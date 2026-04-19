@@ -42,11 +42,17 @@ if [[ "${1:-}" == "--dry-run" || "${1:-}" == "-n" ]]; then
 fi
 
 # Sanity: rsync must be GNU 3.x. openrsync has no -s and no --append-verify.
-if ! rsync --version 2>/dev/null | head -1 | grep -q '^rsync '; then
-  echo "error: your \`rsync\` is Apple's openrsync, not GNU rsync." >&2
-  echo "fix:   brew install rsync, then ensure /opt/homebrew/bin is in PATH." >&2
-  exit 2
-fi
+# Capture the version line into a variable (avoids head/pipefail SIGPIPE races).
+rsync_ver="$(rsync --version 2>/dev/null || true)"
+rsync_ver="${rsync_ver%%$'\n'*}"
+case "$rsync_ver" in
+  rsync\ *) ;;    # GNU rsync — good
+  *)
+    echo "error: your \`rsync\` is '${rsync_ver:-unknown}' — not GNU rsync." >&2
+    echo "fix:   brew install rsync, then ensure /opt/homebrew/bin is in PATH." >&2
+    exit 2
+    ;;
+esac
 
 if [[ ! -d "$SRC" ]]; then
   echo "error: source folder does not exist: $SRC" >&2
