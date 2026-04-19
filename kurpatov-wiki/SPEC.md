@@ -199,7 +199,7 @@ and repair it. The forge-side mirror lives at
 | GitHub repo             | Pushed by                               | Working tree                                         |
 | ----------------------- | --------------------------------------- | ---------------------------------------------------- |
 | `kurpatov-wiki-raw`     | `kurpatov-wiki-raw-pusher` (container)  | server: `${STORAGE_ROOT}/kurpatov-wiki/vault/raw/`   |
-| `kurpatov-wiki-wiki`    | Claude Desktop / Cowork session         | Mac: `~/forge-wikiwork/wiki/` (by convention)        |
+| `kurpatov-wiki-wiki`    | Claude Desktop / Cowork session         | Cowork session workspace: `~/repos/kurpatov-wiki-wiki/` (by convention)        |
 
 In the `kurpatov-wiki-raw` repo, raw transcripts live under a
 `data/` subtree: `data/<course>/<module>/<stem>/raw.json`. The repo

@@ -44,6 +44,26 @@ mac-side-wiki-authoring.md` are kept as the design-trail mirror
 that accompanies this ADR; operational editing happens in the wiki
 repo.
 
+Amended (2026-04-20 — working copies in the session's sandbox
+workspace, not the Mac's home). The "Mac-side" shorthand in this
+ADR's title and body means "Cowork session running on the
+operator's Mac, not a server-side daemon". The original body
+placed the session's working clones under `~/forge-wikiwork/` on
+the Mac's filesystem — i.e. paths in the operator's actual
+`$HOME`. That has changed: the Cowork session now keeps its
+clones in its own persistent sandbox workspace (concretely
+`~/repos/kurpatov-wiki-raw` and `~/repos/kurpatov-wiki-wiki` where
+`~` is the session's home inside its Linux sandbox, not the
+operator's Mac home). The operator's Mac home no longer has a
+`~/forge-wikiwork/` directory; it was removed as part of this
+amendment. GitHub push auth is the session's own ed25519 SSH key
+(registered once on the operator's GitHub account as a user SSH
+key, title `kurpatov-wiki-cowork-session`) — not a deploy key on
+the Mac. The follow-up "Deploy key and SSH config for the wiki
+repo on the Mac" below is correspondingly obsolete. The
+invariants are unchanged: the session is the pusher, no
+server-side daemon authors the wiki, the human-in-the-loop stays.
+
 ## Context
 
 Once `vault/raw/<stem>/raw.json` started accumulating (ADR 0002,
@@ -182,10 +202,13 @@ is old.
 
 ## Decision
 
-### Authoring happens on the Mac, in a Claude Desktop session
+### Authoring happens in a Mac-hosted Claude Desktop (Cowork) session
 
-A Mac-side Cowork session clones two repos into a working directory
-(e.g. `~/forge-wikiwork/`):
+A Cowork session — a process running on the operator's Mac as part
+of Claude Desktop — clones two repos into its own persistent
+sandbox workspace under `~/repos/` (where `~` is the session's
+sandbox home, not the Mac's user home — see the 2026-04-20
+amendment above):
 
 - `kurpatov-wiki-raw` (read-only for this flow — content is written
   by the server-side raw-pusher, ADR 0005).
@@ -195,8 +218,8 @@ Per session, all steps run by the Cowork session via its Bash tool
 (the operator orchestrates and reviews, but does not type the git
 commands):
 
-1. `git -C ~/forge-wikiwork/raw pull --ff-only`.
-2. `git -C ~/forge-wikiwork/wiki pull --ff-only`.
+1. `git -C ~/repos/kurpatov-wiki-raw  pull --ff-only`.
+2. `git -C ~/repos/kurpatov-wiki-wiki pull --ff-only`.
 3. Load `data/concept-index.json`.
 4. Pick the next unprocessed video in course order (the playbook in
    `docs/authoring.md` defines the ordering rule).
@@ -205,8 +228,8 @@ commands):
    `data/videos/<course>/<module>/<stem>.md` in the wiki repo + any
    new concept files under `data/concepts/` + any concept updates +
    an updated `data/concept-index.json`.
-6. `git -C ~/forge-wikiwork/wiki add -A && git -C ~/forge-wikiwork/wiki
-   commit -m "video: <slug>" && git -C ~/forge-wikiwork/wiki push`.
+6. `git -C ~/repos/kurpatov-wiki-wiki add -A && git -C ~/repos/kurpatov-wiki-wiki
+   commit -m "video: <slug>" && git -C ~/repos/kurpatov-wiki-wiki push`.
 7. Loop to step 4 until the session ends or the operator is tired.
 
 No automation. No daemon. No server-side pusher for the wiki layer.
@@ -353,9 +376,12 @@ the Mac.
   while keeping its `--vault` (git working tree) at
   `/workspace/vault/raw/`. Existing content was moved via the
   server-side migration script referenced in ADR 0005's amendment.
-- Deploy key and SSH config for the wiki repo on the Mac. Mirrors the
+- ~~Deploy key and SSH config for the wiki repo on the Mac. Mirrors the
   server-side key file for the raw repo but lives on the Mac; not
-  committed to git.
+  committed to git.~~ **Obsolete (2026-04-20):** the wiki repo is
+  pushed from the Cowork session's sandbox using the session's own
+  ed25519 SSH key, registered on the operator's GitHub account.
+  See the 2026-04-20 amendment under Status.
 - If/when the wiki volume outgrows a weekly Mac session, revisit:
   could a server-side daemon (local vLLM or API) produce *draft*
   articles that the operator reviews in-session? That would be a

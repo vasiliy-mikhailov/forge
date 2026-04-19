@@ -3,10 +3,10 @@
 > **Design-trail mirror.** The authoritative working copy of this
 > playbook lives at `kurpatov-wiki-wiki/docs/authoring.md` in the
 > wiki repo, alongside the prompts it references. Operational
-> edits land there (under the `docs:` commit subject). The copy in
-> this forge directory is retained as the design trail for ADR 0007
-> and uses pre-migration paths in places — see the wiki repo for the
-> current `data/`-prefixed version.
+> edits land there (under the `docs:` commit subject). This copy in
+> forge is retained as the design trail for ADR 0007 and is kept
+> roughly synchronized for cross-repo readability — but if the two
+> drift, the wiki repo's version is authoritative.
 
 This is the concrete playbook for a Claude Desktop (Cowork) session
 that produces wiki articles from raw transcripts. Design rationale:
@@ -20,50 +20,53 @@ process N videos, and push.
 
 **Who runs the git commands.** The Cowork session itself runs
 `git pull`, `git add`, `git commit`, and `git push` through its own
-Bash tool, using the operator's Mac SSH key to authenticate to
-GitHub. The session is the wiki pusher — the architectural mirror of
+Bash tool, using the session's own ed25519 SSH key (registered on
+the operator's GitHub account) to authenticate. The session is the wiki pusher — the architectural mirror of
 the server-side `kurpatov-wiki-raw-pusher` container, with CLAUDE.md +
 this playbook as its program. The operator opens the session, points
 at a starting slug, and reviews diffs; typing out git invocations is
 not part of the operator's job.
 
-## One-time bootstrap (per Mac)
+## One-time bootstrap (per session)
 
-Only needed on a fresh Mac or a fresh clone location.
+Only needed on a fresh Cowork session with an empty sandbox.
 
 ### Working directory layout
 
-By convention, two sibling clones under one workspace. The exact path
-does not matter; pick one and be consistent across sessions.
+Two sibling clones under the session's persistent sandbox
+workspace:
 
 ```
-~/forge-wikiwork/
-├── raw/        ← git clone of kurpatov-wiki-raw       (read-only use)
-└── wiki/       ← git clone of kurpatov-wiki-wiki      (read-write)
+~/repos/
+├── kurpatov-wiki-raw    ← git clone of kurpatov-wiki-raw    (read-only use)
+└── kurpatov-wiki-wiki   ← git clone of kurpatov-wiki-wiki   (read-write)
 ```
 
 ```bash
-mkdir -p ~/forge-wikiwork && cd ~/forge-wikiwork
-git clone git@github.com:vasiliy-mikhailov/kurpatov-wiki-raw.git raw
-git clone git@github.com:vasiliy-mikhailov/kurpatov-wiki-wiki.git wiki
+mkdir -p ~/repos && cd ~/repos
+test -d kurpatov-wiki-raw  || git clone git@github.com:vasiliy-mikhailov/kurpatov-wiki-raw.git
+test -d kurpatov-wiki-wiki || git clone git@github.com:vasiliy-mikhailov/kurpatov-wiki-wiki.git
 ```
 
-### Deploy keys on the Mac
+### SSH auth
 
-The `kurpatov-wiki-raw` deploy key lives on the **server**, not on the
-Mac — the Mac authenticates to GitHub with whatever SSH key the
-operator uses for their GitHub account (no deploy key needed for
-read, no deploy key needed for push to a repo owned by the account).
+The `kurpatov-wiki-raw` deploy key lives on the **server**, not in
+the session's sandbox — the session authenticates to GitHub with
+its own ed25519 SSH key (`~/.ssh/id_ed25519`, registered on the
+operator's GitHub account as a user SSH key, title
+`kurpatov-wiki-cowork-session`). No per-repo deploy key on the
+session side.
 
-No per-repo key configuration on the Mac. `git pull` / `git push`
-uses `~/.ssh/id_ed25519` (or whatever is in `~/.ssh/config` for
-`github.com`).
+If the sandbox key rotates between sessions and a push is rejected
+with "Permission denied (publickey)", surface the current public
+key (`cat ~/.ssh/id_ed25519.pub`) to the operator so they can
+update the GitHub entry.
 
 ### Sanity check
 
 ```bash
-ls ~/forge-wikiwork/raw      # should show <course>/<module>/<stem>/raw.json
-ls ~/forge-wikiwork/wiki     # should show README.md, index.md, concepts/, videos/, concept-index.json
+ls ~/repos/kurpatov-wiki-raw/data   # should show <course>/<module>/<stem>/raw.json
+ls ~/repos/kurpatov-wiki-wiki/data  # should show index.md, concept-index.json, concepts/, videos/
 ```
 
 If the wiki repo is empty or missing the scaffolding, the operator
@@ -79,8 +82,8 @@ They are the cheap safety net against out-of-date state.
 
 1. **Pull both repos.**
    ```bash
-   git -C ~/forge-wikiwork/raw  pull --ff-only
-   git -C ~/forge-wikiwork/wiki pull --ff-only
+   git -C ~/repos/kurpatov-wiki-raw  pull --ff-only
+   git -C ~/repos/kurpatov-wiki-wiki pull --ff-only
    ```
    If either pull is not fast-forward, stop and surface the state to
    the operator — the wiki repo in particular should never have
@@ -88,7 +91,7 @@ They are the cheap safety net against out-of-date state.
 
 2. **Confirm the wiki working tree is clean.**
    ```bash
-   git -C ~/forge-wikiwork/wiki status --short
+   git -C ~/repos/kurpatov-wiki-wiki status --short
    ```
    A dirty tree means the last session ended mid-video. Decide with
    the operator: commit-and-push leftover, or `git restore` to
@@ -175,9 +178,9 @@ Per video, in one session cycle:
 4. **Commit and push.** The session runs these via its Bash tool
    (not the operator):
    ```bash
-   git -C ~/forge-wikiwork/wiki add -A
-   git -C ~/forge-wikiwork/wiki commit -m "video: <slug>"
-   git -C ~/forge-wikiwork/wiki push
+   git -C ~/repos/kurpatov-wiki-wiki add -A
+   git -C ~/repos/kurpatov-wiki-wiki commit -m "video: <slug>"
+   git -C ~/repos/kurpatov-wiki-wiki push
    ```
    One commit per video. The commit subject is always `video: <slug>`
    unless the work is something else (see below). If `git push` fails
