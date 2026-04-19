@@ -126,22 +126,73 @@ Stable contract (see ADR 0002 "JSON-only, single file"):
 - Atomicity: the file is written to `<stem>.tmp/raw.json`, then the
   directory is renamed to `<stem>/`.
 
-### WIKI layer: `vault/wiki/`
-Out of scope for this SPEC today. Expected: markdown files with notes,
-linked to raw.json via `info.source_path`. Will live in a separate
-`kurpatov-wiki-wiki` private GitHub repo — same shape as the raw repo
-below, pushed by a yet-to-be-written sibling of the raw-pusher.
+### WIKI layer: `kurpatov-wiki-wiki` (GitHub-canonical, Mac-authored)
+
+Unlike the RAW layer, the wiki layer is **not** written from the server.
+Full decision record: [ADR 0007](docs/adr/0007-wiki-layer-mac-side.md).
+Authoring happens in a Claude Desktop (Cowork) session on the operator's
+Mac, which reads the `kurpatov-wiki-raw` repo and writes the
+`kurpatov-wiki-wiki` repo directly. `${STORAGE_ROOT}/kurpatov-wiki/vault/
+wiki/` is **not** created by `make setup` and has no server-side
+consumer; the canonical wiki lives on GitHub.
+
+Repo layout:
+
+```
+kurpatov-wiki-wiki/           (repo root = wiki root)
+├── README.md                 reading protocol + conventions
+├── index.md                  course/module/video order + A-Z concept index
+├── concept-index.json        authoritative authoring state (see below)
+├── concepts/
+│   ├── _template.md
+│   ├── <concept-slug>.md     one per psychological concept
+│   └── ...
+└── videos/
+    ├── _template.md
+    └── <course>/<module>/<stem>.md   one per source video
+```
+
+Two article types (see ADR 0007):
+
+- **Video article** — three required sections:
+  `## TL;DR` (1-2 sentences), `## New ideas` (ideas first introduced
+  in this video, not in any previously-processed video — the
+  fast-reader's path), `## All ideas` (full ideational content
+  grouped by concept, with cross-links to `concepts/`).
+  Frontmatter carries `slug`, `course`, `module`, `source_raw`,
+  `processed_at`, `concepts_touched`, `concepts_introduced`. There
+  is no numeric `order:` field — module names are zero-padded
+  (`05-conflicts`) and stems carry zero-padded numeric prefixes
+  (`005 Conflict nature`), so sorted-path order equals course
+  order (see ADR 0007 invariants).
+
+- **Concept article** — an append-only article per psychological
+  concept. A short top-of-article definition, followed by a
+  "Contributions by video" log where each entry names a video slug
+  and summarizes what that video adds to the concept. Never
+  rewritten destructively; fixes are explicit edits with reasons.
+
+`concept-index.json` is the authoring state file (ADR 0007 →
+Invariants). Every Mac-side session reads it at start, uses it to
+decide what's "new" in the next video, and commits the updated
+version at the end. Drift between this file and the `concepts/`
+directory is a bug; the playbook at
+[docs/mac-side-wiki-authoring.md](docs/mac-side-wiki-authoring.md)
+spells out how to detect and repair it.
 
 ### Published repos
 
-| GitHub repo             | Pushed by                   | Working tree on server                              |
-| ----------------------- | --------------------------- | --------------------------------------------------- |
-| `kurpatov-wiki-raw`     | `kurpatov-wiki-raw-pusher`  | `${STORAGE_ROOT}/kurpatov-wiki/vault/raw/`          |
-| `kurpatov-wiki-wiki`    | not yet wired (manual)      | `${STORAGE_ROOT}/kurpatov-wiki/vault/wiki/` (future) |
+| GitHub repo             | Pushed by                               | Working tree                                         |
+| ----------------------- | --------------------------------------- | ---------------------------------------------------- |
+| `kurpatov-wiki-raw`     | `kurpatov-wiki-raw-pusher` (container)  | server: `${STORAGE_ROOT}/kurpatov-wiki/vault/raw/`   |
+| `kurpatov-wiki-wiki`    | Claude Desktop / Cowork session         | Mac: `~/forge-wikiwork/wiki/` (by convention)        |
 
 The `kurpatov-wiki-raw` repo root **is** the raw-transcripts tree:
 `<course>/<module>/<stem>/raw.json` directories live directly at the
-repo's top level, with no `raw/` prefix. See ADR 0005 for why.
+repo's top level, with no `raw/` prefix. See ADR 0005.
+
+The `kurpatov-wiki-wiki` repo root **is** the wiki tree as shown
+above. No `wiki/` prefix. See ADR 0007.
 
 ## Invariants
 
@@ -179,19 +230,21 @@ Done:
 Not yet:
 - Diarization (pyannote). Placeholder in the format is there; the HF token
   hasn't been obtained.
-- LLM summary per video.
-- Wiki assembly.
-- `kurpatov-wiki-wiki` repo + matching pusher.
+- LLM summary per video (design: ADR 0007; content: Mac-side Claude
+  Desktop sessions, pending operator time).
+- Concept articles populated beyond scaffolding.
 
 ## Open questions
-- How to split long lectures into semantic blocks (by time? by VAD pauses?
-  by sentences in the text?).
-- Do we need a separate "clean transcript" layer (no timings) to feed into
-  the LLM, or is `segments[].text` enough?
-- Where to keep prompts for summarization — in code or as standalone
-  markdown files in `kurpatov-wiki/prompts/`.
+- How to split long lectures into semantic blocks for the "All ideas"
+  section (by time? by VAD pauses? by thematic shift? Currently left to
+  the Mac-side session's judgment — see the playbook).
+- Concept vocabulary drift across English and Russian. Concept slugs are
+  English kebab-case; article prose follows whichever language reads best
+  for the concept. Playbook captures the resolution rule.
 - Determinism and reproducibility for pyannote: how to pin checkpoint
   versions.
+- When (if ever) the wiki layer needs automation. Today's cadence matches
+  Mac-side sessions; if volume grows, revisit per ADR 0007 follow-ups.
 
 ## Running
 ```bash
@@ -207,7 +260,9 @@ docker exec -t jupyter-kurpatov-wiki \
   python -u /workspace/notebooks/02_transcribe_incremental.py
 ```
 
-See also: `docs/adr/0001` through `0006`,
+See also: `docs/adr/0001` through `0007`,
+`docs/mac-side-wiki-authoring.md` (wiki-layer playbook),
+`prompts/per-video-summarize.md`, `prompts/concept-article.md`,
 `notebooks/02_transcribe_incremental.py`,
 `notebooks/03_watch_and_transcribe.py`,
 `notebooks/04_watch_raw_and_push.py`,
