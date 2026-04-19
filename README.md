@@ -75,6 +75,9 @@ More detail in `docs/architecture.md` and the SPEC of each service.
 - [docs/operations.md](docs/operations.md) — runbook: host prerequisites,
   backups, disaster recovery, GPU rotation.
 - [docs/adr/](docs/adr/) — repo-level architecture decision records.
+- [tests/](tests/) — plain-English test model (goals + signals + edge
+  cases) that `scripts/smoke.sh` and friends derive from. TDD source
+  of truth.
 - `<service>/SPEC.md` — per-service spec.
 - `<service>/docs/adr/` — per-service ADRs.
 

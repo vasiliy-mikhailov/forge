@@ -30,6 +30,10 @@ Current subsystems (each in its own folder):
 3. Open the SPEC.md of the service being edited (`<service>/SPEC.md`).
 4. Skim `docs/adr/` and `<service>/docs/adr/` — architectural decisions
    there must not be silently undone.
+5. If you are about to change observable behavior, also open `tests/` —
+   that directory is the source of truth for what the smoke test (and
+   future test scripts) must verify. Update the model there **before**
+   editing `scripts/smoke.sh`. See `tests/README.md` for the TDD loop.
 
 ## Rules for edits
 

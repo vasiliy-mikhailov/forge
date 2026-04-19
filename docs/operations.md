@@ -204,7 +204,13 @@ make kurpatov-wiki-logs | head -50
 ## End-to-end smoke test
 
 `make smoke` (or `./scripts/smoke.sh`) runs an idempotent, read-only
-health check across the whole stack. What it verifies:
+health check across the whole stack. The checks below are a summary;
+the full test model — goals, signals, and known edge cases for each
+check — lives in [`tests/smoke.md`](../tests/smoke.md). Changes to
+what's asserted must go through that file first (see
+[`tests/README.md`](../tests/README.md) for the TDD loop).
+
+What the smoke test verifies:
 
 1. All 6 containers Up: `caddy`, `mlflow`, `jupyter-rl-2048`,
    `jupyter-kurpatov-wiki`, `kurpatov-transcriber`,

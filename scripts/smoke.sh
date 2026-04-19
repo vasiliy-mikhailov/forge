@@ -1,21 +1,28 @@
 #!/usr/bin/env bash
 # forge smoke test — end-to-end health check for all services.
 #
-# What it verifies:
-#   1. All 6 forge containers are Up (caddy, mlflow, jupyter-rl-2048,
-#      jupyter-kurpatov-wiki, kurpatov-transcriber, kurpatov-wiki-raw-pusher).
-#   2. GPU partitioning: rl-2048 sees the GPU pinned by RL_2048_GPU_UUID,
-#      kurpatov-wiki sees the one pinned by KURPATOV_WIKI_GPU_UUID, and
-#      they don't leak into each other.
-#   3. torch.cuda is available inside both GPU containers and a small
-#      matmul runs without error.
-#   4. Caddy fronts all three domains correctly:
-#        - unauth request -> 401
-#        - auth request   -> 200 (mlflow) / 302 (jupyter hosts, to /lab)
-#   5. mlflow REST API is reachable with basic auth and returns JSON.
-#   6. kurpatov-transcriber has started its inotify watcher on the videos
-#      tree, and kurpatov-wiki-raw-pusher has started its inotify watcher
-#      on the raw-transcripts tree (see kurpatov-wiki/docs/adr/0005).
+# SOURCE OF TRUTH: tests/smoke.md
+#   This script is a derivation of that model. If you find yourself
+#   adding a check here without a matching entry there, stop. Update
+#   tests/smoke.md first (goals + signals + edge cases), then come
+#   back and mirror the change in this file. See tests/README.md for
+#   the full TDD workflow.
+#
+# What it verifies (each section below corresponds to a section in
+# tests/smoke.md with the same name):
+#   1. Containers up — all 6 forge containers (caddy, mlflow,
+#      jupyter-rl-2048, jupyter-kurpatov-wiki, kurpatov-transcriber,
+#      kurpatov-wiki-raw-pusher).
+#   2. GPU partitioning — rl-2048 pinned to RL_2048_GPU_UUID,
+#      kurpatov-wiki pinned to KURPATOV_WIKI_GPU_UUID, no leakage.
+#   3. torch.cuda matmul — both GPU containers can actually run a
+#      CUDA kernel.
+#   4. Caddy basic auth — unauth=401, auth=200|302 on every public
+#      domain.
+#   5. mlflow REST API — /experiments/search returns JSON.
+#   6. Reactive watchers — transcriber has inotify on
+#      /workspace/videos, raw-pusher has inotify on
+#      /workspace/vault/raw (see kurpatov-wiki/docs/adr/0005).
 #
 # Usage:
 #   make smoke              # from the forge root (recommended)
