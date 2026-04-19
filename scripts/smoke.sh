@@ -156,20 +156,32 @@ fi
 # ---------- 6. watchers (transcriber + raw-pusher) ----------
 section "kurpatov watchers"
 
-if docker logs --since=24h kurpatov-transcriber 2>&1 | grep -qE 'inotify on /workspace/videos'; then
-  pass "transcriber has inotify on /workspace/videos"
-else
-  fail "no 'inotify on /workspace/videos' line in last 24h of transcriber logs"
-fi
+# Capture logs first, then grep, to avoid `grep -q` + pipefail SIGPIPE:
+# grep -q closes stdin on first match, docker logs exits 141, pipefail
+# fails the whole pipe. Capturing sidesteps that cleanly.
+check_watcher_log() {
+  local label=$1 container=$2 pattern=$3
+  local logs
+  logs=$(docker logs --since=24h "$container" 2>&1 || true)
+  if grep -qE -- "$pattern" <<<"$logs"; then
+    pass "$label"
+  else
+    fail "$label"
+  fi
+}
+
+check_watcher_log \
+  "transcriber has inotify on /workspace/videos" \
+  kurpatov-transcriber \
+  'inotify on /workspace/videos'
 
 # The raw-pusher watches the raw-transcripts tree; the transcriber writes
 # there, and the pusher commits + pushes to the kurpatov-wiki-raw GitHub
 # repo. See kurpatov-wiki/docs/adr/0005-split-transcribe-and-push.md.
-if docker logs --since=24h kurpatov-wiki-raw-pusher 2>&1 | grep -qE 'inotify on /workspace/vault/raw'; then
-  pass "raw-pusher has inotify on /workspace/vault/raw"
-else
-  fail "no 'inotify on /workspace/vault/raw' line in last 24h of raw-pusher logs"
-fi
+check_watcher_log \
+  "raw-pusher has inotify on /workspace/vault/raw" \
+  kurpatov-wiki-raw-pusher \
+  'inotify on /workspace/vault/raw'
 
 # ---------- summary ----------
 TOTAL=$((PASSED + FAILED))
