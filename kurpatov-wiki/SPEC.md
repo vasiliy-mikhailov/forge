@@ -33,7 +33,8 @@ state only through the vault filesystem — no code, no network RPC.
 1. **`jupyter-kurpatov-wiki`** — Jupyter for manual experiments and batch
    runs (`02_transcribe_incremental.py`). Torch + faster-whisper +
    pyannote.audio in a venv. Served via caddy + basic auth. Uses
-   `KURPATOV_WIKI_GPU_UUID`.
+   `KURPATOV_WIKI_GPU_UUID`. Image: `forge-kurpatov-wiki:latest`
+   (CUDA base, ~20 GB).
 
 2. **`kurpatov-transcriber`** — headless daemon running
    `03_watch_and_transcribe.py`. Reactively watches `videos/` and
@@ -45,8 +46,11 @@ state only through the vault filesystem — no code, no network RPC.
 3. **`kurpatov-wiki-raw-pusher`** — headless daemon running
    `04_watch_raw_and_push.py`. Reactively watches `vault/raw/` and
    pushes new transcripts to the private `kurpatov-wiki-raw` GitHub
-   repo (see ADR 0005). Same image, no GPU, no network exposure other
-   than outbound SSH to GitHub. Knows nothing about whisper or videos.
+   repo (see ADR 0005). No GPU, no network exposure other than
+   outbound SSH to GitHub. Knows nothing about whisper or videos.
+   Runs a dedicated lean image `forge-kurpatov-wiki-pusher:latest`
+   (`python:3.12-slim` + git + openssh-client + watchdog, ~200 MB) —
+   see ADR 0006. Built from `kurpatov-wiki/Dockerfile.pusher`.
 
 Volume access by service:
 
@@ -203,7 +207,7 @@ docker exec -t jupyter-kurpatov-wiki \
   python -u /workspace/notebooks/02_transcribe_incremental.py
 ```
 
-See also: `docs/adr/0001` through `0005`,
+See also: `docs/adr/0001` through `0006`,
 `notebooks/02_transcribe_incremental.py`,
 `notebooks/03_watch_and_transcribe.py`,
 `notebooks/04_watch_raw_and_push.py`,

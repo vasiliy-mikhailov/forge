@@ -255,6 +255,50 @@ Same goal / signals / edge cases as above, but for
 
 ---
 
+## Section 7 — pusher image discipline
+
+### raw-pusher does not use the GPU image
+
+**Goal.** `kurpatov-wiki-raw-pusher`'s job is `git add/commit/push` over
+SSH. It has no business dragging a 20 GB CUDA stack. The pusher must
+run a dedicated lean image — no torch, no whisper, no nvidia base.
+
+**Signals.**
+- `docker inspect kurpatov-wiki-raw-pusher --format '{{.Config.Image}}'`
+  returns an image *different from* the one used by
+  `jupyter-kurpatov-wiki` and `kurpatov-transcriber`. The shipped pair
+  today is `forge-kurpatov-wiki:latest` (GPU) vs.
+  `forge-kurpatov-wiki-pusher:latest` (lean).
+- `docker image inspect <pusher-image> --format '{{.Size}}'` returns
+  a size under 500 MB. A python-slim + git + openssh-client +
+  watchdog image is ~200 MB; 500 MB gives generous headroom for the
+  slim base bumping a major version or for a few extra apt packages,
+  while still catching accidental `FROM forge-kurpatov-wiki:latest`
+  regression.
+
+**Edge cases.**
+- Two images tagged identically would false-pass the "different from"
+  check. Not a real risk under our naming scheme but worth noting.
+- The 500 MB threshold is policy, not physics. If a future dependency
+  legitimately pushes the pusher past 500 MB, update this model file
+  first (raise the number, document why) rather than silently
+  relaxing the script.
+- The NVIDIA CUDA banner at the top of `docker logs
+  kurpatov-wiki-raw-pusher` was the symptom that motivated this
+  split — a daemon using 0% of the GPU still printed "GPU
+  functionality will not be available" on every restart, polluting
+  logs and indirectly causing the `grep -q` + `pipefail` SIGPIPE
+  bug. The asserted signal is image identity/size, not log
+  absence, because a log-absence check would silently pass if NVIDIA
+  ever removed the banner from their base image.
+- Whichever image is built first wins the local cache. Both images
+  must be built in sync; `make kurpatov-wiki-build` runs
+  `docker compose build` which builds every service that declares a
+  `build:` block, so this is handled at the compose layer, not by
+  the test.
+
+---
+
 ## Known gaps
 
 Things the smoke test does *not* currently verify, but should someday:

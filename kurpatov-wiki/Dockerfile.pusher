@@ -1,0 +1,21 @@
+# Dedicated lean image for kurpatov-wiki-raw-pusher.
+#
+# The pusher's whole job is: watch /workspace/vault/raw with watchdog,
+# git add / commit / push over SSH. No torch, no whisper, no CUDA —
+# see kurpatov-wiki/docs/adr/0006-lean-pusher-image.md.
+#
+# Expected built size: ~200 MB. Smoke test (tests/smoke.md §7) asserts
+# under 500 MB.
+FROM python:3.12-slim
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      git openssh-client ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
+
+RUN pip install --no-cache-dir watchdog
+
+WORKDIR /workspace
+
+CMD ["python", "-u", "/workspace/notebooks/04_watch_raw_and_push.py"]

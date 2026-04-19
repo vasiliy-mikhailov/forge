@@ -6,6 +6,12 @@ two layers `raw/` and `wiki/` are now two *separate git repos* rather than
 two sibling folders inside one repo. The vault filesystem layout under
 `${STORAGE_ROOT}/kurpatov-wiki/vault/` is unchanged.
 
+Amended (2026-04-19) by [ADR 0006](0006-lean-pusher-image.md): the
+"They run the same image (`forge-kurpatov-wiki:latest`)" note below is
+now obsolete. The pusher runs a dedicated lean image
+(`forge-kurpatov-wiki-pusher:latest`, based on `python:3.12-slim`). The
+container split itself is unchanged.
+
 ## Context
 Once the RAW layer stabilized (ADR 0002), I wanted the transcripts to be
 continuously mirrored to a private GitHub repo — as a backup, and as a
@@ -58,8 +64,13 @@ kurpatov-wiki-raw-pusher     watches  /workspace/vault/raw/
                              No GPU reservation — CPU only.
 ```
 
-They run the same image (`forge-kurpatov-wiki:latest`) because
-`openssh-client` + Python are already in it; no separate Dockerfile.
+~~They run the same image (`forge-kurpatov-wiki:latest`) because
+`openssh-client` + Python are already in it; no separate Dockerfile.~~
+**Superseded by ADR 0006.** The transcriber still runs
+`forge-kurpatov-wiki:latest`; the pusher now runs a dedicated lean
+image `forge-kurpatov-wiki-pusher:latest` built from
+`kurpatov-wiki/Dockerfile.pusher` (`python:3.12-slim` + git +
+openssh-client + watchdog, ~200 MB).
 
 ### Two repos, not one
 `raw/` and `wiki/` live in two distinct private GitHub repos:

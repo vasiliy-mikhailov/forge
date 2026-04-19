@@ -58,9 +58,12 @@ services:
 
   # Separate from the transcriber by design: single responsibility.
   # Watches /workspace/vault/raw for new/changed files and pushes
-  # them to the private kurpatov-wiki-raw GitHub repo. Reuses the
-  # forge-kurpatov-wiki image because openssh-client + python are
-  # already installed there; no GPU needed.
+  # them to the private kurpatov-wiki-raw GitHub repo.
+  #
+  # Runs a dedicated lean image (python:3.12-slim + git + openssh-client
+  # + watchdog, ~200 MB) instead of the 20 GB GPU image. Rationale and
+  # consequences: kurpatov-wiki/docs/adr/0006-lean-pusher-image.md.
+  # Smoke test enforces: tests/smoke.md §7.
   #
   # Note: the on-disk path `/workspace/vault/raw` still uses the
   # legacy "vault" name (host: ${STORAGE_ROOT}/kurpatov-wiki/vault),
@@ -69,7 +72,10 @@ services:
   # cheap to rename later; the GitHub repo rename is the only piece
   # that needs to happen out-of-band.
   kurpatov-wiki-raw-pusher:
-    image: forge-kurpatov-wiki:latest
+    image: forge-kurpatov-wiki-pusher:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.pusher
     container_name: kurpatov-wiki-raw-pusher
     volumes:
       - ./notebooks:/workspace/notebooks

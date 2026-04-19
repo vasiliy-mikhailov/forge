@@ -23,6 +23,9 @@
 #   6. Reactive watchers — transcriber has inotify on
 #      /workspace/videos, raw-pusher has inotify on
 #      /workspace/vault/raw (see kurpatov-wiki/docs/adr/0005).
+#   7. Pusher image discipline — raw-pusher runs a dedicated lean
+#      image (no CUDA), not the GPU image (see
+#      kurpatov-wiki/docs/adr/0006).
 #
 # Usage:
 #   make smoke              # from the forge root (recommended)
@@ -189,6 +192,47 @@ check_watcher_log \
   "raw-pusher has inotify on /workspace/vault/raw" \
   kurpatov-wiki-raw-pusher \
   'inotify on /workspace/vault/raw'
+
+# ---------- 7. pusher image discipline ----------
+# Rationale: the raw-pusher only needs git + openssh-client + watchdog.
+# Riding the ~20 GB forge-kurpatov-wiki:latest GPU image wastes space,
+# bloats restart-time logs with the NVIDIA CUDA banner (which in turn
+# was what triggered the grep -q + pipefail SIGPIPE false-fail in
+# check #6 above), and needlessly expands the container's attack
+# surface. See kurpatov-wiki/docs/adr/0006-lean-pusher-image.md.
+section "pusher image discipline"
+
+pusher_image=$(docker inspect kurpatov-wiki-raw-pusher \
+  --format '{{.Config.Image}}' 2>/dev/null || echo "")
+gpu_image=$(docker inspect jupyter-kurpatov-wiki \
+  --format '{{.Config.Image}}' 2>/dev/null || echo "")
+
+if [[ -z "$pusher_image" ]]; then
+  fail "raw-pusher image lookup: docker inspect returned empty (is the container running?)"
+elif [[ -z "$gpu_image" ]]; then
+  fail "gpu image lookup: docker inspect on jupyter-kurpatov-wiki returned empty"
+elif [[ "$pusher_image" == "$gpu_image" ]]; then
+  fail "raw-pusher shares the GPU image (both=$pusher_image); expected a dedicated lean image"
+else
+  pass "raw-pusher uses a dedicated image (pusher=$pusher_image gpu=$gpu_image)"
+fi
+
+# Size check: lean pusher image should be well under 500 MB.
+# A python:3.12-slim + git + openssh-client + watchdog build is ~200 MB;
+# 500 MB threshold catches an accidental FROM forge-kurpatov-wiki:latest
+# regression (that image is ~20 GB) with generous headroom.
+MAX_PUSHER_BYTES=$((500 * 1024 * 1024))
+if [[ -n "$pusher_image" ]]; then
+  pusher_bytes=$(docker image inspect "$pusher_image" \
+    --format '{{.Size}}' 2>/dev/null || echo "")
+  if [[ -z "$pusher_bytes" || ! "$pusher_bytes" =~ ^[0-9]+$ ]]; then
+    fail "raw-pusher image size lookup failed (image=$pusher_image)"
+  elif (( pusher_bytes < MAX_PUSHER_BYTES )); then
+    pass "raw-pusher image size under 500MB (image=$pusher_image bytes=$pusher_bytes)"
+  else
+    fail "raw-pusher image too large (image=$pusher_image bytes=$pusher_bytes limit=$MAX_PUSHER_BYTES)"
+  fi
+fi
 
 # ---------- summary ----------
 TOTAL=$((PASSED + FAILED))

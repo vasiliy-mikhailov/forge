@@ -103,13 +103,19 @@ make <service>
 make <service>-logs   # verify it came up cleanly
 ```
 
-Note for kurpatov-wiki: its `docker-compose.yml` uses the same
-`image: forge-kurpatov-wiki:latest` for all three services —
-`jupyter-kurpatov-wiki`, `kurpatov-transcriber`, and
-`kurpatov-wiki-raw-pusher`. Building from any one rebuilds the shared
-image. The pusher adds only a deploy-key mount and a different
-command; no Dockerfile branch. See
-[kurpatov-wiki/docs/adr/0005-split-transcribe-and-push.md](../kurpatov-wiki/docs/adr/0005-split-transcribe-and-push.md).
+Note for kurpatov-wiki: its `docker-compose.yml` builds **two** images.
+`jupyter-kurpatov-wiki` and `kurpatov-transcriber` share the GPU image
+`forge-kurpatov-wiki:latest` (built from `Dockerfile`, ~20 GB,
+CUDA + torch + whisper + jupyter). `kurpatov-wiki-raw-pusher` runs a
+dedicated lean image `forge-kurpatov-wiki-pusher:latest` built from
+`Dockerfile.pusher` (`python:3.12-slim` + git + openssh-client +
+watchdog, ~200 MB). `make kurpatov-wiki-build` runs
+`docker compose build` which walks every service with a `build:`
+block, so both images rebuild together — no per-image target is
+needed. See
+[kurpatov-wiki/docs/adr/0005-split-transcribe-and-push.md](../kurpatov-wiki/docs/adr/0005-split-transcribe-and-push.md)
+and
+[kurpatov-wiki/docs/adr/0006-lean-pusher-image.md](../kurpatov-wiki/docs/adr/0006-lean-pusher-image.md).
 
 ### Pinned-core build (keeps ssh responsive)
 
@@ -229,6 +235,13 @@ What the smoke test verifies:
    and `kurpatov-wiki-raw-pusher` on `/workspace/vault/raw` (reactive git
    auto-push — see
    [kurpatov-wiki/docs/adr/0005-split-transcribe-and-push.md](../kurpatov-wiki/docs/adr/0005-split-transcribe-and-push.md)).
+7. `kurpatov-wiki-raw-pusher` runs its own lean image
+   (`forge-kurpatov-wiki-pusher:latest`, python-slim + git +
+   openssh-client + watchdog, ~200 MB), not the ~20 GB GPU image —
+   see
+   [kurpatov-wiki/docs/adr/0006-lean-pusher-image.md](../kurpatov-wiki/docs/adr/0006-lean-pusher-image.md).
+   The smoke test enforces: pusher's image must differ from
+   `jupyter-kurpatov-wiki`'s and be under 500 MB.
 
 Exit code is `0` iff all checks pass. Run it after `make base` +
 `make rl-2048` + `make kurpatov-wiki`, after any service rebuild, and
