@@ -1,4 +1,7 @@
-include .env
+# .env holds server-side config (STORAGE_ROOT, domains, GPU UUIDs, secrets).
+# Optional so the Makefile also loads on laptop clones where .env doesn't
+# exist (needed for laptop-only targets like `push-videos`).
+-include .env
 export
 
 STORAGE_ROOT ?= /mnt/steam/forge
