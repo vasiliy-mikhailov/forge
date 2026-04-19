@@ -45,10 +45,18 @@ One docker network `proxy-net` (external), every service is attached:
         │                    │               │
  kurpatov-transcriber       (same GPU)       │
  (no network, fs only)                       │
+        │                                    │
+        ▼  vault/raw/                        │
+ kurpatov-wiki-raw-pusher                    │
+ (CPU only, outbound SSH → GitHub)           │
                                               │
                     all three write metrics ▼
                                          (via caddy)
 ```
+
+The kurpatov-wiki subsystem is three containers that share only the
+vault filesystem — there is no code or network link between them (see
+[kurpatov-wiki/docs/adr/0005-split-transcribe-and-push.md]).
 
 ## GPU ↔ service mapping
 
@@ -58,6 +66,7 @@ Set via variables in `.env`:
 - `KURPATOV_WIKI_GPU_UUID` → both `jupyter-kurpatov-wiki` and
   `kurpatov-transcriber` (both share a single GPU, see
   [kurpatov-wiki/docs/adr/0003-watcher-reactive-not-cron.md]).
+  `kurpatov-wiki-raw-pusher` gets no GPU — it's CPU-only.
 
 Important: these two UUIDs must differ, otherwise the second service will
 OOM.
@@ -75,11 +84,20 @@ ${STORAGE_ROOT:-/mnt/steam/forge}/
     ├── videos/                      # input mp4, structure is
     │   └── <course>/<module>/*.mp4  #   mirrored into vault/raw
     ├── vault/
-    │   ├── raw/                     # RAW layer — JSON transcripts (see ADR 0001)
+    │   ├── raw/                     # RAW layer + git working tree for
+    │   │   │                        #   the kurpatov-wiki-raw repo
+    │   │   │                        #   (repo root IS this dir; see ADR 0005)
+    │   │   ├── .git/
     │   │   └── <course>/<module>/<video_stem>/raw.json
-    │   └── wiki/                    # WIKI layer — empty for now
+    │   └── wiki/                    # WIKI layer — empty for now;
+    │                                #   future home of kurpatov-wiki-wiki repo
     └── checkpoints/
 ```
+
+Note: `vault/` on disk is just a parent directory; the git repo lives at
+`vault/raw/`, not at `vault/`. The "vault" name is legacy and kept only
+to avoid rewriting `~/.ssh/kurpatov-wiki-vault` and
+`vault/raw/.git/config core.sshCommand` (see ADR 0005 → Follow-ups).
 
 Directories are created by `make setup` in the root Makefile.
 
@@ -114,6 +132,9 @@ Everything is behind basic auth (`BASIC_AUTH_USER` / `BASIC_AUTH_HASH`).
 - Corrupting `mlflow/data/mlflow.db` → experiment history is gone
   (artifacts survive but their metadata is lost).
 - Losing `vault/raw/` → re-run every transcription (hours of audio × RTF 0.05).
+  Mitigated by the `kurpatov-wiki-raw` GitHub repo: the pusher keeps it
+  continuously mirrored, so a fresh `git clone` into `vault/raw/` recovers
+  the transcripts without re-running whisper.
 - Accidentally setting `RL_2048_GPU_UUID == KURPATOV_WIKI_GPU_UUID` → OOM.
 - `apt full-upgrade` pulled in the "wrong" nvidia driver (proprietary
   instead of `-open`, or a newer major) → multi-GPU silently breaks. Run

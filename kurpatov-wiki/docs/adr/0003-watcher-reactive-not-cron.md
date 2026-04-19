@@ -51,6 +51,10 @@ Option 3. A dedicated service `kurpatov-transcriber` in compose, running
   `02_transcribe_incremental.py`.
 - No double-processing: the `raw.json` existence check is the first guard;
   the `.tmp` directory makes the write atomic.
+- The transcriber does not invoke `git`. Mirroring `raw/` to GitHub is a
+  separate container's responsibility (`kurpatov-wiki-raw-pusher`, see
+  [ADR 0005](0005-split-transcribe-and-push.md)). A failed push must
+  never stall a transcription and vice versa.
 
 ## Alternatives considered
 - **cron**: no "immediacy", and if a video lands seconds after the tick

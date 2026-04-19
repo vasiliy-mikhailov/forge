@@ -1,7 +1,11 @@
 # ADR 0001 — two-layer vault (raw + wiki)
 
 ## Status
-Accepted (2026-04-19).
+Accepted (2026-04-19). Partially amended by
+[ADR 0005](0005-split-transcribe-and-push.md): the two layers now live
+in two separate git repos (`kurpatov-wiki-raw`, `kurpatov-wiki-wiki`)
+rather than as siblings inside one. The on-disk layer split described
+here is unchanged.
 
 ## Context
 The "video → wiki" pipeline is at least three qualitatively different

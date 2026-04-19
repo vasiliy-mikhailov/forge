@@ -38,8 +38,12 @@ Current subsystems (each in its own folder):
 - **One change per edit.** Don't mix refactors with new features.
 - **Secrets only in `.env`.** No tokens, passwords, certificates in git.
   If you see something that looks like a secret — stop and ask.
-- **Data lives under `${STORAGE_ROOT}`**, not in the repo. `vault/`,
-  `videos/`, `models/`, `checkpoints/`, `mlruns/` are never committed.
+- **Data lives under `${STORAGE_ROOT}`**, not in the forge repo.
+  `vault/`, `videos/`, `models/`, `checkpoints/`, `mlruns/` are never
+  committed to forge. Note: `vault/raw/` **is** a git working tree —
+  but for a *separate* repo (`kurpatov-wiki-raw`), pushed by the
+  `kurpatov-wiki-raw-pusher` container. See
+  `kurpatov-wiki/docs/adr/0005-split-transcribe-and-push.md`.
 - **ADR for irreversible decisions.** If on-disk data format changes, the
   framework choice changes, or the network topology changes — add
   `docs/adr/NNNN-*.md` or `<service>/docs/adr/NNNN-*.md` where NNNN is the

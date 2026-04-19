@@ -104,8 +104,12 @@ make <service>-logs   # verify it came up cleanly
 ```
 
 Note for kurpatov-wiki: its `docker-compose.yml` uses the same
-`image: forge-kurpatov-wiki:latest` for the jupyter and transcriber services.
-Building from either rebuilds the shared image.
+`image: forge-kurpatov-wiki:latest` for all three services —
+`jupyter-kurpatov-wiki`, `kurpatov-transcriber`, and
+`kurpatov-wiki-raw-pusher`. Building from any one rebuilds the shared
+image. The pusher adds only a deploy-key mount and a different
+command; no Dockerfile branch. See
+[kurpatov-wiki/docs/adr/0005-split-transcribe-and-push.md](../kurpatov-wiki/docs/adr/0005-split-transcribe-and-push.md).
 
 ### Pinned-core build (keeps ssh responsive)
 
@@ -154,7 +158,11 @@ What to back up, in order of priority:
 1. `.env` — secrets. Keep in a password manager, not in git.
 2. `${STORAGE_ROOT}/kurpatov-wiki/videos/` — sources (separate from the repo).
 3. `${STORAGE_ROOT}/kurpatov-wiki/vault/raw/` — transcription results
-   (expensive to regenerate).
+   (expensive to regenerate). Also continuously mirrored to the
+   `kurpatov-wiki-raw` private GitHub repo by the
+   `kurpatov-wiki-raw-pusher` container, so in practice a fresh
+   `git clone` recovers this layer without re-running whisper (see
+   [kurpatov-wiki/docs/adr/0005-split-transcribe-and-push.md](../kurpatov-wiki/docs/adr/0005-split-transcribe-and-push.md)).
 4. `mlflow/data/mlflow.db` + `${STORAGE_ROOT}/mlflow/mlruns/` — experiment
    history.
 5. `${STORAGE_ROOT}/kurpatov-wiki/checkpoints/`,
@@ -177,6 +185,10 @@ Order:
 3. Drop `.env` from the password manager.
 4. Create `STORAGE_ROOT`, restore from backups:
    - `vault/raw/` (mandatory — otherwise transcribe starts from zero).
+     Fastest path: `git clone git@github.com:vasiliy-mikhailov/kurpatov-wiki-raw.git`
+     into `${STORAGE_ROOT}/kurpatov-wiki/vault/raw`, then configure
+     `.git/config core.sshCommand` to use the `~/.ssh/kurpatov-wiki-vault`
+     deploy key so the pusher can resume from the server (ADR 0005).
    - `videos/` (if you want them as the source of truth).
    - `mlflow/data/mlflow.db` and `mlruns/` (if you want history).
 5. `make setup && make base && make kurpatov-wiki && make rl-2048`.
@@ -194,8 +206,9 @@ make kurpatov-wiki-logs | head -50
 `make smoke` (or `./scripts/smoke.sh`) runs an idempotent, read-only
 health check across the whole stack. What it verifies:
 
-1. All 5 containers Up: `caddy`, `mlflow`, `jupyter-rl-2048`,
-   `jupyter-kurpatov-wiki`, `kurpatov-transcriber`.
+1. All 6 containers Up: `caddy`, `mlflow`, `jupyter-rl-2048`,
+   `jupyter-kurpatov-wiki`, `kurpatov-transcriber`,
+   `kurpatov-wiki-raw-pusher`.
 2. GPU partitioning — `jupyter-rl-2048` sees exactly the GPU pinned by
    `RL_2048_GPU_UUID` and `jupyter-kurpatov-wiki` sees the one pinned by
    `KURPATOV_WIKI_GPU_UUID`.
@@ -205,8 +218,11 @@ health check across the whole stack. What it verifies:
    `200` (mlflow) or `302` (jupyter, redirects to `/lab`) with basic auth.
 5. mlflow REST API (`/api/2.0/mlflow/experiments/search`) returns JSON
    containing an experiments list.
-6. `kurpatov-transcriber` has logged `inotify on /workspace/videos` —
-   the reactive watcher has started.
+6. Both kurpatov-wiki watchers have logged their `inotify on ...` line:
+   `kurpatov-transcriber` on `/workspace/videos` (reactive transcription),
+   and `kurpatov-wiki-raw-pusher` on `/workspace/vault/raw` (reactive git
+   auto-push — see
+   [kurpatov-wiki/docs/adr/0005-split-transcribe-and-push.md](../kurpatov-wiki/docs/adr/0005-split-transcribe-and-push.md)).
 
 Exit code is `0` iff all checks pass. Run it after `make base` +
 `make rl-2048` + `make kurpatov-wiki`, after any service rebuild, and

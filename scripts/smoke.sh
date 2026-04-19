@@ -2,8 +2,8 @@
 # forge smoke test — end-to-end health check for all services.
 #
 # What it verifies:
-#   1. All 5 forge containers are Up (caddy, mlflow, jupyter-rl-2048,
-#      jupyter-kurpatov-wiki, kurpatov-transcriber).
+#   1. All 6 forge containers are Up (caddy, mlflow, jupyter-rl-2048,
+#      jupyter-kurpatov-wiki, kurpatov-transcriber, kurpatov-wiki-raw-pusher).
 #   2. GPU partitioning: rl-2048 sees the GPU pinned by RL_2048_GPU_UUID,
 #      kurpatov-wiki sees the one pinned by KURPATOV_WIKI_GPU_UUID, and
 #      they don't leak into each other.
@@ -13,7 +13,9 @@
 #        - unauth request -> 401
 #        - auth request   -> 200 (mlflow) / 302 (jupyter hosts, to /lab)
 #   5. mlflow REST API is reachable with basic auth and returns JSON.
-#   6. kurpatov-transcriber has started its inotify watcher on the vault.
+#   6. kurpatov-transcriber has started its inotify watcher on the videos
+#      tree, and kurpatov-wiki-raw-pusher has started its inotify watcher
+#      on the raw-transcripts tree (see kurpatov-wiki/docs/adr/0005).
 #
 # Usage:
 #   make smoke              # from the forge root (recommended)
@@ -49,7 +51,7 @@ set -a; . ./.env; set +a
 USER=$BASIC_AUTH_USER
 PASS=$MLFLOW_TRACKING_PASSWORD
 
-EXPECTED_CONTAINERS=(caddy mlflow jupyter-rl-2048 jupyter-kurpatov-wiki kurpatov-transcriber)
+EXPECTED_CONTAINERS=(caddy mlflow jupyter-rl-2048 jupyter-kurpatov-wiki kurpatov-transcriber kurpatov-wiki-raw-pusher)
 
 # ---------- pretty output ----------
 PASSED=0
@@ -151,13 +153,22 @@ else
   fail "mlflow /experiments/search unexpected response: $(printf '%.200s' "$api_body")"
 fi
 
-# ---------- 6. transcriber watcher ----------
-section "kurpatov-transcriber watcher"
+# ---------- 6. watchers (transcriber + raw-pusher) ----------
+section "kurpatov watchers"
 
 if docker logs --since=24h kurpatov-transcriber 2>&1 | grep -qE 'inotify on /workspace/videos'; then
   pass "transcriber has inotify on /workspace/videos"
 else
   fail "no 'inotify on /workspace/videos' line in last 24h of transcriber logs"
+fi
+
+# The raw-pusher watches the raw-transcripts tree; the transcriber writes
+# there, and the pusher commits + pushes to the kurpatov-wiki-raw GitHub
+# repo. See kurpatov-wiki/docs/adr/0005-split-transcribe-and-push.md.
+if docker logs --since=24h kurpatov-wiki-raw-pusher 2>&1 | grep -qE 'inotify on /workspace/vault/raw'; then
+  pass "raw-pusher has inotify on /workspace/vault/raw"
+else
+  fail "no 'inotify on /workspace/vault/raw' line in last 24h of raw-pusher logs"
 fi
 
 # ---------- summary ----------

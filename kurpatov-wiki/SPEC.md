@@ -26,26 +26,48 @@ LLM layer and wiki assembly are in progress.
 - Not multi-user. Just me.
 
 ## Architecture
-Two long-running roles inside a single docker-compose project (see
-`docker-compose.yml`):
+Three long-running roles inside a single docker-compose project (see
+`docker-compose.yml`), each with a single responsibility. They share
+state only through the vault filesystem — no code, no network RPC.
 
 1. **`jupyter-kurpatov-wiki`** — Jupyter for manual experiments and batch
    runs (`02_transcribe_incremental.py`). Torch + faster-whisper +
-   pyannote.audio in a venv. Served via caddy + basic auth.
+   pyannote.audio in a venv. Served via caddy + basic auth. Uses
+   `KURPATOV_WIKI_GPU_UUID`.
 
 2. **`kurpatov-transcriber`** — headless daemon running
-   `03_watch_and_transcribe.py`. It reactively watches `videos/` and
+   `03_watch_and_transcribe.py`. Reactively watches `videos/` and
    transcribes new files as soon as they stabilize. Model is lazy-loaded
    on the first task and unloaded after N seconds of idle (see ADR 0003).
-   Same image, same network, same GPU.
+   Same image, same network, same GPU as jupyter. Knows nothing about
+   git.
 
-Both services have access to:
+3. **`kurpatov-wiki-raw-pusher`** — headless daemon running
+   `04_watch_raw_and_push.py`. Reactively watches `vault/raw/` and
+   pushes new transcripts to the private `kurpatov-wiki-raw` GitHub
+   repo (see ADR 0005). Same image, no GPU, no network exposure other
+   than outbound SSH to GitHub. Knows nothing about whisper or videos.
 
-- `${STORAGE_ROOT}/kurpatov-wiki/videos/` → `/workspace/videos/` (mounted
-  rw but effectively read-only).
-- `${STORAGE_ROOT}/kurpatov-wiki/vault/` → `/workspace/vault/` (rw).
-- `${STORAGE_ROOT}/models/` → `/workspace/models/` (shared HF cache with
-  rl-2048).
+Volume access by service:
+
+| Mount inside container            | jupyter | transcriber | raw-pusher |
+| --------------------------------- | :-----: | :---------: | :--------: |
+| `/workspace/videos/` (ro-ish)     |   rw    |     rw      |     —      |
+| `/workspace/vault/`               |   rw    |     rw      |     rw     |
+| `/workspace/models/` (HF cache)   |   rw    |     rw      |     —      |
+| `/workspace/checkpoints/`         |   rw    |     rw      |     —      |
+| `/root/.ssh/kurpatov-wiki-vault`  |   —     |      —      |     ro     |
+
+Host paths:
+
+- `${STORAGE_ROOT}/kurpatov-wiki/videos/` — input .mp4 tree.
+- `${STORAGE_ROOT}/kurpatov-wiki/vault/` — vault root. Contains
+  `raw/` (a git working tree for the `kurpatov-wiki-raw` repo) and,
+  later, `wiki/` (a git working tree for `kurpatov-wiki-wiki`).
+- `${STORAGE_ROOT}/models/` — shared HF cache with rl-2048.
+- `~/.ssh/kurpatov-wiki-vault` — per-repo deploy key for the raw repo;
+  filename keeps the legacy "vault" name for now (see ADR 0005 →
+  Follow-ups).
 
 ## Data contracts
 
@@ -102,7 +124,20 @@ Stable contract (see ADR 0002 "JSON-only, single file"):
 
 ### WIKI layer: `vault/wiki/`
 Out of scope for this SPEC today. Expected: markdown files with notes,
-linked to raw.json via `info.source_path`.
+linked to raw.json via `info.source_path`. Will live in a separate
+`kurpatov-wiki-wiki` private GitHub repo — same shape as the raw repo
+below, pushed by a yet-to-be-written sibling of the raw-pusher.
+
+### Published repos
+
+| GitHub repo             | Pushed by                   | Working tree on server                              |
+| ----------------------- | --------------------------- | --------------------------------------------------- |
+| `kurpatov-wiki-raw`     | `kurpatov-wiki-raw-pusher`  | `${STORAGE_ROOT}/kurpatov-wiki/vault/raw/`          |
+| `kurpatov-wiki-wiki`    | not yet wired (manual)      | `${STORAGE_ROOT}/kurpatov-wiki/vault/wiki/` (future) |
+
+The `kurpatov-wiki-raw` repo root **is** the raw-transcripts tree:
+`<course>/<module>/<stem>/raw.json` directories live directly at the
+repo's top level, with no `raw/` prefix. See ADR 0005 for why.
 
 ## Invariants
 
@@ -130,16 +165,19 @@ linked to raw.json via `info.source_path`.
 Production for the RAW layer. Running since April 2026.
 
 Done:
-- Two roles in compose (jupyter + transcriber).
+- Three roles in compose (jupyter + transcriber + raw-pusher).
 - Reactive watcher with lazy-load / idle-unload of the model.
 - Full mirror of the videos → vault/raw hierarchy.
 - Migration script for the flat layout.
+- Continuous auto-push of `vault/raw/` to the `kurpatov-wiki-raw`
+  private GitHub repo, with debounced commits (see ADR 0005).
 
 Not yet:
 - Diarization (pyannote). Placeholder in the format is there; the HF token
   hasn't been obtained.
 - LLM summary per video.
 - Wiki assembly.
+- `kurpatov-wiki-wiki` repo + matching pusher.
 
 ## Open questions
 - How to split long lectures into semantic blocks (by time? by VAD pauses?
@@ -165,7 +203,8 @@ docker exec -t jupyter-kurpatov-wiki \
   python -u /workspace/notebooks/02_transcribe_incremental.py
 ```
 
-See also: `docs/adr/0001` through `0004`,
+See also: `docs/adr/0001` through `0005`,
 `notebooks/02_transcribe_incremental.py`,
 `notebooks/03_watch_and_transcribe.py`,
+`notebooks/04_watch_raw_and_push.py`,
 `notebooks/migrate_vault_hierarchy.py`.
