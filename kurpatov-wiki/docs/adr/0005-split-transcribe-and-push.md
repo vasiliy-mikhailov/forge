@@ -12,6 +12,22 @@ now obsolete. The pusher runs a dedicated lean image
 (`forge-kurpatov-wiki-pusher:latest`, based on `python:3.12-slim`). The
 container split itself is unchanged.
 
+Amended (2026-04-19 — data/ content split). Paths below that place
+content directly at the `vault/raw/` tree top level are now off by
+one `data/` segment. The transcriber writes to
+`/workspace/vault/raw/data/<course>/<module>/<stem>/raw.json`; the
+pusher watches `/workspace/vault/raw/data/` while keeping its git
+working tree (`--vault`) at `/workspace/vault/raw/` so the existing
+`.git/` at that root keeps working. The `kurpatov-wiki-raw` repo's
+top level now contains a `data/` directory; course / module / stem
+dirs live under it. Rationale: course and module names are
+unconstrained strings; a tooling addition at the repo root (e.g. a
+future `README.md`, `CLAUDE.md`, or CI config) would collide with a
+course slug in the same namespace. Mirrors the same split landed
+in `kurpatov-wiki-wiki` under ADR 0007's first amendment. The ADR
+body below describes the post-migration layout; the pre-amendment
+state survives only in git history.
+
 ## Context
 Once the RAW layer stabilized (ADR 0002), I wanted the transcripts to be
 continuously mirrored to a private GitHub repo — as a backup, and as a
@@ -55,14 +71,24 @@ Docker volume:
 
 ```
 kurpatov-transcriber         watches  /workspace/videos/
-                             writes   /workspace/vault/raw/<stem>/raw.json
+                             writes   /workspace/vault/raw/data/
+                                        <course>/<module>/<stem>/raw.json
                              knows nothing about git.
 
-kurpatov-wiki-raw-pusher     watches  /workspace/vault/raw/
-                             runs     git add -A && git commit && git push
+kurpatov-wiki-raw-pusher     watches  /workspace/vault/raw/data/  (--raw)
+                             runs     git -C /workspace/vault/raw/  (--vault)
+                                        add -A && git commit && git push
                              knows nothing about whisper, GPUs, or videos.
                              No GPU reservation — CPU only.
 ```
+
+The pusher separates *what it watches* (`--raw`, the content
+subtree) from *what it commits in* (`--vault`, the git working
+tree). The split exists precisely so the `data/` migration could
+move content without moving `.git/`: `vault/raw/.git/` stays put,
+`git add -A` at the working-tree root picks up the moved content
+naturally, and the watcher's debounce logic only fires on actual
+content changes under `data/`.
 
 ~~They run the same image (`forge-kurpatov-wiki:latest`) because
 `openssh-client` + Python are already in it; no separate Dockerfile.~~
@@ -75,23 +101,28 @@ openssh-client + watchdog, ~200 MB).
 ### Two repos, not one
 `raw/` and `wiki/` live in two distinct private GitHub repos:
 
-| Repo                    | Contents                                       | Pushed by                     |
-| ----------------------- | ---------------------------------------------- | ----------------------------- |
-| `kurpatov-wiki-raw`     | `<course>/<module>/<stem>/raw.json` at root    | `kurpatov-wiki-raw-pusher`    |
-| `kurpatov-wiki-wiki`    | `<course>/<module>/<stem>.md` (future)         | not yet wired; manual for now |
+| Repo                    | Contents                                                    | Pushed by                     |
+| ----------------------- | ----------------------------------------------------------- | ----------------------------- |
+| `kurpatov-wiki-raw`     | `data/<course>/<module>/<stem>/raw.json`                    | `kurpatov-wiki-raw-pusher`    |
+| `kurpatov-wiki-wiki`    | `data/videos/<course>/<module>/<stem>.md`, `data/concepts/` | Mac-side Cowork session (ADR 0007) |
 
 The names `raw` / `wiki` follow the vault layers from ADR 0001. The
 `-wiki-wiki` suffix looks odd but matches: the subsystem is
 `kurpatov-wiki` and the repo holds its `wiki/` layer.
 
-### Repo root IS the content
+### Repo top level is `data/`, not the content directly
 On the server, `${STORAGE_ROOT}/kurpatov-wiki/vault/raw/` is a git
-working tree. Its `.git/` sits at that directory; the repo's top level
-**is** the `<course>/<module>/<stem>/raw.json` tree. There is no `raw/`
-subdirectory at the repo root, and there is no sibling `wiki/` to share
-it with — the sibling lives in a different repo. The parent
+working tree. Its `.git/` sits at that directory; the repo's top
+level is a `data/` subtree that holds
+`<course>/<module>/<stem>/raw.json`. There is no sibling `wiki/`
+layer in this repo — that lives in `kurpatov-wiki-wiki`. The parent
 `vault/` directory exists only as a convenience for operators and
 retains its legacy on-disk name (cheap to rename later).
+
+The `data/` segment exists so that future top-level tooling files
+(`README.md`, `CLAUDE.md`, CI config) cannot collide with a course
+directory named `README` or `CLAUDE`. Same rationale as the wiki
+repo's split (ADR 0007).
 
 ### Deploy keys, one per repo
 Each repo has its own SSH deploy key on GitHub. On the host, keys live
@@ -103,12 +134,15 @@ key — it has no reason to.
 
 ### Debounce + ignore staging dirs
 The pusher uses `watchdog` to subscribe to filesystem events over
-`/workspace/vault/raw/` recursively, bumps a debounce deadline on every
-event, and fires `git add -A && git commit && git push` once the tree
-has been quiet for `--debounce-sec` seconds (default 10). Any path
-passing through a `.tmp` sibling is ignored — that's the transcriber's
-atomic-write staging area (ADR 0002); the rename itself generates an
-event for the final directory, which the pusher picks up naturally.
+`/workspace/vault/raw/data/` recursively (`--raw`), bumps a debounce
+deadline on every event, and fires
+`git -C /workspace/vault/raw/ add -A && git commit && git push` (the
+commit runs from the `--vault` root, which is the git working tree)
+once the tree has been quiet for `--debounce-sec` seconds (default
+10). Any path passing through a `.tmp` sibling is ignored — that's
+the transcriber's atomic-write staging area (ADR 0002); the rename
+itself generates an event for the final directory, which the pusher
+picks up naturally.
 
 ### Identity and safe.directory
 The pusher runs as root in the container but the `.git` tree on the
@@ -139,8 +173,10 @@ No mutable git config is written into the mounted `.git`.
   wants transcripts mirrored, it goes through the pusher — or through
   a future replacement that also listens on `/workspace/vault/raw/`.
 - The raw-pusher must never read or write anything outside
-  `/workspace/vault/raw/` and the mounted deploy key. It has no
-  business touching videos, models, or the wiki layer.
+  `/workspace/vault/raw/` (its `--vault` working tree, which
+  includes the `data/` content subtree it actually watches) and the
+  mounted deploy key. It has no business touching videos, models,
+  or the wiki layer.
 - `vault/raw/.git/` stays on the host, not in the container image.
   The container is stateless; rebuilding it must not invalidate or
   rewrite repo history.
@@ -168,6 +204,10 @@ No mutable git config is written into the mounted `.git`.
   deploy key file `~/.ssh/kurpatov-wiki-vault` away from the legacy
   "vault" name. Cheap but touches live state; deferred until
   convenient.
-- Wire up the `kurpatov-wiki-wiki` repo when wiki assembly exists
-  (task #7). Likely a second pusher container, same shape.
+- ~~Wire up the `kurpatov-wiki-wiki` repo when wiki assembly exists
+  (task #7). Likely a second pusher container, same shape.~~
+  **Superseded by ADR 0007.** The wiki repo is pushed by a Mac-side
+  Cowork session, not a server-side pusher. The symmetry with ADR
+  0005 holds at a different layer (session-as-pusher vs.
+  container-as-pusher).
 - Consider signing commits once the pusher is no longer experimental.

@@ -1,7 +1,10 @@
 # Dedicated lean image for kurpatov-wiki-raw-pusher.
 #
-# The pusher's whole job is: watch /workspace/vault/raw with watchdog,
-# git add / commit / push over SSH. No torch, no whisper, no CUDA —
+# The pusher's whole job is: watch /workspace/vault/raw/data (content
+# subtree) with watchdog and run `git add -A && git commit && git push`
+# from /workspace/vault/raw (the git working tree — `.git/` lives at
+# the root, content lives under `data/`; see ADR 0005's data/content-
+# split amendment). No torch, no whisper, no CUDA —
 # see kurpatov-wiki/docs/adr/0006-lean-pusher-image.md.
 #
 # Expected built size: ~200 MB. Smoke test (tests/smoke.md §7) asserts

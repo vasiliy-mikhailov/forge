@@ -1,5 +1,14 @@
 # Per-video summarization prompt
 
+> **Design-trail mirror.** The authoritative working copy of this
+> prompt lives in the wiki repo at
+> `kurpatov-wiki-wiki/prompts/per-video-summarize.md`. That version
+> is what authoring sessions actually read; it also uses `data/`-
+> prefixed paths that match the wiki repo's post-migration layout
+> (ADR 0007 amendment). The copy here is retained as the design
+> trail accepted with ADR 0007. If you came looking for the running
+> prompt, open the wiki repo.
+
 You are writing a wiki article for one Kurpatov psychology lecture, in
 the context of a growing two-tier wiki (per-video articles +
 per-concept articles). Your output feeds a reader who wants to read

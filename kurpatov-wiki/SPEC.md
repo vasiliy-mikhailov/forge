@@ -9,9 +9,14 @@ then an assembled wiki.
 The problem is solved in layers (see ADR 0001 "two-layer vault"):
 
 ```
-videos/     → vault/raw/     → vault/wiki/
-(.mp4)        (raw.json)       (markdown, not yet assembled)
+videos/     → vault/raw/data/  → kurpatov-wiki-wiki/data/
+(.mp4)        (raw.json)          (markdown, Mac-authored)
 ```
+
+Both published repos use a `data/` subtree so meta files
+(`CLAUDE.md`, `README.md`, etc.) don't share a namespace with
+course slugs. See ADR 0005's data/content-split amendment (raw
+side) and ADR 0007's amendment (wiki side).
 
 Today the first two steps are implemented: scanning and transcription. The
 LLM layer and wiki assembly are in progress.
@@ -44,13 +49,15 @@ state only through the vault filesystem — no code, no network RPC.
    git.
 
 3. **`kurpatov-wiki-raw-pusher`** — headless daemon running
-   `04_watch_raw_and_push.py`. Reactively watches `vault/raw/` and
-   pushes new transcripts to the private `kurpatov-wiki-raw` GitHub
-   repo (see ADR 0005). No GPU, no network exposure other than
-   outbound SSH to GitHub. Knows nothing about whisper or videos.
-   Runs a dedicated lean image `forge-kurpatov-wiki-pusher:latest`
-   (`python:3.12-slim` + git + openssh-client + watchdog, ~200 MB) —
-   see ADR 0006. Built from `kurpatov-wiki/Dockerfile.pusher`.
+   `04_watch_raw_and_push.py`. Reactively watches `vault/raw/data/`
+   (content subtree) and commits from the `vault/raw/` git working
+   tree, pushing new transcripts to the private `kurpatov-wiki-raw`
+   GitHub repo (see ADR 0005). No GPU, no network exposure other
+   than outbound SSH to GitHub. Knows nothing about whisper or
+   videos. Runs a dedicated lean image
+   `forge-kurpatov-wiki-pusher:latest` (`python:3.12-slim` + git +
+   openssh-client + watchdog, ~200 MB) — see ADR 0006. Built from
+   `kurpatov-wiki/Dockerfile.pusher`.
 
 Volume access by service:
 
@@ -66,8 +73,10 @@ Host paths:
 
 - `${STORAGE_ROOT}/kurpatov-wiki/videos/` — input .mp4 tree.
 - `${STORAGE_ROOT}/kurpatov-wiki/vault/` — vault root. Contains
-  `raw/` (a git working tree for the `kurpatov-wiki-raw` repo) and,
-  later, `wiki/` (a git working tree for `kurpatov-wiki-wiki`).
+  `raw/` (a git working tree for the `kurpatov-wiki-raw` repo; its
+  content lives under `raw/data/<course>/<module>/<stem>/`). The
+  parallel `wiki/` layer is not created here — the wiki is authored
+  and pushed from the operator's Mac (ADR 0007).
 - `${STORAGE_ROOT}/models/` — shared HF cache with rl-2048.
 - `~/.ssh/kurpatov-wiki-vault` — per-repo deploy key for the raw repo;
   filename keeps the legacy "vault" name for now (see ADR 0005 →
@@ -88,7 +97,7 @@ videos/
 Any depth of nesting is allowed — both the watcher and the incremental
 script mirror the structure (see ADR 0004).
 
-### RAW layer: `vault/raw/<same dirs>/<stem>/raw.json`
+### RAW layer: `vault/raw/data/<same dirs>/<stem>/raw.json`
 Stable contract (see ADR 0002 "JSON-only, single file"):
 
 ```json
@@ -136,20 +145,24 @@ Mac, which reads the `kurpatov-wiki-raw` repo and writes the
 wiki/` is **not** created by `make setup` and has no server-side
 consumer; the canonical wiki lives on GitHub.
 
-Repo layout:
+Repo layout (meta at the root, content under `data/`):
 
 ```
-kurpatov-wiki-wiki/           (repo root = wiki root)
-├── README.md                 reading protocol + conventions
-├── index.md                  course/module/video order + A-Z concept index
-├── concept-index.json        authoritative authoring state (see below)
-├── concepts/
-│   ├── _template.md
-│   ├── <concept-slug>.md     one per psychological concept
-│   └── ...
-└── videos/
-    ├── _template.md
-    └── <course>/<module>/<stem>.md   one per source video
+kurpatov-wiki-wiki/               (repo root)
+├── CLAUDE.md                     session entrypoint
+├── README.md                     reading protocol + conventions
+├── prompts/                      authoring prompts
+├── docs/                         design.md + authoring.md
+└── data/                         all content lives here
+    ├── index.md                  course/module/video order + A-Z concept index
+    ├── concept-index.json        authoritative authoring state (see below)
+    ├── concepts/
+    │   ├── _template.md
+    │   ├── <concept-slug>.md     one per psychological concept
+    │   └── ...
+    └── videos/
+        ├── _template.md
+        └── <course>/<module>/<stem>.md   one per source video
 ```
 
 Two article types (see ADR 0007):
@@ -172,13 +185,14 @@ Two article types (see ADR 0007):
   and summarizes what that video adds to the concept. Never
   rewritten destructively; fixes are explicit edits with reasons.
 
-`concept-index.json` is the authoring state file (ADR 0007 →
+`data/concept-index.json` is the authoring state file (ADR 0007 →
 Invariants). Every Mac-side session reads it at start, uses it to
 decide what's "new" in the next video, and commits the updated
-version at the end. Drift between this file and the `concepts/`
-directory is a bug; the playbook at
-[docs/mac-side-wiki-authoring.md](docs/mac-side-wiki-authoring.md)
-spells out how to detect and repair it.
+version at the end. Drift between this file and the `data/concepts/`
+directory is a bug; the wiki-repo playbook at
+`kurpatov-wiki-wiki/docs/authoring.md` spells out how to detect
+and repair it. The forge-side mirror lives at
+[docs/mac-side-wiki-authoring.md](docs/mac-side-wiki-authoring.md).
 
 ### Published repos
 
@@ -187,21 +201,26 @@ spells out how to detect and repair it.
 | `kurpatov-wiki-raw`     | `kurpatov-wiki-raw-pusher` (container)  | server: `${STORAGE_ROOT}/kurpatov-wiki/vault/raw/`   |
 | `kurpatov-wiki-wiki`    | Claude Desktop / Cowork session         | Mac: `~/forge-wikiwork/wiki/` (by convention)        |
 
-The `kurpatov-wiki-raw` repo root **is** the raw-transcripts tree:
-`<course>/<module>/<stem>/raw.json` directories live directly at the
-repo's top level, with no `raw/` prefix. See ADR 0005.
+In the `kurpatov-wiki-raw` repo, raw transcripts live under a
+`data/` subtree: `data/<course>/<module>/<stem>/raw.json`. The repo
+root is reserved for future meta files. On the server the git
+working tree sits at `${STORAGE_ROOT}/kurpatov-wiki/vault/raw/` and
+the pusher's `--raw` (watch subtree) points at
+`${STORAGE_ROOT}/kurpatov-wiki/vault/raw/data/`. See ADR 0005.
 
-The `kurpatov-wiki-wiki` repo root **is** the wiki tree as shown
-above. No `wiki/` prefix. See ADR 0007.
+In the `kurpatov-wiki-wiki` repo, content lives under `data/`
+(articles, concept-index, nav); meta (CLAUDE.md, README, prompts/,
+docs/) lives at the root. See ADR 0007.
 
 ## Invariants
 
 1. **Transcription is idempotent.** If `raw.json` for a video exists and is
    not corrupt, both scripts (02 and 03) skip it.
-2. **Hierarchy is mirrored.**
-   `out_dir = vault/raw / video.relative_to(videos).with_suffix("")`. The
-   old flat layout is considered incompatible; migrate with
-   `migrate_vault_hierarchy.py` (see ADR 0004).
+2. **Hierarchy is mirrored under `data/`.**
+   `out_dir = vault/raw/data / video.relative_to(videos).with_suffix("")`.
+   The old flat layout is considered incompatible; migrate with
+   `migrate_vault_hierarchy.py` (see ADR 0004). The `data/` prefix
+   is per ADR 0005's data/content-split amendment.
 3. **Only one GPU consumer at a time.** Jupyter and the transcriber share
    one GPU (`KURPATOV_WIKI_GPU_UUID`), but the transcriber unloads its
    model while idle so jupyter can use the memory for experiments
@@ -222,10 +241,13 @@ Production for the RAW layer. Running since April 2026.
 Done:
 - Three roles in compose (jupyter + transcriber + raw-pusher).
 - Reactive watcher with lazy-load / idle-unload of the model.
-- Full mirror of the videos → vault/raw hierarchy.
-- Migration script for the flat layout.
-- Continuous auto-push of `vault/raw/` to the `kurpatov-wiki-raw`
-  private GitHub repo, with debounced commits (see ADR 0005).
+- Full mirror of the videos → vault/raw/data hierarchy.
+- Migration script for the flat layout (ADR 0004); subsequent
+  data/-subtree migration via the server-side script documented in
+  ADR 0005's amendment.
+- Continuous auto-push of `vault/raw/data/` to the
+  `kurpatov-wiki-raw` private GitHub repo, with debounced commits
+  (see ADR 0005).
 
 Not yet:
 - Diarization (pyannote). Placeholder in the format is there; the HF token

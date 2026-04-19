@@ -189,9 +189,9 @@ check_watcher_log \
 # there, and the pusher commits + pushes to the kurpatov-wiki-raw GitHub
 # repo. See kurpatov-wiki/docs/adr/0005-split-transcribe-and-push.md.
 check_watcher_log \
-  "raw-pusher has inotify on /workspace/vault/raw" \
+  "raw-pusher has inotify on /workspace/vault/raw/data" \
   kurpatov-wiki-raw-pusher \
-  'inotify on /workspace/vault/raw'
+  'inotify on /workspace/vault/raw/data'
 
 # ---------- 7. pusher image discipline ----------
 # Rationale: the raw-pusher only needs git + openssh-client + watchdog.

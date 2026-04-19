@@ -1,8 +1,14 @@
 # Concept article prompt (first-introduction only)
 
+> **Design-trail mirror.** The authoritative working copy of this
+> prompt lives at `kurpatov-wiki-wiki/prompts/concept-article.md`.
+> Authoring sessions read that one; it uses `data/`-prefixed paths
+> matching ADR 0007's amended wiki layout. The copy here documents
+> the prompt shape as accepted with ADR 0007.
+
 Used when a video introduces a concept that is not yet in the wiki —
-no existing `concepts/<slug>.md`, no entry in
-`concept-index.json`'s `concepts` dict. This prompt produces the
+no existing `data/concepts/<slug>.md`, no entry in
+`data/concept-index.json`'s `concepts` dict. This prompt produces the
 seed article. Every later video that touches the concept **appends**
 to the existing article; it does not re-run this prompt.
 

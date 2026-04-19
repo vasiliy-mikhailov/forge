@@ -234,11 +234,14 @@ process hasn't exited yet.
   change to this check's signal and needs a matching model + script
   update.
 
-### raw-pusher has inotify on /workspace/vault/raw
+### raw-pusher has inotify on /workspace/vault/raw/data
 
 Same goal / signals / edge cases as above, but for
 `kurpatov-wiki-raw-pusher` and the string
-`inotify on /workspace/vault/raw`.
+`inotify on /workspace/vault/raw/data`. The pusher watches the
+content subtree (`--raw`, default `/workspace/vault/raw/data`), not
+the git working tree root — see ADR 0005's data/content-split
+amendment.
 
 **Edge cases (additional).**
 - The raw-pusher's logs include the NVIDIA CUDA banner on every

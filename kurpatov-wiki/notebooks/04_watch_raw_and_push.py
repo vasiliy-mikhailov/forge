@@ -2,9 +2,12 @@
 Raw-transcripts auto-push daemon for the Kurpatov-wiki project.
 
 Responsibility (single, by design):
-  - Watch /workspace/vault/raw recursively for new or changed files.
+  - Watch /workspace/vault/raw/data recursively for new or changed files
+    (the content subtree — see ADR 0005's data/content-split amendment).
   - When the filesystem has been quiet for `--debounce-sec` seconds,
-    run `git add -A && git commit && git push` inside /workspace/vault/raw.
+    run `git add -A && git commit && git push` inside
+    /workspace/vault/raw (the git working tree — `.git/` is at this
+    root, not under `data/`).
 
 Deliberately decoupled from the transcriber:
   - The transcriber (03_watch_and_transcribe.py) knows nothing about git.
@@ -13,14 +16,17 @@ Deliberately decoupled from the transcriber:
 
 Repo naming:
   - This daemon pushes to the `kurpatov-wiki-raw` private GitHub repo.
-    The git working tree IS /workspace/vault/raw — the repo's root
-    contains <video-stem>/raw.json directories directly, with no
-    extra prefix. The on-disk parent dir `vault/` (host:
+    The git working tree IS /workspace/vault/raw (`--vault`); under
+    that, all transcripts live in a `data/` subtree
+    (`--raw`, default `/workspace/vault/raw/data`). The repo's root
+    contains `data/<course>/<module>/<stem>/raw.json`, leaving the
+    top level free for future meta files (README, CLAUDE.md, CI).
+    The on-disk parent dir `vault/` (host:
     ${STORAGE_ROOT}/kurpatov-wiki/vault) and the deploy key file
     `~/.ssh/kurpatov-wiki-vault` retain their legacy names; renaming
     them is cheap and can happen out-of-band. Wiki output (built
     manually for now) will live in a separate `kurpatov-wiki-wiki`
-    repo owned by a different workflow.
+    repo owned by a different workflow (ADR 0007).
 
 Git plumbing assumptions:
   - /workspace/vault/raw is a git working tree, pre-initialized on
@@ -229,10 +235,23 @@ class RawHandler(FileSystemEventHandler):
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--vault", default="/workspace/vault/raw",
-                    help="Git working tree to commit from (the repo root).")
-    ap.add_argument("--raw", default="/workspace/vault/raw",
-                    help="Subtree to watch for changes (normally same as --vault).")
+    ap.add_argument(
+        "--vault", default="/workspace/vault/raw",
+        help=(
+            "Git working tree to commit from (the repo root — .git/ "
+            "lives here). Distinct from --raw since content was moved "
+            "into a data/ subtree without moving .git/; see ADR 0005 "
+            "data/content-split amendment."
+        ),
+    )
+    ap.add_argument(
+        "--raw", default="/workspace/vault/raw/data",
+        help=(
+            "Subtree to watch for content changes. Defaults to the "
+            "`data/` subtree under --vault. Staging-dir filters "
+            "interpret paths relative to this root."
+        ),
+    )
     ap.add_argument("--debounce-sec", type=float, default=10.0,
                     help="Quiet-period seconds before committing a burst.")
     ap.add_argument("--initial-push", action="store_true", default=True,

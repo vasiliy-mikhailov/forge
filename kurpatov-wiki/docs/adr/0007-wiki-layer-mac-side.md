@@ -9,11 +9,40 @@ The `kurpatov-wiki-wiki` GitHub repo is authored from the operator's
 Mac, in a Claude Desktop (Cowork) session. The **Cowork session itself
 is the pusher** — it runs `git pull`, `git add`, `git commit`, and
 `git push` via its own Bash tool, guided by CLAUDE.md and the prompts
-in `kurpatov-wiki/prompts/`. The architectural symmetry with ADR 0005
-holds at a different layer: server-side the pusher is a container,
-Mac-side the pusher is a Cowork session. Neither is an operator
-running commit scripts. The server's role ends at publishing
-`raw.json` to the `kurpatov-wiki-raw` repo.
+in the wiki repo's `prompts/` directory (see "Amended" below).
+The architectural symmetry with ADR 0005 holds at a different layer:
+server-side the pusher is a container, Mac-side the pusher is a
+Cowork session. Neither is an operator running commit scripts. The
+server's role ends at publishing `raw.json` to the
+`kurpatov-wiki-raw` repo.
+
+Amended (2026-04-19 — data/content split). The wiki repo layout
+under **Decision** below is now a two-subtree split: `/data/` holds
+all content (`index.md`, `concept-index.json`, `concepts/`,
+`videos/`); the root holds meta (`CLAUDE.md`, `README.md`,
+`prompts/`, `docs/`). The sibling `kurpatov-wiki-raw` repo mirrors
+the split — transcripts live under `data/<course>/<module>/<stem>/
+raw.json`, not at the repo root. Rationale: course names and concept
+slugs are unconstrained content-addressed strings; a future video
+called `prompts` or a concept called `readme` would collide with a
+tooling file in the same namespace. Cost: every cross-repo path
+reference gains a `data/` segment. The ADR body below has been
+updated in place; the pre-amendment layout survives only in git
+history.
+
+Amended (2026-04-19 — prompts migrate to the wiki repo). The
+invariant "Prompts live in `forge`, content lives in
+`kurpatov-wiki-wiki`" is superseded. The authoritative working
+copies of `per-video-summarize.md`, `concept-article.md`, and the
+authoring playbook now live in `kurpatov-wiki-wiki/prompts/` and
+`kurpatov-wiki-wiki/docs/authoring.md`. The original concern — not
+mixing prompt churn with content churn in one git history — is now
+addressed in the wiki repo itself via the `prompt:` commit-subject
+convention, which keeps prompt changes independently auditable. The
+forge-side `kurpatov-wiki/prompts/*.md` and `kurpatov-wiki/docs/
+mac-side-wiki-authoring.md` are kept as the design-trail mirror
+that accompanies this ADR; operational editing happens in the wiki
+repo.
 
 ## Context
 
@@ -64,19 +93,37 @@ unfamiliar concept in that delta, where do they go for depth?
 Two article types, two directories, one shared concept registry:
 
 ```
-kurpatov-wiki-wiki/           (repo root)
-├── README.md                 ← how this wiki is organized, reading protocol
-├── index.md                  ← course / module / video order, concept A-Z
-├── concept-index.json        ← machine-readable concept registry (authoring state)
-├── concepts/
-│   ├── _template.md          ← boilerplate for a new concept article
-│   ├── neocortex.md          ← one article per concept
-│   ├── defense-mechanism.md
-│   └── ...
-└── videos/
-    ├── _template.md          ← boilerplate for a new video article
-    └── <course>/<module>/<stem>.md
+kurpatov-wiki-wiki/               (repo root)
+├── CLAUDE.md                     ← session entrypoint (meta)
+├── README.md                     ← reading protocol (meta)
+├── .gitignore                    ← (meta)
+├── prompts/                      ← authoring prompts (meta)
+│   ├── per-video-summarize.md
+│   └── concept-article.md
+├── docs/                         ← design + playbook (meta)
+│   ├── design.md
+│   └── authoring.md
+└── data/                         ← all content lives under here
+    ├── index.md                  ← course / module / video order, concept A-Z
+    ├── concept-index.json        ← machine-readable concept registry (authoring state)
+    ├── concepts/
+    │   ├── _template.md          ← boilerplate for a new concept article
+    │   ├── neocortex.md          ← one article per concept
+    │   ├── defense-mechanism.md
+    │   └── ...
+    └── videos/
+        ├── _template.md          ← boilerplate for a new video article
+        └── <course>/<module>/<stem>.md
 ```
+
+The split is deliberate. Course names and concept slugs are
+unconstrained content-addressed strings; a future video called
+`prompts` or a concept called `readme` would collide with a tooling
+file if everything lived at the repo root. Keeping meta at the root
+and content under `data/` removes that failure mode at the cost of
+one `data/` segment in every cross-repo path reference. The sibling
+`kurpatov-wiki-raw` repo mirrors the split — transcripts live under
+`data/<course>/<module>/<stem>/raw.json`.
 
 A **video article** has three load-bearing sections:
 
@@ -104,7 +151,7 @@ at time of writing**. To make sessions resumable across machines and
 days, we pin that state explicitly rather than inferring it by
 re-reading every video article every time.
 
-`concept-index.json` lives at the wiki repo root and contains:
+`data/concept-index.json` lives in the wiki repo and contains:
 
 ```json
 {
@@ -150,12 +197,14 @@ commands):
 
 1. `git -C ~/forge-wikiwork/raw pull --ff-only`.
 2. `git -C ~/forge-wikiwork/wiki pull --ff-only`.
-3. Load `concept-index.json`.
+3. Load `data/concept-index.json`.
 4. Pick the next unprocessed video in course order (the playbook in
-   `docs/mac-side-wiki-authoring.md` defines the ordering rule).
-5. Read `raw.json` for that video; produce `videos/<path>/<stem>.md`
-   + any new concept files + any concept updates + an updated
-   `concept-index.json`.
+   `docs/authoring.md` defines the ordering rule).
+5. Read `data/<course>/<module>/<stem>/raw.json` from the raw repo
+   for that video; produce
+   `data/videos/<course>/<module>/<stem>.md` in the wiki repo + any
+   new concept files under `data/concepts/` + any concept updates +
+   an updated `data/concept-index.json`.
 6. `git -C ~/forge-wikiwork/wiki add -A && git -C ~/forge-wikiwork/wiki
    commit -m "video: <slug>" && git -C ~/forge-wikiwork/wiki push`.
 7. Loop to step 4 until the session ends or the operator is tired.
@@ -165,14 +214,24 @@ But also no Mac-side commit scripts: the session handles its own
 git flow end-to-end, because the editorial work and the push are
 the same action.
 
-### The prompts are part of the repo
+### The prompts are part of the wiki repo
 
-`kurpatov-wiki/prompts/per-video-summarize.md` and
-`kurpatov-wiki/prompts/concept-article.md` (in the **forge** repo,
-not the wiki repo) are the prompts the Mac-side session reads at the
-start of authoring. They are prose, version-controlled, reviewed on
-PR. If a prompt changes, a new pass over prior videos may be
-warranted; the decision to re-process is explicit, not implicit.
+`kurpatov-wiki-wiki/prompts/per-video-summarize.md` and
+`kurpatov-wiki-wiki/prompts/concept-article.md` are the prompts the
+Mac-side session reads at the start of authoring, alongside the
+playbook at `kurpatov-wiki-wiki/docs/authoring.md`. They are prose,
+version-controlled, reviewed in-tree. Prompt changes ride the same
+history as content changes but are kept independently auditable via
+the `prompt:` commit-subject convention (distinct from `video:`,
+`concept:`, `index:`, `docs:`). If a prompt changes, a new pass
+over prior videos may be warranted; the decision to re-process is
+explicit, not implicit, and is recorded as a `prompt-v2 pass: <slug>`
+commit on each re-processed video.
+
+The copies under `forge/kurpatov-wiki/prompts/` and
+`forge/kurpatov-wiki/docs/mac-side-wiki-authoring.md` are kept as
+the design-trail mirror tied to this ADR. They are not edited for
+operational use — edits go to the wiki repo.
 
 ### No server-side wiki service
 
@@ -232,9 +291,20 @@ the Mac.
   jupyter containers for access to `raw/`, but neither service
   writes into `vault/wiki/`. If a future service needs to, that's a
   new ADR.
-- **Prompts live in `forge`, content lives in `kurpatov-wiki-wiki`.**
-  The prompts are code-reviewed, the wiki is editorial. Mixing them
-  would make prompt churn look like content changes in git history.
+- **Meta at the root, content under `data/`.** The wiki repo keeps
+  `CLAUDE.md`, `README.md`, `prompts/`, and `docs/` at the repo
+  root; `index.md`, `concept-index.json`, `concepts/`, and
+  `videos/` live under `data/`. The raw repo mirrors this: transcripts
+  are under `data/<course>/<module>/<stem>/raw.json`. A future video
+  slug or concept slug must never be able to collide with a tooling
+  filename.
+- **Commit subjects distinguish prompt churn from content churn.**
+  Prompt edits use the `prompt:` subject; content authoring uses
+  `video:`, `concept:`, `index:`. `prompt-v2 pass: <slug>` marks a
+  re-processing of an existing video against a revised prompt. This
+  replaces the earlier "prompts live in a different repo" invariant
+  — the separation is now semantic (via subject) rather than physical
+  (via repo boundary).
 
 ## Alternatives considered
 
@@ -264,14 +334,25 @@ the Mac.
 
 ## Follow-ups
 
-- Playbook: `kurpatov-wiki/docs/mac-side-wiki-authoring.md` — the
-  concrete session runbook, including the ordering rule and the
-  concept-index drift-detection procedure. Lives outside this ADR
-  because it will churn with operator experience.
-- First seed commit of `kurpatov-wiki-wiki`: README, index, templates,
-  empty `concept-index.json`. Produced under
-  `outputs/kurpatov-wiki-wiki-seed/` in this session for the operator
-  to drop into the new GitHub repo.
+- Playbook: `kurpatov-wiki-wiki/docs/authoring.md` — the concrete
+  session runbook, including the ordering rule and the concept-index
+  drift-detection procedure. Lives in the wiki repo because it churns
+  with operator experience; the forge-side
+  `kurpatov-wiki/docs/mac-side-wiki-authoring.md` is the
+  design-trail mirror.
+- First seed commit of `kurpatov-wiki-wiki`: CLAUDE.md, README,
+  prompts, playbook, `data/` scaffolding (empty `concept-index.json`,
+  templates). Produced under `outputs/kurpatov-wiki-wiki-seed/` in
+  the earlier session and pushed via
+  `outputs/seed-wiki-repo.sh`. The subsequent `data/` refactor was
+  applied via `outputs/migrate-wiki-to-data.sh`.
+- Raw-side `data/` migration: the transcriber's
+  `03_watch_and_transcribe.py` now writes to
+  `/workspace/vault/raw/data/<course>/<module>/<stem>/raw.json`;
+  the pusher's `04_watch_raw_and_push.py` watches the same subtree
+  while keeping its `--vault` (git working tree) at
+  `/workspace/vault/raw/`. Existing content was moved via the
+  server-side migration script referenced in ADR 0005's amendment.
 - Deploy key and SSH config for the wiki repo on the Mac. Mirrors the
   server-side key file for the raw repo but lives on the Mac; not
   committed to git.

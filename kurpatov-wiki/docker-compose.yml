@@ -57,8 +57,11 @@ services:
     restart: unless-stopped
 
   # Separate from the transcriber by design: single responsibility.
-  # Watches /workspace/vault/raw for new/changed files and pushes
-  # them to the private kurpatov-wiki-raw GitHub repo.
+  # Watches /workspace/vault/raw/data for new/changed files and pushes
+  # them from the /workspace/vault/raw git working tree to the private
+  # kurpatov-wiki-raw GitHub repo. (The `.git/` directory lives at
+  # /workspace/vault/raw, unchanged; only the content moved under
+  # `data/` — see ADR 0005's data/content-split amendment.)
   #
   # Runs a dedicated lean image (python:3.12-slim + git + openssh-client
   # + watchdog, ~200 MB) instead of the 20 GB GPU image. Rationale and

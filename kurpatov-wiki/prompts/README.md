@@ -1,14 +1,27 @@
 # Prompts for the wiki layer
 
-These prompts are part of the **forge** repo, not the
-`kurpatov-wiki-wiki` content repo. Prompt changes are code changes:
-they're reviewed on PR, they change history in this repo, and they
-do not sneak into the editorial git history of the wiki repo.
+> **Design-trail mirror.** The authoritative working copies of these
+> prompts now live in the wiki repo at
+> `kurpatov-wiki-wiki/prompts/`, alongside the authoring playbook at
+> `kurpatov-wiki-wiki/docs/authoring.md`. Operational edits happen
+> there and ride the wiki's git history under the `prompt:` commit
+> subject. The copies in *this* directory are retained as the design
+> trail tied to ADR 0007 — they document the prompt shape the ADR was
+> accepted against. If you want the current operational version, read
+> the wiki repo.
+>
+> The earlier "prompts live in forge, content lives in
+> `kurpatov-wiki-wiki`" invariant is superseded by ADR 0007's
+> amendment (2026-04-19). See the ADR for the rationale — in short,
+> the separation is now semantic (via the `prompt:` subject) rather
+> than physical (via repo boundary), which is what the invariant was
+> really about.
 
 Design context: [ADR 0007 — wiki layer: Mac-side authoring, two-tier
 structure](../docs/adr/0007-wiki-layer-mac-side.md).
 
-Session runbook: [../docs/mac-side-wiki-authoring.md](../docs/mac-side-wiki-authoring.md).
+Session runbook (design-trail mirror):
+[../docs/mac-side-wiki-authoring.md](../docs/mac-side-wiki-authoring.md).
 
 ## Files
 

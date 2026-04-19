@@ -2,8 +2,10 @@
 Transcription daemon for the Kurpatov-wiki vault.
 
 Watches /workspace/videos recursively for new .mp4 files and transcribes them
-into /workspace/vault/raw/<stem>/raw.json, matching the schema of
-02_transcribe_incremental.py.
+into /workspace/vault/raw/data/<course>/<module>/<stem>/raw.json, matching
+the schema of 02_transcribe_incremental.py. The `data/` prefix separates
+content from future repo-root meta files (CLAUDE.md, README.md, etc.) in
+the kurpatov-wiki-raw repo; see ADR 0005's data/content-split amendment.
 
 Design notes:
   - inotify via watchdog (reactive; not cron polling).
@@ -80,7 +82,12 @@ def clean_tmp_dir(tmp_dir: Path) -> None:
 
 
 def out_dir_for(video: Path, out_root: Path, videos_root: Path) -> Path:
-    """vault/raw/ mirrors the full videos/<...>/<name>.mp4 → <...>/<name>/raw.json."""
+    """vault/raw/data/ mirrors the full videos/<...>/<name>.mp4 → <...>/<name>/raw.json.
+
+    `out_root` is expected to be `/workspace/vault/raw/data/` (see --out
+    default below); the `data/` segment is what separates transcript
+    content from the repo's meta root in kurpatov-wiki-raw.
+    """
     return out_root / video.relative_to(videos_root).with_suffix("")
 
 
@@ -431,7 +438,17 @@ class Daemon:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--videos", default="/workspace/videos")
-    ap.add_argument("--out", default="/workspace/vault/raw")
+    ap.add_argument(
+        "--out",
+        default="/workspace/vault/raw/data",
+        help=(
+            "Root under which raw.json files are written. Defaults to "
+            "/workspace/vault/raw/data so that the kurpatov-wiki-raw "
+            "repo's top-level `data/` holds content and its root stays "
+            "free for meta files. See ADR 0005's data/content-split "
+            "amendment."
+        ),
+    )
     ap.add_argument("--pattern", default="*.mp4")
     ap.add_argument("--model", default="large-v3")
     ap.add_argument("--compute", default="float16",

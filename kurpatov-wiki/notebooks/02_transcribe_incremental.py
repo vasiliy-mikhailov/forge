@@ -2,8 +2,11 @@
 Incremental transcription for the Kurpatov-wiki vault.
 
 Recursively scans /workspace/videos/, compares against the list of existing
-transcripts under /workspace/vault/raw/<...>/<video_stem>/raw.json, and only
-processes the missing ones via faster-whisper large-v3 on cuda:0.
+transcripts under /workspace/vault/raw/data/<...>/<video_stem>/raw.json, and
+only processes the missing ones via faster-whisper large-v3 on cuda:0.
+(The `data/` segment is per ADR 0005's data/content-split amendment — the
+kurpatov-wiki-raw repo's content lives under `data/` so the root stays free
+for meta files.)
 
 Output format: a single raw.json file. Fields:
   info.language               — language detected by whisper
@@ -89,8 +92,8 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--videos", default="/workspace/videos",
                     help="Root with video files (recursive scan)")
-    ap.add_argument("--out", default="/workspace/vault/raw",
-                    help="Where to place transcripts (default: vault/raw)")
+    ap.add_argument("--out", default="/workspace/vault/raw/data",
+                    help="Where to place transcripts (default: vault/raw/data)")
     ap.add_argument("--pattern", default="*.mp4",
                     help="Video glob (default: *.mp4)")
     ap.add_argument("--model", default="large-v3")
@@ -105,7 +108,8 @@ def main() -> None:
     out_root.mkdir(parents=True, exist_ok=True)
 
     # out_dir mirrors the full hierarchy videos/<...>/<name>.mp4 →
-    # vault/raw/<...>/<name>/raw.json
+    # vault/raw/data/<...>/<name>/raw.json (data/ segment per ADR 0005
+    # data/content-split amendment).
     def out_dir_for(v: Path) -> Path:
         return out_root / v.relative_to(videos_root).with_suffix("")
 
@@ -119,7 +123,7 @@ def main() -> None:
           f"done: {done_count}  pending: {len(pending)}")
 
     if not pending:
-        print("[done ] nothing to do — vault/raw is up to date")
+        print("[done ] nothing to do — vault/raw/data is up to date")
         return
 
     # ----- 2. Durations up front (for an accurate outer progress bar) -----

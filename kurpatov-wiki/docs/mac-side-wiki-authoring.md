@@ -1,9 +1,18 @@
 # Mac-side wiki authoring — session runbook
 
+> **Design-trail mirror.** The authoritative working copy of this
+> playbook lives at `kurpatov-wiki-wiki/docs/authoring.md` in the
+> wiki repo, alongside the prompts it references. Operational
+> edits land there (under the `docs:` commit subject). The copy in
+> this forge directory is retained as the design trail for ADR 0007
+> and uses pre-migration paths in places — see the wiki repo for the
+> current `data/`-prefixed version.
+
 This is the concrete playbook for a Claude Desktop (Cowork) session
 that produces wiki articles from raw transcripts. Design rationale:
-[ADR 0007](adr/0007-wiki-layer-mac-side.md). Prompts the session uses:
-[`../prompts/`](../prompts/).
+[ADR 0007](adr/0007-wiki-layer-mac-side.md). Prompts the session uses
+(design-trail mirror): [`../prompts/`](../prompts/); the running
+copies live in the wiki repo's `prompts/`.
 
 Scope: everything a new session needs to know to open the
 `kurpatov-wiki-wiki` repo, pick up where the last session left off,
