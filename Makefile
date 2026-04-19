@@ -4,7 +4,7 @@ export
 STORAGE_ROOT ?= /mnt/steam/forge
 SERVICES := caddy mlflow rl-2048 kurpatov-wiki
 
-.PHONY: help setup network base base-down stop-gpu ps gpu du smoke $(SERVICES)
+.PHONY: help setup network base base-down stop-gpu ps gpu du smoke push-videos $(SERVICES)
 
 help:
 	@echo "First run:     make setup && make base"
@@ -16,6 +16,10 @@ help:
 	@echo "  make base       — caddy + mlflow"
 	@echo "  make base-down  — stop everything"
 	@echo "  make stop-gpu   — stop rl-2048 + kurpatov-wiki"
+	@echo ""
+	@echo "Content:"
+	@echo "  make push-videos — move ~/Downloads/Курпатов/*.mp4 to server over LAN"
+	@echo "                     (see scripts/push-videos.sh for MODULE override)"
 	@echo ""
 	@echo "Diagnostics:   make ps / gpu / du / smoke"
 
@@ -68,3 +72,6 @@ du:
 
 smoke:
 	@bash scripts/smoke.sh
+
+push-videos:
+	@bash scripts/push-videos.sh

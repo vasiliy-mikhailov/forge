@@ -269,6 +269,53 @@ make rl-2048
 # to swap back — put the UUIDs back and repeat.
 ```
 
+## Pushing new videos from laptop
+
+Drop new lecture `.mp4` files into `~/Downloads/Курпатов/` on the
+laptop and ship them to the server with a single command:
+
+```bash
+make push-videos
+```
+
+This moves every `*.mp4` in the source folder to the current default
+module under `kurpatov-wiki/videos/` on the server, deleting each file
+locally only after the transfer is verified. The `kurpatov-transcriber`
+daemon picks them up via inotify and transcribes within ~10s of each
+file landing — no server-side action required.
+
+Defaults live in `scripts/push-videos.sh` and are currently:
+
+- `SRC    = ~/Downloads/Курпатов`
+- `HOST   = 192.168.0.2` (LAN; set to `mikhailov.tech` for VPN)
+- `PORT   = 22` (set to `2222` for VPN)
+- `COURSE = Психолог-консультант`
+- `MODULE = 005 Природа внутренних конфликтов. Базовые психологические потребности`
+
+Override via env vars for a one-off (e.g. a different module):
+
+```bash
+MODULE='006 <next module name>' make push-videos
+SRC=~/somewhere/else make push-videos
+HOST=mikhailov.tech PORT=2222 make push-videos   # over VPN instead of LAN
+```
+
+Dry-run first if you want to check what will move:
+
+```bash
+bash scripts/push-videos.sh --dry-run
+```
+
+When the "current module" changes (you finish uploading 005 and move
+on to 006), edit the `MODULE` default in `scripts/push-videos.sh` and
+commit the change — the repo is the source of truth for the active
+module.
+
+Requires GNU rsync 3.x on the laptop. macOS ships `openrsync` by
+default, which lacks `-s` and `--append-verify`; fix once with
+`brew install rsync` and ensure `/opt/homebrew/bin` is ahead of
+`/usr/bin` in `PATH`.
+
 ## Transcript migration
 
 If the directory layout under `vault/raw/` changes, there's a migration
