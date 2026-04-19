@@ -4,7 +4,7 @@ Raw-transcripts auto-push daemon for the Kurpatov-wiki project.
 Responsibility (single, by design):
   - Watch /workspace/vault/raw recursively for new or changed files.
   - When the filesystem has been quiet for `--debounce-sec` seconds,
-    run `git add -A && git commit && git push` inside /workspace/vault.
+    run `git add -A && git commit && git push` inside /workspace/vault/raw.
 
 Deliberately decoupled from the transcriber:
   - The transcriber (03_watch_and_transcribe.py) knows nothing about git.
@@ -13,15 +13,18 @@ Deliberately decoupled from the transcriber:
 
 Repo naming:
   - This daemon pushes to the `kurpatov-wiki-raw` private GitHub repo.
-    The on-disk dir is still called `vault/` (host:
-    ${STORAGE_ROOT}/kurpatov-wiki/vault) and the deploy key file is
-    `~/.ssh/kurpatov-wiki-vault` — those names are legacy and can be
-    renamed out-of-band without touching this script. Wiki output
-    (built manually for now) will live in a separate
-    `kurpatov-wiki-wiki` repo owned by a different workflow.
+    The git working tree IS /workspace/vault/raw — the repo's root
+    contains <video-stem>/raw.json directories directly, with no
+    extra prefix. The on-disk parent dir `vault/` (host:
+    ${STORAGE_ROOT}/kurpatov-wiki/vault) and the deploy key file
+    `~/.ssh/kurpatov-wiki-vault` retain their legacy names; renaming
+    them is cheap and can happen out-of-band. Wiki output (built
+    manually for now) will live in a separate `kurpatov-wiki-wiki`
+    repo owned by a different workflow.
 
 Git plumbing assumptions:
-  - /workspace/vault is a git working tree, pre-initialized on the host.
+  - /workspace/vault/raw is a git working tree, pre-initialized on
+    the host.
   - .git/config has core.sshCommand pointing at the deploy key at
     ~/.ssh/kurpatov-wiki-vault (mounted read-only into this container).
   - remote `origin` points at the private kurpatov-wiki-raw repo (SSH URL).
@@ -85,7 +88,7 @@ def git_add_commit_push(vault_root: Path) -> None:
     base = git_cmd_base(vault_root)
 
     add = subprocess.run(
-        base + ["add", "-A", "--", "raw"],
+        base + ["add", "-A"],
         capture_output=True, text=True, timeout=60,
     )
     if add.returncode != 0:
@@ -98,7 +101,7 @@ def git_add_commit_push(vault_root: Path) -> None:
         capture_output=True, timeout=10,
     )
     if diff.returncode == 0:
-        log.debug("[git  ] nothing to commit")
+        log.info("[git  ] nothing to commit")
         return
 
     # Build a concise commit message from the staged name-status output.
@@ -226,10 +229,10 @@ class RawHandler(FileSystemEventHandler):
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--vault", default="/workspace/vault",
-                    help="Git working tree to commit from.")
+    ap.add_argument("--vault", default="/workspace/vault/raw",
+                    help="Git working tree to commit from (the repo root).")
     ap.add_argument("--raw", default="/workspace/vault/raw",
-                    help="Subtree to watch for changes.")
+                    help="Subtree to watch for changes (normally same as --vault).")
     ap.add_argument("--debounce-sec", type=float, default=10.0,
                     help="Quiet-period seconds before committing a burst.")
     ap.add_argument("--initial-push", action="store_true", default=True,
