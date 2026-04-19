@@ -107,6 +107,33 @@ Note for kurpatov-wiki: its `docker-compose.yml` uses the same
 `image: forge-kurpatov-wiki:latest` for the jupyter and transcriber services.
 Building from either rebuilds the shared image.
 
+### Pinned-core build (keeps ssh responsive)
+
+Cold builds saturate every core — ssh/mlflow/arbitrage become unusable for
+10-20 min. Fix: a dedicated buildx builder pinned to CPU 0 only. One-time
+setup:
+
+```bash
+docker buildx create --name slowbuilder \
+  --driver docker-container \
+  --driver-opt cpuset-cpus=0 \
+  --bootstrap --use
+docker update --restart unless-stopped buildx_buildkit_slowbuilder0
+```
+
+`docker buildx use slowbuilder` persists in `~/.docker/buildx/` so every
+subsequent `docker compose build` (and thus every `make *-build`) runs
+through it. Builds take longer wall-clock but the other 23 cores stay
+free. To switch back temporarily: `docker buildx use default`.
+
+Verify the pin:
+
+```bash
+docker inspect buildx_buildkit_slowbuilder0 \
+  --format 'cpuset={{.HostConfig.CpusetCpus}} restart={{.HostConfig.RestartPolicy.Name}}'
+# cpuset=0 restart=unless-stopped
+```
+
 ## Logs
 
 ```bash

@@ -7,8 +7,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       ffmpeg libsndfile1 \
  && rm -rf /var/lib/apt/lists/*
 
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh
-ENV PATH="/root/.local/bin:${PATH}"
+# uv from pypi (install.sh hangs inside some BuildKit builders).
+RUN pip install --break-system-packages uv
 
 RUN uv venv /opt/venv --python=3.12 --seed
 ENV VIRTUAL_ENV=/opt/venv
