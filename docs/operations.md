@@ -161,9 +161,36 @@ Health check:
 
 ```bash
 make ps
-curl -I https://${JUPYTER_KURPATOV_WIKI_DOMAIN}   # 401 with basic auth — ok
+make smoke                                        # full end-to-end smoke suite
 make kurpatov-wiki-logs | head -50
 ```
+
+## End-to-end smoke test
+
+`make smoke` (or `./scripts/smoke.sh`) runs an idempotent, read-only
+health check across the whole stack. What it verifies:
+
+1. All 5 containers Up: `caddy`, `mlflow`, `jupyter-rl-2048`,
+   `jupyter-kurpatov-wiki`, `kurpatov-transcriber`.
+2. GPU partitioning — `jupyter-rl-2048` sees exactly the GPU pinned by
+   `RL_2048_GPU_UUID` and `jupyter-kurpatov-wiki` sees the one pinned by
+   `KURPATOV_WIKI_GPU_UUID`.
+3. `torch.cuda` is available inside both GPU containers and a small
+   1024×1024 matmul completes without error.
+4. Caddy: each of the three domains returns `401` unauthenticated and
+   `200` (mlflow) or `302` (jupyter, redirects to `/lab`) with basic auth.
+5. mlflow REST API (`/api/2.0/mlflow/experiments/search`) returns JSON
+   containing an experiments list.
+6. `kurpatov-transcriber` has logged `inotify on /workspace/videos` —
+   the reactive watcher has started.
+
+Exit code is `0` iff all checks pass. Run it after `make base` +
+`make rl-2048` + `make kurpatov-wiki`, after any service rebuild, and
+as a quick periodic sanity check.
+
+The plaintext basic-auth password is read from `MLFLOW_TRACKING_PASSWORD`
+in `.env` — by convention in this deployment the same secret is used
+for Caddy basicauth and the mlflow tracking client.
 
 ## GPU suddenly unavailable
 

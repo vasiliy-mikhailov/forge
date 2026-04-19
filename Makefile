@@ -4,7 +4,7 @@ export
 STORAGE_ROOT ?= /mnt/steam/forge
 SERVICES := caddy mlflow rl-2048 kurpatov-wiki
 
-.PHONY: help setup network base base-down stop-gpu ps gpu du $(SERVICES)
+.PHONY: help setup network base base-down stop-gpu ps gpu du smoke $(SERVICES)
 
 help:
 	@echo "First run:     make setup && make base"
@@ -17,7 +17,7 @@ help:
 	@echo "  make base-down  — stop everything"
 	@echo "  make stop-gpu   — stop rl-2048 + kurpatov-wiki"
 	@echo ""
-	@echo "Diagnostics:   make ps / gpu / du"
+	@echo "Diagnostics:   make ps / gpu / du / smoke"
 
 setup:
 	@mkdir -p $(STORAGE_ROOT)/models
@@ -65,3 +65,6 @@ gpu:
 
 du:
 	@du -sh $(STORAGE_ROOT)/* 2>/dev/null || echo "$(STORAGE_ROOT) is empty"
+
+smoke:
+	@bash scripts/smoke.sh
