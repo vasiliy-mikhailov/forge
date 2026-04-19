@@ -14,6 +14,7 @@ models/
 videos/
 checkpoints/
 mlruns/
+wandb/
 
 # --- Python / Jupyter ---
 __pycache__/
@@ -24,6 +25,9 @@ __pycache__/
 .venv/
 venv/
 *.egg-info/
+
+# whitelist: the one notebook we actually ship
+!rl-2048/2048_gpt_oss_20b.ipynb
 
 # --- node / editors ---
 .DS_Store
@@ -39,3 +43,21 @@ docker-compose.override.yml
 *.log
 tmp/
 .tmp/
+
+# --- rl-2048 working clutter ---
+# experimental Dockerfile variants pile up next to the live one
+rl-2048/Dockerfile-*
+rl-2048/Dockerfile.*
+!rl-2048/Dockerfile
+rl-2048/Caddyfile
+rl-2048/hello.py
+rl-2048/.aider.chat.history.md
+# GRPO/test run outputs (sit next to the notebook during training)
+rl-2048/gpu-*/
+rl-2048/grpo_*/
+rl-2048/mlflow-data/
+rl-2048/mlruns/
+rl-2048/outputs/
+rl-2048/.inductor_cache/
+rl-2048/.triton_cache/
+rl-2048/.vllm_cache/
