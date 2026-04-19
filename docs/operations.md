@@ -109,22 +109,12 @@ Building from either rebuilds the shared image.
 
 ### Pinned-core build (keeps ssh responsive)
 
-Cold builds saturate every core — ssh/mlflow/arbitrage become unusable for
-10-20 min. Fix: a dedicated buildx builder pinned to CPU 0 only. One-time
-setup:
-
-```bash
-docker buildx create --name slowbuilder \
-  --driver docker-container \
-  --driver-opt cpuset-cpus=0 \
-  --bootstrap --use
-docker update --restart unless-stopped buildx_buildkit_slowbuilder0
-```
-
-`docker buildx use slowbuilder` persists in `~/.docker/buildx/` so every
-subsequent `docker compose build` (and thus every `make *-build`) runs
-through it. Builds take longer wall-clock but the other 23 cores stay
-free. To switch back temporarily: `docker buildx use default`.
+Cold builds saturate every core — ssh/mlflow/arbitrage become unusable
+for 10-20 min. Fix: a dedicated buildx builder (`slowbuilder`) pinned to
+CPU 0 only. `common.mk`'s `build` target auto-provisions this builder
+on first invocation and routes every `make *-build` through it via
+`BUILDX_BUILDER=slowbuilder`. Builds take longer wall-clock but the
+other 23 cores stay free.
 
 Verify the pin:
 
@@ -133,6 +123,13 @@ docker inspect buildx_buildkit_slowbuilder0 \
   --format 'cpuset={{.HostConfig.CpusetCpus}} restart={{.HostConfig.RestartPolicy.Name}}'
 # cpuset=0 restart=unless-stopped
 ```
+
+To rebuild full-speed on all cores temporarily (e.g. a one-off you want
+done fast): `BUILDX_BUILDER=default make <service>-build`.
+
+To wipe the builder (rare — after a botched docker upgrade or if its
+cache gets stuck): `docker buildx rm slowbuilder && docker rm -f
+buildx_buildkit_slowbuilder0`. Next `make *-build` recreates it.
 
 ## Logs
 

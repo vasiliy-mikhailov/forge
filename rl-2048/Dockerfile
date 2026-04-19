@@ -7,9 +7,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     openssl \
  && rm -rf /var/lib/apt/lists/*
 
-# Install uv
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh
-ENV PATH="/root/.local/bin:${PATH}"
+# uv from pypi (install.sh hangs inside some BuildKit builders).
+RUN pip install --break-system-packages uv
 
 # venv
 RUN uv venv /opt/venv --python=3.12 --seed
