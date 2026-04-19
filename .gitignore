@@ -27,7 +27,8 @@ venv/
 *.egg-info/
 
 # whitelist: the one notebook we actually ship
-!rl-2048/2048_gpt_oss_20b.ipynb
+!rl-2048/notebooks/
+!rl-2048/notebooks/2048_gpt_oss_20b.ipynb
 
 # --- node / editors ---
 .DS_Store

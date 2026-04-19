@@ -41,14 +41,16 @@ TLS + auth in front of it. Writes metrics to mlflow via https + basic
 auth (`MLFLOW_TRACKING_URI`, `MLFLOW_TRACKING_USERNAME`,
 `MLFLOW_TRACKING_PASSWORD`).
 
+Jupyter is launched with `--notebook-dir=/workspace/notebooks`, so the
+file browser opens directly on the working directory. `/workspace/models`
+and `/workspace/checkpoints` are still accessible by absolute path from
+code (they just don't appear in the sidebar).
+
 ## Tracked notebook
-`rl-2048/2048_gpt_oss_20b.ipynb` — the current GRPO experiment on
-GPT-OSS-20B, whitelisted against the global `*.ipynb` ignore. Living
-here at the rl-2048/ root (next to Dockerfile) marks it as a
-source-of-truth artifact, not a throwaway. When iterating, copy it into
-`./notebooks/` (which is the only bind-mount into jupyter), work there,
-and promote back to the root with `cp notebooks/2048_gpt_oss_20b.ipynb
-2048_gpt_oss_20b.ipynb` before committing.
+`rl-2048/notebooks/2048_gpt_oss_20b.ipynb` — the current GRPO experiment
+on GPT-OSS-20B, whitelisted against the global `*.ipynb` ignore. It lives
+in the bind-mounted `notebooks/` directory so Jupyter edits the same file
+git tracks — no copying back and forth.
 
 All other notebooks (scratch, variants) stay in `./notebooks/` and are
 git-ignored.
@@ -70,8 +72,8 @@ compatibility between notebook revisions is guaranteed.
 3. `shm_size: 16gb` — needed for some compile flows in torch, don't
    lower it.
 4. Only one `.ipynb` is tracked in git
-   (`rl-2048/2048_gpt_oss_20b.ipynb`), whitelisted against the global
-   `*.ipynb` ignore. Everything else in `./notebooks/` is scratch.
+   (`rl-2048/notebooks/2048_gpt_oss_20b.ipynb`), whitelisted against the
+   global `*.ipynb` ignore. Everything else in `./notebooks/` is scratch.
 
 ## Status
 Work-in-progress (sandbox). Dockerfile is periodically updated for new
