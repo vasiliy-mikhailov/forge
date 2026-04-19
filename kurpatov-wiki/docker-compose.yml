@@ -56,6 +56,31 @@ services:
     command: ["python", "-u", "/workspace/notebooks/03_watch_and_transcribe.py"]
     restart: unless-stopped
 
+  # Separate from the transcriber by design: single responsibility.
+  # Watches /workspace/vault/raw for new/changed files and pushes
+  # them to the private kurpatov-wiki-raw GitHub repo. Reuses the
+  # forge-kurpatov-wiki image because openssh-client + python are
+  # already installed there; no GPU needed.
+  #
+  # Note: the on-disk path `/workspace/vault/raw` still uses the
+  # legacy "vault" name (host: ${STORAGE_ROOT}/kurpatov-wiki/vault),
+  # as does the deploy key filename `~/.ssh/kurpatov-wiki-vault`
+  # which is baked into vault/.git/config core.sshCommand. Those are
+  # cheap to rename later; the GitHub repo rename is the only piece
+  # that needs to happen out-of-band.
+  kurpatov-wiki-raw-pusher:
+    image: forge-kurpatov-wiki:latest
+    container_name: kurpatov-wiki-raw-pusher
+    volumes:
+      - ./notebooks:/workspace/notebooks
+      - ${STORAGE_ROOT}/kurpatov-wiki/vault:/workspace/vault
+      # Deploy key (read-only) — matches vault/.git/config
+      # core.sshCommand (~/.ssh/kurpatov-wiki-vault → /root/... in
+      # container, /home/vmihaylov/... on host).
+      - ~/.ssh/kurpatov-wiki-vault:/root/.ssh/kurpatov-wiki-vault:ro
+    command: ["python", "-u", "/workspace/notebooks/04_watch_raw_and_push.py"]
+    restart: unless-stopped
+
 networks:
   proxy-net:
     external: true
