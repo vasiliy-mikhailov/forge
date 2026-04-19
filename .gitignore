@@ -1,0 +1,41 @@
+# --- secrets ---
+.env
+*.env
+!.env.example
+*.pem
+*.key
+certs/
+
+# --- data (everything that lives on STORAGE_ROOT) ---
+# Lives outside the repo (on /mnt/steam/forge), but guard anyway.
+mlflow/data/
+vault/
+models/
+videos/
+checkpoints/
+mlruns/
+
+# --- Python / Jupyter ---
+__pycache__/
+*.pyc
+*.pyo
+*.ipynb
+.ipynb_checkpoints/
+.venv/
+venv/
+*.egg-info/
+
+# --- node / editors ---
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# --- Docker ---
+# compose writes these when you make local-only overrides
+docker-compose.override.yml
+
+# --- logs / temporary ---
+*.log
+tmp/
+.tmp/

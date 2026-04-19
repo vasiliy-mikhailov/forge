@@ -1,0 +1,34 @@
+services:
+  jupyter-rl-2048:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: jupyter-rl-2048
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=${RL_2048_GPU_UUID}
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+      - MLFLOW_TRACKING_URI=https://${MLFLOW_DOMAIN}
+      - MLFLOW_TRACKING_USERNAME=${BASIC_AUTH_USER}
+      - MLFLOW_TRACKING_PASSWORD=${MLFLOW_TRACKING_PASSWORD}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              capabilities: [gpu, compute, utility]
+              device_ids:
+                - ${RL_2048_GPU_UUID}
+    volumes:
+      - ./notebooks:/workspace/notebooks
+      - ${STORAGE_ROOT}/models:/workspace/models
+      - ${STORAGE_ROOT}/rl-2048/checkpoints:/workspace/checkpoints
+    expose:
+      - "8888"
+    shm_size: "16gb"
+    networks:
+      - proxy-net
+    restart: unless-stopped
+
+networks:
+  proxy-net:
+    external: true

@@ -1,0 +1,61 @@
+services:
+  jupyter-kurpatov-wiki:
+    image: forge-kurpatov-wiki:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: jupyter-kurpatov-wiki
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=${KURPATOV_WIKI_GPU_UUID}
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+      - MLFLOW_TRACKING_URI=https://${MLFLOW_DOMAIN}
+      - MLFLOW_TRACKING_USERNAME=${BASIC_AUTH_USER}
+      - MLFLOW_TRACKING_PASSWORD=${MLFLOW_TRACKING_PASSWORD}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              capabilities: [gpu, compute, utility]
+              device_ids:
+                - ${KURPATOV_WIKI_GPU_UUID}
+    volumes:
+      - ./notebooks:/workspace/notebooks
+      - ${STORAGE_ROOT}/models:/workspace/models
+      - ${STORAGE_ROOT}/kurpatov-wiki/videos:/workspace/videos
+      - ${STORAGE_ROOT}/kurpatov-wiki/vault:/workspace/vault
+      - ${STORAGE_ROOT}/kurpatov-wiki/checkpoints:/workspace/checkpoints
+    expose:
+      - "8888"
+    shm_size: "8gb"
+    networks:
+      - proxy-net
+    restart: unless-stopped
+
+  kurpatov-transcriber:
+    image: forge-kurpatov-wiki:latest
+    container_name: kurpatov-transcriber
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=${KURPATOV_WIKI_GPU_UUID}
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              capabilities: [gpu, compute, utility]
+              device_ids:
+                - ${KURPATOV_WIKI_GPU_UUID}
+    volumes:
+      - ./notebooks:/workspace/notebooks
+      - ${STORAGE_ROOT}/models:/workspace/models
+      - ${STORAGE_ROOT}/kurpatov-wiki/videos:/workspace/videos
+      - ${STORAGE_ROOT}/kurpatov-wiki/vault:/workspace/vault
+      - ${STORAGE_ROOT}/kurpatov-wiki/checkpoints:/workspace/checkpoints
+    shm_size: "4gb"
+    command: ["python", "-u", "/workspace/notebooks/03_watch_and_transcribe.py"]
+    restart: unless-stopped
+
+networks:
+  proxy-net:
+    external: true

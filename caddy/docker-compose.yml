@@ -1,0 +1,29 @@
+services:
+  caddy:
+    image: caddy:2
+    container_name: caddy
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - ACME_EMAIL=${ACME_EMAIL}
+      - BASIC_AUTH_USER=${BASIC_AUTH_USER}
+      - BASIC_AUTH_HASH=${BASIC_AUTH_HASH}
+      - JUPYTER_RL_2048_DOMAIN=${JUPYTER_RL_2048_DOMAIN}
+      - JUPYTER_KURPATOV_WIKI_DOMAIN=${JUPYTER_KURPATOV_WIKI_DOMAIN}
+      - MLFLOW_DOMAIN=${MLFLOW_DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - proxy-net
+    restart: unless-stopped
+
+volumes:
+  caddy_data:
+  caddy_config:
+
+networks:
+  proxy-net:
+    external: true

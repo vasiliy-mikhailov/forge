@@ -1,0 +1,6 @@
+This file is a stub; safe to delete.
+
+The folder `rl-2048/notebooks/` is bind-mounted into the container as
+`/workspace/notebooks` and is created automatically by `make setup`. The
+git-tracked placeholder in the repo is `rl-2048/notebooks/README.md`, which
+explains the convention.

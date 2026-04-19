@@ -1,0 +1,24 @@
+services:
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.14.3
+    container_name: mlflow
+    command: >
+      mlflow server
+      --host 0.0.0.0
+      --port 5000
+      --backend-store-uri sqlite:////data/mlflow.db
+      --artifacts-destination /mlruns
+      --serve-artifacts
+      --default-artifact-root mlflow-artifacts:/
+    volumes:
+      - ./data:/data                                 # sqlite — on SSD
+      - ${STORAGE_ROOT}/mlflow/mlruns:/mlruns        # artifacts — on the HDD pool
+    expose:
+      - "5000"
+    networks:
+      - proxy-net
+    restart: unless-stopped
+
+networks:
+  proxy-net:
+    external: true
