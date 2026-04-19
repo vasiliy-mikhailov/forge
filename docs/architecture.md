@@ -88,9 +88,16 @@ ${STORAGE_ROOT:-/mnt/steam/forge}/
     │   │   │                        #   the kurpatov-wiki-raw repo
     │   │   │                        #   (repo root IS this dir; see ADR 0005)
     │   │   ├── .git/
-    │   │   └── <course>/<module>/<video_stem>/raw.json
-    │   └── wiki/                    # WIKI layer — empty for now;
-    │                                #   future home of kurpatov-wiki-wiki repo
+    │   │   ├── README.md            #   meta at the root (ADR 0005 data/
+    │   │   │                        #   content-split amendment)
+    │   │   └── data/                #   content subtree — transcriber and
+    │   │       │                    #   pusher both default here
+    │   │       └── <course>/<module>/<video_stem>/
+    │   │           └── raw.json
+    │   └── wiki/                    # reserved directory; the WIKI layer
+    │                                #   lives in kurpatov-wiki-wiki on the
+    │                                #   operator's Mac, not on the server
+    │                                #   (ADR 0007). Not created by setup.
     └── checkpoints/
 ```
 

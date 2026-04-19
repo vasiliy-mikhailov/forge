@@ -4,6 +4,18 @@
 Accepted (2026-04-19). Supersedes the original flat layout; transition was
 done via a one-off `migrate_vault_hierarchy.py`.
 
+Amended (2026-04-19 — data/ content split). The Decision section
+below places the mirrored hierarchy directly under `vault/raw/`.
+Post-amendment, it lives one segment deeper, under
+`vault/raw/data/<course>/<module>/<stem>/raw.json`, so that meta
+files at the repo root (`README.md`, `CLAUDE.md`, CI config) cannot
+collide with a top-level course directory in the same namespace.
+The hierarchy itself — course / module / stem, stem-as-directory —
+is unchanged. See [ADR 0005](0005-split-transcribe-and-push.md)
+(data/ content-split amendment) for the migration and the pusher
+`--vault` / `--raw` path split that made the move possible without
+relocating `.git/`.
+
 ## Context
 Originally the transcription script stored `raw.json` in a **flat**
 layout:

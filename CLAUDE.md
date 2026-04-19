@@ -98,7 +98,7 @@ make du    # on-disk sizes under STORAGE_ROOT
 - Do not give rl-2048 and kurpatov-wiki the same GPU UUID — the second
   service will hit OOM.
 - Do not commit `.ipynb` files or large `.pt`/`.bin` blobs.
-- Do not change the `vault/raw/<path>/raw.json` format without an ADR —
+- Do not change the `vault/raw/data/<path>/raw.json` format without an ADR —
   the watcher and every downstream layer depend on it.
 - Do not reinstall the proprietary nvidia driver (without `-open`) and
   do not delete `/etc/modprobe.d/nvidia-uvm.conf`. Multi-GPU on Blackwell

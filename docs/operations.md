@@ -232,8 +232,10 @@ What the smoke test verifies:
    containing an experiments list.
 6. Both kurpatov-wiki watchers have logged their `inotify on ...` line:
    `kurpatov-transcriber` on `/workspace/videos` (reactive transcription),
-   and `kurpatov-wiki-raw-pusher` on `/workspace/vault/raw` (reactive git
-   auto-push — see
+   and `kurpatov-wiki-raw-pusher` on `/workspace/vault/raw/data` (reactive
+   git auto-push; the pusher watches the content subtree `--raw` but runs
+   git in `--vault=/workspace/vault/raw` so `.git/` stays at the working-
+   tree root — see
    [kurpatov-wiki/docs/adr/0005-split-transcribe-and-push.md](../kurpatov-wiki/docs/adr/0005-split-transcribe-and-push.md)).
 7. `kurpatov-wiki-raw-pusher` runs its own lean image
    (`forge-kurpatov-wiki-pusher:latest`, python-slim + git +

@@ -32,7 +32,6 @@ setup:
 	@mkdir -p $(STORAGE_ROOT)/kurpatov-wiki/videos
 	@mkdir -p $(STORAGE_ROOT)/kurpatov-wiki/checkpoints
 	@mkdir -p $(STORAGE_ROOT)/kurpatov-wiki/vault/raw
-	@mkdir -p $(STORAGE_ROOT)/kurpatov-wiki/vault/wiki
 	@mkdir -p $(STORAGE_ROOT)/mlflow/mlruns
 	@mkdir -p mlflow/data rl-2048/notebooks kurpatov-wiki/notebooks
 

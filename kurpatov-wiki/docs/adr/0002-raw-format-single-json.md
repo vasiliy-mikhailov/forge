@@ -3,6 +3,17 @@
 ## Status
 Accepted (2026-04-19).
 
+Amended (2026-04-19 — data/ content split). The path shown in the
+Decision section below (`vault/raw/<path>/<stem>/raw.json`) is now
+off by one `data/` segment: the transcriber writes to
+`vault/raw/data/<path>/<stem>/raw.json`, and the pusher watches
+`vault/raw/data/` while keeping its git working tree at
+`vault/raw/` so the existing `.git/` keeps working without being
+moved. File format (one JSON per video) is unchanged — only the
+parent directory grew a `data/` prefix. Rationale and migration
+are in [ADR 0005](0005-split-transcribe-and-push.md) (data/
+content-split amendment).
+
 ## Context
 faster-whisper emits segments (with timings and optionally words with
 probabilities) plus an `info` object with language/duration/model
