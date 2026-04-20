@@ -25,14 +25,14 @@ Session runbook (design-trail mirror):
 
 ## Files
 
-- [`per-video-summarize.md`](per-video-summarize.md) — the primary
+- [`per-source-summarize.md`](per-source-summarize.md) — the primary
   prompt. Given one `raw.json`, the current `concept-index.json`, and
-  the list of prior video slugs, produces a video article plus the
-  set of concept-article deltas the video implies.
+  the list of prior source slugs, produces a source article plus the
+  set of concept-article deltas the source implies.
 - [`concept-article.md`](concept-article.md) — the prompt used when a
   concept is newly introduced (no existing file under `concepts/`).
   Seeds the concept article with a definition + first contribution
-  entry. Later videos append to the existing article; they do not
+  entry. Later sources append to the existing article; they do not
   re-run this prompt.
 
 ## Why prompts and not code
@@ -43,7 +43,7 @@ markdown, and `git add/commit/push`. That's operator-level scripting
 (or direct tool calls inside a Cowork session), not a library.
 
 The interesting IP of the pipeline is the prompts — the instructions
-for "what does a good video article look like, what qualifies as
+for "what does a good source article look like, what qualifies as
 'new', how do concept contributions read." Keeping them as prose
 files means a new operator (or a later model) can read them directly
 and understand what the wiki is supposed to feel like without

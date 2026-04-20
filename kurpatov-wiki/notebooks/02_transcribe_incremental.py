@@ -1,18 +1,22 @@
 """
 Incremental transcription for the Kurpatov-wiki vault.
 
-Recursively scans /workspace/videos/, compares against the list of existing
-transcripts under /workspace/vault/raw/data/<...>/<video_stem>/raw.json, and
-only processes the missing ones via faster-whisper large-v3 on cuda:0.
+Recursively scans /workspace/sources/, compares against the list of existing
+transcripts under /workspace/vault/raw/data/<...>/<stem>/raw.json, and only
+processes the missing ones via faster-whisper large-v3 on cuda:0.
 (The `data/` segment is per ADR 0005's data/content-split amendment — the
 kurpatov-wiki-raw repo's content lives under `data/` so the root stays free
 for meta files.)
+
+Historical note: this directory used to be called `videos/` and accepted only
+*.mp4. Since then we've broadened the scope to any source material Whisper can
+ingest via ffmpeg — video or audio, using the MEDIA_EXTENSIONS allow-list.
 
 Output format: a single raw.json file. Fields:
   info.language               — language detected by whisper
   info.duration               — audio duration
   info.language_probability   — language detection confidence
-  info.source_path            — source mp4
+  info.source_path            — source media file
   info.model                  — whisper model name
   info.compute_type           — precision (float16 / bfloat16 / ...)
   info.beam_size              — beam size during decoding
@@ -48,6 +52,23 @@ from pathlib import Path
 
 from faster_whisper import WhisperModel
 from tqdm import tqdm
+
+
+# ---------------------------------------------------------------------------
+# media extensions — kept in sync with 03_watch_and_transcribe.py
+# ---------------------------------------------------------------------------
+
+MEDIA_EXTENSIONS: frozenset[str] = frozenset({
+    # Video
+    ".mp4", ".mkv", ".webm", ".mov", ".m4v", ".avi",
+    # Audio
+    ".mp3", ".m4a", ".wav", ".ogg", ".flac", ".opus", ".aac",
+})
+
+
+def is_media(path: Path) -> bool:
+    """True if the suffix is one we'll feed to Whisper."""
+    return path.suffix.lower() in MEDIA_EXTENSIONS
 
 
 # ---------------------------------------------------------------------------
@@ -90,12 +111,11 @@ def utc_now_iso() -> str:
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--videos", default="/workspace/videos",
-                    help="Root with video files (recursive scan)")
+    ap.add_argument("--sources", default="/workspace/sources",
+                    help="Root with source media (recursive scan). "
+                         "Any file whose suffix is in MEDIA_EXTENSIONS is picked up.")
     ap.add_argument("--out", default="/workspace/vault/raw/data",
                     help="Where to place transcripts (default: vault/raw/data)")
-    ap.add_argument("--pattern", default="*.mp4",
-                    help="Video glob (default: *.mp4)")
     ap.add_argument("--model", default="large-v3")
     ap.add_argument("--compute", default="float16",
                     choices=["float16", "bfloat16", "int8_float16"])
@@ -103,23 +123,24 @@ def main() -> None:
     ap.add_argument("--language", default="ru")
     args = ap.parse_args()
 
-    videos_root = Path(args.videos)
+    sources_root = Path(args.sources)
     out_root = Path(args.out)
     out_root.mkdir(parents=True, exist_ok=True)
 
-    # out_dir mirrors the full hierarchy videos/<...>/<name>.mp4 →
+    # out_dir mirrors the full hierarchy sources/<...>/<name>.<ext> →
     # vault/raw/data/<...>/<name>/raw.json (data/ segment per ADR 0005
     # data/content-split amendment).
-    def out_dir_for(v: Path) -> Path:
-        return out_root / v.relative_to(videos_root).with_suffix("")
+    def out_dir_for(src: Path) -> Path:
+        return out_root / src.relative_to(sources_root).with_suffix("")
 
-    # ----- 1. Scan videos + pick the missing ones -----
-    all_videos = sorted(videos_root.rglob(args.pattern))
-    pending = [v for v in all_videos
-               if not (out_dir_for(v) / "raw.json").exists()]
+    # ----- 1. Scan sources + pick the missing ones -----
+    all_sources = sorted(p for p in sources_root.rglob("*")
+                         if p.is_file() and is_media(p))
+    pending = [s for s in all_sources
+               if not (out_dir_for(s) / "raw.json").exists()]
 
-    done_count = len(all_videos) - len(pending)
-    print(f"[scan ] videos found: {len(all_videos)}  "
+    done_count = len(all_sources) - len(pending)
+    print(f"[scan ] sources found: {len(all_sources)}  "
           f"done: {done_count}  pending: {len(pending)}")
 
     if not pending:
@@ -128,7 +149,7 @@ def main() -> None:
 
     # ----- 2. Durations up front (for an accurate outer progress bar) -----
     print("[probe] measuring durations via ffprobe...")
-    durations = {v: probe_duration(v) for v in pending}
+    durations = {s: probe_duration(s) for s in pending}
     total_audio = sum(durations.values())
     print(f"[probe] queue: {len(pending)} files, "
           f"{total_audio/3600:.2f}h audio total "
@@ -159,10 +180,10 @@ def main() -> None:
     )
 
     try:
-        for idx, video in enumerate(pending, 1):
-            audio_dur = durations[video]
-            stem = video.stem
-            out_dir = out_dir_for(video)
+        for idx, source in enumerate(pending, 1):
+            audio_dur = durations[source]
+            stem = source.stem
+            out_dir = out_dir_for(source)
             tmp_dir = out_dir.parent / f"{out_dir.name}.tmp"
             out_dir.parent.mkdir(parents=True, exist_ok=True)
             clean_tmp_dir(tmp_dir)
@@ -183,7 +204,7 @@ def main() -> None:
 
             t_file = time.time()
             segments, info = model.transcribe(
-                str(video),
+                str(source),
                 language=args.language,
                 beam_size=args.beam,
                 vad_filter=True,
@@ -223,7 +244,7 @@ def main() -> None:
                     "language": info.language,
                     "duration": info.duration,
                     "language_probability": info.language_probability,
-                    "source_path": str(video),
+                    "source_path": str(source),
                     "model": args.model,
                     "compute_type": args.compute,
                     "beam_size": args.beam,
@@ -251,7 +272,7 @@ def main() -> None:
     finally:
         outer_bar.close()
 
-    print(f"\n[done ] processed {len(pending)} videos -> {out_root}")
+    print(f"\n[done ] processed {len(pending)} sources -> {out_root}")
 
 
 if __name__ == "__main__":

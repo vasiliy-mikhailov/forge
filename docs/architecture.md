@@ -12,7 +12,7 @@ see each service's SPEC.md.
 - Disks:
   - SSD (system) — holds the repo, `mlflow/data/mlflow.db`, small stuff.
   - HDD pool (ZFS, `/mnt/steam`) — `/mnt/steam/forge` = `STORAGE_ROOT`,
-    everything heavy lives here: models, videos, transcripts, checkpoints,
+    everything heavy lives here: models, sources, transcripts, checkpoints,
     mlflow artifacts.
 - OS: Ubuntu 24.04, docker + docker compose + NVIDIA container runtime.
 - GPU stack:
@@ -81,8 +81,10 @@ ${STORAGE_ROOT:-/mnt/steam/forge}/
 ├── rl-2048/
 │   └── checkpoints/
 └── kurpatov-wiki/
-    ├── videos/                      # input mp4, structure is
-    │   └── <course>/<module>/*.mp4  #   mirrored into vault/raw
+    ├── sources/                     # input source media (video + audio),
+    │   └── <course>/<module>/*.<ext> #   structure mirrored into vault/raw.
+    │                                 #   MEDIA_EXTENSIONS allow-list lives in
+    │                                 #   kurpatov-wiki/notebooks/0{2,3}*.py.
     ├── vault/
     │   ├── raw/                     # RAW layer + git working tree for
     │   │   │                        #   the kurpatov-wiki-raw repo
@@ -92,7 +94,7 @@ ${STORAGE_ROOT:-/mnt/steam/forge}/
     │   │   │                        #   content-split amendment)
     │   │   └── data/                #   content subtree — transcriber and
     │   │       │                    #   pusher both default here
-    │   │       └── <course>/<module>/<video_stem>/
+    │   │       └── <course>/<module>/<source_stem>/
     │   │           └── raw.json
     │   └── wiki/                    # reserved directory; the WIKI layer
     │                                #   lives in kurpatov-wiki-wiki on the

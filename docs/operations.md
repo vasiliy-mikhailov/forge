@@ -85,8 +85,10 @@ make setup
 # 3. Bring up the base — caddy will issue TLS via ACME
 make base
 
-# 4. Add videos (for kurpatov-wiki) under
-#    ${STORAGE_ROOT}/kurpatov-wiki/videos/<course>/<module>/*.mp4
+# 4. Add source media (for kurpatov-wiki) under
+#    ${STORAGE_ROOT}/kurpatov-wiki/sources/<course>/<module>/*.<ext>
+#    (video or audio; extensions listed in
+#     kurpatov-wiki/notebooks/0{2,3}_*.py MEDIA_EXTENSIONS)
 # and bring up the GPU services:
 make kurpatov-wiki
 make rl-2048
@@ -162,7 +164,7 @@ nvidia-smi -L                # UUIDs
 What to back up, in order of priority:
 
 1. `.env` — secrets. Keep in a password manager, not in git.
-2. `${STORAGE_ROOT}/kurpatov-wiki/videos/` — sources (separate from the repo).
+2. `${STORAGE_ROOT}/kurpatov-wiki/sources/` — input media (separate from the repo).
 3. `${STORAGE_ROOT}/kurpatov-wiki/vault/raw/` — transcription results
    (expensive to regenerate). Also continuously mirrored to the
    `kurpatov-wiki-raw` private GitHub repo by the
@@ -195,7 +197,7 @@ Order:
      into `${STORAGE_ROOT}/kurpatov-wiki/vault/raw`, then configure
      `.git/config core.sshCommand` to use the `~/.ssh/kurpatov-wiki-vault`
      deploy key so the pusher can resume from the server (ADR 0005).
-   - `videos/` (if you want them as the source of truth).
+   - `sources/` (if you want them as the source of truth).
    - `mlflow/data/mlflow.db` and `mlruns/` (if you want history).
 5. `make setup && make base && make kurpatov-wiki && make rl-2048`.
 
@@ -231,7 +233,7 @@ What the smoke test verifies:
 5. mlflow REST API (`/api/2.0/mlflow/experiments/search`) returns JSON
    containing an experiments list.
 6. Both kurpatov-wiki watchers have logged their `inotify on ...` line:
-   `kurpatov-transcriber` on `/workspace/videos` (reactive transcription),
+   `kurpatov-transcriber` on `/workspace/sources` (reactive transcription),
    and `kurpatov-wiki-raw-pusher` on `/workspace/vault/raw/data` (reactive
    git auto-push; the pusher watches the content subtree `--raw` but runs
    git in `--vault=/workspace/vault/raw` so `.git/` stays at the working-
@@ -306,45 +308,48 @@ make rl-2048
 # to swap back — put the UUIDs back and repeat.
 ```
 
-## Pushing new videos from laptop
+## Pushing new source media from laptop
 
-Drop new lecture `.mp4` files into `~/Downloads/Курпатов/` on the
-laptop and ship them to the server with a single command:
+Drop new lecture files into `~/Downloads/Курпатов/` on the laptop and
+ship them to the server with a single command:
 
 ```bash
-make push-videos
+make push-sources
 ```
 
-This moves every `*.mp4` in the source folder to the current default
-module under `kurpatov-wiki/videos/` on the server, deleting each file
-locally only after the transfer is verified. The `kurpatov-transcriber`
-daemon picks them up via inotify and transcribes within ~10s of each
-file landing — no server-side action required.
+This moves every media file (any suffix in the MEDIA_EXTENSIONS allow-list
+— video: `mp4/mkv/webm/mov/m4v/avi`, audio: `mp3/m4a/wav/ogg/flac/opus/aac`)
+from the source folder to the current default module under
+`kurpatov-wiki/sources/` on the server, deleting each file locally only
+after the transfer is verified. The `kurpatov-transcriber` daemon picks
+them up via inotify and transcribes within ~10s of each file landing —
+no server-side action required. faster-whisper handles audio natively via
+ffmpeg, so `.mp3` and friends go through the same path as `.mp4`.
 
-Defaults live in `scripts/push-videos.sh` and are currently:
+Defaults live in `scripts/push-sources.sh` and are currently:
 
-- `SRC    = ~/Downloads/Курпатов`
-- `HOST   = 192.168.0.2` (LAN; set to `mikhailov.tech` for VPN)
-- `PORT   = 22` (set to `2222` for VPN)
-- `COURSE = Психолог-консультант`
-- `MODULE = 005 Природа внутренних конфликтов. Базовые психологические потребности`
+- `SRC     = ~/Downloads/Курпатов`
+- `HOST    = 192.168.0.2` (LAN; set to `mikhailov.tech` for VPN)
+- `PORT    = 22` (set to `2222` for VPN)
+- `COURSE  = Психолог-консультант`
+- `MODULE  = 005 Природа внутренних конфликтов. Базовые психологические потребности`
 
 Override via env vars for a one-off (e.g. a different module):
 
 ```bash
-MODULE='006 <next module name>' make push-videos
-SRC=~/somewhere/else make push-videos
-HOST=mikhailov.tech PORT=2222 make push-videos   # over VPN instead of LAN
+MODULE='006 <next module name>' make push-sources
+SRC=~/somewhere/else make push-sources
+HOST=mikhailov.tech PORT=2222 make push-sources   # over VPN instead of LAN
 ```
 
 Dry-run first if you want to check what will move:
 
 ```bash
-bash scripts/push-videos.sh --dry-run
+bash scripts/push-sources.sh --dry-run
 ```
 
 When the "current module" changes (you finish uploading 005 and move
-on to 006), edit the `MODULE` default in `scripts/push-videos.sh` and
+on to 006), edit the `MODULE` default in `scripts/push-sources.sh` and
 commit the change — the repo is the source of truth for the active
 module.
 
@@ -363,7 +368,7 @@ inside the container (raw files are root-owned):
 docker exec jupyter-kurpatov-wiki \
   python3 /workspace/notebooks/migrate_vault_hierarchy.py \
     --vault-raw /workspace/vault/raw \
-    --strip-prefix /workspace/videos \
+    --strip-prefix /workspace/sources \
     --dry-run
 # verify the plan → remove --dry-run
 ```

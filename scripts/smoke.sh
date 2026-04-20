@@ -21,7 +21,7 @@
 #      domain.
 #   5. mlflow REST API — /experiments/search returns JSON.
 #   6. Reactive watchers — transcriber has inotify on
-#      /workspace/videos, raw-pusher has inotify on
+#      /workspace/sources, raw-pusher has inotify on
 #      /workspace/vault/raw (see kurpatov-wiki/docs/adr/0005).
 #   7. Pusher image discipline — raw-pusher runs a dedicated lean
 #      image (no CUDA), not the GPU image (see
@@ -181,9 +181,9 @@ check_watcher_log() {
 }
 
 check_watcher_log \
-  "transcriber has inotify on /workspace/videos" \
+  "transcriber has inotify on /workspace/sources" \
   kurpatov-transcriber \
-  'inotify on /workspace/videos'
+  'inotify on /workspace/sources'
 
 # The raw-pusher watches the raw-transcripts tree; the transcriber writes
 # there, and the pusher commits + pushes to the kurpatov-wiki-raw GitHub

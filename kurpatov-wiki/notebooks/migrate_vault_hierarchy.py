@@ -8,7 +8,7 @@ raw.json, so no guessing is required.
 Run on the host (typically via ssh):
   python3 migrate_vault_hierarchy.py \
     --vault-raw /mnt/steam/forge/kurpatov-wiki/vault/raw \
-    --strip-prefix /workspace/videos
+    --strip-prefix /workspace/sources
 
   (add --dry-run to preview without moving)
 """
@@ -26,7 +26,7 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--vault-raw", required=True,
                     help="Root of vault/raw on the host.")
-    ap.add_argument("--strip-prefix", default="/workspace/videos",
+    ap.add_argument("--strip-prefix", default="/workspace/sources",
                     help="Prefix from info.source_path to strip off.")
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()

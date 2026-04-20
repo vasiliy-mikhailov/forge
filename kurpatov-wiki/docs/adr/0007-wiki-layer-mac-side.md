@@ -33,7 +33,7 @@ history.
 Amended (2026-04-19 — prompts migrate to the wiki repo). The
 invariant "Prompts live in `forge`, content lives in
 `kurpatov-wiki-wiki`" is superseded. The authoritative working
-copies of `per-video-summarize.md`, `concept-article.md`, and the
+copies of `per-source-summarize.md`, `concept-article.md`, and the
 authoring playbook now live in `kurpatov-wiki-wiki/prompts/` and
 `kurpatov-wiki-wiki/docs/authoring.md`. The original concern — not
 mixing prompt churn with content churn in one git history — is now
@@ -64,6 +64,24 @@ repo on the Mac" below is correspondingly obsolete. The
 invariants are unchanged: the session is the pusher, no
 server-side daemon authors the wiki, the human-in-the-loop stays.
 
+
+Amended (2026-04-20 — videos/ → sources/ rename). In both the wiki
+repo and in this ADR's prose, the former tier name `videos/` has
+been renamed to `sources/`, and `video article` → `source article`.
+The rename follows the upstream broadening of accepted input media
+(video + audio; see ADR 0004's 2026-04-20 amendment). Corresponding
+renames applied downstream: `processed_videos` →
+`processed_sources` in `data/concept-index.json`;
+`prompts/per-source-summarize.md` →
+`prompts/per-source-summarize.md`; commit subject `video:` →
+`source:` for per-source authoring passes; "Contributions by video"
+log heading in concept articles → "Contributions by source". The
+invariants below (ordering via zero-padded module/stem prefixes;
+append-only concept articles; `concept-index.json` as authoritative
+state; meta-at-root / content-under-data) are unchanged. This ADR's
+body has been updated in place; the pre-rename wording survives
+only in git history.
+
 ## Context
 
 Once `vault/raw/<stem>/raw.json` started accumulating (ADR 0002,
@@ -92,7 +110,7 @@ the table:
    really a new concept, or a rephrasing of neocortex?"). The
    human-in-the-loop is not a cost here: it is the point. Deciding
    what constitutes a "concept" in psychology is a human call; so is
-   deciding which idea is "new" in video N if a previous video's
+   deciding which idea is "new" in source N if a previous source's
    phrasing was slightly different.
 
 Option 3 removes an entire operational surface (a new service, a new
@@ -105,9 +123,9 @@ structure), it's actually right-sized.
 ### Two-tier wiki structure
 
 Kurpatov's lectures are concept-heavy. The naïve "one summary per
-video" layout loses the most useful property we can give a reader:
-the ability to **read only the delta**. If a reader watched videos
-1..N-1, what's genuinely new in video N? And when the reader hits an
+source" layout loses the most useful property we can give a reader:
+the ability to **read only the delta**. If a reader watched sources
+1..N-1, what's genuinely new in source N? And when the reader hits an
 unfamiliar concept in that delta, where do they go for depth?
 
 Two article types, two directories, one shared concept registry:
@@ -118,26 +136,26 @@ kurpatov-wiki-wiki/               (repo root)
 ├── README.md                     ← reading protocol (meta)
 ├── .gitignore                    ← (meta)
 ├── prompts/                      ← authoring prompts (meta)
-│   ├── per-video-summarize.md
+│   ├── per-source-summarize.md
 │   └── concept-article.md
 ├── docs/                         ← design + playbook (meta)
 │   ├── design.md
 │   └── authoring.md
 └── data/                         ← all content lives under here
-    ├── index.md                  ← course / module / video order, concept A-Z
+    ├── index.md                  ← course / module / source order, concept A-Z
     ├── concept-index.json        ← machine-readable concept registry (authoring state)
     ├── concepts/
     │   ├── _template.md          ← boilerplate for a new concept article
     │   ├── neocortex.md          ← one article per concept
     │   ├── defense-mechanism.md
     │   └── ...
-    └── videos/
-        ├── _template.md          ← boilerplate for a new video article
+    └── sources/
+        ├── _template.md          ← boilerplate for a new source article
         └── <course>/<module>/<stem>.md
 ```
 
 The split is deliberate. Course names and concept slugs are
-unconstrained content-addressed strings; a future video called
+unconstrained content-addressed strings; a future source called
 `prompts` or a concept called `readme` would collide with a tooling
 file if everything lived at the repo root. Keeping meta at the root
 and content under `data/` removes that failure mode at the cost of
@@ -145,12 +163,12 @@ one `data/` segment in every cross-repo path reference. The sibling
 `kurpatov-wiki-raw` repo mirrors the split — transcripts live under
 `data/<course>/<module>/<stem>/raw.json`.
 
-A **video article** has three load-bearing sections:
+A **source article** has three load-bearing sections:
 
 - `## TL;DR` — 1-2 sentences: what this lecture is about at the
   top level.
 - `## New ideas` — ideas this lecture introduces **that do not
-  appear in any previously-processed video**. The reader's
+  appear in any previously-processed source**. The reader's
   fast-track. Each new idea is either a new concept (add to
   `concepts/`) or a new claim about an existing concept (add to
   that concept's contribution log).
@@ -169,14 +187,14 @@ never rewritten destructively; each pass appends.
 The "new ideas" section is a function of the **cumulative concept set
 at time of writing**. To make sessions resumable across machines and
 days, we pin that state explicitly rather than inferring it by
-re-reading every video article every time.
+re-reading every source article every time.
 
 `data/concept-index.json` lives in the wiki repo and contains:
 
 ```json
 {
   "generated_at": "2026-04-19T12:00:00Z",
-  "processed_videos": [
+  "processed_sources": [
     {
       "slug": "Psychologist-consultant/05-conflicts/005-something",
       "processed_at": "2026-04-19T12:00:00Z",
@@ -221,15 +239,15 @@ commands):
 1. `git -C ~/repos/kurpatov-wiki-raw  pull --ff-only`.
 2. `git -C ~/repos/kurpatov-wiki-wiki pull --ff-only`.
 3. Load `data/concept-index.json`.
-4. Pick the next unprocessed video in course order (the playbook in
+4. Pick the next unprocessed source in course order (the playbook in
    `docs/authoring.md` defines the ordering rule).
 5. Read `data/<course>/<module>/<stem>/raw.json` from the raw repo
    for that video; produce
-   `data/videos/<course>/<module>/<stem>.md` in the wiki repo + any
+   `data/sources/<course>/<module>/<stem>.md` in the wiki repo + any
    new concept files under `data/concepts/` + any concept updates +
    an updated `data/concept-index.json`.
 6. `git -C ~/repos/kurpatov-wiki-wiki add -A && git -C ~/repos/kurpatov-wiki-wiki
-   commit -m "video: <slug>" && git -C ~/repos/kurpatov-wiki-wiki push`.
+   commit -m "source: <slug>" && git -C ~/repos/kurpatov-wiki-wiki push`.
 7. Loop to step 4 until the session ends or the operator is tired.
 
 No automation. No daemon. No server-side pusher for the wiki layer.
@@ -239,17 +257,17 @@ the same action.
 
 ### The prompts are part of the wiki repo
 
-`kurpatov-wiki-wiki/prompts/per-video-summarize.md` and
+`kurpatov-wiki-wiki/prompts/per-source-summarize.md` and
 `kurpatov-wiki-wiki/prompts/concept-article.md` are the prompts the
 Mac-side session reads at the start of authoring, alongside the
 playbook at `kurpatov-wiki-wiki/docs/authoring.md`. They are prose,
 version-controlled, reviewed in-tree. Prompt changes ride the same
 history as content changes but are kept independently auditable via
-the `prompt:` commit-subject convention (distinct from `video:`,
+the `prompt:` commit-subject convention (distinct from `source:`,
 `concept:`, `index:`, `docs:`). If a prompt changes, a new pass
-over prior videos may be warranted; the decision to re-process is
+over prior sources may be warranted; the decision to re-process is
 explicit, not implicit, and is recorded as a `prompt-v2 pass: <slug>`
-commit on each re-processed video.
+commit on each re-processed source.
 
 The copies under `forge/kurpatov-wiki/prompts/` and
 `forge/kurpatov-wiki/docs/mac-side-wiki-authoring.md` are kept as
@@ -291,12 +309,12 @@ the Mac.
 
 ## Invariants
 
-- **Video ordering.** Videos MUST be processed in course order. The
+- **Source ordering.** Sources MUST be processed in course order. The
   source naming convention encodes this order at every level —
   modules are zero-padded (`01-intro`, `05-conflicts`), stems carry
   zero-padded numeric prefixes (`005 Conflict nature`) — so
   sorted-path order equals course order with no manual annotation.
-  Video-article frontmatter therefore does **not** carry a numeric
+  Source-article frontmatter therefore does **not** carry a numeric
   `order:` field; the slug (path) is the order. "New ideas" is only
   meaningful against the already-processed prefix.
 - **`concept-index.json` is authoritative state.** A session MUST
@@ -304,10 +322,10 @@ the Mac.
   the end of every push. Drift between the JSON and the `concepts/`
   files on disk is a bug; the session is expected to detect and fix
   it (the playbook spells out how).
-- **Concept articles are append-only.** A later video adds to a
+- **Concept articles are append-only.** A later source adds to a
   concept article; it does not rewrite prior contributions, because
   that would silently invalidate the "new ideas" determinations of
-  earlier videos. Fixes to genuinely wrong prior content are
+  earlier sources. Fixes to genuinely wrong prior content are
   explicit edits with a commit message spelling out why.
 - **No server writes to `vault/wiki/`.** The server mounts
   `${STORAGE_ROOT}/kurpatov-wiki/vault/` into the transcriber and
@@ -317,14 +335,14 @@ the Mac.
 - **Meta at the root, content under `data/`.** The wiki repo keeps
   `CLAUDE.md`, `README.md`, `prompts/`, and `docs/` at the repo
   root; `index.md`, `concept-index.json`, `concepts/`, and
-  `videos/` live under `data/`. The raw repo mirrors this: transcripts
-  are under `data/<course>/<module>/<stem>/raw.json`. A future video
+  `sources/` live under `data/`. The raw repo mirrors this: transcripts
+  are under `data/<course>/<module>/<stem>/raw.json`. A future source
   slug or concept slug must never be able to collide with a tooling
   filename.
 - **Commit subjects distinguish prompt churn from content churn.**
   Prompt edits use the `prompt:` subject; content authoring uses
-  `video:`, `concept:`, `index:`. `prompt-v2 pass: <slug>` marks a
-  re-processing of an existing video against a revised prompt. This
+  `source:`, `concept:`, `index:`. `prompt-v2 pass: <slug>` marks a
+  re-processing of an existing source against a revised prompt. This
   replaces the earlier "prompts live in a different repo" invariant
   — the separation is now semantic (via subject) rather than physical
   (via repo boundary).
@@ -345,14 +363,14 @@ the Mac.
   session uses the same model without the cost-per-run, and the
   human-in-the-loop step is actually valuable for this editorial
   task, not a bottleneck to engineer around.
-- **One article per video, no concept tier.** Rejected — loses the
+- **One article per source, no concept tier.** Rejected — loses the
   "fast reader reads only new ideas" property, which is the main
   reason to build a wiki at all instead of just reading the
   transcripts.
-- **Concept tier only, no per-video articles.** Rejected — loses
+- **Concept tier only, no per-source articles.** Rejected — loses
   the chronological record of how Kurpatov himself builds up a
-  concept across lectures. The video article's "new ideas" section
-  is also what makes the concept article's "Contributions by video"
+  concept across lectures. The source article's "new ideas" section
+  is also what makes the concept article's "Contributions by source"
   log populable without re-reading every transcript.
 
 ## Follow-ups

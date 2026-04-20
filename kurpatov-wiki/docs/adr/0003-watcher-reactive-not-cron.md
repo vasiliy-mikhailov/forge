@@ -5,7 +5,7 @@ Accepted (2026-04-19).
 
 ## Context
 I drop new mp4s unevenly — one or two at a time, batches once a day.
-Transcribing one video takes a couple of minutes on an RTX 5090. What I
+Transcribing one lecture takes a couple of minutes on an RTX 5090. What I
 want:
 
 - Automation: I drop a file, I see `raw.json` minutes later, no manual
@@ -25,7 +25,7 @@ Options:
 Option 3. A dedicated service `kurpatov-transcriber` in compose, running
 `03_watch_and_transcribe.py`. Inside:
 
-- `watchdog.observers.Observer` on `/workspace/videos/`, recursive.
+- `watchdog.observers.Observer` on `/workspace/sources/`, recursive.
 - `StabilityTracker` waits until an mp4 file's size+mtime stop changing
   for `--stable-sec` seconds (default 10), then pushes it into the
   processing queue.
@@ -47,7 +47,7 @@ Option 3. A dedicated service `kurpatov-transcriber` in compose, running
 ## Invariants
 - Container restart resets in-memory state → if at restart some mp4 was
   "stable but not yet taken", the next start still picks it up (it scans
-  `videos/` and diffs against `vault/raw/`). Same behavior as
+  `sources/` and diffs against `vault/raw/`). Same behavior as
   `02_transcribe_incremental.py`.
 - No double-processing: the `raw.json` existence check is the first guard;
   the `.tmp` directory makes the write atomic.
@@ -57,7 +57,7 @@ Option 3. A dedicated service `kurpatov-transcriber` in compose, running
   never stall a transcription and vice versa.
 
 ## Alternatives considered
-- **cron**: no "immediacy", and if a video lands seconds after the tick
+- **cron**: no "immediacy", and if a source file lands seconds after the tick
   we wait a full cycle. Plus cron can start on a file that's still being
   written.
 - **Model always loaded**: ~4 GB of VRAM unavailable for parallel

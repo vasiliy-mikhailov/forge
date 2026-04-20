@@ -22,7 +22,7 @@ services:
     volumes:
       - ./notebooks:/workspace/notebooks
       - ${STORAGE_ROOT}/models:/workspace/models
-      - ${STORAGE_ROOT}/kurpatov-wiki/videos:/workspace/videos
+      - ${STORAGE_ROOT}/kurpatov-wiki/sources:/workspace/sources
       - ${STORAGE_ROOT}/kurpatov-wiki/vault:/workspace/vault
       - ${STORAGE_ROOT}/kurpatov-wiki/checkpoints:/workspace/checkpoints
     expose:
@@ -49,7 +49,7 @@ services:
     volumes:
       - ./notebooks:/workspace/notebooks
       - ${STORAGE_ROOT}/models:/workspace/models
-      - ${STORAGE_ROOT}/kurpatov-wiki/videos:/workspace/videos
+      - ${STORAGE_ROOT}/kurpatov-wiki/sources:/workspace/sources
       - ${STORAGE_ROOT}/kurpatov-wiki/vault:/workspace/vault
       - ${STORAGE_ROOT}/kurpatov-wiki/checkpoints:/workspace/checkpoints
     shm_size: "4gb"

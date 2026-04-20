@@ -1,17 +1,25 @@
 # kurpatov-wiki — SPEC
 
 ## Purpose
-Automatically build a structured "wiki" from Kurpatov's video lectures
-("Karpathy-style LLM notes" methodology). Inputs are `.mp4` files from his
-courses; outputs are first a transcript, then per-video summaries / notes,
+Automatically build a structured "wiki" from Kurpatov's lectures
+("Karpathy-style LLM notes" methodology). Inputs are source media files
+(video or audio — typically `.mp4`, but also `.mp3` and friends) from his
+courses; outputs are first a transcript, then per-source summaries / notes,
 then an assembled wiki.
 
 The problem is solved in layers (see ADR 0001 "two-layer vault"):
 
 ```
-videos/     → vault/raw/data/  → kurpatov-wiki-wiki/data/
-(.mp4)        (raw.json)          (markdown, Mac-authored)
+sources/    → vault/raw/data/  → kurpatov-wiki-wiki/data/
+(.mp4,        (raw.json)          (markdown, Mac-authored)
+ .mp3, …)
 ```
+
+Historical note: the input directory used to be `videos/` and the pipeline
+accepted only `.mp4`. The scope has since broadened to any Whisper-ingestible
+media (via ffmpeg). The allow-list of suffixes lives as `MEDIA_EXTENSIONS`
+in `notebooks/02_transcribe_incremental.py` and
+`notebooks/03_watch_and_transcribe.py`; keep them in sync.
 
 Both published repos use a `data/` subtree so meta files
 (`CLAUDE.md`, `README.md`, etc.) don't share a namespace with
@@ -22,8 +30,9 @@ Today the first two steps are implemented: scanning and transcription. The
 LLM layer and wiki assembly are in progress.
 
 ## Non-goals
-- Not multimodal — video content (frames, gestures) is not analyzed.
-  Audio only.
+- Not multimodal — for video inputs only the audio track is used; frames
+  and gestures are not analyzed. Audio-only inputs pass through the same
+  path.
 - Not publishing. The wiki will end up as markdown + navigation; hosting
   and rendering are out of scope for this service.
 - Not real-time. Latency target is "a couple of minutes after the file is
@@ -42,8 +51,9 @@ state only through the vault filesystem — no code, no network RPC.
    (CUDA base, ~20 GB).
 
 2. **`kurpatov-transcriber`** — headless daemon running
-   `03_watch_and_transcribe.py`. Reactively watches `videos/` and
-   transcribes new files as soon as they stabilize. Model is lazy-loaded
+   `03_watch_and_transcribe.py`. Reactively watches `sources/` and
+   transcribes new media files (any suffix in MEDIA_EXTENSIONS) as soon as
+   they stabilize. Model is lazy-loaded
    on the first task and unloaded after N seconds of idle (see ADR 0003).
    Same image, same network, same GPU as jupyter. Knows nothing about
    git.
@@ -54,7 +64,7 @@ state only through the vault filesystem — no code, no network RPC.
    tree, pushing new transcripts to the private `kurpatov-wiki-raw`
    GitHub repo (see ADR 0005). No GPU, no network exposure other
    than outbound SSH to GitHub. Knows nothing about whisper or
-   videos. Runs a dedicated lean image
+   source media. Runs a dedicated lean image
    `forge-kurpatov-wiki-pusher:latest` (`python:3.12-slim` + git +
    openssh-client + watchdog, ~200 MB) — see ADR 0006. Built from
    `kurpatov-wiki/Dockerfile.pusher`.
@@ -63,7 +73,7 @@ Volume access by service:
 
 | Mount inside container            | jupyter | transcriber | raw-pusher |
 | --------------------------------- | :-----: | :---------: | :--------: |
-| `/workspace/videos/` (ro-ish)     |   rw    |     rw      |     —      |
+| `/workspace/sources/` (ro-ish)    |   rw    |     rw      |     —      |
 | `/workspace/vault/`               |   rw    |     rw      |     rw     |
 | `/workspace/models/` (HF cache)   |   rw    |     rw      |     —      |
 | `/workspace/checkpoints/`         |   rw    |     rw      |     —      |
@@ -71,7 +81,7 @@ Volume access by service:
 
 Host paths:
 
-- `${STORAGE_ROOT}/kurpatov-wiki/videos/` — input .mp4 tree.
+- `${STORAGE_ROOT}/kurpatov-wiki/sources/` — input source-media tree (video + audio).
 - `${STORAGE_ROOT}/kurpatov-wiki/vault/` — vault root. Contains
   `raw/` (a git working tree for the `kurpatov-wiki-raw` repo; its
   content lives under `raw/data/<course>/<module>/<stem>/`). The
@@ -84,18 +94,22 @@ Host paths:
 
 ## Data contracts
 
-### Inputs: `videos/`
+### Inputs: `sources/`
 Arbitrary directory hierarchy. Typical:
 
 ```
-videos/
+sources/
 └── <course>/
     └── <module>/
-        └── <lecture-name>.mp4
+        └── <lecture-name>.<ext>      # .mp4 | .mp3 | .mkv | .m4a | …
 ```
 
 Any depth of nesting is allowed — both the watcher and the incremental
-script mirror the structure (see ADR 0004).
+script mirror the structure (see ADR 0004). The set of accepted suffixes
+is the `MEDIA_EXTENSIONS` allow-list (video: `mp4/mkv/webm/mov/m4v/avi`;
+audio: `mp3/m4a/wav/ogg/flac/opus/aac`). faster-whisper routes audio
+through ffmpeg internally, so any format ffmpeg can decode works; we only
+gate which extensions the watcher picks up.
 
 ### RAW layer: `vault/raw/data/<same dirs>/<stem>/raw.json`
 Stable contract (see ADR 0002 "JSON-only, single file"):
@@ -106,7 +120,7 @@ Stable contract (see ADR 0002 "JSON-only, single file"):
     "language": "ru",
     "duration": 3210.12,
     "language_probability": 0.98,
-    "source_path": "/workspace/videos/Psychologist-consultant/.../005 ... .mp4",
+    "source_path": "/workspace/sources/Psychologist-consultant/.../005 ... .mp4",
     "model": "large-v3",
     "compute_type": "float16",
     "beam_size": 5,
@@ -129,7 +143,7 @@ Stable contract (see ADR 0002 "JSON-only, single file"):
 
 - `info.source_path` — absolute path inside the container. Needed for:
   migration (`migrate_vault_hierarchy.py`), and for binding wiki pages back
-  to videos later.
+  to their source media later.
 - `info.diarized` — flag that `segments[].speaker` is populated. Currently
   always `false`; a later pyannote step will set it.
 - Atomicity: the file is written to `<stem>.tmp/raw.json`, then the
@@ -154,22 +168,22 @@ kurpatov-wiki-wiki/               (repo root)
 ├── prompts/                      authoring prompts
 ├── docs/                         design.md + authoring.md
 └── data/                         all content lives here
-    ├── index.md                  course/module/video order + A-Z concept index
+    ├── index.md                  course/module/source order + A-Z concept index
     ├── concept-index.json        authoritative authoring state (see below)
     ├── concepts/
     │   ├── _template.md
     │   ├── <concept-slug>.md     one per psychological concept
     │   └── ...
-    └── videos/
+    └── sources/
         ├── _template.md
-        └── <course>/<module>/<stem>.md   one per source video
+        └── <course>/<module>/<stem>.md   one per source (video or audio)
 ```
 
 Two article types (see ADR 0007):
 
-- **Video article** — three required sections:
+- **Source article** — three required sections:
   `## TL;DR` (1-2 sentences), `## New ideas` (ideas first introduced
-  in this video, not in any previously-processed video — the
+  in this source, not in any previously-processed source — the
   fast-reader's path), `## All ideas` (full ideational content
   grouped by concept, with cross-links to `concepts/`).
   Frontmatter carries `slug`, `course`, `module`, `source_raw`,
@@ -181,13 +195,13 @@ Two article types (see ADR 0007):
 
 - **Concept article** — an append-only article per psychological
   concept. A short top-of-article definition, followed by a
-  "Contributions by video" log where each entry names a video slug
-  and summarizes what that video adds to the concept. Never
+  "Contributions by source" log where each entry names a source slug
+  and summarizes what that source adds to the concept. Never
   rewritten destructively; fixes are explicit edits with reasons.
 
 `data/concept-index.json` is the authoring state file (ADR 0007 →
 Invariants). Every Mac-side session reads it at start, uses it to
-decide what's "new" in the next video, and commits the updated
+decide what's "new" in the next source, and commits the updated
 version at the end. Drift between this file and the `data/concepts/`
 directory is a bug; the wiki-repo playbook at
 `kurpatov-wiki-wiki/docs/authoring.md` spells out how to detect
@@ -214,10 +228,10 @@ docs/) lives at the root. See ADR 0007.
 
 ## Invariants
 
-1. **Transcription is idempotent.** If `raw.json` for a video exists and is
-   not corrupt, both scripts (02 and 03) skip it.
+1. **Transcription is idempotent.** If `raw.json` for a source exists and
+   is not corrupt, both scripts (02 and 03) skip it.
 2. **Hierarchy is mirrored under `data/`.**
-   `out_dir = vault/raw/data / video.relative_to(videos).with_suffix("")`.
+   `out_dir = vault/raw/data / source.relative_to(sources).with_suffix("")`.
    The old flat layout is considered incompatible; migrate with
    `migrate_vault_hierarchy.py` (see ADR 0004). The `data/` prefix
    is per ADR 0005's data/content-split amendment.
@@ -225,9 +239,9 @@ docs/) lives at the root. See ADR 0007.
    one GPU (`KURPATOV_WIKI_GPU_UUID`), but the transcriber unloads its
    model while idle so jupyter can use the memory for experiments
    (see ADR 0003).
-4. **File stability before processing.** The watcher waits until the mp4's
-   size and mtime stop changing for `--stable-sec` seconds (default 10).
-   This protects against processing a half-copied file from
+4. **File stability before processing.** The watcher waits until the
+   source file's size and mtime stop changing for `--stable-sec` seconds
+   (default 10). This protects against processing a half-copied file from
    rsync/scp/cp.
 5. **Model format is fixed.** `large-v3`, `float16`, `beam=5`,
    `language=ru`, word timestamps, VAD with `min_silence_duration_ms=500`.
@@ -241,7 +255,7 @@ Production for the RAW layer. Running since April 2026.
 Done:
 - Three roles in compose (jupyter + transcriber + raw-pusher).
 - Reactive watcher with lazy-load / idle-unload of the model.
-- Full mirror of the videos → vault/raw/data hierarchy.
+- Full mirror of the sources → vault/raw/data hierarchy.
 - Migration script for the flat layout (ADR 0004); subsequent
   data/-subtree migration via the server-side script documented in
   ADR 0005's amendment.
@@ -252,7 +266,7 @@ Done:
 Not yet:
 - Diarization (pyannote). Placeholder in the format is there; the HF token
   hasn't been obtained.
-- LLM summary per video (design: ADR 0007; content: Mac-side Claude
+- LLM summary per source (design: ADR 0007; content: Mac-side Claude
   Desktop sessions, pending operator time).
 - Concept articles populated beyond scaffolding.
 
@@ -270,9 +284,10 @@ Not yet:
 
 ## Running
 ```bash
-# Drop videos in:
-mkdir -p ${STORAGE_ROOT}/kurpatov-wiki/videos/Psychologist-consultant/05-conflicts
-cp ~/downloads/*.mp4 ${STORAGE_ROOT}/kurpatov-wiki/videos/Psychologist-consultant/05-conflicts/
+# Drop source media in (any MEDIA_EXTENSIONS suffix, video or audio):
+mkdir -p ${STORAGE_ROOT}/kurpatov-wiki/sources/Psychologist-consultant/05-conflicts
+cp ~/downloads/*.mp4 ${STORAGE_ROOT}/kurpatov-wiki/sources/Psychologist-consultant/05-conflicts/
+# or .mp3 / .m4a / … — same path.
 
 # Bring up (from the forge root):
 make kurpatov-wiki
@@ -284,7 +299,7 @@ docker exec -t jupyter-kurpatov-wiki \
 
 See also: `docs/adr/0001` through `0007`,
 `docs/mac-side-wiki-authoring.md` (wiki-layer playbook),
-`prompts/per-video-summarize.md`, `prompts/concept-article.md`,
+`prompts/per-source-summarize.md`, `prompts/concept-article.md`,
 `notebooks/02_transcribe_incremental.py`,
 `notebooks/03_watch_and_transcribe.py`,
 `notebooks/04_watch_raw_and_push.py`,

@@ -11,7 +11,7 @@ Responsibility (single, by design):
 
 Deliberately decoupled from the transcriber:
   - The transcriber (03_watch_and_transcribe.py) knows nothing about git.
-  - This daemon knows nothing about whisper or videos.
+  - This daemon knows nothing about whisper or source media.
   - They share only the vault filesystem via a Docker volume.
 
 Repo naming:

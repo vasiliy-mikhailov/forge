@@ -202,7 +202,7 @@ enough (caddy could be 200ing a stale cache or a misrouted backend).
 
 ## Section 6 — reactive watchers
 
-### transcriber has inotify on /workspace/videos
+### transcriber has inotify on /workspace/sources
 
 **Goal.** `kurpatov-transcriber` has actually entered its watchdog
 loop. A container that booted but errored before `observer.schedule()`
@@ -211,7 +211,7 @@ process hasn't exited yet.
 
 **Signals.**
 - `docker logs --since=24h kurpatov-transcriber 2>&1` contains the
-  string `inotify on /workspace/videos` at least once.
+  string `inotify on /workspace/sources` at least once.
 
 **Edge cases.**
 - **Large log + `grep -q` + `pipefail` = SIGPIPE false-fail.** If the

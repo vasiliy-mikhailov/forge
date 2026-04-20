@@ -6,25 +6,25 @@
 > matching ADR 0007's amended wiki layout. The copy here documents
 > the prompt shape as accepted with ADR 0007.
 
-Used when a video introduces a concept that is not yet in the wiki —
+Used when a source introduces a concept that is not yet in the wiki —
 no existing `data/concepts/<slug>.md`, no entry in
 `data/concept-index.json`'s `concepts` dict. This prompt produces the
-seed article. Every later video that touches the concept **appends**
+seed article. Every later source that touches the concept **appends**
 to the existing article; it does not re-run this prompt.
 
 See [ADR 0007](../docs/adr/0007-wiki-layer-mac-side.md) and
-[per-video-summarize.md](per-video-summarize.md) for surrounding
+[per-source-summarize.md](per-source-summarize.md) for surrounding
 context.
 
 ## Inputs you receive
 
 1. The concept slug (English kebab-case, e.g. `defense-mechanism`).
-2. The video slug that introduces it, e.g.
+2. The source slug that introduces it, e.g.
    `Psychologist-consultant/05-conflicts/003-defenses`.
-3. The relevant excerpts from that video's `raw.json` (not the whole
+3. The relevant excerpts from that source's `raw.json` (not the whole
    transcript — the segments where the concept is actually
    discussed).
-4. The already-drafted "New ideas" section of the video article, so
+4. The already-drafted "New ideas" section of the source article, so
    the concept article can align with it.
 
 ## Output
@@ -48,26 +48,26 @@ touched_by:
 One or two paragraphs. What is this concept, in plain terms, as
 Kurpatov uses it? This is the top-of-article piece a reader hits
 first, so it must stand on its own without requiring a click to
-any video article.
+any source article.
 
 If Kurpatov's definition differs from mainstream usage (textbook
 psychology, neuroscience, etc.), note the divergence here in a
 short paragraph labeled **How Kurpatov uses this**. Do not try to
 reconcile or adjudicate — describe the difference.
 
-## Contributions by video
+## Contributions by source
 
-Ordered log. Each entry names one video and summarizes what that
-video adds to this concept. The **first entry is this one** —
+Ordered log. Each entry names one source and summarizes what that
+source adds to this concept. The **first entry is this one** —
 produced by this prompt. All later entries are produced by
-per-video-summarize.md and appended.
+per-source-summarize.md and appended.
 
 ### <course>/<module>/<stem>
 
-- What this video says about the concept, in bullets.
-- Cross-links back to the video article:
-  `See [<short title>](../videos/<course>/<module>/<stem>.md).`
-- Timestamps `[mm:ss]` from that video's raw.json when they help a
+- What this source says about the concept, in bullets.
+- Cross-links back to the source article:
+  `See [<short title>](../sources/<course>/<module>/<stem>.md).`
+- Timestamps `[mm:ss]` from that source's raw.json when they help a
   reader locate the source statement.
 
 ## Related concepts
@@ -97,7 +97,7 @@ is commonly confused with. One sentence each.
   later is costly. Pick carefully on first introduction; ask the
   operator if unsure.
 - **Append-only going forward.** After this prompt seeds the file,
-  later videos add `### <slug>` entries below. They do not edit
+  later sources add `### <slug>` entries below. They do not edit
   the `## Definition` or earlier contributions without an explicit
   correction note in the commit message.
 
@@ -107,6 +107,6 @@ is commonly confused with. One sentence each.
   Wikipedia.
 - Import standard-psychology definitions wholesale. If Kurpatov
   hasn't said it, the wiki doesn't assert it as his view.
-- Pre-populate the "Contributions by video" log with future
-  guesses. Only the video that is currently being processed appears
+- Pre-populate the "Contributions by source" log with future
+  guesses. Only the source that is currently being processed appears
   there.

@@ -1,11 +1,17 @@
 """
 Transcription daemon for the Kurpatov-wiki vault.
 
-Watches /workspace/videos recursively for new .mp4 files and transcribes them
-into /workspace/vault/raw/data/<course>/<module>/<stem>/raw.json, matching
-the schema of 02_transcribe_incremental.py. The `data/` prefix separates
-content from future repo-root meta files (CLAUDE.md, README.md, etc.) in
-the kurpatov-wiki-raw repo; see ADR 0005's data/content-split amendment.
+Watches /workspace/sources recursively for new media files (video or audio)
+and transcribes them into /workspace/vault/raw/data/<course>/<module>/
+<stem>/raw.json, matching the schema of 02_transcribe_incremental.py.
+The `data/` prefix separates content from future repo-root meta files
+(CLAUDE.md, README.md, etc.) in the kurpatov-wiki-raw repo; see ADR
+0005's data/content-split amendment.
+
+Supported inputs are any audio/video format faster-whisper (via ffmpeg)
+can decode — see MEDIA_EXTENSIONS below. The directory name used to be
+"videos/" but was generalized to "sources/" once audio-only lectures
+and other source materials entered scope.
 
 Design notes:
   - inotify via watchdog (reactive; not cron polling).
@@ -15,9 +21,9 @@ Design notes:
   - The Whisper model is lazy-loaded: brought to VRAM only when the queue has
     work, and evicted after --idle-unload-sec seconds of idleness. Between
     back-to-back files the model stays warm to avoid thrashing.
-  - Initial scan at startup enqueues every .mp4 without a matching raw.json,
-    so the daemon also acts as a "catch-up" for anything dropped in while it
-    was down.
+  - Initial scan at startup enqueues every media file without a matching
+    raw.json, so the daemon also acts as a "catch-up" for anything dropped
+    in while it was down.
   - Atomic writes: result goes into <stem>.tmp/raw.json, then
     <stem>.tmp → <stem> rename.
   - Graceful shutdown on SIGTERM/SIGINT: current file finishes, then exit.
@@ -47,6 +53,28 @@ from watchdog.observers import Observer
 
 
 log = logging.getLogger("watcher")
+
+
+# ---------------------------------------------------------------------------
+# Supported media file extensions.
+#
+# faster-whisper decodes via ffmpeg, so anything ffmpeg can read is fair
+# game. We intentionally allow-list formats rather than rely on a single
+# glob: a "sources" directory may also contain non-media artefacts
+# (README files, transcripts, supporting PDFs) that must be ignored.
+# ---------------------------------------------------------------------------
+
+MEDIA_EXTENSIONS: frozenset[str] = frozenset({
+    # Video
+    ".mp4", ".mkv", ".webm", ".mov", ".m4v", ".avi",
+    # Audio
+    ".mp3", ".m4a", ".wav", ".ogg", ".flac", ".opus", ".aac",
+})
+
+
+def is_media(path: Path) -> bool:
+    """True if the suffix is one we'll feed to Whisper."""
+    return path.suffix.lower() in MEDIA_EXTENSIONS
 
 
 # ---------------------------------------------------------------------------
@@ -81,29 +109,30 @@ def clean_tmp_dir(tmp_dir: Path) -> None:
     tmp_dir.rmdir()
 
 
-def out_dir_for(video: Path, out_root: Path, videos_root: Path) -> Path:
-    """vault/raw/data/ mirrors the full videos/<...>/<name>.mp4 → <...>/<name>/raw.json.
+def out_dir_for(source: Path, out_root: Path, sources_root: Path) -> Path:
+    """vault/raw/data/ mirrors the full sources/<...>/<name>.<ext>
+    → <...>/<name>/raw.json.
 
     `out_root` is expected to be `/workspace/vault/raw/data/` (see --out
     default below); the `data/` segment is what separates transcript
     content from the repo's meta root in kurpatov-wiki-raw.
     """
-    return out_root / video.relative_to(videos_root).with_suffix("")
+    return out_root / source.relative_to(sources_root).with_suffix("")
 
 
 def transcribe_one(
     model: WhisperModel,
-    video: Path,
+    source: Path,
     out_root: Path,
-    videos_root: Path,
+    sources_root: Path,
     *,
     language: str,
     beam: int,
     model_name: str,
     compute: str,
 ) -> None:
-    stem = video.stem
-    out_dir = out_dir_for(video, out_root, videos_root)
+    stem = source.stem
+    out_dir = out_dir_for(source, out_root, sources_root)
     tmp_dir = out_dir.parent / f"{out_dir.name}.tmp"
 
     if (out_dir / "raw.json").exists():
@@ -115,14 +144,14 @@ def transcribe_one(
     tmp_dir.mkdir(parents=True)
 
     try:
-        duration = probe_duration(video)
+        duration = probe_duration(source)
     except Exception:
         duration = 0.0
-    log.info("[trans] %s (%.0fs audio)", video.name, duration)
+    log.info("[trans] %s (%.0fs audio)", source.name, duration)
 
     t0 = time.time()
     segments, info = model.transcribe(
-        str(video),
+        str(source),
         language=language,
         beam_size=beam,
         vad_filter=True,
@@ -150,7 +179,7 @@ def transcribe_one(
             "language": info.language,
             "duration": info.duration,
             "language_probability": info.language_probability,
-            "source_path": str(video),
+            "source_path": str(source),
             "model": model_name,
             "compute_type": compute,
             "beam_size": beam,
@@ -184,12 +213,12 @@ class StabilityTracker:
     def __init__(
         self,
         out_root: Path,
-        videos_root: Path,
+        sources_root: Path,
         stable_sec: float,
         enqueue: Callable[[Path], None],
     ):
         self.out_root = out_root
-        self.videos_root = videos_root
+        self.sources_root = sources_root
         self.stable_sec = stable_sec
         self.enqueue = enqueue
         self._lock = threading.Lock()
@@ -198,14 +227,14 @@ class StabilityTracker:
 
     def _raw_json_for(self, path: Path) -> Path:
         try:
-            rel = path.relative_to(self.videos_root).with_suffix("")
+            rel = path.relative_to(self.sources_root).with_suffix("")
         except ValueError:
-            # path is outside videos_root — not our file
+            # path is outside sources_root — not our file
             return self.out_root / "__outside__" / "raw.json"
         return self.out_root / rel / "raw.json"
 
     def touch(self, path: Path) -> None:
-        if path.suffix.lower() != ".mp4":
+        if not is_media(path):
             return
         if self._raw_json_for(path).exists():
             return
@@ -268,7 +297,7 @@ class WatcherHandler(FileSystemEventHandler):
 class Daemon:
     def __init__(self, args):
         self.args = args
-        self.videos_root = Path(args.videos)
+        self.sources_root = Path(args.sources)
         self.out_root = Path(args.out)
         self.out_root.mkdir(parents=True, exist_ok=True)
 
@@ -282,7 +311,7 @@ class Daemon:
         self.shutdown = threading.Event()
         self.tracker = StabilityTracker(
             self.out_root,
-            self.videos_root,
+            self.sources_root,
             args.stable_sec,
             self._enqueue,
         )
@@ -356,7 +385,7 @@ class Daemon:
                     self.model,
                     path,
                     self.out_root,
-                    self.videos_root,
+                    self.sources_root,
                     language=self.args.language,
                     beam=self.args.beam,
                     model_name=self.args.model,
@@ -373,18 +402,21 @@ class Daemon:
     # -- initial scan --
 
     def _initial_scan(self) -> None:
-        videos = sorted(self.videos_root.rglob(self.args.pattern))
+        all_media = sorted(
+            p for p in self.sources_root.rglob("*")
+            if p.is_file() and is_media(p)
+        )
         pending = [
-            v for v in videos
-            if not (out_dir_for(v, self.out_root, self.videos_root)
+            p for p in all_media
+            if not (out_dir_for(p, self.out_root, self.sources_root)
                     / "raw.json").exists()
         ]
         log.info(
             "[scan ] found=%d  done=%d  pending=%d",
-            len(videos), len(videos) - len(pending), len(pending),
+            len(all_media), len(all_media) - len(pending), len(pending),
         )
-        for v in pending:
-            self.tracker.touch(v)
+        for p in pending:
+            self.tracker.touch(p)
 
     # -- run --
 
@@ -399,11 +431,11 @@ class Daemon:
         observer = Observer()
         observer.schedule(
             WatcherHandler(self.tracker),
-            str(self.videos_root),
+            str(self.sources_root),
             recursive=True,
         )
         observer.start()
-        log.info("[watch] inotify on %s (recursive)", self.videos_root)
+        log.info("[watch] inotify on %s (recursive)", self.sources_root)
 
         worker_t = threading.Thread(
             target=self._worker, name="worker", daemon=True,
@@ -437,7 +469,15 @@ class Daemon:
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--videos", default="/workspace/videos")
+    ap.add_argument(
+        "--sources",
+        default="/workspace/sources",
+        help=(
+            "Root directory holding source media (video/audio). Watched "
+            "recursively. Was historically named --videos; renamed when "
+            "audio-only lectures and other source materials entered scope."
+        ),
+    )
     ap.add_argument(
         "--out",
         default="/workspace/vault/raw/data",
@@ -449,7 +489,6 @@ def main() -> None:
             "amendment."
         ),
     )
-    ap.add_argument("--pattern", default="*.mp4")
     ap.add_argument("--model", default="large-v3")
     ap.add_argument("--compute", default="float16",
                     choices=["float16", "bfloat16", "int8_float16"])

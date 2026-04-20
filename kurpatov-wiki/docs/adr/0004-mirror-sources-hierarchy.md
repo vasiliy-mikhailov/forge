@@ -1,4 +1,4 @@
-# ADR 0004 — vault/raw/ fully mirrors the videos/ hierarchy
+# ADR 0004 — vault/raw/ fully mirrors the sources/ hierarchy
 
 ## Status
 Accepted (2026-04-19). Supersedes the original flat layout; transition was
@@ -16,12 +16,23 @@ is unchanged. See [ADR 0005](0005-split-transcribe-and-push.md)
 `--vault` / `--raw` path split that made the move possible without
 relocating `.git/`.
 
+Amended (2026-04-20 — videos/ → sources/ rename). The input
+directory was renamed from `videos/` to `sources/` once the pipeline
+widened its scope to include non-video media (`.mp3`, `.m4a`, ...).
+This ADR uses the new name throughout; wherever the text below says
+`sources/`, the corresponding pre-rename path was `videos/`. The
+mirror invariant (output path = input path with the root swapped
+and the suffix stripped) is unchanged. The accepted-suffix
+allow-list lives as `MEDIA_EXTENSIONS` in
+`kurpatov-wiki/notebooks/02_transcribe_incremental.py` and
+`03_watch_and_transcribe.py`.
+
 ## Context
 Originally the transcription script stored `raw.json` in a **flat**
 layout:
 
 ```
-videos/Psychologist-consultant/05-conflicts/005 Conflict nature.mp4
+sources/Psychologist-consultant/05-conflicts/005 Conflict nature.mp4
 → vault/raw/005 Conflict nature/raw.json
 ```
 
@@ -34,16 +45,16 @@ Problems:
   otherwise there's no natural navigation.
 
 ## Decision
-`vault/raw/` **fully mirrors** the `videos/` hierarchy. The output path:
+`vault/raw/` **fully mirrors** the `sources/` hierarchy. The output path:
 
 ```python
-out_dir = vault_raw_root / video.relative_to(videos_root).with_suffix("")
+out_dir = vault_raw_root / source.relative_to(sources_root).with_suffix("")
 ```
 
 For the example above:
 
 ```
-videos/Psychologist-consultant/05-conflicts/005 Conflict nature.mp4
+sources/Psychologist-consultant/05-conflicts/005 Conflict nature.mp4
 → vault/raw/Psychologist-consultant/05-conflicts/005 Conflict nature/raw.json
 ```
 

@@ -1,8 +1,8 @@
-# Per-video summarization prompt
+# Per-source summarization prompt
 
 > **Design-trail mirror.** The authoritative working copy of this
 > prompt lives in the wiki repo at
-> `kurpatov-wiki-wiki/prompts/per-video-summarize.md`. That version
+> `kurpatov-wiki-wiki/prompts/per-source-summarize.md`. That version
 > is what authoring sessions actually read; it also uses `data/`-
 > prefixed paths that match the wiki repo's post-migration layout
 > (ADR 0007 amendment). The copy here is retained as the design
@@ -10,46 +10,46 @@
 > prompt, open the wiki repo.
 
 You are writing a wiki article for one Kurpatov psychology lecture, in
-the context of a growing two-tier wiki (per-video articles +
+the context of a growing two-tier wiki (per-source articles +
 per-concept articles). Your output feeds a reader who wants to read
-**only the delta** — what this video adds to what they already know
-from prior videos. See [ADR 0007](../docs/adr/0007-wiki-layer-mac-side.md)
+**only the delta** — what this source adds to what they already know
+from prior sources. See [ADR 0007](../docs/adr/0007-wiki-layer-mac-side.md)
 for the full structural rationale.
 
 ## Inputs you receive
 
-1. `raw.json` for one video. Segments are faster-whisper output in
+1. `raw.json` for one source. Segments are faster-whisper output in
    Russian: `segments[].start`, `segments[].end`, `segments[].text`,
    optionally `words[]`. `info.source_path` names the original file.
 2. `concept-index.json` — the authoring state. The `concepts` dict
    defines what concepts are already known; anything not in it is a
-   candidate for a new concept in this video. The `processed_videos`
-   list defines the reading order so far (this video comes after all
-   of them). The list order is the course order because videos are
+   candidate for a new concept in this source. The `processed_sources`
+   list defines the reading order so far (this source comes after all
+   of them). The list order is the course order because sources are
    processed in sorted-path order and the raw tree's filenames
    carry zero-padded numerical prefixes at every level — see
    "Ordering" below.
-3. The slug for this video (derived from its path under the raw
+3. The slug for this source (derived from its path under the raw
    tree), e.g. `Psychologist-consultant/05-conflicts/005 Conflict nature`.
 4. The existing `concepts/<slug>.md` files for any concept this
-   video touches, so you can append rather than duplicate.
+   source touches, so you can append rather than duplicate.
 
 ## Outputs you produce
 
-Per video, in one authoring pass:
+Per source, in one authoring pass:
 
-1. **`videos/<slug>.md`** — the video article. Required shape below.
+1. **`sources/<slug>.md`** — the source article. Required shape below.
 2. **Zero or more new `concepts/<concept-slug>.md` files** — for each
-   concept this video genuinely introduces for the first time.
+   concept this source genuinely introduces for the first time.
 3. **Zero or more edits to existing `concepts/<concept-slug>.md`** —
-   appending a new "Contributions by video" entry. Never rewrite
+   appending a new "Contributions by source" entry. Never rewrite
    earlier entries; add below them.
-4. **Updated `concept-index.json`** — append this video's entry to
-   `processed_videos`, add any new concepts to `concepts`, and update
-   `touched_by` for concepts this video extends.
+4. **Updated `concept-index.json`** — append this source's entry to
+   `processed_sources`, add any new concepts to `concepts`, and update
+   `touched_by` for concepts this source extends.
 
 You commit and push the wiki repo yourself, in the same session, via
-your Bash tool: `git add -A && git commit -m "video: <slug>" && git
+your Bash tool: `git add -A && git commit -m "source: <slug>" && git
 push`. Do not hand this off to the operator — you are the pusher for
 this repo, just like the server-side `kurpatov-wiki-raw-pusher` is
 the pusher for the raw repo. Session playbook:
@@ -66,10 +66,10 @@ the ordering at every level:
   (`001 Title`, `005 Conflict nature`, ...).
 
 Sorted-path order therefore equals course order, with no manual
-annotation. The video article's frontmatter does **not** carry a
+annotation. The source article's frontmatter does **not** carry a
 numeric `order:` field; the slug (path) is the order.
 
-## Video article shape
+## Source article shape
 
 ```markdown
 ---
@@ -89,12 +89,12 @@ concepts_introduced: [<concept-slug>, ...]
 ## TL;DR
 
 One or two sentences. What is this lecture fundamentally about?
-Assume the reader has read the prior videos in `processed_videos`.
+Assume the reader has read the prior sources in `processed_sources`.
 
 ## New ideas
 
-The claims in this video that do **not** appear in any earlier
-`processed_videos`. This is the fast-track section — a reader who
+The claims in this source that do **not** appear in any earlier
+`processed_sources`. This is the fast-track section — a reader who
 has followed the course reads only this and clicks through to
 `concepts/` for anything unfamiliar.
 
@@ -109,7 +109,7 @@ has followed the course reads only this and clicks through to
   source.
 
 If there is genuinely nothing new (e.g. a recap lecture), write
-exactly: `This video restates prior material; see [TL;DR](#tldr).`
+exactly: `This source restates prior material; see [TL;DR](#tldr).`
 Do not invent novelty.
 
 ## All ideas
@@ -121,7 +121,7 @@ course in order.
 
 ### <Concept-slug-or-thematic-cluster>
 
-- Ideas the video states about this concept, timestamped where
+- Ideas the source states about this concept, timestamped where
   helpful. Mark which of these are the "new" ones (matching the
   `## New ideas` list above) so the two sections stay in sync.
 
@@ -136,8 +136,8 @@ load-bearing. Skip the section entirely if there's nothing to say.
 
 ## Rules for what counts as "new"
 
-- **New idea** = a proposition this video states that cannot be
-  supported by reading only the video articles in `processed_videos`.
+- **New idea** = a proposition this source states that cannot be
+  supported by reading only the source articles in `processed_sources`.
   Phrasing differences do not count; conceptual differences do.
 - **New concept** = a concept that has no entry in
   `concept-index.json`'s `concepts` dict. Be conservative: if the
@@ -150,13 +150,13 @@ load-bearing. Skip the section entirely if there's nothing to say.
 
 ## Rules for concept articles
 
-- **Append-only.** A later video's contribution is appended to the
-  `## Contributions by video` log. Earlier contributions are not
+- **Append-only.** A later source's contribution is appended to the
+  `## Contributions by source` log. Earlier contributions are not
   edited, because that would silently invalidate the "new ideas"
-  determination of the earlier video.
+  determination of the earlier source.
 - **If a prior contribution is wrong** — flagged by the operator
   during this session — edit it explicitly, note the correction in
-  the commit message, and consider whether the video that made the
+  the commit message, and consider whether the source that made the
   wrong claim needs a `## Notes` section amended. Do not silently
   rewrite.
 - **A brand-new concept article** follows the template in

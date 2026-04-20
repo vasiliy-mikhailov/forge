@@ -41,7 +41,7 @@ That turned out to be wrong for two reasons:
    network / DNS / SSH key issue at git-push time should not mark a
    transcription as failed, tie up GPU memory waiting on a remote, or
    leak git config into a notebook image whose primary job is whisper.
-2. **Bursty writes vs. commit cadence.** A single video produces one
+2. **Bursty writes vs. commit cadence.** A single source produces one
    `raw.json`, but a batch upload produces N of them over a few minutes.
    One commit per file is noisy; batching by "filesystem has been quiet
    for X seconds" is the right cadence, and that belongs in a watcher,
@@ -70,7 +70,7 @@ single-responsibility services sharing only the vault filesystem via a
 Docker volume:
 
 ```
-kurpatov-transcriber         watches  /workspace/videos/
+kurpatov-transcriber         watches  /workspace/sources/
                              writes   /workspace/vault/raw/data/
                                         <course>/<module>/<stem>/raw.json
                              knows nothing about git.
@@ -78,7 +78,7 @@ kurpatov-transcriber         watches  /workspace/videos/
 kurpatov-wiki-raw-pusher     watches  /workspace/vault/raw/data/  (--raw)
                              runs     git -C /workspace/vault/raw/  (--vault)
                                         add -A && git commit && git push
-                             knows nothing about whisper, GPUs, or videos.
+                             knows nothing about whisper, GPUs, or source media.
                              No GPU reservation — CPU only.
 ```
 
@@ -104,7 +104,7 @@ openssh-client + watchdog, ~200 MB).
 | Repo                    | Contents                                                    | Pushed by                     |
 | ----------------------- | ----------------------------------------------------------- | ----------------------------- |
 | `kurpatov-wiki-raw`     | `data/<course>/<module>/<stem>/raw.json`                    | `kurpatov-wiki-raw-pusher`    |
-| `kurpatov-wiki-wiki`    | `data/videos/<course>/<module>/<stem>.md`, `data/concepts/` | Mac-side Cowork session (ADR 0007) |
+| `kurpatov-wiki-wiki`    | `data/sources/<course>/<module>/<stem>.md`, `data/concepts/` | Mac-side Cowork session (ADR 0007) |
 
 The names `raw` / `wiki` follow the vault layers from ADR 0001. The
 `-wiki-wiki` suffix looks odd but matches: the subsystem is
@@ -175,7 +175,7 @@ No mutable git config is written into the mounted `.git`.
 - The raw-pusher must never read or write anything outside
   `/workspace/vault/raw/` (its `--vault` working tree, which
   includes the `data/` content subtree it actually watches) and the
-  mounted deploy key. It has no business touching videos, models,
+  mounted deploy key. It has no business touching source media, models,
   or the wiki layer.
 - `vault/raw/.git/` stays on the host, not in the container image.
   The container is stateless; rebuilding it must not invalidate or

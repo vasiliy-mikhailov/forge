@@ -58,7 +58,7 @@ make stop-gpu              # stop rl-2048 + kurpatov-wiki
 - One docker network `proxy-net`, every service attached to it.
 - Public services (jupyter-*, mlflow) are fronted by caddy, routed by
   hostname → container:port. Auth is basic, on top of TLS from Let's Encrypt.
-- Heavy data (models, videos, transcripts, checkpoints, mlflow artifacts)
+- Heavy data (models, sources, transcripts, checkpoints, mlflow artifacts)
   live on a separate disk at `STORAGE_ROOT` (on my box it's a ZFS pool at
   `/mnt/steam/forge`) and never enter git.
 - Each service is a standalone docker-compose project. The root `Makefile`
@@ -91,8 +91,8 @@ See `docs/operations.md`. In short:
    80/443 are free.
 4. Do the GPU host setup (driver, UVM, container toolkit, reboot).
 5. `make setup && make base`
-6. Drop videos back into `${STORAGE_ROOT}/kurpatov-wiki/videos/...`,
+6. Drop source media back into `${STORAGE_ROOT}/kurpatov-wiki/sources/...`,
    adjust `.env`, start the services you need.
 
-Code and configs are in git. Data (models, videos, vault, mlflow) lives
+Code and configs are in git. Data (models, sources, vault, mlflow) lives
 outside and needs its own backup strategy (see `docs/operations.md`).
