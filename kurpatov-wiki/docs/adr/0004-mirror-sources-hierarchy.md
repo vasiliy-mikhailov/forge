@@ -23,9 +23,27 @@ This ADR uses the new name throughout; wherever the text below says
 `sources/`, the corresponding pre-rename path was `videos/`. The
 mirror invariant (output path = input path with the root swapped
 and the suffix stripped) is unchanged. The accepted-suffix
-allow-list lives as `MEDIA_EXTENSIONS` in
-`kurpatov-wiki/notebooks/02_transcribe_incremental.py` and
-`03_watch_and_transcribe.py`.
+allow-list lives (post-2026-04-20) as `INGEST_EXTENSIONS` =
+`WHISPER_EXTENSIONS | HTML_EXTENSIONS` in
+`kurpatov-wiki/notebooks/02_ingest_incremental.py` and
+`03_watch_and_ingest.py`.
+
+Amended (2026-04-20 — HTML sources keep their extension in the slug).
+The mirror rule below (`with_suffix("")` — drop the extension) is
+specific to the whisper path. HTML sources (`.html`, `.htm`) keep
+their extension in the output directory name:
+
+```
+sources/<m>/<stem>.mp4   → raw/data/<m>/<stem>/raw.json       (whisper)
+sources/<m>/<stem>.html  → raw/data/<m>/<stem>.html/raw.json  (html)
+```
+
+This keeps a media file and an HTML page sharing the same stem
+from overwriting each other in the raw tree. The dispatch logic
+and rename rationale live in
+[ADR 0008](0008-ingest-dispatch.md); the code lives in
+`out_slug_for(...)` inside `02_ingest_incremental.py` and
+`03_watch_and_ingest.py`.
 
 ## Context
 Originally the transcription script stored `raw.json` in a **flat**

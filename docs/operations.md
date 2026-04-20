@@ -88,7 +88,7 @@ make base
 # 4. Add source media (for kurpatov-wiki) under
 #    ${STORAGE_ROOT}/kurpatov-wiki/sources/<course>/<module>/*.<ext>
 #    (video or audio; extensions listed in
-#     kurpatov-wiki/notebooks/0{2,3}_*.py MEDIA_EXTENSIONS)
+#     kurpatov-wiki/notebooks/0{2,3}_*_ingest*.py INGEST_EXTENSIONS)
 # and bring up the GPU services:
 make kurpatov-wiki
 make rl-2048
@@ -106,7 +106,7 @@ make <service>-logs   # verify it came up cleanly
 ```
 
 Note for kurpatov-wiki: its `docker-compose.yml` builds **two** images.
-`jupyter-kurpatov-wiki` and `kurpatov-transcriber` share the GPU image
+`jupyter-kurpatov-wiki` and `kurpatov-ingest` share the GPU image
 `forge-kurpatov-wiki:latest` (built from `Dockerfile`, ~20 GB,
 CUDA + torch + whisper + jupyter). `kurpatov-wiki-raw-pusher` runs a
 dedicated lean image `forge-kurpatov-wiki-pusher:latest` built from
@@ -192,7 +192,7 @@ Order:
 2. `git clone` the repo.
 3. Drop `.env` from the password manager.
 4. Create `STORAGE_ROOT`, restore from backups:
-   - `vault/raw/` (mandatory — otherwise transcribe starts from zero).
+   - `vault/raw/` (mandatory — otherwise ingest starts from zero).
      Fastest path: `git clone git@github.com:vasiliy-mikhailov/kurpatov-wiki-raw.git`
      into `${STORAGE_ROOT}/kurpatov-wiki/vault/raw`, then configure
      `.git/config core.sshCommand` to use the `~/.ssh/kurpatov-wiki-vault`
@@ -221,7 +221,7 @@ what's asserted must go through that file first (see
 What the smoke test verifies:
 
 1. All 6 containers Up: `caddy`, `mlflow`, `jupyter-rl-2048`,
-   `jupyter-kurpatov-wiki`, `kurpatov-transcriber`,
+   `jupyter-kurpatov-wiki`, `kurpatov-ingest`,
    `kurpatov-wiki-raw-pusher`.
 2. GPU partitioning — `jupyter-rl-2048` sees exactly the GPU pinned by
    `RL_2048_GPU_UUID` and `jupyter-kurpatov-wiki` sees the one pinned by
@@ -233,7 +233,9 @@ What the smoke test verifies:
 5. mlflow REST API (`/api/2.0/mlflow/experiments/search`) returns JSON
    containing an experiments list.
 6. Both kurpatov-wiki watchers have logged their `inotify on ...` line:
-   `kurpatov-transcriber` on `/workspace/sources` (reactive transcription),
+   `kurpatov-ingest` on `/workspace/sources` (reactive ingest: whisper for media,
+   HTML extractor for getcourse.ru lesson pages — see
+   [kurpatov-wiki/docs/adr/0008-ingest-dispatch.md](../kurpatov-wiki/docs/adr/0008-ingest-dispatch.md)),
    and `kurpatov-wiki-raw-pusher` on `/workspace/vault/raw/data` (reactive
    git auto-push; the pusher watches the content subtree `--raw` but runs
    git in `--vault=/workspace/vault/raw` so `.git/` stays at the working-
@@ -317,14 +319,19 @@ ship them to the server with a single command:
 make push-sources
 ```
 
-This moves every media file (any suffix in the MEDIA_EXTENSIONS allow-list
-— video: `mp4/mkv/webm/mov/m4v/avi`, audio: `mp3/m4a/wav/ogg/flac/opus/aac`)
+This moves every media file (any suffix in the INGEST_EXTENSIONS allow-list
+— video: `mp4/mkv/webm/mov/m4v/avi`, audio: `mp3/m4a/wav/ogg/flac/opus/aac`,
+html: `html/htm`)
 from the source folder to the current default module under
 `kurpatov-wiki/sources/` on the server, deleting each file locally only
-after the transfer is verified. The `kurpatov-transcriber` daemon picks
-them up via inotify and transcribes within ~10s of each file landing —
+after the transfer is verified. The `kurpatov-ingest` daemon picks
+them up via inotify and ingests within ~10s of each file landing —
 no server-side action required. faster-whisper handles audio natively via
 ffmpeg, so `.mp3` and friends go through the same path as `.mp4`.
+HTML files (`.html`, `.htm` — typically getcourse.ru lesson exports)
+take the HTML-extractor path instead, producing the same segments[]
+shape minus timing — see
+[kurpatov-wiki/docs/adr/0008-ingest-dispatch.md](../kurpatov-wiki/docs/adr/0008-ingest-dispatch.md).
 
 Defaults live in `scripts/push-sources.sh` and are currently:
 

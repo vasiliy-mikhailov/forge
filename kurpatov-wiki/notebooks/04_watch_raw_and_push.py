@@ -10,7 +10,7 @@ Responsibility (single, by design):
     root, not under `data/`).
 
 Deliberately decoupled from the transcriber:
-  - The transcriber (03_watch_and_transcribe.py) knows nothing about git.
+  - The ingest daemon (03_watch_and_ingest.py) knows nothing about git.
   - This daemon knows nothing about whisper or source media.
   - They share only the vault filesystem via a Docker volume.
 
@@ -49,7 +49,7 @@ Failure model:
     the commit+push is skipped — no empty commits.
 
 Atomic-rename awareness:
-  - The transcriber writes to <stem>.tmp/ and renames to <stem>/ when
+  - The ingest daemon writes to <slug>.tmp/ and renames to <slug>/ when
     done. We ignore any path containing a '.tmp' component so we never
     commit a partial write — the rename itself generates an event for
     the final directory which we happily pick up.
@@ -207,7 +207,7 @@ class RawHandler(FileSystemEventHandler):
 
     def _is_tmp(self, path: str) -> bool:
         # Ignore any path that passes through a '.tmp' sibling — the
-        # transcriber's atomic-write staging area.
+        # ingest daemon's atomic-write staging area.
         try:
             rel = Path(path).resolve().relative_to(self.raw_root)
         except ValueError:

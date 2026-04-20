@@ -65,6 +65,22 @@ invariants are unchanged: the session is the pusher, no
 server-side daemon authors the wiki, the human-in-the-loop stays.
 
 
+Amended (2026-04-20 — HTML sources reach the wiki as first-class
+source articles). The ingest pipeline (server-side) grew a second
+extractor for getcourse.ru HTML lesson pages; see
+[ADR 0008](0008-ingest-dispatch.md). The wiki layer treats them
+the same as media-derived raw.json: one source article per
+`raw/data/<mirror>/<slug>/raw.json`, where `<slug>` is `<stem>`
+for media and `<stem>.html` for HTML. The renderer keys off
+`info.extractor` to decide whether the source article should
+include timing-based affordances (clickable timestamps) or not
+(HTML has no timing). The 2026-04-20 rename
+`kurpatov-transcriber` → `kurpatov-ingest` is a server-side
+change; the Mac-side prose below still calls it "the
+server's ingest side" and is unaffected. The invariant
+"no server-side daemon authors the wiki" holds: the ingest
+daemon still only writes raw.json.
+
 Amended (2026-04-20 — videos/ → sources/ rename). In both the wiki
 repo and in this ADR's prose, the former tier name `videos/` has
 been renamed to `sources/`, and `video article` → `source article`.

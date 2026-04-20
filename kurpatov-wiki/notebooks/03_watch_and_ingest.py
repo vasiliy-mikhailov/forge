@@ -1,35 +1,42 @@
 """
-Transcription daemon for the Kurpatov-wiki vault.
+Ingest daemon for the Kurpatov-wiki vault.
 
-Watches /workspace/sources recursively for new media files (video or audio)
-and transcribes them into /workspace/vault/raw/data/<course>/<module>/
-<stem>/raw.json, matching the schema of 02_transcribe_incremental.py.
+Watches /workspace/sources recursively for new source files and ingests
+them into /workspace/vault/raw/data/<mirror>/<slug>/raw.json. Two
+extractors run behind one scheduler, dispatched by file suffix:
+
+  * WHISPER_EXTENSIONS — audio / video the faster-whisper model can
+    decode via ffmpeg. Writes segments[] with word-level timestamps.
+  * HTML_EXTENSIONS — getcourse.ru-style lesson-page exports. The
+    extractor (`_extract_html.py`) harvests only lecturer prose and
+    writes the same segments[] shape with no timing fields.
+
+See [ADR 0008](../docs/adr/0008-ingest-dispatch.md) for why the daemon
+handles both and why it was renamed from "transcriber" to "ingest".
+The output schema is documented at the top of 02_ingest_incremental.py
+and formalised in ADR 0002.
+
 The `data/` prefix separates content from future repo-root meta files
-(CLAUDE.md, README.md, etc.) in the kurpatov-wiki-raw repo; see ADR
-0005's data/content-split amendment.
-
-Supported inputs are any audio/video format faster-whisper (via ffmpeg)
-can decode — see MEDIA_EXTENSIONS below. The directory name used to be
-"videos/" but was generalized to "sources/" once audio-only lectures
-and other source materials entered scope.
+(CLAUDE.md, README.md, etc.) in kurpatov-wiki-raw; see ADR 0005's
+data/content-split amendment.
 
 Design notes:
   - inotify via watchdog (reactive; not cron polling).
   - Files are only enqueued once they "stabilize": size and mtime unchanged
     for --stable-sec seconds. Protects against WRITE-in-progress for scp,
     rsync.tmp→mv, and similar patterns.
-  - The Whisper model is lazy-loaded: brought to VRAM only when the queue has
-    work, and evicted after --idle-unload-sec seconds of idleness. Between
-    back-to-back files the model stays warm to avoid thrashing.
-  - Initial scan at startup enqueues every media file without a matching
-    raw.json, so the daemon also acts as a "catch-up" for anything dropped
+  - Whisper is lazy-loaded: brought to VRAM only when a whisper job runs,
+    and evicted after --idle-unload-sec seconds of idleness. HTML jobs
+    never touch the GPU — they skip the load entirely.
+  - Initial scan at startup enqueues every source file without a matching
+    raw.json, so the daemon also acts as "catch-up" for anything dropped
     in while it was down.
-  - Atomic writes: result goes into <stem>.tmp/raw.json, then
-    <stem>.tmp → <stem> rename.
+  - Atomic writes: result goes into <slug>.tmp/raw.json, then
+    <slug>.tmp → <slug> rename.
   - Graceful shutdown on SIGTERM/SIGINT: current file finishes, then exit.
 
-Run inside the kurpatov-transcriber container (service in docker-compose):
-  python -u /workspace/notebooks/03_watch_and_transcribe.py
+Run inside the kurpatov-ingest container (service in docker-compose):
+  python -u /workspace/notebooks/03_watch_and_ingest.py
 """
 
 from __future__ import annotations
@@ -42,6 +49,7 @@ import logging
 import queue
 import signal
 import subprocess
+import sys
 import threading
 import time
 from pathlib import Path
@@ -51,34 +59,50 @@ from faster_whisper import WhisperModel
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
+# local helper — HTML → segments[] extractor
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _extract_html  # noqa: E402
 
-log = logging.getLogger("watcher")
+
+log = logging.getLogger("ingest")
 
 
 # ---------------------------------------------------------------------------
-# Supported media file extensions.
+# Supported source extensions — kept in sync with 02_ingest_incremental.py.
 #
-# faster-whisper decodes via ffmpeg, so anything ffmpeg can read is fair
-# game. We intentionally allow-list formats rather than rely on a single
-# glob: a "sources" directory may also contain non-media artefacts
-# (README files, transcripts, supporting PDFs) that must be ignored.
+# We allow-list suffixes (rather than glob) because `sources/` may also
+# contain assorted non-ingestable artefacts (README, scratch PDFs, etc.)
+# that must be ignored.
 # ---------------------------------------------------------------------------
 
-MEDIA_EXTENSIONS: frozenset[str] = frozenset({
+WHISPER_EXTENSIONS: frozenset[str] = frozenset({
     # Video
     ".mp4", ".mkv", ".webm", ".mov", ".m4v", ".avi",
     # Audio
     ".mp3", ".m4a", ".wav", ".ogg", ".flac", ".opus", ".aac",
 })
 
+HTML_EXTENSIONS: frozenset[str] = frozenset({".html", ".htm"})
 
-def is_media(path: Path) -> bool:
-    """True if the suffix is one we'll feed to Whisper."""
-    return path.suffix.lower() in MEDIA_EXTENSIONS
+INGEST_EXTENSIONS: frozenset[str] = WHISPER_EXTENSIONS | HTML_EXTENSIONS
+
+
+def extractor_for(path: Path) -> str | None:
+    """Return "whisper" | "html" | None for the given source path."""
+    suffix = path.suffix.lower()
+    if suffix in WHISPER_EXTENSIONS:
+        return "whisper"
+    if suffix in HTML_EXTENSIONS:
+        return "html"
+    return None
+
+
+def is_ingestable(path: Path) -> bool:
+    return extractor_for(path) is not None
 
 
 # ---------------------------------------------------------------------------
-# helpers (same semantics as 02_transcribe_incremental.py)
+# helpers (same semantics as 02_ingest_incremental.py)
 # ---------------------------------------------------------------------------
 
 def utc_now_iso() -> str:
@@ -109,18 +133,70 @@ def clean_tmp_dir(tmp_dir: Path) -> None:
     tmp_dir.rmdir()
 
 
-def out_dir_for(source: Path, out_root: Path, sources_root: Path) -> Path:
-    """vault/raw/data/ mirrors the full sources/<...>/<name>.<ext>
-    → <...>/<name>/raw.json.
-
-    `out_root` is expected to be `/workspace/vault/raw/data/` (see --out
-    default below); the `data/` segment is what separates transcript
-    content from the repo's meta root in kurpatov-wiki-raw.
+def out_slug_for(source: Path, sources_root: Path) -> Path:
     """
-    return out_root / source.relative_to(sources_root).with_suffix("")
+    Output slug (relative to --out root) for a given source.
+
+    Media: strip the extension (`sources/a/b.mp4` → `a/b`) — historical
+    behaviour, see ADR 0004.
+    HTML:  keep the extension (`sources/a/b.html` → `a/b.html`) so that
+    a media file and an HTML page sharing the same stem never collide
+    (ADR 0008).
+    """
+    rel = source.relative_to(sources_root)
+    if extractor_for(source) == "whisper":
+        return rel.with_suffix("")
+    return rel
 
 
-def transcribe_one(
+def out_dir_for(source: Path, out_root: Path, sources_root: Path) -> Path:
+    """vault/raw/data/ mirror — see out_slug_for for the naming rule."""
+    return out_root / out_slug_for(source, sources_root)
+
+
+# ---------------------------------------------------------------------------
+# HTML ingest (cheap, no GPU)
+# ---------------------------------------------------------------------------
+
+def ingest_html_one(
+    source: Path,
+    out_root: Path,
+    sources_root: Path,
+    *,
+    language: str,
+) -> None:
+    stem = source.stem
+    out_dir = out_dir_for(source, out_root, sources_root)
+    tmp_dir = out_dir.parent / f"{out_dir.name}.tmp"
+
+    if (out_dir / "raw.json").exists():
+        log.info("[skip ] %s already has raw.json", stem)
+        return
+
+    out_dir.parent.mkdir(parents=True, exist_ok=True)
+    clean_tmp_dir(tmp_dir)
+    tmp_dir.mkdir(parents=True)
+
+    t0 = time.time()
+    payload = _extract_html.build_raw_payload(source, language=language)
+    (tmp_dir / "raw.json").write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    tmp_dir.rename(out_dir)
+    wall = time.time() - t0
+
+    log.info(
+        "[html ] %s — %d paragraphs, title=%r, wall %.2fs",
+        stem, payload["info"]["paragraph_count"], payload["info"]["title"], wall,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Whisper ingest (GPU-bound)
+# ---------------------------------------------------------------------------
+
+def ingest_whisper_one(
     model: WhisperModel,
     source: Path,
     out_root: Path,
@@ -147,7 +223,7 @@ def transcribe_one(
         duration = probe_duration(source)
     except Exception:
         duration = 0.0
-    log.info("[trans] %s (%.0fs audio)", source.name, duration)
+    log.info("[whisp] %s (%.0fs audio)", source.name, duration)
 
     t0 = time.time()
     segments, info = model.transcribe(
@@ -174,16 +250,19 @@ def transcribe_one(
             ],
         })
 
+    now = utc_now_iso()
     payload = {
         "info": {
             "language": info.language,
             "duration": info.duration,
             "language_probability": info.language_probability,
             "source_path": str(source),
+            "extractor": "whisper",
             "model": model_name,
             "compute_type": compute,
             "beam_size": beam,
-            "transcribed_at": utc_now_iso(),
+            "extracted_at": now,
+            "transcribed_at": now,   # backward-compat alias
             "diarized": False,
         },
         "segments": raw_segments,
@@ -227,14 +306,14 @@ class StabilityTracker:
 
     def _raw_json_for(self, path: Path) -> Path:
         try:
-            rel = path.relative_to(self.sources_root).with_suffix("")
+            slug = out_slug_for(path, self.sources_root)
         except ValueError:
             # path is outside sources_root — not our file
             return self.out_root / "__outside__" / "raw.json"
-        return self.out_root / rel / "raw.json"
+        return self.out_root / slug / "raw.json"
 
     def touch(self, path: Path) -> None:
-        if not is_media(path):
+        if not is_ingestable(path):
             return
         if self._raw_json_for(path).exists():
             return
@@ -243,7 +322,7 @@ class StabilityTracker:
         except FileNotFoundError:
             return
         if not st.st_size:
-            # empty file — skip; ffmpeg won't like it
+            # empty file — skip
             return
         now = time.time()
         with self._lock:
@@ -324,7 +403,10 @@ class Daemon:
                 return
             self._in_flight.add(path)
         self.queue.put(path)
-        log.info("[queue] + %s (qsize=%d)", path.name, self.queue.qsize())
+        log.info(
+            "[queue] + %s [%s] (qsize=%d)",
+            path.name, extractor_for(path), self.queue.qsize(),
+        )
 
     # -- model lifecycle --
 
@@ -378,20 +460,32 @@ class Daemon:
                     self._unload_model()
                 continue
 
+            kind = extractor_for(path)
             try:
-                self._load_model()
-                self.model_last_used = time.time()
-                transcribe_one(
-                    self.model,
-                    path,
-                    self.out_root,
-                    self.sources_root,
-                    language=self.args.language,
-                    beam=self.args.beam,
-                    model_name=self.args.model,
-                    compute=self.args.compute,
-                )
-                self.model_last_used = time.time()
+                if kind == "html":
+                    # HTML never touches the GPU — run directly.
+                    ingest_html_one(
+                        path,
+                        self.out_root,
+                        self.sources_root,
+                        language=self.args.language,
+                    )
+                elif kind == "whisper":
+                    self._load_model()
+                    self.model_last_used = time.time()
+                    ingest_whisper_one(
+                        self.model,
+                        path,
+                        self.out_root,
+                        self.sources_root,
+                        language=self.args.language,
+                        beam=self.args.beam,
+                        model_name=self.args.model,
+                        compute=self.args.compute,
+                    )
+                    self.model_last_used = time.time()
+                else:
+                    log.warning("[skip ] %s is not ingestable", path.name)
             except Exception:
                 log.exception("[fail ] while processing %s", path)
             finally:
@@ -402,18 +496,21 @@ class Daemon:
     # -- initial scan --
 
     def _initial_scan(self) -> None:
-        all_media = sorted(
+        all_sources = sorted(
             p for p in self.sources_root.rglob("*")
-            if p.is_file() and is_media(p)
+            if p.is_file() and is_ingestable(p)
         )
         pending = [
-            p for p in all_media
+            p for p in all_sources
             if not (out_dir_for(p, self.out_root, self.sources_root)
                     / "raw.json").exists()
         ]
+        whisper_n = sum(1 for p in pending if extractor_for(p) == "whisper")
+        html_n = sum(1 for p in pending if extractor_for(p) == "html")
         log.info(
-            "[scan ] found=%d  done=%d  pending=%d",
-            len(all_media), len(all_media) - len(pending), len(pending),
+            "[scan ] found=%d  done=%d  pending=%d (whisper=%d, html=%d)",
+            len(all_sources), len(all_sources) - len(pending),
+            len(pending), whisper_n, html_n,
         )
         for p in pending:
             self.tracker.touch(p)
@@ -473,9 +570,8 @@ def main() -> None:
         "--sources",
         default="/workspace/sources",
         help=(
-            "Root directory holding source media (video/audio). Watched "
-            "recursively. Was historically named --videos; renamed when "
-            "audio-only lectures and other source materials entered scope."
+            "Root directory holding source files (media + HTML). Watched "
+            "recursively. Any suffix in INGEST_EXTENSIONS is picked up."
         ),
     )
     ap.add_argument(

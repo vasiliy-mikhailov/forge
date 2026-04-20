@@ -16,23 +16,30 @@ sources/    → vault/raw/data/  → kurpatov-wiki-wiki/data/
 ```
 
 Historical note: the input directory used to be `videos/` and the pipeline
-accepted only `.mp4`. The scope has since broadened to any Whisper-ingestible
-media (via ffmpeg). The allow-list of suffixes lives as `MEDIA_EXTENSIONS`
-in `notebooks/02_transcribe_incremental.py` and
-`notebooks/03_watch_and_transcribe.py`; keep them in sync.
+accepted only `.mp4`. The scope has since broadened twice — first to any
+Whisper-ingestible audio/video (via ffmpeg), then to HTML lesson-page
+exports from getcourse.ru. The allow-list lives as `INGEST_EXTENSIONS`
+= `WHISPER_EXTENSIONS | HTML_EXTENSIONS` in
+`notebooks/02_ingest_incremental.py` and
+`notebooks/03_watch_and_ingest.py`; keep them in sync. HTML is handled
+by a dedicated extractor (`notebooks/_extract_html.py`) that reuses
+the same raw.json envelope — see ADR 0008.
 
 Both published repos use a `data/` subtree so meta files
 (`CLAUDE.md`, `README.md`, etc.) don't share a namespace with
 course slugs. See ADR 0005's data/content-split amendment (raw
 side) and ADR 0007's amendment (wiki side).
 
-Today the first two steps are implemented: scanning and transcription. The
-LLM layer and wiki assembly are in progress.
+Today the first two steps are implemented: scanning and ingest
+(faster-whisper for media, HTML extractor for getcourse.ru pages;
+see ADR 0008). The LLM layer and wiki assembly are in progress.
 
 ## Non-goals
 - Not multimodal — for video inputs only the audio track is used; frames
   and gestures are not analyzed. Audio-only inputs pass through the same
-  path.
+  whisper path. HTML inputs are handled by an HTML-text extractor
+  (lecturer prose only; student answers and comments explicitly dropped
+  — see ADR 0008) — not the whisper path.
 - Not publishing. The wiki will end up as markdown + navigation; hosting
   and rendering are out of scope for this service.
 - Not real-time. Latency target is "a couple of minutes after the file is
@@ -45,18 +52,20 @@ Three long-running roles inside a single docker-compose project (see
 state only through the vault filesystem — no code, no network RPC.
 
 1. **`jupyter-kurpatov-wiki`** — Jupyter for manual experiments and batch
-   runs (`02_transcribe_incremental.py`). Torch + faster-whisper +
-   pyannote.audio in a venv. Served via caddy + basic auth. Uses
+   runs (`02_ingest_incremental.py`). Torch + faster-whisper +
+   pyannote.audio + bs4 in a venv. Served via caddy + basic auth. Uses
    `KURPATOV_WIKI_GPU_UUID`. Image: `forge-kurpatov-wiki:latest`
    (CUDA base, ~20 GB).
 
-2. **`kurpatov-transcriber`** — headless daemon running
-   `03_watch_and_transcribe.py`. Reactively watches `sources/` and
-   transcribes new media files (any suffix in MEDIA_EXTENSIONS) as soon as
-   they stabilize. Model is lazy-loaded
-   on the first task and unloaded after N seconds of idle (see ADR 0003).
-   Same image, same network, same GPU as jupyter. Knows nothing about
-   git.
+2. **`kurpatov-ingest`** — headless daemon running
+   `03_watch_and_ingest.py`. Reactively watches `sources/` and ingests
+   new source files (any suffix in INGEST_EXTENSIONS) as soon as
+   they stabilize. Dispatches by suffix: audio/video → faster-whisper
+   (GPU, lazy-load / idle-unload per ADR 0003); HTML → the
+   `_extract_html.py` extractor (CPU, no model load). Same image,
+   same network, same GPU budget as jupyter. Knows nothing about
+   git. See ADR 0008 for the dispatch design and the rename from
+   `kurpatov-transcriber`.
 
 3. **`kurpatov-wiki-raw-pusher`** — headless daemon running
    `04_watch_raw_and_push.py`. Reactively watches `vault/raw/data/`
@@ -71,7 +80,7 @@ state only through the vault filesystem — no code, no network RPC.
 
 Volume access by service:
 
-| Mount inside container            | jupyter | transcriber | raw-pusher |
+| Mount inside container            | jupyter |   ingest    | raw-pusher |
 | --------------------------------- | :-----: | :---------: | :--------: |
 | `/workspace/sources/` (ro-ish)    |   rw    |     rw      |     —      |
 | `/workspace/vault/`               |   rw    |     rw      |     rw     |
@@ -81,7 +90,7 @@ Volume access by service:
 
 Host paths:
 
-- `${STORAGE_ROOT}/kurpatov-wiki/sources/` — input source-media tree (video + audio).
+- `${STORAGE_ROOT}/kurpatov-wiki/sources/` — input source tree (video + audio + HTML).
 - `${STORAGE_ROOT}/kurpatov-wiki/vault/` — vault root. Contains
   `raw/` (a git working tree for the `kurpatov-wiki-raw` repo; its
   content lives under `raw/data/<course>/<module>/<stem>/`). The
@@ -101,18 +110,23 @@ Arbitrary directory hierarchy. Typical:
 sources/
 └── <course>/
     └── <module>/
-        └── <lecture-name>.<ext>      # .mp4 | .mp3 | .mkv | .m4a | …
+        └── <lecture-name>.<ext>      # .mp4 | .mp3 | .mkv | .m4a | .html | …
 ```
 
 Any depth of nesting is allowed — both the watcher and the incremental
 script mirror the structure (see ADR 0004). The set of accepted suffixes
-is the `MEDIA_EXTENSIONS` allow-list (video: `mp4/mkv/webm/mov/m4v/avi`;
-audio: `mp3/m4a/wav/ogg/flac/opus/aac`). faster-whisper routes audio
-through ffmpeg internally, so any format ffmpeg can decode works; we only
-gate which extensions the watcher picks up.
+is the `INGEST_EXTENSIONS` allow-list — the union of `WHISPER_EXTENSIONS`
+(video: `mp4/mkv/webm/mov/m4v/avi`; audio: `mp3/m4a/wav/ogg/flac/opus/aac`)
+and `HTML_EXTENSIONS` (`html/htm`). faster-whisper routes audio through
+ffmpeg internally, so any format ffmpeg can decode works; HTML takes the
+`_extract_html.py` path (lecturer prose only, see ADR 0008). We gate
+which extensions the watcher picks up; everything else is ignored.
 
-### RAW layer: `vault/raw/data/<same dirs>/<stem>/raw.json`
-Stable contract (see ADR 0002 "JSON-only, single file"):
+### RAW layer: `vault/raw/data/<same dirs>/<slug>/raw.json`
+`<slug>` is `<stem>` for whisper-produced raws (historical) and
+`<stem>.html` for HTML-produced raws (so media and HTML with the same
+stem never collide — ADR 0008). Stable contract (see ADR 0002
+"JSON-only, single file"):
 
 ```json
 {
@@ -124,6 +138,8 @@ Stable contract (see ADR 0002 "JSON-only, single file"):
     "model": "large-v3",
     "compute_type": "float16",
     "beam_size": 5,
+    "extractor": "whisper",
+    "extracted_at": "2026-04-19T08:30:00Z",
     "transcribed_at": "2026-04-19T08:30:00Z",
     "diarized": false
   },
@@ -141,9 +157,14 @@ Stable contract (see ADR 0002 "JSON-only, single file"):
 }
 ```
 
+- `info.extractor` — `"whisper"` or `"html"`. Distinguishes the two
+  extractor paths without string-matching on `source_path`. HTML-produced
+  raws carry `info.title` (lesson title) and `info.paragraph_count`; they
+  do not carry `info.duration`, `info.model`, timing fields on segments,
+  speaker, or words[]. See ADR 0008 for the full schema matrix.
 - `info.source_path` — absolute path inside the container. Needed for:
   migration (`migrate_vault_hierarchy.py`), and for binding wiki pages back
-  to their source media later.
+  to their source media/page later.
 - `info.diarized` — flag that `segments[].speaker` is populated. Currently
   always `false`; a later pyannote step will set it.
 - Atomicity: the file is written to `<stem>.tmp/raw.json`, then the
@@ -228,17 +249,19 @@ docs/) lives at the root. See ADR 0007.
 
 ## Invariants
 
-1. **Transcription is idempotent.** If `raw.json` for a source exists and
+1. **Ingest is idempotent.** If `raw.json` for a source exists and
    is not corrupt, both scripts (02 and 03) skip it.
 2. **Hierarchy is mirrored under `data/`.**
-   `out_dir = vault/raw/data / source.relative_to(sources).with_suffix("")`.
-   The old flat layout is considered incompatible; migrate with
-   `migrate_vault_hierarchy.py` (see ADR 0004). The `data/` prefix
-   is per ADR 0005's data/content-split amendment.
-3. **Only one GPU consumer at a time.** Jupyter and the transcriber share
-   one GPU (`KURPATOV_WIKI_GPU_UUID`), but the transcriber unloads its
-   model while idle so jupyter can use the memory for experiments
-   (see ADR 0003).
+   `out_dir = vault/raw/data / out_slug_for(source)` — for media that's
+   `source.relative_to(sources).with_suffix("")`, for HTML it keeps the
+   `.html` suffix in the slug (ADR 0008). The old flat layout is
+   considered incompatible; migrate with `migrate_vault_hierarchy.py`
+   (see ADR 0004). The `data/` prefix is per ADR 0005's
+   data/content-split amendment.
+3. **Only one GPU consumer at a time.** Jupyter and the ingest daemon
+   share one GPU (`KURPATOV_WIKI_GPU_UUID`), but the ingest daemon
+   unloads its model while idle so jupyter can use the memory for
+   experiments (see ADR 0003). HTML ingest never touches the GPU.
 4. **File stability before processing.** The watcher waits until the
    source file's size and mtime stop changing for `--stable-sec` seconds
    (default 10). This protects against processing a half-copied file from
@@ -253,8 +276,9 @@ docs/) lives at the root. See ADR 0007.
 Production for the RAW layer. Running since April 2026.
 
 Done:
-- Three roles in compose (jupyter + transcriber + raw-pusher).
-- Reactive watcher with lazy-load / idle-unload of the model.
+- Three roles in compose (jupyter + ingest + raw-pusher).
+- Reactive watcher with lazy-load / idle-unload of the whisper model;
+  HTML extraction dispatched inline on the same watcher (see ADR 0008).
 - Full mirror of the sources → vault/raw/data hierarchy.
 - Migration script for the flat layout (ADR 0004); subsequent
   data/-subtree migration via the server-side script documented in
@@ -284,23 +308,24 @@ Not yet:
 
 ## Running
 ```bash
-# Drop source media in (any MEDIA_EXTENSIONS suffix, video or audio):
+# Drop sources in (any INGEST_EXTENSIONS suffix, media or HTML):
 mkdir -p ${STORAGE_ROOT}/kurpatov-wiki/sources/Psychologist-consultant/05-conflicts
 cp ~/downloads/*.mp4 ${STORAGE_ROOT}/kurpatov-wiki/sources/Psychologist-consultant/05-conflicts/
-# or .mp3 / .m4a / … — same path.
+# or .mp3 / .m4a / .html / … — same path.
 
 # Bring up (from the forge root):
 make kurpatov-wiki
 
 # The watcher picks them up on its own. Batch pass over everything missing:
 docker exec -t jupyter-kurpatov-wiki \
-  python -u /workspace/notebooks/02_transcribe_incremental.py
+  python -u /workspace/notebooks/02_ingest_incremental.py
 ```
 
-See also: `docs/adr/0001` through `0007`,
+See also: `docs/adr/0001` through `0008`,
 `docs/mac-side-wiki-authoring.md` (wiki-layer playbook),
 `prompts/per-source-summarize.md`, `prompts/concept-article.md`,
-`notebooks/02_transcribe_incremental.py`,
-`notebooks/03_watch_and_transcribe.py`,
+`notebooks/02_ingest_incremental.py`,
+`notebooks/03_watch_and_ingest.py`,
 `notebooks/04_watch_raw_and_push.py`,
+`notebooks/_extract_html.py`,
 `notebooks/migrate_vault_hierarchy.py`.

@@ -5,9 +5,9 @@
 # is fully transferred + verified), not copied — so you can drop new
 # lectures into ~/Downloads/Курпатов/ and run this once to ship them.
 #
-# The kurpatov-transcriber daemon has an inotify watcher on the sources
+# The kurpatov-ingest daemon has an inotify watcher on the sources
 # tree, so transcription starts automatically the moment files land.
-# The daemon picks up any suffix in its MEDIA_EXTENSIONS allow-list
+# The daemon picks up any suffix in its INGEST_EXTENSIONS allow-list
 # (video: mp4/mkv/webm/mov/m4v/avi; audio: mp3/m4a/wav/ogg/flac/opus/aac).
 # This script uses the same list when selecting what to push.
 #
@@ -39,8 +39,10 @@ COURSE="${COURSE:-Психолог-консультант}"
 MODULE="${MODULE:-005 Природа внутренних конфликтов. Базовые психологические потребности}"
 SOURCES="${SOURCES:-/mnt/steam/forge/kurpatov-wiki/sources}"
 
-# MEDIA_EXTENSIONS — must stay in sync with notebooks/{02,03}*.py.
-MEDIA_EXTS=(mp4 mkv webm mov m4v avi mp3 m4a wav ogg flac opus aac)
+# INGEST_EXTENSIONS — must stay in sync with notebooks/{02,03}_*_ingest*.py.
+# Ingestable source suffixes — kept in sync with INGEST_EXTENSIONS in
+# kurpatov-wiki/notebooks/0{2,3}_*_ingest*.py (ADR 0008).
+SOURCE_EXTS=(mp4 mkv webm mov m4v avi mp3 m4a wav ogg flac opus aac html htm)
 
 DRY_RUN=""
 if [[ "${1:-}" == "--dry-run" || "${1:-}" == "-n" ]]; then
@@ -68,7 +70,7 @@ fi
 
 shopt -s nullglob nocaseglob
 files=()
-for ext in "${MEDIA_EXTS[@]}"; do
+for ext in "${SOURCE_EXTS[@]}"; do
   for f in "$SRC"/*."$ext"; do
     files+=("$f")
   done
@@ -77,7 +79,7 @@ shopt -u nocaseglob
 
 if [[ ${#files[@]} -eq 0 ]]; then
   echo "nothing to do: no media files in $SRC"
-  echo "  (looking for: ${MEDIA_EXTS[*]})"
+  echo "  (looking for: ${SOURCE_EXTS[*]})"
   exit 0
 fi
 
@@ -95,6 +97,6 @@ rsync -avh${DRY_RUN} -s \
 
 if [[ -z "$DRY_RUN" ]]; then
   echo
-  echo "done. the transcriber's inotify watcher will queue each file within ~10s."
-  echo "tail it with:  ssh -p $PORT $REMOTE@$HOST 'docker logs -f --tail=20 kurpatov-transcriber'"
+  echo "done. the ingest daemon's inotify watcher will queue each file within ~10s."
+  echo "tail it with:  ssh -p $PORT $REMOTE@$HOST 'docker logs -f --tail=20 kurpatov-ingest'"
 fi

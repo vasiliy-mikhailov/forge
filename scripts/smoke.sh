@@ -11,7 +11,7 @@
 # What it verifies (each section below corresponds to a section in
 # tests/smoke.md with the same name):
 #   1. Containers up — all 6 forge containers (caddy, mlflow,
-#      jupyter-rl-2048, jupyter-kurpatov-wiki, kurpatov-transcriber,
+#      jupyter-rl-2048, jupyter-kurpatov-wiki, kurpatov-ingest,
 #      kurpatov-wiki-raw-pusher).
 #   2. GPU partitioning — rl-2048 pinned to RL_2048_GPU_UUID,
 #      kurpatov-wiki pinned to KURPATOV_WIKI_GPU_UUID, no leakage.
@@ -20,7 +20,7 @@
 #   4. Caddy basic auth — unauth=401, auth=200|302 on every public
 #      domain.
 #   5. mlflow REST API — /experiments/search returns JSON.
-#   6. Reactive watchers — transcriber has inotify on
+#   6. Reactive watchers — ingest daemon has inotify on
 #      /workspace/sources, raw-pusher has inotify on
 #      /workspace/vault/raw (see kurpatov-wiki/docs/adr/0005).
 #   7. Pusher image discipline — raw-pusher runs a dedicated lean
@@ -61,7 +61,7 @@ set -a; . ./.env; set +a
 USER=$BASIC_AUTH_USER
 PASS=$MLFLOW_TRACKING_PASSWORD
 
-EXPECTED_CONTAINERS=(caddy mlflow jupyter-rl-2048 jupyter-kurpatov-wiki kurpatov-transcriber kurpatov-wiki-raw-pusher)
+EXPECTED_CONTAINERS=(caddy mlflow jupyter-rl-2048 jupyter-kurpatov-wiki kurpatov-ingest kurpatov-wiki-raw-pusher)
 
 # ---------- pretty output ----------
 PASSED=0
@@ -163,7 +163,7 @@ else
   fail "mlflow /experiments/search unexpected response: $(printf '%.200s' "$api_body")"
 fi
 
-# ---------- 6. watchers (transcriber + raw-pusher) ----------
+# ---------- 6. watchers (ingest + raw-pusher) ----------
 section "kurpatov watchers"
 
 # Capture logs first, then grep, to avoid `grep -q` + pipefail SIGPIPE:
@@ -181,11 +181,11 @@ check_watcher_log() {
 }
 
 check_watcher_log \
-  "transcriber has inotify on /workspace/sources" \
-  kurpatov-transcriber \
+  "ingest daemon has inotify on /workspace/sources" \
+  kurpatov-ingest \
   'inotify on /workspace/sources'
 
-# The raw-pusher watches the raw-transcripts tree; the transcriber writes
+# The raw-pusher watches the raw tree; the ingest daemon writes
 # there, and the pusher commits + pushes to the kurpatov-wiki-raw GitHub
 # repo. See kurpatov-wiki/docs/adr/0005-split-transcribe-and-push.md.
 check_watcher_log \

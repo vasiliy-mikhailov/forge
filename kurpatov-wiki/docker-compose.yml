@@ -32,9 +32,9 @@ services:
       - proxy-net
     restart: unless-stopped
 
-  kurpatov-transcriber:
+  kurpatov-ingest:
     image: forge-kurpatov-wiki:latest
-    container_name: kurpatov-transcriber
+    container_name: kurpatov-ingest
     environment:
       - NVIDIA_VISIBLE_DEVICES=${KURPATOV_WIKI_GPU_UUID}
       - NVIDIA_DRIVER_CAPABILITIES=compute,utility
@@ -53,10 +53,10 @@ services:
       - ${STORAGE_ROOT}/kurpatov-wiki/vault:/workspace/vault
       - ${STORAGE_ROOT}/kurpatov-wiki/checkpoints:/workspace/checkpoints
     shm_size: "4gb"
-    command: ["python", "-u", "/workspace/notebooks/03_watch_and_transcribe.py"]
+    command: ["python", "-u", "/workspace/notebooks/03_watch_and_ingest.py"]
     restart: unless-stopped
 
-  # Separate from the transcriber by design: single responsibility.
+  # Separate from the ingest daemon by design: single responsibility.
   # Watches /workspace/vault/raw/data for new/changed files and pushes
   # them from the /workspace/vault/raw git working tree to the private
   # kurpatov-wiki-raw GitHub repo. (The `.git/` directory lives at

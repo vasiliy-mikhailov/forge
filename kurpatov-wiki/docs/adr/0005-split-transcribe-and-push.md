@@ -28,6 +28,18 @@ in `kurpatov-wiki-wiki` under ADR 0007's first amendment. The ADR
 body below describes the post-migration layout; the pre-amendment
 state survives only in git history.
 
+Amended (2026-04-20 — `kurpatov-transcriber` → `kurpatov-ingest`).
+The container on the left side of the diagram below was renamed
+when the daemon grew a second extractor for HTML sources alongside
+faster-whisper. Scripts `02_transcribe_incremental.py` →
+`02_ingest_incremental.py`, `03_watch_and_transcribe.py` →
+`03_watch_and_ingest.py`. Wherever the body below says
+`kurpatov-transcriber` / "the transcriber" / `03_watch_and_transcribe.py`,
+read `kurpatov-ingest` / "the ingest daemon" /
+`03_watch_and_ingest.py`; the split-into-two-containers design
+is unchanged. See [ADR 0008](0008-ingest-dispatch.md) for dispatch
+details and the rationale for the rename.
+
 ## Context
 Once the RAW layer stabilized (ADR 0002), I wanted the transcripts to be
 continuously mirrored to a private GitHub repo — as a backup, and as a

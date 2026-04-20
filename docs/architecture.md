@@ -43,7 +43,7 @@ One docker network `proxy-net` (external), every service is attached:
         ▼             ▼              ▼
  jupyter-kurpatov-wiki  jupyter-rl-2048   mlflow :5000
         │                    │               │
- kurpatov-transcriber       (same GPU)       │
+ kurpatov-ingest            (same GPU)       │
  (no network, fs only)                       │
         │                                    │
         ▼  vault/raw/                        │
@@ -64,7 +64,7 @@ Set via variables in `.env`:
 
 - `RL_2048_GPU_UUID` → rl-2048 (one GPU, entirely).
 - `KURPATOV_WIKI_GPU_UUID` → both `jupyter-kurpatov-wiki` and
-  `kurpatov-transcriber` (both share a single GPU, see
+  `kurpatov-ingest` (both share a single GPU, see
   [kurpatov-wiki/docs/adr/0003-watcher-reactive-not-cron.md]).
   `kurpatov-wiki-raw-pusher` gets no GPU — it's CPU-only.
 
@@ -81,10 +81,10 @@ ${STORAGE_ROOT:-/mnt/steam/forge}/
 ├── rl-2048/
 │   └── checkpoints/
 └── kurpatov-wiki/
-    ├── sources/                     # input source media (video + audio),
+    ├── sources/                     # input source files (audio, video, HTML),
     │   └── <course>/<module>/*.<ext> #   structure mirrored into vault/raw.
-    │                                 #   MEDIA_EXTENSIONS allow-list lives in
-    │                                 #   kurpatov-wiki/notebooks/0{2,3}*.py.
+    │                                 #   INGEST_EXTENSIONS allow-list (whisper +
+    │                                 #   html) lives in kurpatov-wiki/notebooks/0{2,3}*.py.
     ├── vault/
     │   ├── raw/                     # RAW layer + git working tree for
     │   │   │                        #   the kurpatov-wiki-raw repo
@@ -92,10 +92,11 @@ ${STORAGE_ROOT:-/mnt/steam/forge}/
     │   │   ├── .git/
     │   │   ├── README.md            #   meta at the root (ADR 0005 data/
     │   │   │                        #   content-split amendment)
-    │   │   └── data/                #   content subtree — transcriber and
+    │   │   └── data/                #   content subtree — ingest daemon and
     │   │       │                    #   pusher both default here
-    │   │       └── <course>/<module>/<source_stem>/
-    │   │           └── raw.json
+    │   │       └── <course>/<module>/<slug>/
+    │   │           └── raw.json     #   <slug> = <stem> for media,
+    │   │                            #           <stem>.html for HTML (ADR 0008)
     │   └── wiki/                    # reserved directory; the WIKI layer
     │                                #   lives in kurpatov-wiki-wiki on the
     │                                #   operator's Mac, not on the server

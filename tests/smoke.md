@@ -47,7 +47,7 @@ must mean "something is actually broken," not "the check was flaky."
 
 ## Section 1 — containers up
 
-### container up: caddy / mlflow / jupyter-rl-2048 / jupyter-kurpatov-wiki / kurpatov-transcriber / kurpatov-wiki-raw-pusher
+### container up: caddy / mlflow / jupyter-rl-2048 / jupyter-kurpatov-wiki / kurpatov-ingest / kurpatov-wiki-raw-pusher
 
 **Goal.** Every forge service container is running. The expected set
 is exactly 6 containers; adding or removing a service means updating
@@ -102,10 +102,10 @@ Same goal / signals / edge cases as above, but for
 `jupyter-kurpatov-wiki` and `$KURPATOV_WIKI_GPU_UUID`.
 
 **Edge cases (additional).**
-- `kurpatov-transcriber` and `jupyter-kurpatov-wiki` deliberately
+- `kurpatov-ingest` and `jupyter-kurpatov-wiki` deliberately
   share one GPU (see
   [`kurpatov-wiki/docs/adr/0003`](../kurpatov-wiki/docs/adr/0003-watcher-reactive-not-cron.md)).
-  The smoke checks jupyter's view, not the transcriber's, because
+  The smoke checks jupyter's view, not the ingest daemon's, because
   they're identical by construction — duplicate assertion would be
   noise.
 - `kurpatov-wiki-raw-pusher` is CPU-only and has no GPU device; it
@@ -202,15 +202,15 @@ enough (caddy could be 200ing a stale cache or a misrouted backend).
 
 ## Section 6 — reactive watchers
 
-### transcriber has inotify on /workspace/sources
+### ingest daemon has inotify on /workspace/sources
 
-**Goal.** `kurpatov-transcriber` has actually entered its watchdog
+**Goal.** `kurpatov-ingest` has actually entered its watchdog
 loop. A container that booted but errored before `observer.schedule()`
 is silently broken — `docker ps` still shows "Up" because the Python
 process hasn't exited yet.
 
 **Signals.**
-- `docker logs --since=24h kurpatov-transcriber 2>&1` contains the
+- `docker logs --since=24h kurpatov-ingest 2>&1` contains the
   string `inotify on /workspace/sources` at least once.
 
 **Edge cases.**
@@ -221,7 +221,7 @@ process hasn't exited yet.
   match, closes stdin, `docker logs` writes again, gets SIGPIPE
   (exit 141), and pipefail propagates — failing the check even
   though the match was found. Observed in the wild on 2026-04-19:
-  the transcriber check passed by luck (small log, match near the
+  the ingest-watcher check passed by luck (small log, match near the
   end), the raw-pusher check failed reliably because its logs carry
   the multi-line NVIDIA CUDA banner after every restart. **Discipline:
   capture `docker logs` into a variable first, then `grep -qE`
@@ -230,7 +230,7 @@ process hasn't exited yet.
   a long-running healthy container; much longer would wastefully
   scan a log we've already cared about.
 - Phrase must be stable. Any change to the log line in
-  `03_watch_and_transcribe.py` / `04_watch_raw_and_push.py` is a
+  `03_watch_and_ingest.py` / `04_watch_raw_and_push.py` is a
   change to this check's signal and needs a matching model + script
   update.
 
@@ -269,7 +269,7 @@ run a dedicated lean image — no torch, no whisper, no nvidia base.
 **Signals.**
 - `docker inspect kurpatov-wiki-raw-pusher --format '{{.Config.Image}}'`
   returns an image *different from* the one used by
-  `jupyter-kurpatov-wiki` and `kurpatov-transcriber`. The shipped pair
+  `jupyter-kurpatov-wiki` and `kurpatov-ingest`. The shipped pair
   today is `forge-kurpatov-wiki:latest` (GPU) vs.
   `forge-kurpatov-wiki-pusher:latest` (lean).
 - `docker image inspect <pusher-image> --format '{{.Size}}'` returns

@@ -3,6 +3,20 @@
 ## Status
 Accepted (2026-04-19).
 
+## Amended (2026-04-20 — dispatched ingest, not just transcription)
+
+Since this ADR was written the watcher has grown a second extractor
+for HTML sources (getcourse.ru lesson-page exports) alongside
+faster-whisper. The container was renamed `kurpatov-transcriber` →
+`kurpatov-ingest`, the scripts renamed `02_transcribe_incremental.py`
+→ `02_ingest_incremental.py` and `03_watch_and_transcribe.py` →
+`03_watch_and_ingest.py`, and dispatch is now by file suffix:
+media → whisper (GPU, same lazy-load behaviour as below),
+`.html` / `.htm` → `_extract_html.py` (CPU, never loads the model).
+The reactive-watcher design below applies unchanged to both paths.
+See [ADR 0008](0008-ingest-dispatch.md) for the full dispatch
+rationale.
+
 ## Context
 I drop new mp4s unevenly — one or two at a time, batches once a day.
 Transcribing one lecture takes a couple of minutes on an RTX 5090. What I
@@ -24,6 +38,10 @@ Options:
 ## Decision
 Option 3. A dedicated service `kurpatov-transcriber` in compose, running
 `03_watch_and_transcribe.py`. Inside:
+
+(Later renamed to `kurpatov-ingest` / `03_watch_and_ingest.py` when
+HTML extraction joined; see the 2026-04-20 amendment above and
+[ADR 0008](0008-ingest-dispatch.md).)
 
 - `watchdog.observers.Observer` on `/workspace/sources/`, recursive.
 - `StabilityTracker` waits until an mp4 file's size+mtime stop changing
