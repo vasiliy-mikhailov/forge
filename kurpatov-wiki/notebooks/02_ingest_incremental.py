@@ -36,8 +36,9 @@ to care which extractor ran:
                                 that predate the rename)
   info.duration / .language_probability / .model / .compute_type /
   info.beam_size / .diarized  — whisper only
-  info.page_count / .paragraph_count / .pdf_text_source /
-  info.ocr_lang / .ocr_dpi    — pdf only
+  info.page_count / .paragraph_count  — pdf only
+  info.pdf_text_source        — pdf only: "text_layer" | "qwen2.5-vl"
+  info.ocr_model / .ocr_dpi   — pdf only, present when pdf_text_source != text_layer
   segments[].id               — sequential, 1-based
   segments[].text             — recognized / extracted text
   segments[].start / .end     — seconds (whisper only)

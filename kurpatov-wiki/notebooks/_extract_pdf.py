@@ -2,42 +2,41 @@
 PDF → raw.json extractor for the Kurpatov-wiki ingest pipeline.
 
 Scope:
-    Lesson materials sometimes arrive as PDF exports (typically macOS
-    "Print to PDF" via Quartz PDFContext, or a similar workflow that
-    stores each page as a single JPEG with no text layer). A minority
-    of future PDFs may carry a text layer — typeset material exported
-    from Word/LaTeX. This module handles both:
+    Lesson materials arrive as PDFs in two shapes:
 
-      1. If the file has a usable text layer (pypdf can pull > ~500
-         characters across the document and page 1 is not blank),
-         we read it directly — fast, lossless.
-      2. Otherwise we rasterize each page with pdf2image and OCR it
-         with tesseract (lang=rus+eng). CPU-only; runs on the ingest
-         worker thread with no GPU contention.
+      1. Image-only scans (macOS "Print to PDF" via Quartz PDFContext
+         and similar workflows — each page is a single JPEG with no
+         embedded text layer). These go through the VLM path below.
+      2. Typeset exports with an embedded text layer (Word → "Export
+         as PDF", LaTeX → pdflatex). These go through pypdf directly.
 
-The output shape matches the other extractors' raw.json contract
-(see ADR 0008). Three additions specific to PDF:
+A detector picks the fast path when the PDF has enough extractable
+text; otherwise we fall back to the VLM.
+
+The VLM path uses **Qwen/Qwen2.5-VL-7B-Instruct** loaded via HuggingFace
+`transformers` in bfloat16 on CUDA. See
+[ADR 0009](../docs/adr/0009-pdf-extractor.md) 2026-04-21 revised
+amendment for why we chose a vision-language model over
+tesseract / PaddleOCR / Surya.
+
+Output shape matches the other extractors' raw.json contract (ADR
+0008). PDF-specific fields:
 
       * info.page_count            — number of pages
-      * info.pdf_text_source       — "text_layer" | "ocr" | "mixed"
-      * info.ocr_lang              — tesseract -l string (when OCR ran)
-      * segments[].page            — 1-based page number; lets the
-                                     wiki-layer renderer anchor quotes
-                                     to a specific page.
+      * info.pdf_text_source       — "text_layer" | "qwen2.5-vl"
+      * info.ocr_model             — HF model id (when vlm ran)
+      * info.ocr_dpi               — rasterization DPI (when vlm ran)
+      * segments[].page            — 1-based page number
 
-Segmentation mirrors the HTML extractor's "one segment per
-structural unit" policy: within each page we split on blank-line
-boundaries and emit one segment per paragraph. Wrap-induced soft
-line breaks inside a paragraph are collapsed to single spaces.
-Common OCR bullet glyphs (©, •, ●, ○, ◦) that show up at the start
-of a paragraph are normalised to the "- " bullet prefix used by the
-HTML extractor, so the downstream summarization prompt sees the
-same list markers regardless of source.
+Segmentation: one segment per paragraph (blank-line boundaries). Wrap
+line-breaks inside a paragraph are collapsed to single spaces,
+page-number-only paragraphs are dropped, and paragraphs shorter than
+4 characters are dropped as noise.
 
 Run standalone for ad-hoc extraction:
 
-    python _extract_pdf.py <path/to/lesson.pdf> [--out raw.json] \
-                          [--dpi 300] [--ocr-lang rus+eng]
+    python _extract_pdf.py <path/to/lesson.pdf> [--out raw.json] \\
+                          [--dpi 200] [--force-vlm]
 """
 
 from __future__ import annotations
@@ -53,19 +52,47 @@ from pypdf import PdfReader
 
 
 # ---------------------------------------------------------------------------
-# text-layer detection
+# tunables
 # ---------------------------------------------------------------------------
 
+# Minimum extractable character count across the document for us to
+# trust the embedded text layer and skip the VLM.
 _TEXT_LAYER_MIN_CHARS = 500
-_WS_RE = re.compile(r"\s+")
-# Bullet glyphs tesseract frequently returns for round bullet markers.
-_BULLET_RE = re.compile(r"^[©•●○◦▪▫·○◯]\s+")
-# A page-number-only paragraph: just digits (maybe with noise like "OT" for "01").
-_PAGENUM_ONLY_RE = re.compile(r"^\s*[OoО0-9]{1,4}\s*$")
 
+# 200 DPI is Qwen2.5-VL's sweet spot on A4: the vision encoder
+# patchifies to ~28x28 pixel tiles, so more DPI burns VRAM + time
+# with no visible quality gain. Lower than 150 starts losing thin
+# Cyrillic diacritics on small print.
+_DEFAULT_DPI = 200
+
+# Default HF repo for the VLM path.
+_DEFAULT_VLM_MODEL = "Qwen/Qwen2.5-VL-7B-Instruct"
+
+# Instruction handed to the VLM for every page. Terse + explicit —
+# Qwen2.5-VL is chat-tuned and will otherwise add "Here is the
+# transcription:" style preamble.
+_VLM_PROMPT = (
+    "Transcribe all text from this page image in natural reading "
+    "order. Preserve paragraph breaks exactly as they appear in the "
+    "source. Do not add any commentary, captions, descriptions, or "
+    "metadata — output only the text content that is visible on the "
+    "page."
+)
+
+# Generous but finite; a dense A4 of Russian prose tokenizes to ~800
+# tokens, so 4096 is ~5x headroom plus slack for lists/tables.
+_VLM_MAX_NEW_TOKENS = 4096
+
+_WS_RE = re.compile(r"\s+")
+_PAGENUM_ONLY_RE = re.compile(r"^\s*\d{1,4}\s*$")
+
+
+# ---------------------------------------------------------------------------
+# text-layer detection + extraction
+# ---------------------------------------------------------------------------
 
 def _has_usable_text_layer(reader: PdfReader) -> bool:
-    """Heuristic: does this PDF carry enough extractable text to skip OCR?"""
+    """Heuristic: does this PDF carry enough extractable text to skip the VLM?"""
     total = 0
     for page in reader.pages:
         try:
@@ -77,21 +104,15 @@ def _has_usable_text_layer(reader: PdfReader) -> bool:
     return False
 
 
-# ---------------------------------------------------------------------------
-# paragraph splitting (shared by text-layer and OCR paths)
-# ---------------------------------------------------------------------------
-
 def _paragraphs_from_page_text(text: str) -> list[str]:
     """
     Split a single page's text into paragraphs.
 
-    Splits on blank-line boundaries. Within a paragraph, wrap line
-    breaks are collapsed to single spaces (a PDF page wraps a long
-    sentence across visual lines; we don't want that wrap as a
-    semantic boundary). Bullet glyphs at the start of a paragraph
-    are normalised to ``- ``.
+    Splits on blank-line boundaries. Inside a paragraph, wrap line
+    breaks are collapsed to single spaces. Page-number-only and
+    ≤3-char noise paragraphs are dropped.
     """
-    # form-feed can appear between pages when we concatenate; strip.
+    # Form-feed can appear between pages when we concatenate; strip.
     text = text.replace("\x0c", "\n")
     paragraphs: list[str] = []
     for chunk in re.split(r"\n\s*\n+", text):
@@ -102,29 +123,15 @@ def _paragraphs_from_page_text(text: str) -> list[str]:
         if not joined:
             continue
         if _PAGENUM_ONLY_RE.match(joined):
-            # likely a page marker (e.g. "01" mis-OCR'd as "OT"); drop.
             continue
-        joined = _BULLET_RE.sub("- ", joined)
-        # drop obvious OCR noise: isolated logos/glyphs or 2-3 character
-        # fragments (page-numbers mis-OCR'd as "OT", "OS", "о3", etc.,
-        # stray "@" from watermark logos). A legitimate paragraph — even
-        # a short heading — has more content than this.
         if len(joined) <= 3:
             continue
         paragraphs.append(joined)
     return paragraphs
 
 
-# ---------------------------------------------------------------------------
-# text-layer path
-# ---------------------------------------------------------------------------
-
 def _extract_via_text_layer(reader: PdfReader) -> list[tuple[int, str]]:
-    """
-    Return a list of (page_number, paragraph) tuples from the embedded
-    text layer. Paragraph order follows page order; within a page,
-    order follows pypdf's natural extract_text() order.
-    """
+    """(page_number, paragraph) tuples from the embedded text layer."""
     out: list[tuple[int, str]] = []
     for page_idx, page in enumerate(reader.pages, 1):
         try:
@@ -137,34 +144,106 @@ def _extract_via_text_layer(reader: PdfReader) -> list[tuple[int, str]]:
 
 
 # ---------------------------------------------------------------------------
-# OCR path
+# VLM path — Qwen2.5-VL-7B-Instruct via transformers
 # ---------------------------------------------------------------------------
 
-def _extract_via_ocr(
+# Module-level cache: load the VLM once per process and reuse across
+# files. The ingest daemon processes PDFs sequentially, so this amortises
+# the ~10-30s weight-load cost across a batch.
+_vlm_cache: dict[str, Any] = {}
+
+
+def _load_vlm(model_id: str) -> tuple[Any, Any, Any]:
+    """Lazy-load the VLM and its processor; cached at module scope."""
+    import torch  # noqa: WPS433
+    from transformers import (  # noqa: WPS433
+        AutoProcessor,
+        Qwen2_5_VLForConditionalGeneration,
+    )
+
+    if _vlm_cache.get("model_id") == model_id:
+        return (
+            _vlm_cache["model"],
+            _vlm_cache["processor"],
+            _vlm_cache["torch"],
+        )
+
+    processor = AutoProcessor.from_pretrained(model_id)
+    model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
+        model_id,
+        torch_dtype=torch.bfloat16,
+        device_map="cuda",
+        attn_implementation="sdpa",
+    )
+    model.eval()
+    _vlm_cache.clear()
+    _vlm_cache.update(
+        model_id=model_id,
+        model=model,
+        processor=processor,
+        torch=torch,
+    )
+    return model, processor, torch
+
+
+def _vlm_page_text(model, processor, torch, img) -> str:
+    """Run Qwen2.5-VL on a single PIL image and return the transcribed text."""
+    messages = [{
+        "role": "user",
+        "content": [
+            {"type": "image", "image": img},
+            {"type": "text", "text": _VLM_PROMPT},
+        ],
+    }]
+    chat = processor.apply_chat_template(
+        messages, tokenize=False, add_generation_prompt=True,
+    )
+    inputs = processor(
+        text=[chat],
+        images=[img],
+        padding=True,
+        return_tensors="pt",
+    ).to("cuda")
+    with torch.inference_mode():
+        gen_ids = model.generate(
+            **inputs,
+            max_new_tokens=_VLM_MAX_NEW_TOKENS,
+            do_sample=False,
+        )
+    # strip the prompt echo — every row of gen_ids starts with its
+    # corresponding input row, then the new tokens.
+    trimmed = [
+        out[len(inp):]
+        for inp, out in zip(inputs.input_ids, gen_ids)
+    ]
+    decoded = processor.batch_decode(
+        trimmed,
+        skip_special_tokens=True,
+        clean_up_tokenization_spaces=False,
+    )
+    return decoded[0]
+
+
+def _extract_via_vlm(
     source: Path,
     *,
-    dpi: int = 300,
-    lang: str = "rus+eng",
+    model_id: str = _DEFAULT_VLM_MODEL,
+    dpi: int = _DEFAULT_DPI,
     page_count: int | None = None,
 ) -> list[tuple[int, str]]:
     """
-    Rasterize each page to an image and OCR it.
+    Rasterize each page and send it through the VLM, page-by-page.
 
-    We rasterize one page at a time (via ``first_page``/``last_page``)
-    rather than converting the whole PDF up front. A single 300 DPI
-    A4 page is ~25 MB as an in-memory RGB bitmap; a 30-page deck
-    converted all at once would swell to ~750 MB plus tesseract's
-    working set, which can OOM on a modestly-provisioned ingest
-    worker. Page-by-page keeps the peak at one page's worth.
+    Rasterizing one page at a time keeps peak memory at one page's
+    worth. The VLM itself is loaded once per process and cached at
+    module scope via _load_vlm.
     """
-    # Imported lazily so callers that never take the OCR path (e.g. a
-    # pytest unit test on a text-layer fixture) don't pay for the heavy
-    # dependencies.
     from pdf2image import convert_from_path  # noqa: WPS433
-    import pytesseract  # noqa: WPS433
 
     if page_count is None:
         page_count = len(PdfReader(str(source)).pages)
+
+    model, processor, torch = _load_vlm(model_id)
 
     out: list[tuple[int, str]] = []
     for page_idx in range(1, page_count + 1):
@@ -176,7 +255,7 @@ def _extract_via_ocr(
             continue
         img = images[0]
         try:
-            text = pytesseract.image_to_string(img, lang=lang)
+            text = _vlm_page_text(model, processor, torch, img)
         finally:
             img.close()
         for para in _paragraphs_from_page_text(text):
@@ -208,33 +287,32 @@ def build_raw_payload(
     source: Path,
     *,
     language: str = "ru",
-    dpi: int = 300,
-    ocr_lang: str = "rus+eng",
-    force_ocr: bool = False,
+    dpi: int = _DEFAULT_DPI,
+    vlm_model: str = _DEFAULT_VLM_MODEL,
+    force_vlm: bool = False,
 ) -> dict[str, Any]:
     """
     Parse ``source`` and build the raw.json payload dict.
 
-    Tries the text-layer path first; falls back to OCR. ``force_ocr``
+    Tries the text-layer path first; falls back to the VLM. ``force_vlm``
     skips the text-layer detection (useful when the embedded text
-    layer is known to be garbage — some scanners produce a text layer
-    full of ligature noise).
+    layer is known to be ligature noise).
     """
     reader = PdfReader(str(source))
     page_count = len(reader.pages)
 
-    used = None  # "text_layer" | "ocr"
+    used = None  # "text_layer" | "qwen2.5-vl"
     pairs: list[tuple[int, str]] = []
 
-    if not force_ocr and _has_usable_text_layer(reader):
+    if not force_vlm and _has_usable_text_layer(reader):
         pairs = _extract_via_text_layer(reader)
         used = "text_layer"
 
     if not pairs:
-        pairs = _extract_via_ocr(
-            source, dpi=dpi, lang=ocr_lang, page_count=page_count,
+        pairs = _extract_via_vlm(
+            source, model_id=vlm_model, dpi=dpi, page_count=page_count,
         )
-        used = "ocr"
+        used = "qwen2.5-vl"
 
     title = _pdf_title(reader)
 
@@ -253,8 +331,8 @@ def build_raw_payload(
         "paragraph_count": len(segments),
         "pdf_text_source": used,
     }
-    if used == "ocr":
-        info["ocr_lang"] = ocr_lang
+    if used == "qwen2.5-vl":
+        info["ocr_model"] = vlm_model
         info["ocr_dpi"] = dpi
 
     return {"info": info, "segments": segments}
@@ -270,20 +348,22 @@ def main() -> None:
     ap.add_argument("--out", type=Path,
                     help="Where to write raw.json (default: stdout)")
     ap.add_argument("--language", default="ru")
-    ap.add_argument("--dpi", type=int, default=300,
-                    help="Rasterization DPI for OCR path (default: 300)")
-    ap.add_argument("--ocr-lang", default="rus+eng",
-                    help="tesseract -l string (default: rus+eng)")
-    ap.add_argument("--force-ocr", action="store_true",
-                    help="Skip text-layer detection; always OCR.")
+    ap.add_argument("--dpi", type=int, default=_DEFAULT_DPI,
+                    help=f"Rasterization DPI for the VLM path "
+                         f"(default: {_DEFAULT_DPI})")
+    ap.add_argument("--vlm-model", default=_DEFAULT_VLM_MODEL,
+                    help=f"HF repo id for the VLM "
+                         f"(default: {_DEFAULT_VLM_MODEL})")
+    ap.add_argument("--force-vlm", action="store_true",
+                    help="Skip text-layer detection; always use the VLM.")
     args = ap.parse_args()
 
     payload = build_raw_payload(
         args.source,
         language=args.language,
         dpi=args.dpi,
-        ocr_lang=args.ocr_lang,
-        force_ocr=args.force_ocr,
+        vlm_model=args.vlm_model,
+        force_vlm=args.force_vlm,
     )
 
     text = json.dumps(payload, ensure_ascii=False, indent=2)

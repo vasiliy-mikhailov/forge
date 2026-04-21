@@ -12,7 +12,7 @@ extractors run behind one scheduler, dispatched by file suffix:
     writes the same segments[] shape with no timing fields.
   * PDF_EXTENSIONS — PDF exports of lesson materials. The extractor
     (`_extract_pdf.py`) tries the embedded text layer first and falls
-    back to tesseract OCR on image-only PDFs. CPU-only (no GPU load).
+    back to Qwen2.5-VL-7B-Instruct OCR (GPU) on image-only PDFs.
 
 See [ADR 0008](../docs/adr/0008-ingest-dispatch.md) for why the daemon
 handles both and why it was renamed from "transcriber" to "ingest".
@@ -30,7 +30,9 @@ Design notes:
     rsync.tmp→mv, and similar patterns.
   - Whisper is lazy-loaded: brought to VRAM only when a whisper job runs,
     and evicted after --idle-unload-sec seconds of idleness. HTML jobs
-    never touch the GPU — they skip the load entirely.
+    never touch the GPU — they skip the load entirely. PDF jobs may
+    touch the GPU (Qwen2.5-VL-7B) if a page has no text layer; the VLM
+    is also lazy-loaded (cached inside `_extract_pdf`).
   - Initial scan at startup enqueues every source file without a matching
     raw.json, so the daemon also acts as "catch-up" for anything dropped
     in while it was down.
@@ -523,7 +525,7 @@ class Daemon:
                         language=self.args.language,
                     )
                 elif kind == "pdf":
-                    # PDF never touches the GPU (tesseract CPU-only) — run directly.
+                    # PDF usually skips the GPU (text-layer fast path); may fall back to Qwen2.5-VL.
                     ingest_pdf_one(
                         path,
                         self.out_root,

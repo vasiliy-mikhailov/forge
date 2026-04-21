@@ -5,7 +5,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       python3 python3-venv python3-pip python3-dev \
       ca-certificates curl git openssh-client \
       ffmpeg libsndfile1 \
-      tesseract-ocr tesseract-ocr-rus tesseract-ocr-eng \
       poppler-utils \
  && rm -rf /var/lib/apt/lists/*
 
@@ -32,12 +31,14 @@ RUN uv pip install \
 
 RUN uv pip install jupyterlab ipywidgets tqdm watchdog
 
-# PDF extractor stack — pypdf for text-layer extraction, pdf2image to
-# rasterize image-only PDFs, pytesseract as the OCR driver (the
-# tesseract binary itself comes from apt above). Pillow is pdf2image's
-# runtime image type; installed explicitly so image close() works on
-# all variants.
-RUN uv pip install pypdf pdf2image pytesseract Pillow
+# PDF extractor stack — pypdf detects and reads the native text layer
+# (cheap, runs on CPU), pdf2image (+ poppler-utils above) rasterizes
+# scan-only pages, Pillow is pdf2image's runtime image type.
+# transformers + accelerate + qwen-vl-utils load Qwen2.5-VL-7B-Instruct
+# for high-quality OCR on the 5090. See ADR 0009.
+RUN uv pip install \
+      pypdf pdf2image Pillow \
+      "transformers>=4.49.0" accelerate qwen-vl-utils
 
 ENV HF_HOME=/workspace/models \
     HF_DATASETS_CACHE=/workspace/models \

@@ -127,3 +127,61 @@ Questions:
   already share, and forces the summarizer to redo paragraph
   detection. `segments[].page` gives us the page anchor without a
   schema split.
+
+## Amendment — 2026-04-21 revised: Qwen2.5-VL-7B replaces tesseract
+
+Status: Accepted (2026-04-21 revised)
+
+**Pivot.** Before the tesseract build reached the server, the operator
+pushed back on the OCR engine choice: *"там не так много материалов,
+давай нормальную сетку сразу возьмем, чтобы не мучаться с
+перераспознаванием"* — the corpus is small enough that re-OCRing later
+with a better model would cost more operator-time than just picking the
+better model now.
+
+**Revised decision.** The OCR engine is now **Qwen2.5-VL-7B-Instruct**,
+loaded via HuggingFace `transformers` and run on the 5090.
+
+Why the VRAM-contention worry was overstated:
+
+* `faster-whisper` is **lazy-loaded** in `03_watch_and_ingest.py` — it
+  only occupies VRAM while a whisper job is running, and is evicted
+  after `--idle-unload-sec` seconds. So is the VLM (cached inside
+  `_extract_pdf` on first use).
+* Whisper large-v3 on CT2 fp16 ≈ 3 GB VRAM at runtime. Qwen2.5-VL-7B
+  in bf16 ≈ 16 GB. Even if both were resident at once, the 32 GB 5090
+  has headroom.
+* PDFs and audio don't currently arrive simultaneously in our workflow;
+  the worker is single-threaded.
+
+Why Qwen2.5-VL-7B over alternatives:
+
+* **Russian text quality.** Qwen2.5-VL was trained with a substantial
+  Russian corpus and handles Cyrillic script (including italic /
+  cursive / rotated / low-contrast scans) materially better than
+  tesseract.
+* **Layout-aware.** VLMs read the page as a whole — columns, running
+  heads, tables, formulas — instead of tesseract's line-based segmentation.
+  This matches how the upstream material is structured (lesson handouts
+  with boxed pull-quotes).
+* **No model tuning needed.** A single prompt ("transcribe all text in
+  natural reading order, preserve paragraph breaks, no commentary")
+  produces clean paragraphs, no post-processing beyond paragraph
+  splitting + ≤3-char noise filter inherited from the tesseract path.
+
+Revised container diff: drop `tesseract-ocr tesseract-ocr-rus
+tesseract-ocr-eng` from apt and `pytesseract` from pip; add
+`transformers accelerate qwen-vl-utils`. `poppler-utils` / `pypdf` /
+`pdf2image` / `Pillow` stay (we still rasterize pages).
+
+Revised raw.json contract:
+
+        info.pdf_text_source  = "text_layer" | "qwen2.5-vl"
+        info.ocr_model        = "Qwen/Qwen2.5-VL-7B-Instruct"  (when VLM ran)
+        info.ocr_dpi          = 200                             (when VLM ran)
+        # info.ocr_lang is removed; the VLM is multilingual
+
+DPI drops from 300 (tesseract sweet spot) to 200 (Qwen's patch grid
+sweet spot — higher doesn't help).
+
+The `--force-ocr` CLI flag is renamed to `--force-vlm` for clarity.
