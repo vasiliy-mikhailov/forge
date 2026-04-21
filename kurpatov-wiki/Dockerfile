@@ -20,7 +20,7 @@ WORKDIR /workspace
 # PyTorch with CUDA 12.9 — explicit index-url, no --torch-backend magic
 RUN uv pip install \
       --index-url https://download.pytorch.org/whl/cu129 \
-      torch torchaudio torchcodec
+      torch torchvision torchaudio torchcodec
 
 # Transcription stack — from the default PyPI
 RUN uv pip install \
