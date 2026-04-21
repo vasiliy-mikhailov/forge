@@ -150,8 +150,14 @@ def reclaim_orphan_outputs(
     Top-level files under out_root (CLAUDE.md, README.md) are ignored
     because we only look at directories containing a ``raw.json``.
 
-    Returns the number of orphans reclaimed (or would-be reclaimed if
-    dry_run=True).
+    Second pass: stale ``*.tmp`` staging dirs from the atomic-write
+    pattern (``<slug>.tmp/raw.json`` → ``<slug>/``). At startup no
+    extraction is mid-flight, so any surviving ``*.tmp`` dir is
+    garbage — unless the source itself legitimately has ``.tmp`` in
+    its basename, in which case we keep it.
+
+    Returns the number of paths reclaimed (orphan raws + stale .tmp
+    dirs), or would-be reclaimed when dry_run=True.
     """
     if not out_root.exists():
         return 0
@@ -187,7 +193,41 @@ def reclaim_orphan_outputs(
             else:
                 break
 
-    return len(orphans)
+    # Second pass: stale ``.tmp`` staging leftovers.
+    stale_tmp: list[Path] = []
+    for tmp_dir in out_root.rglob("*.tmp"):
+        if not tmp_dir.is_dir():
+            continue
+        slug_rel = tmp_dir.relative_to(out_root)
+        has_source = any(
+            (sources_root / (str(slug_rel) + ext)).exists()
+            for ext in INGEST_EXTENSIONS
+        )
+        if has_source:
+            continue
+        stale_tmp.append(tmp_dir)
+
+    for tmp_dir in stale_tmp:
+        slug_rel = tmp_dir.relative_to(out_root)
+        verb = "would remove" if dry_run else "removing"
+        print(f"[reclaim] {verb} stale .tmp {slug_rel}")
+        if dry_run:
+            continue
+        shutil.rmtree(tmp_dir)
+        parent = tmp_dir.parent
+        while parent != out_root and parent.exists():
+            try:
+                next(parent.iterdir())
+            except StopIteration:
+                try:
+                    parent.rmdir()
+                except OSError:
+                    break
+                parent = parent.parent
+            else:
+                break
+
+    return len(orphans) + len(stale_tmp)
 
 
 # ---------------------------------------------------------------------------

@@ -190,12 +190,18 @@ def reclaim_orphan_outputs(
     Top-level files under out_root (CLAUDE.md, README.md) are ignored:
     we only ever look at directories that contain a ``raw.json``.
 
+    Second pass: stale ``*.tmp`` staging dirs from the atomic-write
+    pattern (``<slug>.tmp/raw.json`` → ``<slug>/``). At startup no
+    extraction is mid-flight, so any surviving ``*.tmp`` dir is
+    garbage — unless the source itself legitimately has ``.tmp`` in
+    its basename, in which case we keep it.
+
     After removing a slug dir we also rmdir any newly-empty ancestor
     mirror dirs up to (but not including) out_root itself, so the raw
     tree doesn't accumulate empty bookkeeping directories.
 
-    Returns the number of orphans reclaimed (or that would be, if
-    dry_run=True).
+    Returns the number of paths reclaimed (orphan raws + stale .tmp
+    dirs). Equals what would be reclaimed when dry_run=True.
     """
     if not out_root.exists():
         return 0
@@ -237,7 +243,44 @@ def reclaim_orphan_outputs(
             else:
                 break
 
-    return len(orphans)
+    # Second pass: stale ``.tmp`` staging leftovers.
+    stale_tmp: list[Path] = []
+    for tmp_dir in out_root.rglob("*.tmp"):
+        if not tmp_dir.is_dir():
+            continue
+        slug_rel = tmp_dir.relative_to(out_root)
+        # Does a source legitimately have this ``.tmp``-suffixed slug?
+        # (E.g. ``sources/foo.tmp.mp4`` → slug ``foo.tmp`` → raw
+        # ``foo.tmp/``.) If so, keep it.
+        has_source = any(
+            (sources_root / (str(slug_rel) + ext)).exists()
+            for ext in INGEST_EXTENSIONS
+        )
+        if has_source:
+            continue
+        stale_tmp.append(tmp_dir)
+
+    for tmp_dir in stale_tmp:
+        slug_rel = tmp_dir.relative_to(out_root)
+        verb = "would remove" if dry_run else "removing"
+        log.info("[reclaim] %s stale .tmp %s", verb, slug_rel)
+        if dry_run:
+            continue
+        shutil.rmtree(tmp_dir)
+        parent = tmp_dir.parent
+        while parent != out_root and parent.exists():
+            try:
+                next(parent.iterdir())
+            except StopIteration:
+                try:
+                    parent.rmdir()
+                except OSError:
+                    break
+                parent = parent.parent
+            else:
+                break
+
+    return len(orphans) + len(stale_tmp)
 
 
 # ---------------------------------------------------------------------------

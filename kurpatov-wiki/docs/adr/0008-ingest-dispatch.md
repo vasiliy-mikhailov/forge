@@ -228,3 +228,18 @@ Safety notes:
 * The pusher (separate container, `kurpatov-wiki-raw-pusher`) picks up
   the removals on its next quiet-period sweep and commits them to
   GitHub exactly like any other change — no special coordination.
+
+Second startup pass: stale `*.tmp` staging dirs. The extractors write
+to `<slug>.tmp/raw.json` first and rename `<slug>.tmp → <slug>` only
+on success (atomic-write pattern). If the process is killed between
+those two steps (container restart, OOM, SIGKILL), the `.tmp` dir is
+orphaned. The orphan-raw pass above misses it because there's no
+`raw.json` inside. Reclaim therefore does a second rglob over
+`*.tmp` directories and deletes any whose slug has no matching
+source. The edge case of a source whose basename legitimately ends
+in `.tmp` (e.g. `sources/foo.tmp.mp4`) is preserved: the matcher
+finds `sources/foo.tmp.<ext>` for the `.tmp`-suffixed slug and keeps
+it. Smoke-tested locally with 5 mixed cases — completed raws with
+and without period-in-stem, orphan raw + its own stale staging,
+stale staging for a still-live slug, and the legitimate-`.tmp`
+source case.
