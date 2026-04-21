@@ -550,7 +550,20 @@ class Daemon:
         self.out_root.mkdir(parents=True, exist_ok=True)
         self.reclaim_dry_run: bool = bool(args.reclaim_dry_run)
 
-        self.queue: queue.Queue[Path] = queue.Queue()
+        # Priority queue keyed on (slug_str, seq, path). Slug is the
+        # source's out_slug_for() — lexicographic order matches the
+        # NNN-prefix naming convention (ADR 0004), so always pulling
+        # the smallest pending slug gives strict 000→001→… order
+        # even when new files arrive mid-run with slugs smaller than
+        # what's already queued. Seq is a monotonic tie-breaker for
+        # the (vanishingly unlikely) case of two paths stringifying
+        # to the same slug — it keeps PriorityQueue from ever having
+        # to compare Path objects, whose ordering is filesystem
+        # specific.
+        self.queue: queue.PriorityQueue[tuple[str, int, Path]] = (
+            queue.PriorityQueue()
+        )
+        self._enqueue_seq: int = 0
         self._in_flight: set[Path] = set()
         self._lock = threading.Lock()
 
@@ -572,7 +585,10 @@ class Daemon:
             if path in self._in_flight:
                 return
             self._in_flight.add(path)
-        self.queue.put(path)
+            self._enqueue_seq += 1
+            seq = self._enqueue_seq
+        slug = str(out_slug_for(path, self.sources_root))
+        self.queue.put((slug, seq, path))
         log.info(
             "[queue] + %s [%s] (qsize=%d)",
             path.name, extractor_for(path), self.queue.qsize(),
@@ -620,7 +636,7 @@ class Daemon:
     def _worker(self) -> None:
         while not self.shutdown.is_set():
             try:
-                path = self.queue.get(timeout=0.5)
+                _slug, _seq, path = self.queue.get(timeout=0.5)
             except queue.Empty:
                 if (
                     self.model is not None

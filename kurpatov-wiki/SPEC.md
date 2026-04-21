@@ -294,6 +294,10 @@ Done:
 - Three roles in compose (jupyter + ingest + raw-pusher).
 - Reactive watcher with lazy-load / idle-unload of the whisper model;
   HTML extraction dispatched inline on the same watcher (see ADR 0008).
+- Strict slug-order processing (priority queue in the daemon, unified
+  sorted loop in the batch script) so downstream stages always see
+  `000/*` before `001/*` before `002/*`, regardless of extractor type
+  or arrival order (see ADR 0008 amendment, 2026-04-21).
 - Full mirror of the sources → vault/raw/data hierarchy.
 - Migration script for the flat layout (ADR 0004); subsequent
   data/-subtree migration via the server-side script documented in

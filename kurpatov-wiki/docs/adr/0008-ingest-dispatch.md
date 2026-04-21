@@ -243,3 +243,39 @@ it. Smoke-tested locally with 5 mixed cases — completed raws with
 and without period-in-stem, orphan raw + its own stale staging,
 stale staging for a still-live slug, and the legitimate-`.tmp`
 source case.
+
+
+## 2026-04-21 amendment — strict slug-order processing
+
+All ingest processing — both the daemon (`03_watch_and_ingest.py`) and
+the batch script (`02_ingest_incremental.py`) — now processes sources
+in strict lexicographic slug order, regardless of extractor type.
+
+**Why it matters.** Sources are named with a zero-padded `NNN_` prefix
+(ADR 0004). Lecture 001 may cite lecture 000; a PDF companion for
+lecture 002 may cite both. If ingest processes PDFs before audio (or
+vice versa), or worse, processes `002/000` before `000/000` because a
+whisper file happens to be in flight when the second arrives, the
+downstream rendering/summarisation step sees references to raws that
+don't exist yet. The pipeline tolerates this (it'll catch up on the
+next pass) but the intermediate Wiki state is broken and confusing.
+
+**Daemon (03).** `queue.Queue` replaced with
+`queue.PriorityQueue[tuple[slug_str, seq, path]]`. Workers pull the
+smallest pending slug, so a newly-dropped `000/003.mp4` jumps ahead of
+`005/000.mp4` already enqueued. `seq` is a monotonic tie-breaker so
+`Path` objects with identical slugs (different extensions) still have
+a deterministic pop order.
+
+**Batch (02).** The previous three-phase loop (all HTML → all PDF →
+all Whisper) is replaced by a single unified loop over `sorted(
+pending, key=lambda p: str(out_slug_for(p, sources_root)))`. Whisper
+model is still lazy-loaded on the first whisper item encountered;
+audio duration probing and the outer progress bar are unchanged (they
+still only fire when whisper work is present). Atomic `<slug>.tmp →
+<slug>` rename applies to all three extractor types, so the reclaim
+pass above handles partial work from any of them uniformly.
+
+Tested: dropped `000/003` while `005/*` was in flight, daemon log
+shows `000/003` processed next. Batch script run on a mixed pending
+set produces output timestamps in slug order (not grouped by type).

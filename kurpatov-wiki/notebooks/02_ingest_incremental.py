@@ -74,6 +74,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+from typing import Optional
 
 from faster_whisper import WhisperModel
 from tqdm import tqdm
@@ -404,8 +405,17 @@ def main() -> None:
           f"{'would be reclaimed (dry-run)' if args.reclaim_dry_run else 'reclaimed'}")
 
     # ----- 1. Scan sources + pick the missing ones -----
-    all_sources = sorted(p for p in sources_root.rglob("*")
-                         if p.is_file() and extractor_for(p) is not None)
+    # Sort by slug (stem-only, ext stripped) rather than full path so
+    # the processing order matches the daemon's priority-queue order
+    # (ADR 0008) — lexicographic slug order is the NNN-prefix order
+    # from ADR 0004 (000/000, 000/001, 001/000, ...). We do NOT group
+    # by extractor type — later sources may cite earlier ones across
+    # formats (e.g. a whisper transcript of a lecture citing a PDF).
+    all_sources = sorted(
+        (p for p in sources_root.rglob("*")
+         if p.is_file() and extractor_for(p) is not None),
+        key=lambda p: str(out_slug_for(p, sources_root)),
+    )
     pending = [s for s in all_sources
                if not (out_dir_for(s) / "raw.json").exists()]
 
@@ -423,88 +433,65 @@ def main() -> None:
         print("[done ] nothing to do — vault/raw/data is up to date")
         return
 
-    # ----- 2. HTML first (cheap, no GPU needed) -----
-    if pending_html:
-        print(f"[html ] extracting {len(pending_html)} HTML page(s)")
-        for idx, source in enumerate(pending_html, 1):
-            stem = source.stem
-            out_dir = out_dir_for(source)
-            tmp_dir = out_dir.parent / f"{out_dir.name}.tmp"
-            out_dir.parent.mkdir(parents=True, exist_ok=True)
-            clean_tmp_dir(tmp_dir)
-            tmp_dir.mkdir(parents=True)
+    # ----- 2. Probe whisper durations up front (for the outer bar) -----
+    durations: dict[Path, float] = {}
+    total_audio = 0.0
+    if pending_whisper:
+        print("[probe] measuring whisper-input durations via ffprobe...")
+        durations = {s: probe_duration(s) for s in pending_whisper}
+        total_audio = sum(durations.values())
+        print(f"[probe] whisper queue: {len(pending_whisper)} files, "
+              f"{total_audio/3600:.2f}h audio total "
+              f"(≈{total_audio*0.05/60:.1f} min wall @ RTF 0.05)")
 
-            payload = ingest_html(source, language=args.language)
-            (tmp_dir / "raw.json").write_text(
-                json.dumps(payload, ensure_ascii=False, indent=2),
-                encoding="utf-8",
+    # ----- 3. Whisper model, lazily loaded on first whisper item -----
+    model: Optional[WhisperModel] = None
+
+    def _ensure_model() -> WhisperModel:
+        nonlocal model
+        if model is None:
+            print(f"[load ] {args.model} on cuda ({args.compute})")
+            t0 = time.time()
+            model = WhisperModel(
+                args.model,
+                device="cuda",
+                compute_type=args.compute,
+                download_root="/workspace/models",
             )
-            tmp_dir.rename(out_dir)
-            print(f"[html ] [{idx}/{len(pending_html)}] {stem[:70]} — "
-                  f"{payload['info']['paragraph_count']} paragraphs")
+            print(f"[load ] done in {time.time() - t0:.1f}s")
+        return model
 
-    # ----- 2b. PDF next (CPU-bound: text-layer fast; OCR slow-ish) -----
-    if pending_pdf:
-        print(f"[pdf  ] extracting {len(pending_pdf)} PDF file(s)")
-        for idx, source in enumerate(pending_pdf, 1):
-            stem = source.stem
-            out_dir = out_dir_for(source)
-            tmp_dir = out_dir.parent / f"{out_dir.name}.tmp"
-            out_dir.parent.mkdir(parents=True, exist_ok=True)
-            clean_tmp_dir(tmp_dir)
-            tmp_dir.mkdir(parents=True)
+    # ----- 4. Outer audio-seconds bar (only meaningful with whisper) -----
+    outer_bar = None
+    if pending_whisper:
+        outer_bar = tqdm(
+            total=total_audio,
+            desc="TOTAL",
+            position=0,
+            unit="s",
+            dynamic_ncols=True,
+            bar_format=(
+                "{l_bar}{bar}| {n:.0f}/{total:.0f}s "
+                "[{elapsed}<{remaining}]"
+            ),
+        )
 
-            payload = ingest_pdf(source, language=args.language)
-            (tmp_dir / "raw.json").write_text(
-                json.dumps(payload, ensure_ascii=False, indent=2),
-                encoding="utf-8",
-            )
-            tmp_dir.rename(out_dir)
-            info = payload["info"]
-            print(f"[pdf  ] [{idx}/{len(pending_pdf)}] {stem[:70]} — "
-                  f"{info['paragraph_count']} paragraphs "
-                  f"({info['page_count']} pages, "
-                  f"source={info['pdf_text_source']})")
-
-    if not pending_whisper:
-        print(f"\n[done ] processed {len(pending)} sources -> {out_root}")
-        return
-
-    # ----- 3. Durations up front (accurate outer progress bar) -----
-    print("[probe] measuring durations via ffprobe...")
-    durations = {s: probe_duration(s) for s in pending_whisper}
-    total_audio = sum(durations.values())
-    print(f"[probe] queue: {len(pending_whisper)} files, "
-          f"{total_audio/3600:.2f}h audio total "
-          f"(≈{total_audio*0.05/60:.1f} min wall @ RTF 0.05)")
-
-    # ----- 4. Load the model once for the whole batch -----
-    print(f"[load ] {args.model} on cuda ({args.compute})")
-    t0 = time.time()
-    model = WhisperModel(
-        args.model,
-        device="cuda",
-        compute_type=args.compute,
-        download_root="/workspace/models",
-    )
-    print(f"[load ] done in {time.time() - t0:.1f}s")
-
-    # ----- 5. Transcription with a double progress bar -----
-    outer_bar = tqdm(
-        total=total_audio,
-        desc="TOTAL",
-        position=0,
-        unit="s",
-        dynamic_ncols=True,
-        bar_format=(
-            "{l_bar}{bar}| {n:.0f}/{total:.0f}s "
-            "[{elapsed}<{remaining}]"
-        ),
-    )
+    # ----- 5. Single unified loop — STRICT slug order -----
+    # Processing 000/000 → 000/001 → 001/000 → ... matters because
+    # later sources may cite earlier ones (e.g. "part 2" references
+    # "part 1"). Do NOT re-group by extractor type. See
+    # docs/adr/0008 amendments.
+    def _say(msg: str) -> None:
+        # Write through the bar when active so tqdm redraws cleanly.
+        if outer_bar is not None:
+            outer_bar.write(msg)
+        else:
+            print(msg)
 
     try:
-        for idx, source in enumerate(pending_whisper, 1):
-            audio_dur = durations[source]
+        whisper_seen = 0
+        for idx, source in enumerate(pending, 1):
+            kind = extractor_for(source)
             stem = source.stem
             out_dir = out_dir_for(source)
             tmp_dir = out_dir.parent / f"{out_dir.name}.tmp"
@@ -512,52 +499,78 @@ def main() -> None:
             clean_tmp_dir(tmp_dir)
             tmp_dir.mkdir(parents=True)
 
-            label = stem if len(stem) <= 55 else stem[:52] + "..."
-            label = f"[{idx}/{len(pending_whisper)}] {label}"
+            if kind == "html":
+                payload = ingest_html(source, language=args.language)
+                (tmp_dir / "raw.json").write_text(
+                    json.dumps(payload, ensure_ascii=False, indent=2),
+                    encoding="utf-8",
+                )
+                tmp_dir.rename(out_dir)
+                _say(f"[html ] [{idx}/{len(pending)}] {stem[:70]} — "
+                     f"{payload['info']['paragraph_count']} paragraphs")
 
-            inner_bar = tqdm(
-                total=audio_dur,
-                desc=label,
-                position=1,
-                leave=False,
-                unit="s",
-                dynamic_ncols=True,
-                bar_format="{l_bar}{bar}| {n:.0f}/{total:.0f}s",
-            )
+            elif kind == "pdf":
+                payload = ingest_pdf(source, language=args.language)
+                (tmp_dir / "raw.json").write_text(
+                    json.dumps(payload, ensure_ascii=False, indent=2),
+                    encoding="utf-8",
+                )
+                tmp_dir.rename(out_dir)
+                info = payload["info"]
+                _say(f"[pdf  ] [{idx}/{len(pending)}] {stem[:70]} — "
+                     f"{info['paragraph_count']} paragraphs "
+                     f"({info['page_count']} pages, "
+                     f"source={info['pdf_text_source']})")
 
-            def _tick(step: float, _inner=inner_bar, _outer=outer_bar):
-                _inner.update(step)
-                _outer.update(step)
+            elif kind == "whisper":
+                _model = _ensure_model()
+                audio_dur = durations[source]
+                whisper_seen += 1
+                label = stem if len(stem) <= 55 else stem[:52] + "..."
+                label = f"[{whisper_seen}/{len(pending_whisper)}] {label}"
 
-            t_file = time.time()
-            payload = ingest_whisper(
-                source, model,
-                model_name=args.model,
-                compute=args.compute,
-                beam=args.beam,
-                language=args.language,
-                audio_dur=audio_dur,
-                progress_cb=_tick,
-            )
+                inner_bar = tqdm(
+                    total=audio_dur,
+                    desc=label,
+                    position=1,
+                    leave=False,
+                    unit="s",
+                    dynamic_ncols=True,
+                    bar_format="{l_bar}{bar}| {n:.0f}/{total:.0f}s",
+                )
 
-            (tmp_dir / "raw.json").write_text(
-                json.dumps(payload, ensure_ascii=False, indent=2),
-                encoding="utf-8",
-            )
+                def _tick(step: float, _inner=inner_bar, _outer=outer_bar):
+                    _inner.update(step)
+                    if _outer is not None:
+                        _outer.update(step)
 
-            # atomic final rename
-            tmp_dir.rename(out_dir)
-            inner_bar.close()
+                t_file = time.time()
+                payload = ingest_whisper(
+                    source, _model,
+                    model_name=args.model,
+                    compute=args.compute,
+                    beam=args.beam,
+                    language=args.language,
+                    audio_dur=audio_dur,
+                    progress_cb=_tick,
+                )
 
-            wall = time.time() - t_file
-            rtf = wall / max(audio_dur, 1e-6)
-            outer_bar.write(
-                f"[done ] {stem[:70]} — {len(payload['segments'])} segs, "
-                f"audio {audio_dur:.0f}s, wall {wall:.0f}s, RTF {rtf:.3f}"
-            )
+                (tmp_dir / "raw.json").write_text(
+                    json.dumps(payload, ensure_ascii=False, indent=2),
+                    encoding="utf-8",
+                )
+                tmp_dir.rename(out_dir)
+                inner_bar.close()
+
+                wall = time.time() - t_file
+                rtf = wall / max(audio_dur, 1e-6)
+                _say(f"[done ] {stem[:70]} — {len(payload['segments'])} segs, "
+                     f"audio {audio_dur:.0f}s, wall {wall:.0f}s, "
+                     f"RTF {rtf:.3f}")
 
     finally:
-        outer_bar.close()
+        if outer_bar is not None:
+            outer_bar.close()
 
     print(f"\n[done ] processed {len(pending)} sources -> {out_root}")
 
