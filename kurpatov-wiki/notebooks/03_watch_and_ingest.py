@@ -33,9 +33,12 @@ Design notes:
     never touch the GPU — they skip the load entirely. PDF jobs may
     touch the GPU (Qwen2.5-VL-7B) if a page has no text layer; the VLM
     is also lazy-loaded (cached inside `_extract_pdf`).
-  - Initial scan at startup enqueues every source file without a matching
-    raw.json, so the daemon also acts as "catch-up" for anything dropped
-    in while it was down.
+  - Initial scan at startup is two-way: (a) enqueue every source file
+    that doesn't yet have a raw.json ("catch-up" for anything dropped
+    in while the daemon was down), and (b) delete raw dirs whose source
+    file no longer exists ("reclaim" for anything renamed or removed
+    while the daemon was down). The reclaim side can be run in
+    dry-run mode with --reclaim-dry-run.
   - Atomic writes: result goes into <slug>.tmp/raw.json, then
     <slug>.tmp → <slug> rename.
   - Graceful shutdown on SIGTERM/SIGINT: current file finishes, then exit.
@@ -52,6 +55,7 @@ import gc
 import json
 import logging
 import queue
+import shutil
 import signal
 import subprocess
 import sys
@@ -166,6 +170,74 @@ def out_slug_for(source: Path, sources_root: Path) -> Path:
 def out_dir_for(source: Path, out_root: Path, sources_root: Path) -> Path:
     """vault/raw/data/ mirror — see out_slug_for for the naming rule."""
     return out_root / out_slug_for(source, sources_root)
+
+
+def reclaim_orphan_outputs(
+    sources_root: Path,
+    out_root: Path,
+    dry_run: bool = False,
+) -> int:
+    """
+    Delete <out_root>/<mirror>/<slug>/ directories whose matching source
+    file no longer exists under <sources_root>/<mirror>/<slug>.<ext>.
+
+    This is the mirror of ``_initial_scan`` (which finds sources with no
+    raw.json and queues them for extraction). Together they keep the
+    raw tree in sync with sources — the rename case works
+    automatically: the old slug loses its source (we delete its raw),
+    the new slug appears without a raw (the forward scan queues it).
+
+    Top-level files under out_root (CLAUDE.md, README.md) are ignored:
+    we only ever look at directories that contain a ``raw.json``.
+
+    After removing a slug dir we also rmdir any newly-empty ancestor
+    mirror dirs up to (but not including) out_root itself, so the raw
+    tree doesn't accumulate empty bookkeeping directories.
+
+    Returns the number of orphans reclaimed (or that would be, if
+    dry_run=True).
+    """
+    if not out_root.exists():
+        return 0
+
+    orphans: list[Path] = []
+    for raw in out_root.rglob("raw.json"):
+        slug_dir = raw.parent
+        slug_rel = slug_dir.relative_to(out_root)
+        # Slug = stem-without-extension (see out_slug_for). A matching
+        # source file is anything whose stem equals slug_rel and whose
+        # extension is in INGEST_EXTENSIONS. We use string concat
+        # (not ``with_suffix``) because filenames may legitimately
+        # contain periods in their stem.
+        has_source = any(
+            (sources_root / (str(slug_rel) + ext)).exists()
+            for ext in INGEST_EXTENSIONS
+        )
+        if not has_source:
+            orphans.append(slug_dir)
+
+    for slug_dir in orphans:
+        slug_rel = slug_dir.relative_to(out_root)
+        verb = "would remove" if dry_run else "removing"
+        log.info("[reclaim] %s orphan %s", verb, slug_rel)
+        if dry_run:
+            continue
+        shutil.rmtree(slug_dir)
+        # Rmdir newly-empty ancestor dirs, stopping at out_root.
+        parent = slug_dir.parent
+        while parent != out_root and parent.exists():
+            try:
+                next(parent.iterdir())
+            except StopIteration:
+                try:
+                    parent.rmdir()
+                except OSError:
+                    break
+                parent = parent.parent
+            else:
+                break
+
+    return len(orphans)
 
 
 # ---------------------------------------------------------------------------
@@ -433,6 +505,7 @@ class Daemon:
         self.sources_root = Path(args.sources)
         self.out_root = Path(args.out)
         self.out_root.mkdir(parents=True, exist_ok=True)
+        self.reclaim_dry_run: bool = bool(args.reclaim_dry_run)
 
         self.queue: queue.Queue[Path] = queue.Queue()
         self._in_flight: set[Path] = set()
@@ -607,6 +680,14 @@ class Daemon:
         )
         stab_t.start()
 
+        n_reclaimed = reclaim_orphan_outputs(
+            self.sources_root, self.out_root,
+            dry_run=self.reclaim_dry_run,
+        )
+        if n_reclaimed:
+            log.info("[reclaim] done — %d orphan raw dir(s) %s",
+                     n_reclaimed,
+                     "dry-run (kept)" if self.reclaim_dry_run else "removed")
         self._initial_scan()
 
         try:
@@ -659,6 +740,8 @@ def main() -> None:
                     help="How long size/mtime must be unchanged before we enqueue.")
     ap.add_argument("--idle-unload-sec", type=float, default=120.0,
                     help="Unload model from VRAM after this many seconds idle.")
+    ap.add_argument("--reclaim-dry-run", action="store_true",
+                    help="Log orphan raw dirs on startup scan, but do not delete them.")
     args = ap.parse_args()
 
     logging.basicConfig(

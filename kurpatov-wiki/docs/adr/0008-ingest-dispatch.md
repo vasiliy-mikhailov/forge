@@ -190,3 +190,41 @@ OCR-vs-text-layer decision are documented in
 [ADR 0009](0009-pdf-extractor.md). `INGEST_EXTENSIONS` is now
 `WHISPER_EXTENSIONS | HTML_EXTENSIONS | PDF_EXTENSIONS`;
 `extractor_for()` returns one of `"whisper" | "html" | "pdf" | None`.
+
+## Amendment — 2026-04-21: two-way startup scan (orphan reclaim)
+
+The startup scan was originally one-way: walk `sources/`, enqueue
+every file without a matching `raw.json`. This left a gap — if the
+operator renamed or removed a source, the old `raw.json` was never
+cleaned up and the wiki layer kept a dangling citation target.
+
+The scan is now two-way:
+
+1. **Forward (unchanged):** sources without a raw.json → enqueue for
+   extraction.
+2. **Reverse (new):** `data/<mirror>/<slug>/raw.json` whose matching
+   source `sources/<mirror>/<slug>.<ext>` (for any `ext ∈
+   INGEST_EXTENSIONS`) no longer exists → delete the whole slug dir.
+   Ancestor mirror dirs are rmdir'd if they become empty.
+
+This makes the rename case work automatically: the old slug loses its
+source (reverse pass deletes the raw), the new slug appears
+source-only (forward pass queues it). No operator action needed
+between a rename and the next daemon boot — just restart the
+container, or wait for the reverse pass if you bake it into a periodic
+job (future).
+
+Escape hatch: `--reclaim-dry-run` logs what would be deleted without
+touching the tree. Useful on first rollout to verify the matcher
+agrees with the operator's intent.
+
+Safety notes:
+
+* Only paths that contain a `raw.json` are considered. Top-level
+  files like `data/CLAUDE.md` are never touched.
+* Slug stems with periods (e.g. `Ст. 14 закона`) are matched via
+  string concatenation (`str(slug) + ext`), not `Path.with_suffix`,
+  so the period in the stem is preserved.
+* The pusher (separate container, `kurpatov-wiki-raw-pusher`) picks up
+  the removals on its next quiet-period sweep and commits them to
+  GitHub exactly like any other change — no special coordination.

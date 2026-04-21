@@ -69,6 +69,7 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import json
+import shutil
 import subprocess
 import sys
 import time
@@ -131,6 +132,62 @@ def out_slug_for(source: Path, sources_root: Path) -> Path:
     """
     rel = source.relative_to(sources_root)
     return rel.with_suffix("")
+
+
+def reclaim_orphan_outputs(
+    sources_root: Path,
+    out_root: Path,
+    dry_run: bool = False,
+) -> int:
+    """
+    Delete <out_root>/<mirror>/<slug>/ directories whose matching source
+    file no longer exists under <sources_root>/<mirror>/<slug>.<ext>.
+
+    Mirror operation to the forward scan (sources without raw.json →
+    extract). Together they keep the raw tree in sync with sources;
+    the rename case works automatically.
+
+    Top-level files under out_root (CLAUDE.md, README.md) are ignored
+    because we only look at directories containing a ``raw.json``.
+
+    Returns the number of orphans reclaimed (or would-be reclaimed if
+    dry_run=True).
+    """
+    if not out_root.exists():
+        return 0
+
+    orphans: list[Path] = []
+    for raw in out_root.rglob("raw.json"):
+        slug_dir = raw.parent
+        slug_rel = slug_dir.relative_to(out_root)
+        has_source = any(
+            (sources_root / (str(slug_rel) + ext)).exists()
+            for ext in INGEST_EXTENSIONS
+        )
+        if not has_source:
+            orphans.append(slug_dir)
+
+    for slug_dir in orphans:
+        slug_rel = slug_dir.relative_to(out_root)
+        verb = "would remove" if dry_run else "removing"
+        print(f"[reclaim] {verb} orphan {slug_rel}")
+        if dry_run:
+            continue
+        shutil.rmtree(slug_dir)
+        parent = slug_dir.parent
+        while parent != out_root and parent.exists():
+            try:
+                next(parent.iterdir())
+            except StopIteration:
+                try:
+                    parent.rmdir()
+                except OSError:
+                    break
+                parent = parent.parent
+            else:
+                break
+
+    return len(orphans)
 
 
 # ---------------------------------------------------------------------------
@@ -286,6 +343,8 @@ def main() -> None:
                     choices=["float16", "bfloat16", "int8_float16"])
     ap.add_argument("--beam", type=int, default=5)
     ap.add_argument("--language", default="ru")
+    ap.add_argument("--reclaim-dry-run", action="store_true",
+                    help="Log orphan raw dirs but do not delete them.")
     args = ap.parse_args()
 
     sources_root = Path(args.sources)
@@ -294,6 +353,14 @@ def main() -> None:
 
     def out_dir_for(src: Path) -> Path:
         return out_root / out_slug_for(src, sources_root)
+
+    # ----- 0. Reconcile: drop orphan raw dirs whose source was removed -----
+    n_reclaimed = reclaim_orphan_outputs(
+        sources_root, out_root, dry_run=args.reclaim_dry_run,
+    )
+    if n_reclaimed:
+        print(f"[reclaim] done — {n_reclaimed} orphan raw dir(s) "
+              f"{'dry-run (kept)' if args.reclaim_dry_run else 'removed'}")
 
     # ----- 1. Scan sources + pick the missing ones -----
     all_sources = sorted(p for p in sources_root.rglob("*")
