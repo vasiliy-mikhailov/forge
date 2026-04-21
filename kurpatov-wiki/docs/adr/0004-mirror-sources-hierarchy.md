@@ -28,22 +28,26 @@ allow-list lives (post-2026-04-20) as `INGEST_EXTENSIONS` =
 `kurpatov-wiki/notebooks/02_ingest_incremental.py` and
 `03_watch_and_ingest.py`.
 
-Amended (2026-04-20 — HTML sources keep their extension in the slug).
-The mirror rule below (`with_suffix("")` — drop the extension) is
-specific to the whisper path. HTML sources (`.html`, `.htm`) keep
-their extension in the output directory name:
+Amended (2026-04-20/2026-04-21 — HTML dispatch uses the same mirror
+rule as whisper). HTML sources (`.html`, `.htm`) were briefly written
+to `<stem>.html/raw.json` to sidestep a hypothetical stem collision
+with a media file of the same name. That special case has been
+removed: every extractor now uses the mirror rule from the Decision
+section below (drop the extension):
 
 ```
-sources/<m>/<stem>.mp4   → raw/data/<m>/<stem>/raw.json       (whisper)
-sources/<m>/<stem>.html  → raw/data/<m>/<stem>.html/raw.json  (html)
+sources/<m>/<stem>.mp4   → raw/data/<m>/<stem>/raw.json  (whisper)
+sources/<m>/<stem>.html  → raw/data/<m>/<stem>/raw.json  (html)
 ```
 
-This keeps a media file and an HTML page sharing the same stem
-from overwriting each other in the raw tree. The dispatch logic
-and rename rationale live in
-[ADR 0008](0008-ingest-dispatch.md); the code lives in
-`out_slug_for(...)` inside `02_ingest_incremental.py` and
-`03_watch_and_ingest.py`.
+Uniqueness is already enforced one level up: every source carries a
+zero-padded `NNN` prefix, so `000 Intro.mp4` and `000 Intro.html`
+colliding would be an authoring bug — not a path-design problem the
+mirror rule needs to handle. Keeping one slug rule lets the pusher
+and the Mac-side renderer stay extractor-agnostic. The dispatch
+rationale lives in [ADR 0008](0008-ingest-dispatch.md)
+(2026-04-21 amendment); the code lives in `out_slug_for(...)` inside
+`02_ingest_incremental.py` and `03_watch_and_ingest.py`.
 
 ## Context
 Originally the transcription script stored `raw.json` in a **flat**

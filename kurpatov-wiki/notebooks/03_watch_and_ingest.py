@@ -137,16 +137,17 @@ def out_slug_for(source: Path, sources_root: Path) -> Path:
     """
     Output slug (relative to --out root) for a given source.
 
-    Media: strip the extension (`sources/a/b.mp4` → `a/b`) — historical
-    behaviour, see ADR 0004.
-    HTML:  keep the extension (`sources/a/b.html` → `a/b.html`) so that
-    a media file and an HTML page sharing the same stem never collide
-    (ADR 0008).
+    Always strip the extension, regardless of extractor. Stem uniqueness
+    within a module is guaranteed by the zero-padded ``NNN`` prefix that
+    every source carries (see ADR 0004); two sources with the same stem
+    but different extensions would be a data-entry bug.
+
+    Examples:
+        sources/a/000 foo.mp4  → a/000 foo
+        sources/a/001 bar.html → a/001 bar
     """
     rel = source.relative_to(sources_root)
-    if extractor_for(source) == "whisper":
-        return rel.with_suffix("")
-    return rel
+    return rel.with_suffix("")
 
 
 def out_dir_for(source: Path, out_root: Path, sources_root: Path) -> Path:

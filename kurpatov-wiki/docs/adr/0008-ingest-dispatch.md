@@ -80,17 +80,21 @@ Two questions fell out of that:
    `<title>`); it lives in `info.title`, not in `segments[]`, because
    it's metadata, not lecture content.
 
-4. **Output path keeps HTML's `.html` suffix to avoid collisions.**
-   Media continues to use the historical stem-only form (ADR 0004):
+4. **Output path strips the extension for every extractor.**
+   All kinds use the historical stem-only form (ADR 0004):
 
    ```
    sources/<m>/<stem>.mp4   → raw/data/<m>/<stem>/raw.json
-   sources/<m>/<stem>.html  → raw/data/<m>/<stem>.html/raw.json
+   sources/<m>/<stem>.html  → raw/data/<m>/<stem>/raw.json
    ```
 
-   This way a media file and an HTML page that happen to share a stem
-   (common, because getcourse.ru and YouTube often name lessons
-   identically) never overwrite each other.
+   Uniqueness within a module is guaranteed by the zero-padded `NNN`
+   prefix every file carries (see ADR 0004) — `000 Intro.mp4` and
+   `000 Intro.html` colliding would be an authoring bug, not a path
+   concern. Keeping a single slug rule means the pusher, the renderer,
+   and the concept indexer never branch on extractor. See the
+   2026-04-21 amendment below for why we reversed the original
+   decision.
 
 5. **Rename `kurpatov-transcriber` → `kurpatov-ingest`.** The service
    in `docker-compose.yml`, its container name, the watchdog script
@@ -148,3 +152,31 @@ Two questions fell out of that:
 - **Keep the name "transcriber" and broaden its behaviour.** Minimal
   churn, maximal lie. Rejected — names that mislead are a recurring
   source of onboarding bugs.
+
+## 2026-04-21 amendment — unify output slug
+
+**Change.** Decision #4 originally specified that HTML sources keep
+their `.html` suffix in the output slug
+(`.../Intro.html/raw.json`) while media sources strip it
+(`.../Intro/raw.json`). That asymmetry has been removed: every
+extractor now writes to `<stem>/raw.json`.
+
+**Reason.** The collision concern that motivated the original rule
+was real in the abstract but doesn't occur in practice. Every source
+in the curriculum is authored with a zero-padded `NNN` prefix
+(`000 Intro.mp4`, `001 First lesson.html`, …) per ADR 0004. Two
+files in the same module with the same `NNN` and the same title but
+different extensions would already be an authoring mistake that the
+module table would flag. The uniformity buys clearer code
+downstream — neither the pusher (`04_watch_raw_and_push.py`) nor the
+Mac-side renderer needs to care which extractor produced a
+`raw.json`.
+
+**Migration.** On 2026-04-21 the single existing `.html/` directory
+in `vault/raw/data/` was renamed via `git mv` inside the pusher
+container; the ingest daemon's boot-scan then treated the renamed
+path as "done" and did not re-ingest. Code changes:
+`notebooks/02_ingest_incremental.py` and
+`notebooks/03_watch_and_ingest.py` — `out_slug_for()` now
+unconditionally returns `rel.with_suffix("")`.
+

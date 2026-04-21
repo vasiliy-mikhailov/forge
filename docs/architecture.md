@@ -94,9 +94,10 @@ ${STORAGE_ROOT:-/mnt/steam/forge}/
     │   │   │                        #   content-split amendment)
     │   │   └── data/                #   content subtree — ingest daemon and
     │   │       │                    #   pusher both default here
-    │   │       └── <course>/<module>/<slug>/
-    │   │           └── raw.json     #   <slug> = <stem> for media,
-    │   │                            #           <stem>.html for HTML (ADR 0008)
+    │   │       └── <course>/<module>/<stem>/
+    │   │           └── raw.json     #   <stem> = source filename minus its
+    │   │                            #           extension, for every extractor
+    │   │                            #           (ADR 0008 2026-04-21 amendment)
     │   └── wiki/                    # reserved directory; the WIKI layer
     │                                #   lives in kurpatov-wiki-wiki on the
     │                                #   operator's Mac, not on the server

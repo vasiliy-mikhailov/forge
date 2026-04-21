@@ -65,13 +65,15 @@ invariants are unchanged: the session is the pusher, no
 server-side daemon authors the wiki, the human-in-the-loop stays.
 
 
-Amended (2026-04-20 — HTML sources reach the wiki as first-class
-source articles). The ingest pipeline (server-side) grew a second
-extractor for getcourse.ru HTML lesson pages; see
+Amended (2026-04-20/2026-04-21 — HTML sources reach the wiki as
+first-class source articles). The ingest pipeline (server-side)
+grew a second extractor for getcourse.ru HTML lesson pages; see
 [ADR 0008](0008-ingest-dispatch.md). The wiki layer treats them
 the same as media-derived raw.json: one source article per
-`raw/data/<mirror>/<slug>/raw.json`, where `<slug>` is `<stem>`
-for media and `<stem>.html` for HTML. The renderer keys off
+`raw/data/<mirror>/<stem>/raw.json` — the slug is the source
+filename minus its extension, for every extractor (the earlier
+`<stem>.html`-for-HTML carve-out was reversed on 2026-04-21). The
+renderer keys off
 `info.extractor` to decide whether the source article should
 include timing-based affordances (clickable timestamps) or not
 (HTML has no timing). The 2026-04-20 rename

@@ -38,11 +38,11 @@ to care which extractor ran:
 Output layout — per-source directory under `vault/raw/data/`:
 
   sources/<mirror>/<stem>.mp4   → vault/raw/data/<mirror>/<stem>/raw.json
-  sources/<mirror>/<stem>.html  → vault/raw/data/<mirror>/<stem>.html/raw.json
+  sources/<mirror>/<stem>.html  → vault/raw/data/<mirror>/<stem>/raw.json
 
-Media keeps the bare stem for historical compatibility (ADR 0004). HTML
-keeps the `.html` suffix in its output dir so that a media file and an
-HTML page sharing the same stem never collide (ADR 0008).
+All extractors drop the extension and use the bare stem — the
+zero-padded ``NNN`` prefix every source carries already guarantees
+uniqueness within a module (ADR 0004, amended by ADR 0008).
 
 Atomicity: the result is first written to <slug>.tmp/raw.json, then
 <slug>.tmp → <slug> via rename. An interrupted run leaves no corrupt
@@ -100,15 +100,17 @@ def out_slug_for(source: Path, sources_root: Path) -> Path:
     """
     Directory name (relative to --out) for a given source.
 
-    Media: strip the extension (`sources/a/b.mp4` → `a/b`).
-    HTML:  keep the extension (`sources/a/b.html` → `a/b.html`).
+    Always strip the extension. Uniqueness of stems within a module is
+    a data-model invariant enforced by the zero-padded ``NNN`` prefix
+    every source carries; two sources with the same stem but different
+    extensions in the same directory would be a data-entry bug.
+
+    Examples:
+        sources/a/000 foo.mp4  → a/000 foo
+        sources/a/001 bar.html → a/001 bar
     """
     rel = source.relative_to(sources_root)
-    kind = extractor_for(source)
-    if kind == "whisper":
-        return rel.with_suffix("")
-    # html, or anything else we might add later: keep full filename
-    return rel
+    return rel.with_suffix("")
 
 
 # ---------------------------------------------------------------------------

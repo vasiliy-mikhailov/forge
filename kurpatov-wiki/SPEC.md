@@ -122,10 +122,11 @@ ffmpeg internally, so any format ffmpeg can decode works; HTML takes the
 `_extract_html.py` path (lecturer prose only, see ADR 0008). We gate
 which extensions the watcher picks up; everything else is ignored.
 
-### RAW layer: `vault/raw/data/<same dirs>/<slug>/raw.json`
-`<slug>` is `<stem>` for whisper-produced raws (historical) and
-`<stem>.html` for HTML-produced raws (so media and HTML with the same
-stem never collide — ADR 0008). Stable contract (see ADR 0002
+### RAW layer: `vault/raw/data/<same dirs>/<stem>/raw.json`
+The output slug is always `<stem>` (the source filename with its
+extension stripped), regardless of extractor. Uniqueness within a
+module is enforced one level up by the zero-padded `NNN` prefix every
+source carries (ADR 0004). Stable contract (see ADR 0002
 "JSON-only, single file"):
 
 ```json
