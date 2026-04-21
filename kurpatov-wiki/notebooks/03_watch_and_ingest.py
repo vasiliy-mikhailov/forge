@@ -727,10 +727,11 @@ class Daemon:
             self.sources_root, self.out_root,
             dry_run=self.reclaim_dry_run,
         )
-        if n_reclaimed:
-            log.info("[reclaim] done — %d orphan raw dir(s) %s",
-                     n_reclaimed,
-                     "dry-run (kept)" if self.reclaim_dry_run else "removed")
+        # Always emit the heartbeat (even for 0 items) so the smoke test
+        # can assert the reclaim code path ran. See tests/smoke.md §8.
+        log.info("[reclaim] startup pass complete — %d item(s) %s",
+                 n_reclaimed,
+                 "would be reclaimed (dry-run)" if self.reclaim_dry_run else "reclaimed")
         self._initial_scan()
 
         try:

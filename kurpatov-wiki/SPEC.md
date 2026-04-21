@@ -18,12 +18,15 @@ sources/    → vault/raw/data/  → kurpatov-wiki-wiki/data/
 Historical note: the input directory used to be `videos/` and the pipeline
 accepted only `.mp4`. The scope has since broadened twice — first to any
 Whisper-ingestible audio/video (via ffmpeg), then to HTML lesson-page
-exports from getcourse.ru. The allow-list lives as `INGEST_EXTENSIONS`
-= `WHISPER_EXTENSIONS | HTML_EXTENSIONS` in
+exports from getcourse.ru, then to PDF scans and typed PDFs. The
+allow-list lives as `INGEST_EXTENSIONS`
+= `WHISPER_EXTENSIONS | HTML_EXTENSIONS | PDF_EXTENSIONS` in
 `notebooks/02_ingest_incremental.py` and
 `notebooks/03_watch_and_ingest.py`; keep them in sync. HTML is handled
-by a dedicated extractor (`notebooks/_extract_html.py`) that reuses
-the same raw.json envelope — see ADR 0008.
+by a dedicated extractor (`notebooks/_extract_html.py`) and PDF by
+`notebooks/_extract_pdf.py` (text-layer fast path, Qwen2.5-VL-7B
+OCR fallback) — both reuse the same raw.json envelope. See ADR
+0008 (dispatch) and ADR 0009 (PDF).
 
 Both published repos use a `data/` subtree so meta files
 (`CLAUDE.md`, `README.md`, etc.) don't share a namespace with
@@ -31,15 +34,19 @@ course slugs. See ADR 0005's data/content-split amendment (raw
 side) and ADR 0007's amendment (wiki side).
 
 Today the first two steps are implemented: scanning and ingest
-(faster-whisper for media, HTML extractor for getcourse.ru pages;
-see ADR 0008). The LLM layer and wiki assembly are in progress.
+(faster-whisper for media, HTML extractor for getcourse.ru pages,
+PDF extractor with OCR fallback; see ADR 0008 + 0009). The LLM
+layer and wiki assembly are in progress.
 
 ## Non-goals
 - Not multimodal — for video inputs only the audio track is used; frames
   and gestures are not analyzed. Audio-only inputs pass through the same
   whisper path. HTML inputs are handled by an HTML-text extractor
   (lecturer prose only; student answers and comments explicitly dropped
-  — see ADR 0008) — not the whisper path.
+  — see ADR 0008) — not the whisper path. PDF inputs use a text-layer
+  extractor when the PDF has an embedded text layer, and fall back to
+  Qwen2.5-VL-7B page-level OCR when the PDF is an image-only scan (see
+  ADR 0009).
 - Not publishing. The wiki will end up as markdown + navigation; hosting
   and rendering are out of scope for this service.
 - Not real-time. Latency target is "a couple of minutes after the file is
@@ -61,11 +68,16 @@ state only through the vault filesystem — no code, no network RPC.
    `03_watch_and_ingest.py`. Reactively watches `sources/` and ingests
    new source files (any suffix in INGEST_EXTENSIONS) as soon as
    they stabilize. Dispatches by suffix: audio/video → faster-whisper
-   (GPU, lazy-load / idle-unload per ADR 0003); HTML → the
-   `_extract_html.py` extractor (CPU, no model load). Same image,
-   same network, same GPU budget as jupyter. Knows nothing about
-   git. See ADR 0008 for the dispatch design and the rename from
-   `kurpatov-transcriber`.
+   (GPU, lazy-load / idle-unload per ADR 0003); HTML →
+   `_extract_html.py` (CPU, no model load); PDF → `_extract_pdf.py`
+   (text-layer fast path is CPU; the OCR fallback loads Qwen2.5-VL-7B
+   on the same GPU, lazy-load / idle-unload — ADR 0009). On every
+   startup the daemon also does a reverse scan: any `raw.json` whose
+   source no longer exists is reclaimed (two-way sync), and any
+   `*.tmp` staging leftover from an interrupted extraction is swept
+   (ADR 0008 amendments). Same image, same network, same GPU budget
+   as jupyter. Knows nothing about git. See ADR 0008 for the
+   dispatch design and the rename from `kurpatov-transcriber`.
 
 3. **`kurpatov-wiki-raw-pusher`** — headless daemon running
    `04_watch_raw_and_push.py`. Reactively watches `vault/raw/data/`
@@ -262,7 +274,9 @@ docs/) lives at the root. See ADR 0007.
 3. **Only one GPU consumer at a time.** Jupyter and the ingest daemon
    share one GPU (`KURPATOV_WIKI_GPU_UUID`), but the ingest daemon
    unloads its model while idle so jupyter can use the memory for
-   experiments (see ADR 0003). HTML ingest never touches the GPU.
+   experiments (see ADR 0003). HTML ingest never touches the GPU;
+   PDF ingest only touches it when the OCR fallback fires (image-only
+   scans), and it unloads on idle like whisper does.
 4. **File stability before processing.** The watcher waits until the
    source file's size and mtime stop changing for `--stable-sec` seconds
    (default 10). This protects against processing a half-copied file from
@@ -309,10 +323,10 @@ Not yet:
 
 ## Running
 ```bash
-# Drop sources in (any INGEST_EXTENSIONS suffix, media or HTML):
+# Drop sources in (any INGEST_EXTENSIONS suffix — media, HTML, or PDF):
 mkdir -p ${STORAGE_ROOT}/kurpatov-wiki/sources/Psychologist-consultant/05-conflicts
 cp ~/downloads/*.mp4 ${STORAGE_ROOT}/kurpatov-wiki/sources/Psychologist-consultant/05-conflicts/
-# or .mp3 / .m4a / .html / … — same path.
+# or .mp3 / .m4a / .html / .pdf / … — same path.
 
 # Bring up (from the forge root):
 make kurpatov-wiki
@@ -322,11 +336,12 @@ docker exec -t jupyter-kurpatov-wiki \
   python -u /workspace/notebooks/02_ingest_incremental.py
 ```
 
-See also: `docs/adr/0001` through `0008`,
+See also: `docs/adr/0001` through `0009`,
 `docs/mac-side-wiki-authoring.md` (wiki-layer playbook),
 `prompts/per-source-summarize.md`, `prompts/concept-article.md`,
 `notebooks/02_ingest_incremental.py`,
 `notebooks/03_watch_and_ingest.py`,
 `notebooks/04_watch_raw_and_push.py`,
 `notebooks/_extract_html.py`,
+`notebooks/_extract_pdf.py`,
 `notebooks/migrate_vault_hierarchy.py`.

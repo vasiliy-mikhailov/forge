@@ -302,6 +302,45 @@ run a dedicated lean image — no torch, no whisper, no nvidia base.
 
 ---
 
+## Section 8 — ingest startup reclaim
+
+### ingest daemon ran the reclaim pass on startup
+
+**Goal.** `kurpatov-ingest` ran its reverse-scan reclaim pass at
+the last boot. This proves the two-way sync code path (forward scan
+of sources, reverse scan of raws, stale `*.tmp` sweep) is wired and
+executing — see
+[`kurpatov-wiki/docs/adr/0008`](../kurpatov-wiki/docs/adr/0008-ingest-dispatch.md)
+amendments. A silent regression (e.g. reclaim removed from `run()`,
+exception swallowed) would mean renamed / deleted sources keep
+stale raws in the vault, which the wiki layer eventually cites.
+
+**Signals.**
+- `docker logs --since=24h kurpatov-ingest 2>&1` contains the string
+  `[reclaim] startup pass complete` at least once. The daemon emits
+  this line unconditionally on every boot, even when zero items were
+  reclaimed, precisely so the smoke test has a stable heartbeat.
+
+**Edge cases.**
+- Same **capture-then-grep** discipline as Section 6: no `grep -q`
+  on a piped `docker logs` under `pipefail`. The ingest log is
+  large because it echoes every source it enqueued on the initial
+  scan, and the SIGPIPE failure mode is real.
+- The phrase `[reclaim] startup pass complete` is part of the
+  smoke contract. Any edit to the log line in
+  `02_ingest_incremental.py` / `03_watch_and_ingest.py` is a change
+  to this check's signal and needs a matching model + script
+  update in the same commit.
+- This asserts the **code path fired**, not that the vault is free
+  of orphans at this instant. A "no orphan raws right now" invariant
+  would be strictly stronger but flaky: a user can rename a source
+  between boot-time reclaim and the smoke run, which is legitimate
+  state, not a test failure. Revisit if renames become common
+  enough that "catch orphans ≤ N minutes old" is worth the added
+  complexity.
+
+---
+
 ## Known gaps
 
 Things the smoke test does *not* currently verify, but should someday:

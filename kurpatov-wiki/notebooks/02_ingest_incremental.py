@@ -398,9 +398,10 @@ def main() -> None:
     n_reclaimed = reclaim_orphan_outputs(
         sources_root, out_root, dry_run=args.reclaim_dry_run,
     )
-    if n_reclaimed:
-        print(f"[reclaim] done — {n_reclaimed} orphan raw dir(s) "
-              f"{'dry-run (kept)' if args.reclaim_dry_run else 'removed'}")
+    # Always emit the heartbeat (even for 0 items) so the smoke test
+    # can assert the reclaim code path ran. See tests/smoke.md §8.
+    print(f"[reclaim] startup pass complete — {n_reclaimed} item(s) "
+          f"{'would be reclaimed (dry-run)' if args.reclaim_dry_run else 'reclaimed'}")
 
     # ----- 1. Scan sources + pick the missing ones -----
     all_sources = sorted(p for p in sources_root.rglob("*")

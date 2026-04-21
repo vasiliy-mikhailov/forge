@@ -26,6 +26,10 @@
 #   7. Pusher image discipline — raw-pusher runs a dedicated lean
 #      image (no CUDA), not the GPU image (see
 #      kurpatov-wiki/docs/adr/0006).
+#   8. Ingest startup reclaim — `kurpatov-ingest` runs the
+#      two-way reverse-scan reclaim pass on boot (orphan raws +
+#      stale .tmp sweep; see kurpatov-wiki/docs/adr/0008
+#      amendments).
 #
 # Usage:
 #   make smoke              # from the forge root (recommended)
@@ -233,6 +237,21 @@ if [[ -n "$pusher_image" ]]; then
     fail "raw-pusher image too large (image=$pusher_image bytes=$pusher_bytes limit=$MAX_PUSHER_BYTES)"
   fi
 fi
+
+# ---------- 8. ingest startup reclaim ----------
+# The ingest daemon runs a reverse-scan reclaim pass on every boot
+# (orphan raws whose source was renamed/deleted, plus stale *.tmp
+# staging leftovers). The pass emits an unconditional heartbeat line
+# — `[reclaim] startup pass complete` — regardless of whether
+# anything was removed, precisely so this smoke check has a stable
+# signal. See tests/smoke.md §8 + kurpatov-wiki/docs/adr/0008
+# amendments.
+section "ingest startup reclaim"
+
+check_watcher_log \
+  "ingest daemon ran [reclaim] startup pass on boot" \
+  kurpatov-ingest \
+  '\[reclaim\] startup pass complete'
 
 # ---------- summary ----------
 TOTAL=$((PASSED + FAILED))
