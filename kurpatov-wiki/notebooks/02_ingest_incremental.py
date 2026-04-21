@@ -5,7 +5,7 @@ Recursively scans /workspace/sources/, compares against the list of
 existing raw.json files under /workspace/vault/raw/data/<mirror>/<slug>/
 raw.json, and processes only the missing ones.
 
-Two extractors live behind a shared scheduler:
+Three extractors live behind a shared scheduler:
 
   * WHISPER_EXTENSIONS — audio / video the faster-whisper model can
     decode via ffmpeg. Produces segments[] with word-level timestamps.
@@ -15,30 +15,41 @@ Two extractors live behind a shared scheduler:
     prose (`<div class="text-normal f-text">` blocks) and emits the
     same segments[] shape with no timing fields.
 
-Both extractors emit the same raw.json schema so downstream (the
+  * PDF_EXTENSIONS — PDF exports of lesson materials. The extractor
+    lives in `_extract_pdf.py`. Tries the embedded text layer first
+    (via pypdf); for image-only PDFs (e.g. macOS "Print to PDF" scans)
+    falls back to tesseract OCR (lang=rus+eng, 300 DPI, page-by-page
+    rasterization). Emits the same segments[] shape; each segment
+    carries a .page anchor.
+
+All extractors emit the same raw.json schema so downstream (the
 kurpatov-wiki-raw pusher and the Mac-side wiki-renderer) doesn't need
 to care which extractor ran:
 
   info.language               — "ru" (or whisper-detected)
   info.source_path            — absolute path to the source file
-  info.extractor              — "whisper" | "html"
+  info.extractor              — "whisper" | "html" | "pdf"
   info.extracted_at           — ISO-8601 UTC
-  info.title                  — lesson title (html only; absent on whisper)
+  info.title                  — lesson title (html/pdf only; absent on whisper)
   info.transcribed_at         — alias of extracted_at (whisper only;
                                 kept for backward compat with older tools
                                 that predate the rename)
   info.duration / .language_probability / .model / .compute_type /
   info.beam_size / .diarized  — whisper only
+  info.page_count / .paragraph_count / .pdf_text_source /
+  info.ocr_lang / .ocr_dpi    — pdf only
   segments[].id               — sequential, 1-based
   segments[].text             — recognized / extracted text
   segments[].start / .end     — seconds (whisper only)
   segments[].speaker          — null placeholder (whisper only)
   segments[].words[]          — word-level timestamps (whisper only)
+  segments[].page             — 1-based page number (pdf only)
 
 Output layout — per-source directory under `vault/raw/data/`:
 
   sources/<mirror>/<stem>.mp4   → vault/raw/data/<mirror>/<stem>/raw.json
   sources/<mirror>/<stem>.html  → vault/raw/data/<mirror>/<stem>/raw.json
+  sources/<mirror>/<stem>.pdf   → vault/raw/data/<mirror>/<stem>/raw.json
 
 All extractors drop the extension and use the bare stem — the
 zero-padded ``NNN`` prefix every source carries already guarantees
@@ -65,9 +76,10 @@ from pathlib import Path
 from faster_whisper import WhisperModel
 from tqdm import tqdm
 
-# local helper — HTML → segments[] extractor
+# local helpers — non-media extractors
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import _extract_html  # noqa: E402
+import _extract_pdf   # noqa: E402
 
 
 # ---------------------------------------------------------------------------
@@ -83,16 +95,22 @@ WHISPER_EXTENSIONS: frozenset[str] = frozenset({
 
 HTML_EXTENSIONS: frozenset[str] = frozenset({".html", ".htm"})
 
-INGEST_EXTENSIONS: frozenset[str] = WHISPER_EXTENSIONS | HTML_EXTENSIONS
+PDF_EXTENSIONS: frozenset[str] = frozenset({".pdf"})
+
+INGEST_EXTENSIONS: frozenset[str] = (
+    WHISPER_EXTENSIONS | HTML_EXTENSIONS | PDF_EXTENSIONS
+)
 
 
 def extractor_for(path: Path) -> str | None:
-    """Return "whisper" | "html" | None for the given source path."""
+    """Return "whisper" | "html" | "pdf" | None for the given source path."""
     suffix = path.suffix.lower()
     if suffix in WHISPER_EXTENSIONS:
         return "whisper"
     if suffix in HTML_EXTENSIONS:
         return "html"
+    if suffix in PDF_EXTENSIONS:
+        return "pdf"
     return None
 
 
@@ -108,6 +126,7 @@ def out_slug_for(source: Path, sources_root: Path) -> Path:
     Examples:
         sources/a/000 foo.mp4  → a/000 foo
         sources/a/001 bar.html → a/001 bar
+        sources/a/002 baz.pdf  → a/002 baz
     """
     rel = source.relative_to(sources_root)
     return rel.with_suffix("")
@@ -159,6 +178,21 @@ def ingest_html(source: Path, language: str) -> dict:
     the pipeline share one code path.
     """
     return _extract_html.build_raw_payload(source, language=language)
+
+
+# ---------------------------------------------------------------------------
+# pdf extractor (non-gpu, OCR-bound on image-only PDFs)
+# ---------------------------------------------------------------------------
+
+def ingest_pdf(source: Path, language: str) -> dict:
+    """
+    Run the PDF extractor and return the raw.json payload.
+
+    Text-layer first (fast, via pypdf); OCR fallback on image-only
+    PDFs (tesseract rus+eng at 300 DPI). CPU-only — runs on the
+    ingest worker thread with no GPU contention.
+    """
+    return _extract_pdf.build_raw_payload(source, language=language)
 
 
 # ---------------------------------------------------------------------------
@@ -268,11 +302,13 @@ def main() -> None:
 
     pending_whisper = [s for s in pending if extractor_for(s) == "whisper"]
     pending_html = [s for s in pending if extractor_for(s) == "html"]
+    pending_pdf = [s for s in pending if extractor_for(s) == "pdf"]
 
     done_count = len(all_sources) - len(pending)
     print(f"[scan ] sources found: {len(all_sources)}  "
           f"done: {done_count}  pending: {len(pending)} "
-          f"(whisper: {len(pending_whisper)}, html: {len(pending_html)})")
+          f"(whisper: {len(pending_whisper)}, html: {len(pending_html)}, "
+          f"pdf: {len(pending_pdf)})")
 
     if not pending:
         print("[done ] nothing to do — vault/raw/data is up to date")
@@ -297,6 +333,29 @@ def main() -> None:
             tmp_dir.rename(out_dir)
             print(f"[html ] [{idx}/{len(pending_html)}] {stem[:70]} — "
                   f"{payload['info']['paragraph_count']} paragraphs")
+
+    # ----- 2b. PDF next (CPU-bound: text-layer fast; OCR slow-ish) -----
+    if pending_pdf:
+        print(f"[pdf  ] extracting {len(pending_pdf)} PDF file(s)")
+        for idx, source in enumerate(pending_pdf, 1):
+            stem = source.stem
+            out_dir = out_dir_for(source)
+            tmp_dir = out_dir.parent / f"{out_dir.name}.tmp"
+            out_dir.parent.mkdir(parents=True, exist_ok=True)
+            clean_tmp_dir(tmp_dir)
+            tmp_dir.mkdir(parents=True)
+
+            payload = ingest_pdf(source, language=args.language)
+            (tmp_dir / "raw.json").write_text(
+                json.dumps(payload, ensure_ascii=False, indent=2),
+                encoding="utf-8",
+            )
+            tmp_dir.rename(out_dir)
+            info = payload["info"]
+            print(f"[pdf  ] [{idx}/{len(pending_pdf)}] {stem[:70]} — "
+                  f"{info['paragraph_count']} paragraphs "
+                  f"({info['page_count']} pages, "
+                  f"source={info['pdf_text_source']})")
 
     if not pending_whisper:
         print(f"\n[done ] processed {len(pending)} sources -> {out_root}")

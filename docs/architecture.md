@@ -81,10 +81,11 @@ ${STORAGE_ROOT:-/mnt/steam/forge}/
 ├── rl-2048/
 │   └── checkpoints/
 └── kurpatov-wiki/
-    ├── sources/                     # input source files (audio, video, HTML),
+    ├── sources/                     # input source files (audio, video, HTML, PDF),
     │   └── <course>/<module>/*.<ext> #   structure mirrored into vault/raw.
     │                                 #   INGEST_EXTENSIONS allow-list (whisper +
-    │                                 #   html) lives in kurpatov-wiki/notebooks/0{2,3}*.py.
+    │                                 #   html + pdf) lives in
+    │                                 #   kurpatov-wiki/notebooks/0{2,3}*.py.
     ├── vault/
     │   ├── raw/                     # RAW layer + git working tree for
     │   │   │                        #   the kurpatov-wiki-raw repo

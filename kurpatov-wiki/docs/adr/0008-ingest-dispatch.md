@@ -180,3 +180,13 @@ path as "done" and did not re-ingest. Code changes:
 `notebooks/03_watch_and_ingest.py` — `out_slug_for()` now
 unconditionally returns `rel.with_suffix("")`.
 
+
+## 2026-04-21 amendment — PDF extractor added
+
+The "cheap to grow" claim above now has a second datapoint. The PDF
+extractor (image-only scans primary, typeset text layer secondary)
+lives in `_extract_pdf.py`; dispatch, schema additions, and the
+OCR-vs-text-layer decision are documented in
+[ADR 0009](0009-pdf-extractor.md). `INGEST_EXTENSIONS` is now
+`WHISPER_EXTENSIONS | HTML_EXTENSIONS | PDF_EXTENSIONS`;
+`extractor_for()` returns one of `"whisper" | "html" | "pdf" | None`.

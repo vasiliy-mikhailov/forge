@@ -2,7 +2,7 @@
 Ingest daemon for the Kurpatov-wiki vault.
 
 Watches /workspace/sources recursively for new source files and ingests
-them into /workspace/vault/raw/data/<mirror>/<slug>/raw.json. Two
+them into /workspace/vault/raw/data/<mirror>/<slug>/raw.json. Three
 extractors run behind one scheduler, dispatched by file suffix:
 
   * WHISPER_EXTENSIONS — audio / video the faster-whisper model can
@@ -10,6 +10,9 @@ extractors run behind one scheduler, dispatched by file suffix:
   * HTML_EXTENSIONS — getcourse.ru-style lesson-page exports. The
     extractor (`_extract_html.py`) harvests only lecturer prose and
     writes the same segments[] shape with no timing fields.
+  * PDF_EXTENSIONS — PDF exports of lesson materials. The extractor
+    (`_extract_pdf.py`) tries the embedded text layer first and falls
+    back to tesseract OCR on image-only PDFs. CPU-only (no GPU load).
 
 See [ADR 0008](../docs/adr/0008-ingest-dispatch.md) for why the daemon
 handles both and why it was renamed from "transcriber" to "ingest".
@@ -59,9 +62,10 @@ from faster_whisper import WhisperModel
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
-# local helper — HTML → segments[] extractor
+# local helpers — non-media extractors
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import _extract_html  # noqa: E402
+import _extract_pdf   # noqa: E402
 
 
 log = logging.getLogger("ingest")
@@ -84,16 +88,22 @@ WHISPER_EXTENSIONS: frozenset[str] = frozenset({
 
 HTML_EXTENSIONS: frozenset[str] = frozenset({".html", ".htm"})
 
-INGEST_EXTENSIONS: frozenset[str] = WHISPER_EXTENSIONS | HTML_EXTENSIONS
+PDF_EXTENSIONS: frozenset[str] = frozenset({".pdf"})
+
+INGEST_EXTENSIONS: frozenset[str] = (
+    WHISPER_EXTENSIONS | HTML_EXTENSIONS | PDF_EXTENSIONS
+)
 
 
 def extractor_for(path: Path) -> str | None:
-    """Return "whisper" | "html" | None for the given source path."""
+    """Return "whisper" | "html" | "pdf" | None for the given source path."""
     suffix = path.suffix.lower()
     if suffix in WHISPER_EXTENSIONS:
         return "whisper"
     if suffix in HTML_EXTENSIONS:
         return "html"
+    if suffix in PDF_EXTENSIONS:
+        return "pdf"
     return None
 
 
@@ -145,6 +155,7 @@ def out_slug_for(source: Path, sources_root: Path) -> Path:
     Examples:
         sources/a/000 foo.mp4  → a/000 foo
         sources/a/001 bar.html → a/001 bar
+        sources/a/002 baz.pdf  → a/002 baz
     """
     rel = source.relative_to(sources_root)
     return rel.with_suffix("")
@@ -190,6 +201,46 @@ def ingest_html_one(
     log.info(
         "[html ] %s — %d paragraphs, title=%r, wall %.2fs",
         stem, payload["info"]["paragraph_count"], payload["info"]["title"], wall,
+    )
+
+
+# ---------------------------------------------------------------------------
+# PDF ingest (no GPU; may do OCR)
+# ---------------------------------------------------------------------------
+
+def ingest_pdf_one(
+    source: Path,
+    out_root: Path,
+    sources_root: Path,
+    *,
+    language: str,
+) -> None:
+    stem = source.stem
+    out_dir = out_dir_for(source, out_root, sources_root)
+    tmp_dir = out_dir.parent / f"{out_dir.name}.tmp"
+
+    if (out_dir / "raw.json").exists():
+        log.info("[skip ] %s already has raw.json", stem)
+        return
+
+    out_dir.parent.mkdir(parents=True, exist_ok=True)
+    clean_tmp_dir(tmp_dir)
+    tmp_dir.mkdir(parents=True)
+
+    t0 = time.time()
+    payload = _extract_pdf.build_raw_payload(source, language=language)
+    (tmp_dir / "raw.json").write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    tmp_dir.rename(out_dir)
+    wall = time.time() - t0
+
+    info = payload["info"]
+    log.info(
+        "[pdf  ] %s — %d paragraphs, %d pages, source=%s, wall %.2fs",
+        stem, info["paragraph_count"], info["page_count"],
+        info["pdf_text_source"], wall,
     )
 
 
@@ -471,6 +522,14 @@ class Daemon:
                         self.sources_root,
                         language=self.args.language,
                     )
+                elif kind == "pdf":
+                    # PDF never touches the GPU (tesseract CPU-only) — run directly.
+                    ingest_pdf_one(
+                        path,
+                        self.out_root,
+                        self.sources_root,
+                        language=self.args.language,
+                    )
                 elif kind == "whisper":
                     self._load_model()
                     self.model_last_used = time.time()
@@ -508,10 +567,12 @@ class Daemon:
         ]
         whisper_n = sum(1 for p in pending if extractor_for(p) == "whisper")
         html_n = sum(1 for p in pending if extractor_for(p) == "html")
+        pdf_n = sum(1 for p in pending if extractor_for(p) == "pdf")
         log.info(
-            "[scan ] found=%d  done=%d  pending=%d (whisper=%d, html=%d)",
+            "[scan ] found=%d  done=%d  pending=%d "
+            "(whisper=%d, html=%d, pdf=%d)",
             len(all_sources), len(all_sources) - len(pending),
-            len(pending), whisper_n, html_n,
+            len(pending), whisper_n, html_n, pdf_n,
         )
         for p in pending:
             self.tracker.touch(p)
@@ -571,8 +632,9 @@ def main() -> None:
         "--sources",
         default="/workspace/sources",
         help=(
-            "Root directory holding source files (media + HTML). Watched "
-            "recursively. Any suffix in INGEST_EXTENSIONS is picked up."
+            "Root directory holding source files (media, HTML, PDF). "
+            "Watched recursively. Any suffix in INGEST_EXTENSIONS is "
+            "picked up."
         ),
     )
     ap.add_argument(
