@@ -20,7 +20,9 @@ Question: what gets committed to git.
   explicitly excludes `.env`.
 - **Outside the forge repo, under `${STORAGE_ROOT}` with its own backup
   strategy**: (3). Data. `.gitignore` excludes `vault/`, `models/`,
-  `videos/`, `checkpoints/`, `mlruns/`, `mlflow/data/`.
+  `sources/`, `checkpoints/`, `mlruns/`, `mlflow/data/` (`sources/`
+  was `videos/` prior to the 2026-04-20 rename — see
+  [kurpatov-wiki ADR 0004](../../kurpatov-wiki/docs/adr/0004-mirror-sources-hierarchy.md)).
 
 ### Exception: `kurpatov-wiki/vault/raw/` is its own repo
 The raw-transcripts tree is tracked, but in a *separate* private

@@ -5,7 +5,7 @@ Accepted (2026-04-19).
 
 Amended (2026-04-19 — data/ content split). The path shown in the
 Decision section below (`vault/raw/<path>/<stem>/raw.json`) is now
-off by one `data/` segment: the transcriber writes to
+off by one `data/` segment: the ingest daemon writes to
 `vault/raw/data/<path>/<stem>/raw.json`, and the pusher watches
 `vault/raw/data/` while keeping its git working tree at
 `vault/raw/` so the existing `.git/` keeps working without being

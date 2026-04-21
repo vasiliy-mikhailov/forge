@@ -43,7 +43,7 @@ Current subsystems (each in its own folder):
 - **Secrets only in `.env`.** No tokens, passwords, certificates in git.
   If you see something that looks like a secret — stop and ask.
 - **Data lives under `${STORAGE_ROOT}`**, not in the forge repo.
-  `vault/`, `videos/`, `models/`, `checkpoints/`, `mlruns/` are never
+  `vault/`, `sources/`, `models/`, `checkpoints/`, `mlruns/` are never
   committed to forge. Note: `vault/raw/` **is** a git working tree —
   but for a *separate* repo (`kurpatov-wiki-raw`), pushed by the
   `kurpatov-wiki-raw-pusher` container. See
