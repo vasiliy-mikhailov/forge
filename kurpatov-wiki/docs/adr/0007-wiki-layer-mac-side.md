@@ -100,6 +100,65 @@ state; meta-at-root / content-under-data) are unchanged. This ADR's
 body has been updated in place; the pre-rename wording survives
 only in git history.
 
+Amended (2026-04-24 — provenance + fact-check pass in per-source
+authoring). The per-source authoring loop now runs every claim in
+the lecture through a mandatory four-way classification pass:
+`NEW` (not in any previously-processed source), `REPEATED (from:
+<slug>)` (already in an earlier source), `CONTRADICTS EARLIER (in:
+<slug>)` (disagrees with a prior source — both sides quoted), or
+`CONTRADICTS FACTS` (disagrees with current external evidence —
+primary-source citation attached). The priority order for
+fact-checking is peer-reviewed paper → textbook → reference site
+(Stanford Encyclopedia of Philosophy, NIH MedlinePlus, …) →
+high-quality journalism; Wikipedia is allowed only as a pointer
+to primary sources. When the web evidence is inconclusive, the
+claim falls back to `NEW` / `REPEATED` with a `Notes` caveat —
+the `CONTRADICTS FACTS` marker is reserved for cases where a
+clear primary-source contradiction is in hand.
+
+The shape of the source article under "Decision" below changes
+accordingly: three required sections become four. A new mandatory
+`## Claims — provenance and fact-check` section sits between
+`## TL;DR` and the new filtered `## New ideas (verified)` section
+(which contains only pure-`NEW`, fact-check-clean claims — the
+renamed "fast reader's path" that was previously `## New ideas`).
+`## All ideas` retains every claim but tags each bullet with its
+provenance marker. Frontmatter gains `fact_check_performed:
+true | false`. Concept articles stay strictly append-only:
+contradictions with earlier sources are recorded inside the *new*
+source's Contributions entry by quoting both sides — the earlier
+entry is not rewritten. The human-in-the-loop invariant from the
+Decision below is unchanged and, if anything, reinforced: the
+operator is the escalation path for editorial judgment calls,
+including inconclusive fact-checks.
+
+Rationale: a Kurpatov lecture reprises prior material, occasionally
+contradicts earlier lectures, and occasionally states empirical
+claims that disagree with the current scientific consensus. The
+original "new ideas" design silently blended all three categories
+into the reader's fast path, which degrades reader trust on first
+encounter. Splitting the output into an auditable `Claims` section
+and a trusted `New ideas (verified)` section keeps the fast-path
+property without letting contamination flow through. The cost is
+real authoring time per source (the fact-check pass takes
+non-trivial web lookups); it is accepted because the wiki is
+cheaper to read correctly than to re-verify at read time.
+
+Backfill note: three source articles authored before this
+amendment (module 005, stems 000/001/002 of the
+Психолог-консультант course) predate the new spec and lack both
+the `## Claims — provenance and fact-check` section and the
+`fact_check_performed` frontmatter field. They will be backfilled
+in a dedicated `prompt-v2 pass:` when the operator schedules it;
+the wiki repo's `CLAUDE.md` → Status and `docs/authoring.md` →
+Known gaps carry the reminder.
+
+The authoritative prose of the pass (procedure, citation priority,
+example) lives in `kurpatov-wiki-wiki/prompts/per-source-summarize.md`;
+the wiki repo's `CLAUDE.md`, `docs/design.md`, and
+`docs/authoring.md` are kept in lockstep. The forge-side mirror is
+`kurpatov-wiki/SPEC.md` → WIKI layer section and this amendment.
+
 ## Context
 
 Once `vault/raw/<stem>/raw.json` started accumulating (ADR 0002,
@@ -181,24 +240,39 @@ one `data/` segment in every cross-repo path reference. The sibling
 `kurpatov-wiki-raw` repo mirrors the split — transcripts live under
 `data/<course>/<module>/<stem>/raw.json`.
 
-A **source article** has three load-bearing sections:
+A **source article** has four load-bearing sections (the
+2026-04-24 amendment above added `## Claims — provenance and
+fact-check` and split the former `## New ideas` into an audit
+trail + a filtered fast-reader path):
 
 - `## TL;DR` — 1-2 sentences: what this lecture is about at the
   top level.
-- `## New ideas` — ideas this lecture introduces **that do not
-  appear in any previously-processed source**. The reader's
-  fast-track. Each new idea is either a new concept (add to
+- `## Claims — provenance and fact-check` — every substantive
+  claim in the lecture, each tagged with exactly one of `NEW`,
+  `REPEATED (from: <slug>)`, `CONTRADICTS EARLIER (in: <slug>)`,
+  or `CONTRADICTS FACTS` (with a primary-source citation). Both
+  sides are quoted for `CONTRADICTS EARLIER`; the external
+  citation is explicit for `CONTRADICTS FACTS`. See the
+  amendment for the citation priority list.
+- `## New ideas (verified)` — the filtered output: only claims
+  tagged pure-`NEW` that survived the fact-check. The reader's
+  fast-track. Each item is either a new concept (add to
   `concepts/`) or a new claim about an existing concept (add to
   that concept's contribution log).
 - `## All ideas` — the full ideational content, grouped by concept,
-  each item cross-linking to its concept article. Includes things
-  that aren't new — for completeness and for readers who don't walk
-  the lecture sequence in order.
+  each bullet tagged with its provenance marker (`[NEW]`,
+  `[REPEATED]`, `[CONTRADICTS EARLIER]`, `[CONTRADICTS FACTS]`)
+  and cross-linked to its concept article. Includes things that
+  aren't new — for completeness, for readers who don't walk the
+  lecture sequence in order, and as the audit trail behind the
+  filtered `## New ideas (verified)` above.
 
 A **concept article** is an ever-growing article about one concept
 (neocortex, defense mechanism, transactional analysis, etc.), with a
-"Contributions by video" log appended to on each pass. Concepts are
-never rewritten destructively; each pass appends.
+"Contributions by source" log appended to on each pass. Concepts
+are never rewritten destructively; each pass appends. When a new
+source's claim contradicts an earlier contribution, the new entry
+quotes both sides side-by-side — the earlier entry is not edited.
 
 ### State: concept-index.json
 

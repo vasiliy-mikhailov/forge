@@ -215,23 +215,37 @@ kurpatov-wiki-wiki/               (repo root)
 
 Two article types (see ADR 0007):
 
-- **Source article** — three required sections:
-  `## TL;DR` (1-2 sentences), `## New ideas` (ideas first introduced
-  in this source, not in any previously-processed source — the
-  fast-reader's path), `## All ideas` (full ideational content
-  grouped by concept, with cross-links to `concepts/`).
-  Frontmatter carries `slug`, `course`, `module`, `source_raw`,
-  `processed_at`, `concepts_touched`, `concepts_introduced`. There
-  is no numeric `order:` field — module names are zero-padded
-  (`05-conflicts`) and stems carry zero-padded numeric prefixes
-  (`005 Conflict nature`), so sorted-path order equals course
-  order (see ADR 0007 invariants).
+- **Source article** — four load-bearing sections in order:
+  `## TL;DR` (1-2 sentences), `## Claims — provenance and fact-check`
+  (every substantive claim marked with exactly one of
+  `NEW` / `REPEATED (from: <slug>)` /
+  `CONTRADICTS EARLIER (in: <slug>)` / `CONTRADICTS FACTS`; the last
+  carries an external primary-source citation — peer-reviewed paper
+  → textbook → reference site, with Wikipedia allowed only as a
+  pointer),
+  `## New ideas (verified)` (the filtered output: only pure-`NEW`
+  claims that survived fact-check — the fast-reader's trusted path),
+  `## All ideas` (full ideational content grouped by concept, with
+  each bullet tagged `[NEW]` / `[REPEATED]` /
+  `[CONTRADICTS EARLIER]` / `[CONTRADICTS FACTS]` and cross-linked
+  to `concepts/`). Frontmatter carries `slug`, `course`, `module`,
+  `extractor`, `source_raw`, `processed_at`, `concepts_touched`,
+  `concepts_introduced`, `fact_check_performed` (boolean — did this
+  pass consult external sources). There is no numeric `order:`
+  field — module names are zero-padded (`05-conflicts`) and stems
+  carry zero-padded numeric prefixes (`005 Conflict nature`), so
+  sorted-path order equals course order (see ADR 0007 invariants).
+  The four-way classification + fact-check pass was added on
+  2026-04-24 — see ADR 0007 amendment.
 
 - **Concept article** — an append-only article per psychological
   concept. A short top-of-article definition, followed by a
   "Contributions by source" log where each entry names a source slug
   and summarizes what that source adds to the concept. Never
-  rewritten destructively; fixes are explicit edits with reasons.
+  rewritten destructively; contradictions from a later source are
+  recorded inside the *new* entry by quoting both sides, leaving
+  the earlier entry untouched. Fixes to genuinely wrong prior
+  content are explicit edits with reasons.
 
 `data/concept-index.json` is the authoring state file (ADR 0007 →
 Invariants). Every Mac-side session reads it at start, uses it to
