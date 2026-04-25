@@ -1,0 +1,142 @@
+# kurpatov-wiki-bench/configs/models.yml — battery roster.
+#
+# Each entry is one experiment. The battery wrapper (run-battery.sh)
+# iterates these in order, swapping the model on the kurpatov-wiki-
+# compiler lab's vLLM between runs.
+#
+# Schema:
+#   id              — short slug used in logs / commit messages
+#   hf              — HuggingFace model id to load
+#   served_name     — what the agent (and bench branch) names the model
+#   quant           — vLLM --quantization flag value (or "auto" to drop)
+#   tool_call_parser  — vLLM --tool-call-parser
+#   reasoning_parser  — vLLM --reasoning-parser ("" to skip)
+#   max_model_len   — context cap; ≥ 65536 required by some agent harnesses
+#   gpus            — [blackwell] | [blackwell, rtx5090] (TP across both)
+#   notes           — operator-readable note
+#
+# Models marked `skip: true` are listed for visibility but not run by
+# default. Comment them in / remove the flag to include in a battery.
+
+baseline:
+  # The Cowork session that authored sources 000–006 manually
+  # (pre-bench infrastructure). Branch already exists on origin;
+  # the battery just records its presence.
+  - id: claude-opus-4-6-cowork
+    type: reference
+    branch: bench/2026-04-25-claude-opus-4-6-cowork
+    notes: |
+      Manual baseline. Restored from a8b8c2a via 'git branch'.
+
+models:
+  # ─── Tier A — small dense, single Blackwell, fastest to test ──────────
+  - id: qwen3.6-27b-fp8
+    hf: Qwen/Qwen3.6-27B-FP8
+    served_name: qwen3.6-27b-fp8
+    quant: fp8
+    tool_call_parser: qwen3_xml
+    reasoning_parser: qwen3
+    max_model_len: 65536
+    gpus: [blackwell]
+    notes: |
+      Official Qwen FP8. Tests "is the community AWQ-INT4 quant the
+      issue?" hypothesis (current prod model is cyankiwi/...AWQ-INT4
+      and crashes on Cyrillic-tool-call JSON).
+
+  - id: qwen3.5-27b-fp8
+    hf: Qwen/Qwen3.5-27B-FP8
+    served_name: qwen3.5-27b-fp8
+    quant: fp8
+    tool_call_parser: qwen3_xml
+    reasoning_parser: qwen3
+    max_model_len: 65536
+    gpus: [blackwell]
+    notes: Predecessor of 3.6, official Qwen FP8.
+
+  - id: qwen3-32b-fp8
+    hf: Qwen/Qwen3-32B-FP8
+    served_name: qwen3-32b-fp8
+    quant: fp8
+    tool_call_parser: qwen3_xml
+    reasoning_parser: qwen3
+    max_model_len: 65536
+    gpus: [blackwell]
+    notes: Bigger Qwen3 dense, single card.
+
+  - id: devstral-small-2-24b
+    hf: mistralai/Devstral-Small-2-24B-Instruct-2512
+    served_name: devstral-small-2-24b
+    quant: auto
+    tool_call_parser: mistral
+    reasoning_parser: ""
+    max_model_len: 65536
+    gpus: [blackwell]
+    notes: |
+      Mistral's coding/agentic 24B dense, Dec 2025. Strong tool-call
+      discipline; weaker Russian than Qwen.
+
+  - id: mistral-small-3.2-24b
+    hf: mistralai/Mistral-Small-3.2-24B-Instruct-2506
+    served_name: mistral-small-3.2-24b
+    quant: auto
+    tool_call_parser: mistral
+    reasoning_parser: ""
+    max_model_len: 65536
+    gpus: [blackwell]
+    notes: Latency-tuned Mistral dense.
+
+  # ─── Tier B — bigger dense, single Blackwell at FP8/INT4 ──────────────
+  - id: nemotron-super-49b-v1.5-fp8
+    hf: nvidia/Llama-3_3-Nemotron-Super-49B-v1_5-FP8
+    served_name: nemotron-super-49b-v1.5
+    quant: fp8
+    tool_call_parser: llama_nemotron_json
+    reasoning_parser: ""
+    max_model_len: 65536
+    gpus: [blackwell]
+    notes: |
+      NVIDIA's dense 49B Llama-derivative, NAS-pruned. Specifically
+      post-trained for tool calling (custom vLLM parser).
+
+  - id: llama-3.3-70b-nvfp4
+    hf: nvidia/Llama-3.3-70B-Instruct-NVFP4
+    served_name: llama-3.3-70b
+    quant: nvfp4
+    tool_call_parser: llama3_json
+    reasoning_parser: ""
+    max_model_len: 65536
+    gpus: [blackwell]
+    notes: |
+      Workhorse Llama 70B, NVIDIA's NVFP4 quant for Blackwell.
+      Weaker Russian than Qwen line.
+
+  # ─── Tier C — large dense, dual-GPU TP (Blackwell + RTX 5090) ─────────
+  - id: devstral-2-123b
+    hf: mistralai/Devstral-2-123B-Instruct-2512
+    served_name: devstral-2-123b
+    quant: auto         # community AWQ may need explicit
+    tool_call_parser: mistral
+    reasoning_parser: ""
+    max_model_len: 32768  # tight on dual-GPU; raise after measurement
+    gpus: [blackwell, rtx5090]
+    tensor_parallel_size: 2
+    notes: |
+      Mistral's flagship dense — 123B in defiance of MoE trend.
+      Coding+agentic. Needs dual-GPU TP, ~30% throughput cost on
+      PCIe (no NVLink between Blackwell + 5090). Run last.
+    skip: true   # un-skip after Tier A/B passes succeed
+
+  # ─── Tier D — historical / failed runs, kept for vocabulary ────────────
+  - id: qwen3.6-27b-awq-int4-community
+    hf: cyankiwi/Qwen3.6-27B-AWQ-INT4
+    served_name: qwen3.6-27b
+    quant: auto    # compressed-tensors auto-detected
+    tool_call_parser: qwen3_xml
+    reasoning_parser: qwen3
+    max_model_len: 65536
+    gpus: [blackwell]
+    notes: |
+      The current prod default. Crashes on Cyrillic-tool-call JSON
+      (LLMBadRequestError: Unterminated string). Listed for
+      reproducibility — running it again should reproduce the crash.
+    skip: true
