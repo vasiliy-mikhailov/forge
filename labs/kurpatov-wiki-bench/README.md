@@ -9,9 +9,10 @@ One `make bench` invocation runs an [OpenHands](https://github.com/OpenHands/Ope
 agent inside an isolated Docker container against whatever model the
 local vLLM endpoint is currently serving. Per-run artifacts (event
 trace + summary + the bench branch the agent pushed) land under
-`${STORAGE_ROOT}/kurpatov-wiki-bench/runs/<run_id>/`.
+`${STORAGE_ROOT}/labs/kurpatov-wiki-bench/experiments/<run_id>/`.
 
-This is **not** part of [forge](https://github.com/vasiliy-mikhailov/forge).
+This used to be a standalone repo; as of forge ADR 0007 it lives at `labs/kurpatov-wiki-bench/` inside forge alongside the other labs (compiler, ingest, rl-2048).
+
 forge is the lab infrastructure (vLLM, MLflow, rl-2048, caddy); this
 repo is one specific evaluation pipeline that consumes forge as a
 black box.
@@ -59,7 +60,7 @@ make bench
 ## Per-run output
 
 ```
-${STORAGE_ROOT}/kurpatov-wiki-bench/runs/<run_id>/
+${STORAGE_ROOT}/labs/kurpatov-wiki-bench/experiments/<run_id>/
 ├── events.jsonl              — OpenHands event trace
 ├── stderr.log                — container stderr
 ├── summary.json              — {run_id, model, sandbox config, exit_code, branch_pushed, ...}

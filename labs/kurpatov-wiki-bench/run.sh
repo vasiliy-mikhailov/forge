@@ -9,8 +9,8 @@
 #     docker socket are NOT mounted; the agent cannot reach them.
 #   - Inference is delegated to forge/inference (vLLM behind caddy)
 #     over the public TLS endpoint. Same path Hermes Agent would use.
-#   - Per-run artifacts under ${STORAGE_ROOT}/kurpatov-wiki-bench/
-#     runs/<run_id>/.
+#   - Per-experiment artifacts under 
+#     ${STORAGE_ROOT}/labs/kurpatov-wiki-bench/experiments/<experiment_id>/.
 #
 # Usage:
 #   ./run.sh                                 # uses .env defaults
@@ -65,7 +65,7 @@ echo "[preflight] OK — vLLM serves '$served'"
 ts=$(date +"%Y-%m-%d-%H%M%S")
 slug=$(echo "$INFERENCE_SERVED_NAME" | tr '/' '-')
 run_id="${ts}-${slug}"
-runs_root="${STORAGE_ROOT}/kurpatov-wiki-bench/runs"
+runs_root="$EXPERIMENTS_ROOT"
 mkdir -p "$runs_root"
 run_dir="${runs_root}/${run_id}"
 mkdir -p "$run_dir"

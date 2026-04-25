@@ -5,7 +5,7 @@ Server-side, **Docker-sandboxed** agent runner that executes the
 `wiki/skills/benchmark/SKILL.md` skill (in `kurpatov-wiki-wiki`)
 against an open-weight model served by the local `forge/inference/`
 vLLM endpoint. Each invocation produces a versioned per-run artifact
-directory under `${STORAGE_ROOT}/kurpatov-wiki-bench/runs/` and a
+directory under `${STORAGE_ROOT}/labs/kurpatov-wiki-bench/experiments/` and a
 branch-on-origin in the wiki repo. Multiple model runs are compared
 offline against the same fixed task.
 
@@ -53,7 +53,7 @@ None at the GPU level. The bench harness is CPU-only.
 `forge/inference/` must be up; `forge/rl-2048/` is irrelevant.
 
 ## Storage layout
-Per-run artifacts: `${STORAGE_ROOT}/kurpatov-wiki-bench/runs/<run_id>/`.
+Per-run artifacts: `${STORAGE_ROOT}/labs/kurpatov-wiki-bench/experiments/<run_id>/`.
 Matches the forge convention (heavy data on the data disk, not in repos).
 
 vLLM HF cache (set up in `forge/inference/`):
@@ -74,7 +74,7 @@ bench artifacts.
 - `SANDBOX_MEMORY`, `SANDBOX_CPUS`, `SANDBOX_PIDS` — container caps.
 
 ### Output per run
-`${STORAGE_ROOT}/kurpatov-wiki-bench/runs/<run_id>/`:
+`${STORAGE_ROOT}/labs/kurpatov-wiki-bench/experiments/<run_id>/`:
 - `events.jsonl` — OpenHands event trace.
 - `stderr.log` — container stderr.
 - `summary.json` — run metadata + sandbox config + outcome.
@@ -95,7 +95,7 @@ origin, with one commit per source the agent authored plus
    check in `run.sh`).
 2. The `kurpatov-wiki-bench:${OPENHANDS_VERSION}` image exists locally
    (`make build` produces it).
-3. `${STORAGE_ROOT}/kurpatov-wiki-bench/runs/` exists (`make
+3. `${STORAGE_ROOT}/labs/kurpatov-wiki-bench/experiments/` exists (`make
    storage-init`).
 4. `gh auth token` returns a non-empty value with `repo` scope.
 
