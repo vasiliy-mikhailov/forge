@@ -77,31 +77,46 @@ outputs: kurpatov-wiki-wiki  (markdown sources + concepts + index,
   вес + vLLM. Не «улучшаем», а выбираем подходящую под текущий skill.
   Параметры serving'а (vLLM флаги) — улучшаем.
 
-### 1.3 Main thesis (pivoted 2026-04-25 после F1)
+### 1.3 Main thesis (pivoted twice — final 2026-04-25 после A8)
 
-**Изначальная ставка**: «skill v1 написан под Opus 4.6, и open-weight
-24-49B классу он не по зубам — нужно переписать skill».
+**Хронология ставок на этот run:**
 
-**После F1 microbench** ставка пересмотрена: F1 показал, что
-Qwen3.6-27B-FP8 в isolated-call setup пишет 49 КБ Cyrillic JSON tool
-args **без единой ошибки** (pass-rate=1.00 от 1 КБ до 49 КБ). Значит
-T3 crash (`Error validating tool 'file_editor': Unterminated string at
-char 285`) — **не архитектурная фрагильность модели на длинных строках**,
-а что-то ещё.
+1. **Ставка v0** (initial): «skill v1 написан под Opus, open-weight
+   24-49B классу не по зубам — переписать skill».
+2. **Ставка v1** (после F1 microbench): «модель в порядке (L\*≥49KB),
+   виноват max_completion_tokens cap в OpenHands». D-cluster понижен.
+3. **Ставка v2 (current, после A8)**: **виноват `max_model_len` (KV-budget
+   контекста), не max_completion_tokens.**
 
-**Текущая ставка** — **A1/A8: max_completion_tokens cap в OpenHands
-LLMConfig**. T3 prompt содержит ~50K input токенов (skill + transcript +
-turn history); агент пытается выдать 16K output токенов; OpenHands по
-дефолту ограничивает completion в ~4K → модель усекается на ~285-м
-символе и vLLM возвращает невалидный JSON.
+**A8 эксперимент 2026-04-25**: бампнули `max_model_len: 65536 → 131072`
+(YaRN factor 2.0→4.0). Тот же T3 на том же Qwen3.6-27B-FP8, тот же
+skill v1 — **проходит**: source 000 успешно создан, 6 концептов созданы,
+concept-index обновлён, commit+push на `bench/2026-04-25-qwen3.6-27b-fp8`
+зелёный. **Pass partial** (source 136 строк vs Opus 216, концептов 6
+vs 32 — quality regression), но JSON-truncation crash **полностью
+устранён**.
 
-Если ставка верна, фикс — **одна строка** в `bench/run.sh`
-(`max_completion_tokens=32768`). Skill переписывать **не обязательно**:
-он работает, ему просто не дают досчитать. Все D-cluster гипотезы
-(skill v2/v3/v4) понижены — остаются как defense-in-depth, не как THE BET.
+**Корень**: T3 prompt (~50K input tokens: skill+CLAUDE+prompts+
+transcript+turn history) + агентский output для source.md (~16K tokens
+Cyrillic body) = ~66K. С `max_model_len=65536` — buffer 0; модель
+обрывается. С `max_model_len=131072` — буфер 65K, всё помещается.
 
-Если ставка ложна — поднимется H10 (context starvation иной природы),
-и снова придётся смотреть на skill / context / max_model_len.
+**Следствия для backlog:**
+- **A1 (max_tokens bump)**: Confidence ↓↓. 128K сам по себе хватает,
+  max_completion_tokens default OpenHands не ограничивает. Можно не трогать.
+- **A4 (guided JSON), A2 (parser swap), A3 (tool_choice)** — defense-in-depth.
+- **D-cluster (skill v2/v3/v4)** — теперь чисто quality-улучшение
+  (для повышения числа концептов и длины source), не нужны для pass.
+- **B-cluster (other models)** — теперь имеет смысл разворачивать всю
+  батарею: с 128K контекстом любая dense 24-49B должна пройти.
+- **F4 (GPT-4o pairwise judge)** — поднимается, потому что вопрос
+  смещается с «работает или нет» на «насколько хорошо vs Opus».
+
+The Big Bet → **«любая dense 24-49B модель + 128K context + skill v1
+проходит T3, разница только в quality»**. Falsifier: при батарее
+gpt-oss-20b / Devstral-Small-2-24B / Mistral-Small-3.2-24B / Nemotron-
+Super-49B-v1.5 / Llama-3.3-70B хоть одна не проходит на этой
+конфигурации.
 
 ## 2. North Star (target condition)
 
