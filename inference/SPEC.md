@@ -70,13 +70,39 @@ Quantization stack at default config:
   are a future option once vLLM exposes a stable W4A4 path; not on by
   default here.
 
-For `Qwen/Qwen3-32B-AWQ` (default) at 32K context this means ~18 GB
-weights + FP8 KV cache giving 546k-token cache pool (≈16.7× concurrency
-at 32K) + ~2 GB CUDA-graph + activation overhead — comfortably inside
-the 96 GB Blackwell with massive headroom. Qwen 3.6/Qwen3 had no
+For `Qwen/Qwen3-32B-AWQ` (default) at 64K context (YaRN-extended,
+see below) this means ~18 GB weights + FP8 KV cache giving 547k-token
+cache pool (≈8.3× concurrency at full 64K) + ~2 GB CUDA-graph +
+activation overhead — comfortably inside the 96 GB Blackwell. Qwen 3.6/Qwen3 had no
 official dense 72B-Instruct-AWQ at deploy time; community 72B GGUFs
 are not vLLM-loadable, so 32B-AWQ is the apples-to-apples comparison
 class for our open-weight benchmark runs.
+
+## Context extension (YaRN)
+Default `INFERENCE_MAX_MODEL_LEN=65536` is above Qwen3-32B's native 32K
+context window; it's enabled via YaRN rope-scaling, baked into the
+compose `command:` as:
+
+```
+--hf-overrides.rope_scaling.rope_type yarn
+--hf-overrides.rope_scaling.factor 2.0
+--hf-overrides.rope_scaling.original_max_position_embeddings 32768
+```
+
+64K is the minimum some agent harnesses (e.g. Hermes Agent) accept;
+hence the default. To extend further (Qwen3 supports YaRN to 128K with
+factor=4.0), edit the `factor` flag and bump `INFERENCE_MAX_MODEL_LEN`.
+
+The dot-notation `--hf-overrides.<key>` form is used over the older
+`--rope-scaling '{json}'` flag because vLLM v0.19 dropped the latter,
+and because YAML's folded scalar (`>`) form in compose strips JSON
+quotes that bare-arg JSON would need.
+
+Caveat: the YaRN parameters above are tuned for the **Qwen3 / Qwen2.5
+family** (rope_theta, base context). Other model families (Llama,
+Mistral, Gemma) will need different `original_max_position_embeddings`
+and possibly different `rope_type`. When swapping models, check the
+target model's `config.json` and adjust.
 
 ## Data contracts
 Input environment variables (all from forge root `.env`):
@@ -90,7 +116,7 @@ Input environment variables (all from forge root `.env`):
 - `INFERENCE_SERVED_NAME` — public model name in the OpenAI API
   (`/v1/models` returns this). Default: `qwen3-72b-instruct`.
 - `INFERENCE_MAX_MODEL_LEN` — context window cap in tokens. Default:
-  `32768`. Raise once we've measured that KV cache fits at higher length.
+  `65536` (YaRN-extended; see `## Context extension (YaRN)` above).
 - `HF_TOKEN` — optional, only needed if the chosen model is gated.
 - `STORAGE_ROOT` — for the HF cache mount.
 

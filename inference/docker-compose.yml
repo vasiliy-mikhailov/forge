@@ -25,6 +25,9 @@ services:
       --quantization awq_marlin
       --kv-cache-dtype fp8
       --max-model-len ${INFERENCE_MAX_MODEL_LEN}
+      --hf-overrides.rope_scaling.rope_type yarn
+      --hf-overrides.rope_scaling.factor 2.0
+      --hf-overrides.rope_scaling.original_max_position_embeddings 32768
       --gpu-memory-utilization 0.92
       --enable-prefix-caching
       --tensor-parallel-size 1
