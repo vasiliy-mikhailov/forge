@@ -100,7 +100,7 @@ echo "[run] dir   =$run_dir"
 curl -fsS "${INFERENCE_BASE_URL}/models" -H "Authorization: Bearer ${VLLM_API_KEY}" > "${run_dir}/vllm-snapshot-start.json"
 
 # --- task prompt: launch.md + GitHub token for git push, model name from /v1/models ---
-task_template=$(cat prompts/launch.md | sed "s|__INFERENCE_SERVED_NAME__|$served|g")
+task_template=$(cat "${LAUNCH_PROMPT:-prompts/launch.md}" | sed "s|__INFERENCE_SERVED_NAME__|$served|g")
 task=$(printf '%s\n\nGITHUB_TOKEN for HTTPS git push (use as the password with username "x-access-token"): %s\n' "$task_template" "$GITHUB_TOKEN")
 
 started_at=$(date -Iseconds)
