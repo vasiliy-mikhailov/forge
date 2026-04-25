@@ -420,7 +420,7 @@ the Mac.
   earlier sources. Fixes to genuinely wrong prior content are
   explicit edits with a commit message spelling out why.
 - **No server writes to `vault/wiki/`.** The server mounts
-  `${STORAGE_ROOT}/kurpatov-wiki/vault/` into the transcriber and
+  `${STORAGE_ROOT}/labs/kurpatov-wiki-ingest/vault/` into the transcriber and
   jupyter containers for access to `raw/`, but neither service
   writes into `vault/wiki/`. If a future service needs to, that's a
   new ADR.

@@ -1,4 +1,4 @@
-# inference — public OpenAI-compatible vLLM endpoint
+# kurpatov-wiki-compiler — public OpenAI-compatible vLLM endpoint
 
 ## Purpose
 A long-running vLLM container exposing an OpenAI-compatible HTTP API at
@@ -10,23 +10,24 @@ inference providers.
 ## Non-goals
 - Not multi-tenant — one user, one model loaded at a time.
 - Not a model-zoo dispatcher — to swap models, edit `.env`,
-  `make inference-down`, `make inference`. Hot-swap is out of scope.
+  `make kurpatov-wiki-compiler-down`, `make kurpatov-wiki-compiler`. Hot-swap is out of scope.
 - Not load-balanced — one container, one GPU. If saturation becomes a
   problem, we add concurrency knobs in vLLM, not a second container.
 - Not multi-GPU — single Blackwell. Tensor-parallel across PCIe is slower
   than single-card inference for 70B-class models with no NVLink.
 
 ## Mode mutex with rl-2048
-`inference` and `rl-2048` both want the Blackwell. forge has effectively
-two modes: **inference mode** (this service running, `rl-2048` stopped)
-and **2048 mode** (`rl-2048` running, `inference` stopped). Bringing both
-up at once will OOM or fail nvidia-container-toolkit GPU allocation.
+`kurpatov-wiki-compiler` and `rl-2048` both want the Blackwell.
+forge has effectively two modes: **compiler mode** (this lab running,
+`rl-2048` stopped) and **2048 mode** (`rl-2048` running, this lab
+stopped). Bringing both up at once will OOM or fail
+nvidia-container-toolkit GPU allocation.
 
 Discipline:
 ```
-make stop-gpu      # stops kurpatov-wiki + rl-2048 + inference
-make inference     # → inference mode
-make rl-2048       # → 2048 mode (you do this only after make inference-down)
+make stop-all      # stops every lab
+make kurpatov-wiki-compiler     # → inference mode
+make rl-2048       # → 2048 mode (you do this only after make kurpatov-wiki-compiler-down)
 ```
 The Makefile does not enforce the mutex; forge convention is one
 operator, the operator manages mode transitions deliberately.
@@ -50,14 +51,16 @@ that breaks every standard SDK. See
 `docs/adr/0001-vllm-public-openai-compatible-endpoint.md`.
 
 Volumes:
-- `${STORAGE_ROOT}/models → /root/.cache/huggingface` — shared HF cache
+- `${STORAGE_ROOT}/shared/models → /root/.cache/huggingface` — shared HF cache
   (same volume rl-2048 and kurpatov-wiki use; weights downloaded once,
   used by all three modes).
 
 Quantization stack at default config:
-- **Weights**: 4-bit, AWQ via Marlin kernels (`--quantization awq_marlin`).
-  vLLM auto-converts the AWQ checkpoint to AWQ-Marlin runtime kernels
-  on load (`The model is convertible to awq_marlin during runtime`).
+- **Weights**: model-dependent. For the current `Qwen/Qwen3.6-27B-FP8`
+  default, `--quantization fp8`. Past defaults used AWQ via Marlin
+  kernels (`--quantization awq_marlin`); update the flag at compose
+  level when swapping models. vLLM can auto-detect from
+  `config.quantization_config` if `--quantization` is absent.
 - **KV cache**: FP8 (`--kv-cache-dtype fp8`). TurboQuant K4V4
   (Hadamard-rotated scalar quantization, ICLR 2026) is the eventual
   target — sub-4-bit-equivalent compression with ~zero quality loss —
@@ -70,7 +73,11 @@ Quantization stack at default config:
   are a future option once vLLM exposes a stable W4A4 path; not on by
   default here.
 
-For `cyankiwi/Qwen3.6-27B-AWQ-INT4` (default) at 64K context
+For the current `Qwen/Qwen3.6-27B-FP8` default at 128K context (was
+`cyankiwi/Qwen3.6-27B-AWQ-INT4` at 64K through 2026-04-25; the AWQ-INT4
+community quant exhibited identical T3 crash characteristics to FP8 —
+see bench/F1+A8 — so the swap was driven by license clarity and tooling
+stability, not bug fixing)
 (YaRN-extended, see below) this means ~50 GB GPU at load + FP8 KV
 cache giving 60 GB pool / ~26× concurrency at full 64K + ~5 GB
 CUDA-graph and activation overhead. The model is a multimodal VL
@@ -88,13 +95,14 @@ compose `command:` as:
 
 ```
 --hf-overrides.rope_scaling.rope_type yarn
---hf-overrides.rope_scaling.factor 2.0
+--hf-overrides.rope_scaling.factor 4.0
 --hf-overrides.rope_scaling.original_max_position_embeddings 32768
 ```
 
-64K is the minimum some agent harnesses (e.g. Hermes Agent) accept;
-hence the default. To extend further (Qwen3 supports YaRN to 128K with
-factor=4.0), edit the `factor` flag and bump `INFERENCE_MAX_MODEL_LEN`.
+Currently set to **128K** (YaRN factor 4.0); 64K is the minimum some agent
+harnesses (e.g. Hermes Agent) accept. Below 128K some agentic flows
+that carry a 50K+ token skill+context exceed the budget — see
+bench `experiments/A8.md` for the diagnostic that drove the bump.
 
 The dot-notation `--hf-overrides.<key>` form is used over the older
 `--rope-scaling '{json}'` flag because vLLM v0.19 dropped the latter,
@@ -115,11 +123,13 @@ Input environment variables (all from forge root `.env`):
 - `VLLM_API_KEY` — required. The `Authorization: Bearer …` value. Generate
   with e.g. `openssl rand -hex 32`.
 - `INFERENCE_MODEL` — HuggingFace model id, e.g.
-  `Qwen/Qwen3-72B-Instruct-AWQ`.
+  the value of `INFERENCE_MODEL` in `.env` (currently `Qwen/Qwen3.6-27B-FP8`; see `forge/.env` and `labs/kurpatov-wiki-bench/configs/models.yml` for swap candidates).
 - `INFERENCE_SERVED_NAME` — public model name in the OpenAI API
-  (`/v1/models` returns this). Default: `qwen3-72b-instruct`.
+  (`/v1/models` returns this). Default: the value of `INFERENCE_SERVED_NAME` in `.env` (currently `qwen3.6-27b-fp8`).
 - `INFERENCE_MAX_MODEL_LEN` — context window cap in tokens. Default:
-  `65536` (YaRN-extended; see `## Context extension (YaRN)` above).
+  `131072` (YaRN factor 4.0; see `## Context extension (YaRN)` above).
+  Bump from 64K to 128K landed 2026-04-25 to fit T3 prompt + body without
+  truncation (see lab `experiments/A8.md` in bench).
 - `HF_TOKEN` — optional, only needed if the chosen model is gated.
 - `STORAGE_ROOT` — for the HF cache mount.
 
@@ -130,18 +140,19 @@ Output:
 
 ## Invariants
 1. `proxy-net` exists (created by `make network` in root) before
-   `make inference`.
+   `make kurpatov-wiki-compiler`.
 2. `${INFERENCE_DOMAIN}` resolves to this host's public IP.
 3. `INFERENCE_GPU_UUID` is not held by any other forge container (i.e.
    `rl-2048` is down).
-4. `${STORAGE_ROOT}/models` exists (created by `make setup`).
+4. `${STORAGE_ROOT}/shared/models` exists (created by `make setup`).
 5. Caddy is up before external traffic can reach the endpoint —
-   `make base` if not already running.
+   the active lab provides caddy automatically ().
 
 ## Status
-New. Smoke-test target lives in `tests/smoke.md` section 9; the script
-runs section 9 only when the container is up, otherwise skips
-(consistent with forge's "not all services run all the time" pattern).
+Live (since 2026-04-25). Per-lab smoke at `tests/smoke.md` /
+`tests/smoke.sh`; root dispatcher (`scripts/smoke.sh`) routes here
+automatically when this lab is the active one (its caddy holds
+:80/:443).
 
 ## Tool calling and reasoning
 Default config enables OpenAI-compatible tool calls plus reasoning
@@ -236,7 +247,7 @@ A model swap is **not** just an `INFERENCE_MODEL=` edit. Walk through:
 4. Pick parsers. See
    [ADR 0002](docs/adr/0002-per-model-parsers.md) and the lookup
    table there. Update both `--tool-call-parser` and
-   `--reasoning-parser` in `inference/docker-compose.yml`.
+   `--reasoning-parser` in `labs/kurpatov-wiki-compiler/docker-compose.yml`.
 5. Update YaRN params. The defaults
    (`factor=2.0, original=32768`) are tuned for Qwen3+ family.
    Other families (Llama, Mistral, Gemma) have different
@@ -248,8 +259,8 @@ A model swap is **not** just an `INFERENCE_MODEL=` edit. Walk through:
     - `INFERENCE_MAX_MODEL_LEN` — keep ≥ 64K so Hermes Agent can connect.
     - `HF_TOKEN` — set if the new model is gated.
 7. Mode-mutex: `make rl-2048-down` if it's running.
-8. `make inference-down && make inference`.
-9. `make inference-logs`. Watch for `Application startup complete`,
+8. `make kurpatov-wiki-compiler-down && make kurpatov-wiki-compiler`.
+9. `make kurpatov-wiki-compiler-logs`. Watch for `Application startup complete`,
    then run a sanity curl (see `## Sanity tests` below).
 10. If healthy, **manually verify a tools request** before assuming
     the agent client will work. The HTTP 200 from vLLM is a weaker
@@ -282,7 +293,7 @@ The third response must show `finish_reason: "tool_calls"`, populated
 parser mismatch (see ADR 0002 diagnostic table).
 
 ### Known harmless warnings during startup
-These appear in `make inference-logs` and **do not** indicate a
+These appear in `make kurpatov-wiki-compiler-logs` and **do not** indicate a
 problem:
 
 - `WARNING [argparse_utils.py:191] With 'vllm serve', you should
@@ -305,7 +316,7 @@ If any of these escalate to `ERROR` rather than `WARNING`, escalate
 to the operator.
 
 ### Caddy survives the model swap
-caddy is unaffected by `make inference-down && make inference`. The
+caddy is unaffected by `make kurpatov-wiki-compiler-down && make kurpatov-wiki-compiler`. The
 `reverse_proxy vllm-inference:8000` directive caches no upstream
 state; when the upstream comes back, requests start flowing again
 on the next health interval. No `make caddy-down` needed unless

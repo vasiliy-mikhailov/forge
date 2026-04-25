@@ -4,7 +4,7 @@
 Accepted (2026-04-19). Partially amends ADR 0001 ("two-layer vault"): the
 two layers `raw/` and `wiki/` are now two *separate git repos* rather than
 two sibling folders inside one repo. The vault filesystem layout under
-`${STORAGE_ROOT}/kurpatov-wiki/vault/` is unchanged.
+`${STORAGE_ROOT}/labs/kurpatov-wiki-ingest/vault/` is unchanged.
 
 Amended (2026-04-19) by [ADR 0006](0006-lean-pusher-image.md): the
 "They run the same image (`forge-kurpatov-wiki:latest`)" note below is
@@ -123,7 +123,7 @@ The names `raw` / `wiki` follow the vault layers from ADR 0001. The
 `kurpatov-wiki` and the repo holds its `wiki/` layer.
 
 ### Repo top level is `data/`, not the content directly
-On the server, `${STORAGE_ROOT}/kurpatov-wiki/vault/raw/` is a git
+On the server, `${STORAGE_ROOT}/labs/kurpatov-wiki-ingest/vault/raw/` is a git
 working tree. Its `.git/` sits at that directory; the repo's top
 level is a `data/` subtree that holds
 `<course>/<module>/<stem>/raw.json`. There is no sibling `wiki/`
@@ -212,7 +212,7 @@ No mutable git config is written into the mounted `.git`.
   adds more coupling than it removes.
 
 ## Follow-ups
-- Rename the on-disk dir `${STORAGE_ROOT}/kurpatov-wiki/vault/` and the
+- Rename the on-disk dir `${STORAGE_ROOT}/labs/kurpatov-wiki-ingest/vault/` and the
   deploy key file `~/.ssh/kurpatov-wiki-vault` away from the legacy
   "vault" name. Cheap but touches live state; deferred until
   convenient.

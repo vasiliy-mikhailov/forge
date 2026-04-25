@@ -13,7 +13,8 @@ ones. We have a Blackwell RTX PRO 6000 96 GB sitting idle when rl-2048
 is not running. Use it.
 
 ## Decision
-Add a new forge subsystem `inference/` that runs **vLLM in a single
+Add a new forge subsystem (now lab `labs/kurpatov-wiki-compiler/` per
+ADR 0007) that runs **vLLM in a single
 docker container**, GPU-pinned to the Blackwell, exposing an
 **OpenAI-compatible HTTP API** at `https://${INFERENCE_DOMAIN}/v1/...`.
 
@@ -70,20 +71,20 @@ back to basic auth via caddy as before.
 **Positive.**
 - forge gains a self-hosted inference endpoint usable from anywhere on
   the internet with `Authorization: Bearer …`, no third-party.
-- The shared `${STORAGE_ROOT}/models` HF cache means weights downloaded
+- The shared `${STORAGE_ROOT}/shared/models` HF cache means weights downloaded
   for inference are also reusable by `rl-2048` and `kurpatov-wiki`.
-- Reversible: removing the subsystem is `make inference-down` plus
+- Reversible: removing the subsystem is `make kurpatov-wiki-compiler-down` plus
   deleting the folder; nothing else depends on it.
 
 **Negative / accepted constraints.**
 - Mutex with `rl-2048` on the Blackwell. forge has effectively two
   modes: inference and 2048. Not enforced in code; documented in
   `inference/SPEC.md` and `CLAUDE.md`. Operator manages the swap via
-  `make stop-gpu` between modes.
+  `make stop-all` between modes.
 - Ops surface grows: one more container to keep healthy, one more
   domain to renew certs for.
 - API key is a single shared secret. If it leaks, rotate via `.env`
-  edit + `make inference-down && make inference`.
+  edit + `make kurpatov-wiki-compiler-down && make kurpatov-wiki-compiler`.
 
 ## Alternatives rejected
 - **NGC `nvcr.io/nvidia/vllm:25.03-py3`.** Tag did not exist at deploy.

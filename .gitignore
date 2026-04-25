@@ -62,3 +62,6 @@ rl-2048/outputs/
 rl-2048/.inductor_cache/
 rl-2048/.triton_cache/
 rl-2048/.vllm_cache/
+
+# --- per-lab mlflow runtime ---
+labs/*/mlflow/data/

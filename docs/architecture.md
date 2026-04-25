@@ -1,157 +1,200 @@
 # forge — architecture
 
-This document describes how forge is physically laid out: what lives where,
-how services talk to each other, how GPUs and disk are used. For "why" —
-see each service's SPEC.md.
+How forge is physically laid out: what lives where, how services talk
+to each other, how GPUs and disk are used. For "why" — see each lab's
+`SPEC.md` and the relevant ADR.
+
+After [ADR 0007](adr/0007-labs-restructure-self-contained-caddy.md)
+forge is organized as **labs** under `labs/<lab>/`, each lab fully
+self-contained (own caddy, compose, SPEC, ADRs). Labs are **mutex on
+host ports :80/:443** because each lab's caddy binds them. Bench is
+the one exception: it has no caddy and is co-runnable with the
+compiler lab.
 
 ## Physical stack
 
 - Hardware: one machine, two NVIDIA Blackwell GPUs:
-  - GPU 0: `RTX PRO 6000 Workstation` (~96 GB VRAM).
-  - GPU 1: `GeForce RTX 5090` (~32 GB VRAM).
+  - GPU 0: `NVIDIA RTX PRO 6000 Blackwell Workstation Edition` (~96 GB VRAM).
+  - GPU 1: `NVIDIA GeForce RTX 5090` (~32 GB VRAM).
 - Disks:
-  - SSD (system) — holds the repo, `mlflow/data/mlflow.db`, small stuff.
+  - SSD (system) — holds the repo and small stuff.
   - HDD pool (ZFS, `/mnt/steam`) — `/mnt/steam/forge` = `STORAGE_ROOT`,
-    everything heavy lives here: models, sources, transcripts, checkpoints,
-    mlflow artifacts.
+    everything heavy lives here: model weights cache, sources,
+    transcripts, checkpoints, mlflow artifacts, bench experiments.
 - OS: Ubuntu 24.04, docker + docker compose + NVIDIA container runtime.
 - GPU stack:
   - Kernel: 6.17 (HWE).
   - Driver: `nvidia-driver-590-open` (MIT/GPL kernel module). **Not the
-    proprietary one, specifically `-open`** — the proprietary driver breaks
+    proprietary one, specifically `-open`** — proprietary breaks
     multi-GPU on Blackwell. See
-    [docs/adr/0004-nvidia-driver-open-plus-hmm-off.md](adr/0004-nvidia-driver-open-plus-hmm-off.md).
+    [adr/0004-nvidia-driver-open-plus-hmm-off.md](adr/0004-nvidia-driver-open-plus-hmm-off.md).
   - UVM HMM disabled via `/etc/modprobe.d/nvidia-uvm.conf`:
     `options nvidia_uvm uvm_disable_hmm=1`.
-  - Container toolkit: `nvidia-container-toolkit ≥ 1.19`. We don't hand-edit
-    `/etc/docker/daemon.json` — the runtime is registered via
+  - Container toolkit: `nvidia-container-toolkit ≥ 1.19`. We don't
+    hand-edit `/etc/docker/daemon.json` — runtime is registered via
     `nvidia-ctk runtime configure`.
 
-## Topology
+## Topology (per-lab caddy after ADR 0007)
 
-One docker network `proxy-net` (external), every service is attached:
+Each lab owns its own caddy, attached to the shared `proxy-net`
+docker network. Only one caddy at a time can hold host :80/:443.
 
 ```
-                    Internet
-                       │
-                       ▼
-                ┌────────────┐
-                │   caddy    │  :80 :443 on host, ACME, basic auth
-                └─────┬──────┘
-                      │ proxy-net
-        ┌─────────────┼──────────────┐
-        ▼             ▼              ▼
- jupyter-kurpatov-wiki  jupyter-rl-2048   mlflow :5000
-        │                    │               │
- kurpatov-ingest            (same GPU)       │
- (no network, fs only)                       │
-        │                                    │
-        ▼  vault/raw/                        │
- kurpatov-wiki-raw-pusher                    │
- (CPU only, outbound SSH → GitHub)           │
-                                              │
-                    all three write metrics ▼
-                                         (via caddy)
+                              Internet
+                                  │
+                                  ▼
+                  ┌───────── exactly one of ─────────┐
+                  │                                  │
+        kurpatov-wiki-compiler-caddy        rl-2048-caddy
+                  │                                  │
+        ╭─────────┼─────────╮            ╭───────────┼───────────╮
+        │ proxy-net          │            │ proxy-net              │
+        ▼                                 ▼           ▼
+   vllm-inference                    jupyter-rl-2048   mlflow:5000
+   :8000  (Bearer auth, no caddy basic auth — ADR 0005)
+
+                  │                                  │
+                  └─────────── or ───────────────────┘
+                                  │
+                                  ▼
+                       kurpatov-wiki-ingest-caddy
+                                  │
+              ╭───────────────────┼───────────────────╮
+              │ proxy-net (jupyter only)                        │
+              ▼
+         jupyter-kurpatov-wiki
+
+         (kurpatov-ingest, kurpatov-wiki-raw-pusher run alongside
+          on the host but bind no public ports — fs-only and SSH-out
+          to GitHub)
 ```
 
-The kurpatov-wiki subsystem is three containers that share only the
-vault filesystem — there is no code or network link between them (see
-[kurpatov-wiki/docs/adr/0005-split-transcribe-and-push.md]).
+Bench (`labs/kurpatov-wiki-bench/`) launches one short-lived sandboxed
+container per `make bench` invocation. It has no caddy, attaches to
+docker `bridge`, and reaches the compiler over the public TLS endpoint.
 
-## GPU ↔ service mapping
+## Lab inventory
 
-Set via variables in `.env`:
+| Lab                                | Containers (per-lab caddy + workers)                                                                                                                  | GPU                                  | Caddy hosts                          |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ | ------------------------------------ |
+| `labs/kurpatov-wiki-compiler/`     | `kurpatov-wiki-compiler-caddy`, `vllm-inference`                                                                                                      | `INFERENCE_GPU_UUID` (Blackwell)     | `${INFERENCE_DOMAIN}`                 |
+| `labs/kurpatov-wiki-ingest/`       | `kurpatov-wiki-ingest-caddy`, `jupyter-kurpatov-wiki`, `kurpatov-ingest`, `kurpatov-wiki-raw-pusher`                                                   | `KURPATOV_WIKI_GPU_UUID` (5090)      | `${JUPYTER_KURPATOV_WIKI_DOMAIN}`     |
+| `labs/kurpatov-wiki-bench/`        | one-shot `bench-<run_id>`                                                                                                                             | none (CPU only)                      | none                                 |
+| `labs/rl-2048/`                    | `rl-2048-caddy`, `jupyter-rl-2048`, `mlflow`                                                                                                          | `RL_2048_GPU_UUID` (Blackwell)       | `${MLFLOW_DOMAIN}`, `${JUPYTER_RL_2048_DOMAIN}` |
 
-- `RL_2048_GPU_UUID` → rl-2048 (one GPU, entirely).
+## GPU ↔ lab mapping
+
+Set via `.env`:
+
+- `RL_2048_GPU_UUID` → `jupyter-rl-2048`. Default: Blackwell.
 - `KURPATOV_WIKI_GPU_UUID` → both `jupyter-kurpatov-wiki` and
-  `kurpatov-ingest` (both share a single GPU, see
-  [kurpatov-wiki/docs/adr/0003-watcher-reactive-not-cron.md]).
-  `kurpatov-wiki-raw-pusher` gets no GPU — it's CPU-only.
+  `kurpatov-ingest` (they share one GPU per
+  [labs/kurpatov-wiki-ingest/docs/adr/0003-watcher-reactive-not-cron.md](../labs/kurpatov-wiki-ingest/docs/adr/0003-watcher-reactive-not-cron.md)).
+  Default: RTX 5090. `kurpatov-wiki-raw-pusher` is CPU-only (per
+  [labs/kurpatov-wiki-ingest/docs/adr/0006-lean-pusher-image.md](../labs/kurpatov-wiki-ingest/docs/adr/0006-lean-pusher-image.md)).
+- `INFERENCE_GPU_UUID` → `vllm-inference`. Default: Blackwell.
 
-Important: these two UUIDs must differ, otherwise the second service will
-OOM.
+**Mutex consequences:** Blackwell hosts compiler OR rl-2048 (not both
+simultaneously). Going to dual-GPU TP on the compiler will eventually
+take both cards, locking out kurpatov-wiki-ingest as well.
 
 ## STORAGE_ROOT layout
 
 ```
 ${STORAGE_ROOT:-/mnt/steam/forge}/
-├── models/                          # shared HF cache (kurpatov-wiki + rl-2048)
-├── mlflow/
-│   └── mlruns/                      # mlflow artifacts
-├── rl-2048/
-│   └── checkpoints/
-└── kurpatov-wiki/
-    ├── sources/                     # input source files (audio, video, HTML, PDF),
-    │   └── <course>/<module>/*.<ext> #   structure mirrored into vault/raw.
-    │                                 #   INGEST_EXTENSIONS allow-list (whisper +
-    │                                 #   html + pdf) lives in
-    │                                 #   kurpatov-wiki/notebooks/0{2,3}*.py.
-    ├── vault/
-    │   ├── raw/                     # RAW layer + git working tree for
-    │   │   │                        #   the kurpatov-wiki-raw repo
-    │   │   │                        #   (repo root IS this dir; see ADR 0005)
-    │   │   ├── .git/
-    │   │   ├── README.md            #   meta at the root (ADR 0005 data/
-    │   │   │                        #   content-split amendment)
-    │   │   └── data/                #   content subtree — ingest daemon and
-    │   │       │                    #   pusher both default here
-    │   │       └── <course>/<module>/<stem>/
-    │   │           └── raw.json     #   <stem> = source filename minus its
-    │   │                            #           extension, for every extractor
-    │   │                            #           (ADR 0008 2026-04-21 amendment)
-    │   └── wiki/                    # reserved directory; the WIKI layer
-    │                                #   lives in kurpatov-wiki-wiki on the
-    │                                #   operator's Mac, not on the server
-    │                                #   (ADR 0007). Not created by setup.
-    └── checkpoints/
+├── shared/
+│   └── models/                        # HF cache, shared by every lab
+│                                       # mounted into vLLM, jupyter-*,
+│                                       # bench (read-only public weights)
+└── labs/
+    ├── kurpatov-wiki-compiler/
+    │   ├── caddy-data/                # per-lab caddy TLS state
+    │   └── caddy-config/
+    ├── kurpatov-wiki-ingest/
+    │   ├── sources/                   # input media (audio, video, HTML, PDF)
+    │   │   └── <course>/<module>/*.<ext>
+    │   ├── vault/
+    │   │   └── raw/                   # RAW layer + git working tree for
+    │   │       │                      #   the kurpatov-wiki-raw repo
+    │   │       │                      #   (repo root IS this dir; ADR 0005)
+    │   │       ├── .git/
+    │   │       ├── README.md
+    │   │       └── data/              # content subtree — ingest daemon
+    │   │           └── <course>/<module>/<stem>/
+    │   │               └── raw.json   # <stem> = source filename
+    │   │                              #         minus extension (ADR 0008)
+    │   ├── checkpoints/
+    │   ├── caddy-data/
+    │   └── caddy-config/
+    ├── kurpatov-wiki-bench/
+    │   └── experiments/<run_id>/      # per-experiment artifacts
+    │       ├── events.jsonl           #   (one experiment = one agent run)
+    │       ├── summary.json
+    │       └── vllm-snapshot-{start,end}.json
+    │   └── evals/                     # T1 microbench CSVs
+    │       └── microbench/<date>-<exp_id>-<model>.csv
+    └── rl-2048/
+        ├── checkpoints/
+        ├── mlruns/                    # mlflow artifacts (lab-local)
+        ├── mlflow/data/               # mlflow.db
+        ├── caddy-data/
+        └── caddy-config/
 ```
 
-Note: `vault/` on disk is just a parent directory; the git repo lives at
-`vault/raw/`, not at `vault/`. The "vault" name is legacy and kept only
-to avoid rewriting `~/.ssh/kurpatov-wiki-vault` and
-`vault/raw/.git/config core.sshCommand` (see ADR 0005 → Follow-ups).
+`make setup` creates this skeleton (root Makefile).
 
-Directories are created by `make setup` in the root Makefile.
+The "vault" name is legacy; the git repo lives at `vault/raw/`, not at
+`vault/`. Kept to avoid rewriting `~/.ssh/kurpatov-wiki-vault` and
+`vault/raw/.git/config core.sshCommand` (see ADR 0005 → Follow-ups in
+the ingest lab).
 
 ## Network and public hostnames
 
-Everything public goes through caddy, routed by hostname:
+Every public-facing surface goes through a per-lab caddy attached to
+`proxy-net`. The active lab's caddy binds host :80/:443.
 
-| Public hostname                     | Backend (container : port)         |
-| ----------------------------------- | ---------------------------------- |
-| `${JUPYTER_RL_2048_DOMAIN}`         | `jupyter-rl-2048:8888`             |
-| `${JUPYTER_KURPATOV_WIKI_DOMAIN}`   | `jupyter-kurpatov-wiki:8888`       |
-| `${MLFLOW_DOMAIN}`                  | `mlflow:5000`                      |
+| Public hostname                     | Active when lab is up                  | Backend                      |
+| ----------------------------------- | -------------------------------------- | ---------------------------- |
+| `${INFERENCE_DOMAIN}`               | `kurpatov-wiki-compiler`               | `vllm-inference:8000`        |
+| `${JUPYTER_KURPATOV_WIKI_DOMAIN}`   | `kurpatov-wiki-ingest`                 | `jupyter-kurpatov-wiki:8888` |
+| `${JUPYTER_RL_2048_DOMAIN}`         | `rl-2048`                              | `jupyter-rl-2048:8888`       |
+| `${MLFLOW_DOMAIN}`                  | `rl-2048` (mlflow lives inside rl-2048 per ADR 0007) | `mlflow:5000`                |
 
-Everything is behind basic auth (`BASIC_AUTH_USER` / `BASIC_AUTH_HASH`).
+Auth: jupyter-* and mlflow are behind caddy basic auth
+(`BASIC_AUTH_USER` / `BASIC_AUTH_HASH`); the inference endpoint is
+the documented exception (vLLM Bearer auth, see
+[ADR 0005](adr/0005-inference-subsystem.md)). TLS terminates at caddy
+in every case.
 
 ## Shared conventions
 
-- Docker compose reads variables from the root `.env` (passed through via
-  `common.mk` → `--env-file ../.env`). That way every service sees the same
-  `STORAGE_ROOT` and the same set of domains.
-- Named volumes are used only where state needs to survive container
-  recreation with minimal side effects (caddy TLS state). Everything else is
-  a bind mount from `${STORAGE_ROOT}` so the path is visible and easy to
-  back up.
-- Image versions are pinned by tag (`caddy:2`, `mlflow:v2.14.3`, ...).
-  `latest` is not used.
+- Compose reads variables from the root `.env` (find via
+  `git rev-parse --show-toplevel` in `common.mk`, so it works at any
+  nesting depth — including from per-lab `caddy/`/`mlflow/` sublabs).
+- Bind mounts to `${STORAGE_ROOT}/...` everywhere except caddy TLS state
+  (the only real named-volume use; everything else is a visible path
+  for backups).
+- Image versions are pinned by tag (`caddy:2`, `mlflow:v2.14.3`,
+  `vllm/vllm-openai:v0.19.1-cu130-ubuntu2404`, …). `latest` is not used.
 
 ## Risk surfaces
 
-- Losing the `caddy_data` volume → Let's Encrypt rate-limit on new
-  certificates (mitigated by staging or waiting out the window).
-- Corrupting `mlflow/data/mlflow.db` → experiment history is gone
-  (artifacts survive but their metadata is lost).
-- Losing `vault/raw/` → re-run every transcription (hours of audio × RTF 0.05).
-  Mitigated by the `kurpatov-wiki-raw` GitHub repo: the pusher keeps it
-  continuously mirrored, so a fresh `git clone` into `vault/raw/` recovers
-  the transcripts without re-running whisper.
-- Accidentally setting `RL_2048_GPU_UUID == KURPATOV_WIKI_GPU_UUID` → OOM.
-- `apt full-upgrade` pulled in the "wrong" nvidia driver (proprietary
-  instead of `-open`, or a newer major) → multi-GPU silently breaks. Run
-  the post-upgrade smoke tests from `docs/operations.md` → "GPU suddenly
+- Losing per-lab `caddy-data/` → Let's Encrypt rate-limit on new certs
+  (mitigated by staging or waiting out the window).
+- Corrupting `${STORAGE_ROOT}/labs/rl-2048/mlflow/data/mlflow.db` →
+  experiment metadata is gone (mlruns/ artifacts survive).
+- Losing `${STORAGE_ROOT}/labs/kurpatov-wiki-ingest/vault/raw/` →
+  re-run every transcription (hours of audio × RTF 0.05). Mitigated
+  by the `kurpatov-wiki-raw` GitHub repo (continuous mirror via the
+  pusher).
+- `RL_2048_GPU_UUID == KURPATOV_WIKI_GPU_UUID == INFERENCE_GPU_UUID` —
+  any overlap → OOM on the second container.
+- `apt full-upgrade` pulled in the wrong nvidia driver (proprietary
+  instead of `-open`, or a newer major) → multi-GPU silently breaks.
+  Diagnostics: [`docs/operations.md`](operations.md) → "GPU suddenly
   unavailable".
-- `nvidia_uvm` loaded without `uvm_disable_hmm=1` (for example, someone
-  deleted `/etc/modprobe.d/nvidia-uvm.conf` during reprovisioning) → CUDA
-  operations hang or crash. That's exactly what ADR 0004 is about.
+- `nvidia_uvm` loaded without `uvm_disable_hmm=1` → CUDA hangs.
+  See [ADR 0004](adr/0004-nvidia-driver-open-plus-hmm-off.md).
+- Two labs' caddies up at once → host port conflict; the second one
+  fails to bind. Smoke dispatcher catches this:
+  `make smoke` exits 1 with a "broken mutex" message.

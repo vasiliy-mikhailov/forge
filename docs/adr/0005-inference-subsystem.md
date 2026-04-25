@@ -1,7 +1,7 @@
 # ADR 0005 — inference subsystem (vLLM on Blackwell)
 
 ## Status
-Accepted (2026-04-25).
+Accepted (2026-04-25). **Subsystem became lab `labs/kurpatov-wiki-compiler/` later the same day (ADR 0007).** All design decisions in this ADR carry over verbatim; only the directory layout changed.
 
 ## Context
 forge needs a long-running inference endpoint that external agents
@@ -25,13 +25,13 @@ at `https://${INFERENCE_DOMAIN}/v1/...` fronted by caddy.
 Three cross-cutting design choices captured here; the
 **implementation-level** sub-decisions (vLLM vs alternatives, NGC
 image vs upstream, vLLM API key vs caddy basic auth) live in
-[`inference/docs/adr/0001`](../../inference/docs/adr/0001-vllm-public-openai-compatible-endpoint.md).
+[`labs/kurpatov-wiki-compiler/docs/adr/0001`](../../labs/kurpatov-wiki-compiler/docs/adr/0001-vllm-public-openai-compatible-endpoint.md).
 
 ### 1. Mode mutex with rl-2048
 `inference` and `rl-2048` both want the Blackwell. forge has effectively
 **two GPU modes for now**: inference mode (`inference` up, `rl-2048`
 down) and 2048 mode (`rl-2048` up, `inference` down). The mutex is
-not enforced in code — `make stop-gpu` already exists for exactly
+not enforced in code — `make stop-all` already exists for exactly
 this kind of mode switch and is now extended to also stop `inference`.
 Operator manages the swap.
 
@@ -51,9 +51,9 @@ TLS still terminates at caddy.
 This is a **documented exception**, not a new pattern: any future
 user-facing UI (a Jupyter, a dashboard) goes back to caddy basic auth.
 
-### 3. Shared HF cache via `${STORAGE_ROOT}/models`
+### 3. Shared HF cache via `${STORAGE_ROOT}/shared/models`
 Inference reuses the same HuggingFace cache mount that `rl-2048` and
-`kurpatov-wiki` already share at `${STORAGE_ROOT}/models →
+`kurpatov-wiki` already share at `${STORAGE_ROOT}/shared/models →
 /root/.cache/huggingface`. Weights downloaded once for inference are
 reusable by the GRPO sandbox the next time we swap to 2048 mode. No
 new `${STORAGE_ROOT}` subdir.
@@ -65,7 +65,7 @@ new `${STORAGE_ROOT}` subdir.
 - Reproducible benchmark target — same skill, same hardware, swap
   models in `.env`.
 - Zero additional disk-layout sprawl (HF cache is shared).
-- Reversible: removing the subsystem is `make inference-down` plus
+- Reversible: removing the subsystem is `make kurpatov-wiki-compiler-down` plus
   deleting `inference/`. Nothing else depends on it (caddy gracefully
   fails the site block if the upstream is down — diagnostic, not
   destructive).
@@ -77,7 +77,7 @@ new `${STORAGE_ROOT}` subdir.
   benchmark endpoint simultaneously. For our usage pattern this is
   fine: experiments are bursts, benchmarks are scheduled.
 - API key is a single shared secret; rotation is an `.env` edit +
-  `make inference-down && make inference`.
+  `make kurpatov-wiki-compiler-down && make kurpatov-wiki-compiler`.
 
 ## Touched files
 - New: `inference/{SPEC.md,docker-compose.yml,Makefile,docs/adr/0001-…}`.

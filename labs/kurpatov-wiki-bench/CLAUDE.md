@@ -11,8 +11,9 @@ authoring task. We launch an OpenHands agent in Docker on the same
 server as the vLLM endpoint, point it at that endpoint, and let it
 execute the skill end-to-end. Per-run artifacts live under `runs/`.
 
-This is **separate from forge.** forge owns vLLM serving, MLflow,
-caddy, etc.; this repo is one consumer.
+Since [ADR 0007](../../docs/adr/0007-labs-restructure-self-contained-caddy.md), bench is **a lab inside forge** (`labs/kurpatov-wiki-bench/`).
+It's a *consumer* of the compiler lab's vLLM endpoint, not a peer of
+the compiler lab.
 
 Full design: [`SPEC.md`](SPEC.md). Decisions: [`docs/adr/`](docs/adr/).
 
@@ -20,7 +21,7 @@ Full design: [`SPEC.md`](SPEC.md). Decisions: [`docs/adr/`](docs/adr/).
 
 1. Read this file.
 2. Read `SPEC.md` and skim `docs/adr/`.
-3. Confirm `forge/inference/` is up via `make preflight` before
+3. Confirm the compiler lab is up via `make preflight` before
    running anything (this script checks `/v1/models` and asserts the
    served name matches `.env`).
 
@@ -31,11 +32,12 @@ Full design: [`SPEC.md`](SPEC.md). Decisions: [`docs/adr/`](docs/adr/).
   specific reuse driver.
 - **Pin OpenHands version.** Don't `:latest`. Bumping is a
   deliberate edit, recorded in git history.
-- **Do not `vllm` anything from this repo.** vLLM is owned by forge.
-  If a desired model isn't loaded, instruct the operator to swap it
-  there — don't reach into forge from here.
-- **Don't modify `kurpatov-wiki-wiki/skills/benchmark/SKILL.md`
-  from here.** That's the task definition; if it needs updates, do
+- **Do not edit vLLM compose from here.** vLLM is owned by
+  `labs/kurpatov-wiki-compiler/`. To swap the model, edit
+  `forge/.env` (`INFERENCE_MODEL`/`INFERENCE_SERVED_NAME`) and
+  `make kurpatov-wiki-compiler-down && make kurpatov-wiki-compiler` —
+  not from this lab.
+- **Don't modify `kurpatov-wiki-wiki/skills/benchmark/SKILL.md` from here.** That's the task definition; if it needs updates, do
   them in the wiki repo deliberately.
 - **Per-run artifacts are append-only.** No run modifies another
   run's output.

@@ -13,9 +13,9 @@ trace + summary + the bench branch the agent pushed) land under
 
 This used to be a standalone repo; as of forge ADR 0007 it lives at `labs/kurpatov-wiki-bench/` inside forge alongside the other labs (compiler, ingest, rl-2048).
 
-forge is the lab infrastructure (vLLM, MLflow, rl-2048, caddy); this
-repo is one specific evaluation pipeline that consumes forge as a
-black box.
+Bench is one of forge's labs (since ADR 0007); it co-runs with the
+compiler lab and consumes its `${INFERENCE_DOMAIN}` endpoint as a
+client — there's no in-process coupling.
 
 ## Architecture in one paragraph
 

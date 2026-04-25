@@ -102,8 +102,8 @@ Volume access by service:
 
 Host paths:
 
-- `${STORAGE_ROOT}/kurpatov-wiki/sources/` — input source tree (video + audio + HTML).
-- `${STORAGE_ROOT}/kurpatov-wiki/vault/` — vault root. Contains
+- `${STORAGE_ROOT}/labs/kurpatov-wiki-ingest/sources/` — input source tree (video + audio + HTML).
+- `${STORAGE_ROOT}/labs/kurpatov-wiki-ingest/vault/` — vault root. Contains
   `raw/` (a git working tree for the `kurpatov-wiki-raw` repo; its
   content lives under `raw/data/<course>/<module>/<stem>/`). The
   parallel `wiki/` layer is not created here — the wiki is authored
@@ -189,7 +189,7 @@ Unlike the RAW layer, the wiki layer is **not** written from the server.
 Full decision record: [ADR 0007](docs/adr/0007-wiki-layer-mac-side.md).
 Authoring happens in a Claude Desktop (Cowork) session on the operator's
 Mac, which reads the `kurpatov-wiki-raw` repo and writes the
-`kurpatov-wiki-wiki` repo directly. `${STORAGE_ROOT}/kurpatov-wiki/vault/
+`kurpatov-wiki-wiki` repo directly. `${STORAGE_ROOT}/labs/kurpatov-wiki-ingest/vault/
 wiki/` is **not** created by `make setup` and has no server-side
 consumer; the canonical wiki lives on GitHub.
 
@@ -260,15 +260,15 @@ and repair it. The forge-side mirror lives at
 
 | GitHub repo             | Pushed by                               | Working tree                                         |
 | ----------------------- | --------------------------------------- | ---------------------------------------------------- |
-| `kurpatov-wiki-raw`     | `kurpatov-wiki-raw-pusher` (container)  | server: `${STORAGE_ROOT}/kurpatov-wiki/vault/raw/`   |
+| `kurpatov-wiki-raw`     | `kurpatov-wiki-raw-pusher` (container)  | server: `${STORAGE_ROOT}/labs/kurpatov-wiki-ingest/vault/raw/`   |
 | `kurpatov-wiki-wiki`    | Claude Desktop / Cowork session         | Cowork session workspace: `~/repos/kurpatov-wiki-wiki/` (by convention)        |
 
 In the `kurpatov-wiki-raw` repo, raw transcripts live under a
 `data/` subtree: `data/<course>/<module>/<stem>/raw.json`. The repo
 root is reserved for future meta files. On the server the git
-working tree sits at `${STORAGE_ROOT}/kurpatov-wiki/vault/raw/` and
+working tree sits at `${STORAGE_ROOT}/labs/kurpatov-wiki-ingest/vault/raw/` and
 the pusher's `--raw` (watch subtree) points at
-`${STORAGE_ROOT}/kurpatov-wiki/vault/raw/data/`. See ADR 0005.
+`${STORAGE_ROOT}/labs/kurpatov-wiki-ingest/vault/raw/data/`. See ADR 0005.
 
 In the `kurpatov-wiki-wiki` repo, content lives under `data/`
 (articles, concept-index, nav); meta (CLAUDE.md, README, prompts/,
@@ -342,8 +342,8 @@ Not yet:
 ## Running
 ```bash
 # Drop sources in (any INGEST_EXTENSIONS suffix — media, HTML, or PDF):
-mkdir -p ${STORAGE_ROOT}/kurpatov-wiki/sources/Psychologist-consultant/05-conflicts
-cp ~/downloads/*.mp4 ${STORAGE_ROOT}/kurpatov-wiki/sources/Psychologist-consultant/05-conflicts/
+mkdir -p ${STORAGE_ROOT}/labs/kurpatov-wiki-ingest/sources/Psychologist-consultant/05-conflicts
+cp ~/downloads/*.mp4 ${STORAGE_ROOT}/labs/kurpatov-wiki-ingest/sources/Psychologist-consultant/05-conflicts/
 # or .mp3 / .m4a / .html / .pdf / … — same path.
 
 # Bring up (from the forge root):

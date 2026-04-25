@@ -20,7 +20,7 @@ Labs:
 
 - `labs/kurpatov-wiki-compiler/` — vLLM serving the LLM that
   *compiles* raw transcripts into wiki articles. (Was
-  `forge/inference/` pre-2026-04-25.)
+  `labs/kurpatov-wiki-compiler/` pre-2026-04-25.)
 - `labs/kurpatov-wiki-ingest/` — the "media → raw transcript"
   pipeline (Whisper, etc.). (Was `forge/kurpatov-wiki/`.)
 - `labs/kurpatov-wiki-bench/` — agent harness that benchmarks
@@ -56,8 +56,8 @@ experiment is a run.
 1. Read this file.
 2. Read `README.md` and `docs/architecture.md` to understand the physical
    layout (where `STORAGE_ROOT` lives, what docker network, which images).
-3. Open the SPEC.md of the service being edited (`<service>/SPEC.md`).
-4. Skim `docs/adr/` and `<service>/docs/adr/` — architectural decisions
+3. Open the SPEC.md of the service being edited (`labs/<lab>/SPEC.md`).
+4. Skim `docs/adr/` and `labs/<lab>/docs/adr/` — architectural decisions
    there must not be silently undone.
 5. If you are about to change observable behavior, also open `tests/` —
    that directory is the source of truth for what the smoke test (and
@@ -73,13 +73,13 @@ experiment is a run.
   If you see something that looks like a secret — stop and ask.
 - **Data lives under `${STORAGE_ROOT}`**, not in the forge repo.
   `vault/`, `sources/`, `models/`, `checkpoints/`, `mlruns/` are never
-  committed to forge. Note: `vault/raw/` **is** a git working tree —
+  committed to forge. Note: `vault/raw/` (under `${STORAGE_ROOT}/labs/kurpatov-wiki-ingest/vault/raw/`) **is** a git working tree —
   but for a *separate* repo (`kurpatov-wiki-raw`), pushed by the
   `kurpatov-wiki-raw-pusher` container. See
-  `kurpatov-wiki/docs/adr/0005-split-transcribe-and-push.md`.
+  `labs/kurpatov-wiki-ingest/docs/adr/0005-split-transcribe-and-push.md`.
 - **ADR for irreversible decisions.** If on-disk data format changes, the
   framework choice changes, or the network topology changes — add
-  `docs/adr/NNNN-*.md` or `<service>/docs/adr/NNNN-*.md` where NNNN is the
+  `docs/adr/NNNN-*.md` or `labs/<lab>/docs/adr/NNNN-*.md` where NNNN is the
   next free number.
 - **SPEC.md is source of truth.** If code diverges from SPEC, don't
   silently change code — either update SPEC or reconcile code to spec.
@@ -100,17 +100,13 @@ Create on-disk layout (creates `${STORAGE_ROOT}` and subdirs):
 make setup
 ```
 
-Base services:
+Bring up one lab (labs are mutex on host :80/:443; only one at a time):
 
 ```bash
-make base        # caddy + mlflow
-```
-
-GPU services (bring them up one by one so errors don't blur together):
-
-```bash
-make kurpatov-wiki
-make rl-2048
+make kurpatov-wiki-compiler   # vLLM endpoint
+make kurpatov-wiki-ingest     # whisper + ingest
+make rl-2048                  # GRPO sandbox
+# ↑ labs are mutex on host :80/:443 — bring up only one (bench co-runs with compiler).
 ```
 
 Diagnostics:
@@ -134,7 +130,7 @@ make du    # on-disk sizes under STORAGE_ROOT
   hosts kurpatov-wiki-ingest. Going to dual-GPU TP for compiler
   takes both cards — kurpatov-wiki-ingest must be down then.
 - Do not commit `.ipynb` files or large `.pt`/`.bin` blobs.
-- Do not change the `vault/raw/data/<path>/raw.json` format without an ADR —
+- Do not change the `${STORAGE_ROOT}/labs/kurpatov-wiki-ingest/vault/raw/data/<path>/raw.json` format without an ADR —
   the watcher and every downstream layer depend on it.
 - Do not reinstall the proprietary nvidia driver (without `-open`) and
   do not delete `/etc/modprobe.d/nvidia-uvm.conf`. Multi-GPU on Blackwell
@@ -146,5 +142,5 @@ make du    # on-disk sizes under STORAGE_ROOT
 
 - There is no task tracker in the repo. Active work lives in git history
   and in `docs/` (ADRs + SPECs).
-- Service logs: `make <service>-logs` (tail -f of `docker logs <container>`).
+- Service logs: `make <lab>-logs` (tail -f of `docker logs <container>`).
 - Enter a container: `docker exec -it <container> bash`.

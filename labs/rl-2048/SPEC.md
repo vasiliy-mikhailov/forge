@@ -30,9 +30,9 @@ venv managed with `uv`. Key packages:
 Volumes:
 - `./notebooks → /workspace/notebooks` — scratch space for experimental
   notebooks. Not in git.
-- `${STORAGE_ROOT}/models → /workspace/models` — shared HuggingFace cache
+- `${STORAGE_ROOT}/shared/models → /workspace/models` — shared HuggingFace cache
   (shared with kurpatov-wiki).
-- `${STORAGE_ROOT}/rl-2048/checkpoints → /workspace/checkpoints` —
+- `${STORAGE_ROOT}/labs/rl-2048/checkpoints → /workspace/checkpoints` —
   checkpoints.
 
 Accessed externally via caddy (`JUPYTER_RL_2048_DOMAIN`) with basicauth —

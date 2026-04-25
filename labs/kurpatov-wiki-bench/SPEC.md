@@ -3,23 +3,23 @@
 ## Purpose
 Server-side, **Docker-sandboxed** agent runner that executes the
 `wiki/skills/benchmark/SKILL.md` skill (in `kurpatov-wiki-wiki`)
-against an open-weight model served by the local `forge/inference/`
+against an open-weight model served by the local `labs/kurpatov-wiki-compiler/`
 vLLM endpoint. Each invocation produces a versioned per-run artifact
 directory under `${STORAGE_ROOT}/labs/kurpatov-wiki-bench/experiments/` and a
 branch-on-origin in the wiki repo. Multiple model runs are compared
 offline against the same fixed task.
 
-This is intentionally **not** part of forge — forge is the lab
-infrastructure; this is one specific evaluation pipeline that
-consumes forge as a black box (it talks to `INFERENCE_DOMAIN` over
-HTTPS like any other client).
+Bench is a **lab** inside forge (since [ADR 0007](../../docs/adr/0007-labs-restructure-self-contained-caddy.md)) but functionally a *client* of the compiler lab — it talks to `${INFERENCE_DOMAIN}`
+over HTTPS like any other external agent. Bench has no caddy and no
+port binding, so it is the one lab that **co-runs** with another lab
+(specifically, `labs/kurpatov-wiki-compiler/`).
 
 ## Non-goals
 - Not a general-purpose evaluation framework. Wired to one task: the
   per-source authoring loop in
   `kurpatov-wiki-wiki/skills/benchmark/SKILL.md`.
 - Not a model server. We consume the vLLM endpoint that
-  `forge/inference/` exposes; we do not start or stop vLLM.
+  `labs/kurpatov-wiki-compiler/` exposes; we do not start or stop vLLM.
 - Not a long-running service. Each `make bench` runs to completion
   (or fails) and exits.
 - Not a UI. Headless only.
@@ -50,14 +50,16 @@ The agent reaches vLLM over the public TLS path (`bridge` network).
 
 ### Mode mutex
 None at the GPU level. The bench harness is CPU-only.
-`forge/inference/` must be up; `forge/rl-2048/` is irrelevant.
+`labs/kurpatov-wiki-compiler/` must be up; `forge/rl-2048/` is irrelevant.
 
 ## Storage layout
 Per-run artifacts: `${STORAGE_ROOT}/labs/kurpatov-wiki-bench/experiments/<run_id>/`.
 Matches the forge convention (heavy data on the data disk, not in repos).
 
-vLLM HF cache (set up in `forge/inference/`):
-`${STORAGE_ROOT}/models/` mounted at `/root/.cache/huggingface`. No
+vLLM HF cache (configured in `labs/kurpatov-wiki-compiler/`):
+`${STORAGE_ROOT}/shared/models/` mounted at `/root/.cache/huggingface`.
+Bench doesn't touch this directly; it's a property of the compiler.
+No
 change here; documenting that the cache lives on the same disk as
 bench artifacts.
 

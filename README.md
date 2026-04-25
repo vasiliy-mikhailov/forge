@@ -38,8 +38,7 @@ $EDITOR .env
 # 2. Create the directory layout on the big disk (STORAGE_ROOT).
 make setup
 
-# 3. Bring up base services.
-# 4. Bring up one lab. Labs are mutex on ports 80/443 + GPU.
+# 3. Bring up one lab. Labs are mutex on ports 80/443 + GPU.
 make kurpatov-wiki-compiler   # vLLM for wiki authoring
 # or:
 make kurpatov-wiki-ingest     # transcription pipeline
@@ -56,21 +55,26 @@ make help                  # list targets
 make ps                    # containers
 make gpu                   # GPU utilization
 make du                    # size of on-disk data
-make kurpatov-wiki-logs    # tail -f logs
+make kurpatov-wiki-ingest-logs   # tail -f one lab's logs
 make stop-all              # stop every lab
 ```
 
 ## Architecture (very short)
 
 - One docker network `proxy-net`, every service attached to it.
-- Public services (jupyter-*, mlflow) are fronted by caddy, routed by
-  hostname → container:port. Auth is basic, on top of TLS from Let's Encrypt.
+- Public services are fronted by **per-lab caddy**: each lab carries its
+  own `caddy/` and binds host :80/:443 — labs are mutex on these ports
+  (see [ADR 0007](docs/adr/0007-labs-restructure-self-contained-caddy.md)).
+  Auth is basic, on top of TLS from Let's Encrypt; the inference
+  endpoint is the documented exception (vLLM Bearer auth, see
+  [ADR 0005](docs/adr/0005-inference-subsystem.md)).
 - Heavy data (models, sources, transcripts, checkpoints, mlflow artifacts)
   live on a separate disk at `STORAGE_ROOT` (on my box it's a ZFS pool at
-  `/mnt/steam/forge`) and never enter git.
-- Each service is a standalone docker-compose project. The root `Makefile`
-  delegates targets into subfolders via `%-build`, `%-down`, `%-logs`
-  pattern rules.
+  `/mnt/steam/forge`); layout: `${STORAGE_ROOT}/{shared/models,labs/<lab>/...}`.
+  Never enters git.
+- Each lab is a standalone docker-compose project under `labs/<lab>/`.
+  The root `Makefile` delegates targets into them via `%-down`/`%-logs`/
+  `%-build` pattern rules.
 
 More detail in `docs/architecture.md` and the SPEC of each service.
 
@@ -85,8 +89,8 @@ More detail in `docs/architecture.md` and the SPEC of each service.
 - [tests/](tests/) — plain-English test model (goals + signals + edge
   cases) that `scripts/smoke.sh` and friends derive from. TDD source
   of truth.
-- `<service>/SPEC.md` — per-service spec.
-- `<service>/docs/adr/` — per-service ADRs.
+- `labs/<lab>/SPEC.md` — per-lab spec.
+- `labs/<lab>/docs/adr/` — per-lab ADRs.
 
 ## Disaster recovery
 
@@ -98,7 +102,7 @@ See `docs/operations.md`. In short:
    80/443 are free.
 4. Do the GPU host setup (driver, UVM, container toolkit, reboot).
 5. `make setup && make base`
-6. Drop source media back into `${STORAGE_ROOT}/kurpatov-wiki/sources/...`,
+6. Drop source media back into `${STORAGE_ROOT}/labs/kurpatov-wiki-ingest/sources/...`,
    adjust `.env`, start the services you need.
 
 Code and configs are in git. Data (models, sources, vault, mlflow) lives
