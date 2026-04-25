@@ -20,8 +20,8 @@ services:
                 - ${RL_2048_GPU_UUID}
     volumes:
       - ./notebooks:/workspace/notebooks
-      - ${STORAGE_ROOT}/models:/workspace/models
-      - ${STORAGE_ROOT}/rl-2048/checkpoints:/workspace/checkpoints
+      - ${STORAGE_ROOT}/shared/models:/workspace/models
+      - ${STORAGE_ROOT}/labs/rl-2048/checkpoints:/workspace/checkpoints
     expose:
       - "8888"
     shm_size: "16gb"

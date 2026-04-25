@@ -21,10 +21,10 @@ services:
                 - ${KURPATOV_WIKI_GPU_UUID}
     volumes:
       - ./notebooks:/workspace/notebooks
-      - ${STORAGE_ROOT}/models:/workspace/models
-      - ${STORAGE_ROOT}/kurpatov-wiki/sources:/workspace/sources
-      - ${STORAGE_ROOT}/kurpatov-wiki/vault:/workspace/vault
-      - ${STORAGE_ROOT}/kurpatov-wiki/checkpoints:/workspace/checkpoints
+      - ${STORAGE_ROOT}/shared/models:/workspace/models
+      - ${STORAGE_ROOT}/labs/kurpatov-wiki-ingest/sources:/workspace/sources
+      - ${STORAGE_ROOT}/labs/kurpatov-wiki-ingest/vault:/workspace/vault
+      - ${STORAGE_ROOT}/labs/kurpatov-wiki-ingest/checkpoints:/workspace/checkpoints
     expose:
       - "8888"
     shm_size: "8gb"
@@ -48,10 +48,10 @@ services:
                 - ${KURPATOV_WIKI_GPU_UUID}
     volumes:
       - ./notebooks:/workspace/notebooks
-      - ${STORAGE_ROOT}/models:/workspace/models
-      - ${STORAGE_ROOT}/kurpatov-wiki/sources:/workspace/sources
-      - ${STORAGE_ROOT}/kurpatov-wiki/vault:/workspace/vault
-      - ${STORAGE_ROOT}/kurpatov-wiki/checkpoints:/workspace/checkpoints
+      - ${STORAGE_ROOT}/shared/models:/workspace/models
+      - ${STORAGE_ROOT}/labs/kurpatov-wiki-ingest/sources:/workspace/sources
+      - ${STORAGE_ROOT}/labs/kurpatov-wiki-ingest/vault:/workspace/vault
+      - ${STORAGE_ROOT}/labs/kurpatov-wiki-ingest/checkpoints:/workspace/checkpoints
     shm_size: "4gb"
     command: ["python", "-u", "/workspace/notebooks/03_watch_and_ingest.py"]
     restart: unless-stopped
@@ -69,7 +69,7 @@ services:
   # Smoke test enforces: tests/smoke.md §7.
   #
   # Note: the on-disk path `/workspace/vault/raw` still uses the
-  # legacy "vault" name (host: ${STORAGE_ROOT}/kurpatov-wiki/vault),
+  # legacy "vault" name (host: ${STORAGE_ROOT}/labs/kurpatov-wiki-ingest/vault),
   # as does the deploy key filename `~/.ssh/kurpatov-wiki-vault`
   # which is baked into vault/.git/config core.sshCommand. Those are
   # cheap to rename later; the GitHub repo rename is the only piece
@@ -82,7 +82,7 @@ services:
     container_name: kurpatov-wiki-raw-pusher
     volumes:
       - ./notebooks:/workspace/notebooks
-      - ${STORAGE_ROOT}/kurpatov-wiki/vault:/workspace/vault
+      - ${STORAGE_ROOT}/labs/kurpatov-wiki-ingest/vault:/workspace/vault
       # Deploy key (read-only) — matches vault/.git/config
       # core.sshCommand (~/.ssh/kurpatov-wiki-vault → /root/... in
       # container, /home/vmihaylov/... on host).

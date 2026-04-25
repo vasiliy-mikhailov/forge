@@ -1,9 +1,13 @@
-ENVFILE := --env-file $(abspath ../.env)
-COMPOSE := docker compose $(ENVFILE)
+# common.mk — included by each lab's Makefile + sublab Makefiles.
+# Discovers forge root via git so it works at any nesting depth
+# (labs/<lab>/ or labs/<lab>/<sublab>/).
 
-# Build all images inside a dedicated buildx builder pinned to CPU 0,
-# so cold builds don't starve ssh / mlflow / arbitrage on the host.
-# The builder is auto-created on first `make *-build` (see ensure-builder).
+FORGE_ROOT     := $(shell git rev-parse --show-toplevel)
+ENVFILE        := --env-file $(FORGE_ROOT)/.env
+COMPOSE        := docker compose $(ENVFILE)
+
+# buildx builder pinned to CPU 0, so cold builds don't starve
+# ssh / mlflow / arbitrage on the host. Auto-created on first build.
 BUILDER        := slowbuilder
 BUILD_CPUSET   := 0
 BUILDER_CTR    := buildx_buildkit_$(BUILDER)0
@@ -19,9 +23,6 @@ down:
 logs:
 	docker logs -f $(CONTAINER)
 
-# Idempotent: create the pinned-core buildx builder if it is missing.
-# Every `build` target depends on this; after first run, subsequent
-# invocations just short-circuit on the `docker buildx inspect` check.
 ensure-builder:
 	@if ! docker buildx inspect $(BUILDER) >/dev/null 2>&1; then \
 	  echo ">>> creating buildx builder '$(BUILDER)' pinned to CPU $(BUILD_CPUSET)"; \

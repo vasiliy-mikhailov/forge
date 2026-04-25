@@ -15,7 +15,7 @@ services:
               device_ids:
                 - ${INFERENCE_GPU_UUID}
     volumes:
-      - ${STORAGE_ROOT}/models:/root/.cache/huggingface
+      - ${STORAGE_ROOT}/shared/models:/root/.cache/huggingface
     expose:
       - "8000"
     shm_size: "16gb"

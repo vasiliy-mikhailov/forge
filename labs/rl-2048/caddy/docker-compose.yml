@@ -1,7 +1,7 @@
 services:
   caddy:
     image: caddy:2
-    container_name: caddy
+    container_name: rl-2048-caddy
     ports:
       - "80:80"
       - "443:443"
@@ -10,20 +10,14 @@ services:
       - BASIC_AUTH_USER=${BASIC_AUTH_USER}
       - BASIC_AUTH_HASH=${BASIC_AUTH_HASH}
       - JUPYTER_RL_2048_DOMAIN=${JUPYTER_RL_2048_DOMAIN}
-      - JUPYTER_KURPATOV_WIKI_DOMAIN=${JUPYTER_KURPATOV_WIKI_DOMAIN}
       - MLFLOW_DOMAIN=${MLFLOW_DOMAIN}
-      - INFERENCE_DOMAIN=${INFERENCE_DOMAIN}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-      - caddy_config:/config
+      - ${STORAGE_ROOT}/labs/rl-2048/caddy-data:/data
+      - ${STORAGE_ROOT}/labs/rl-2048/caddy-config:/config
     networks:
       - proxy-net
     restart: unless-stopped
-
-volumes:
-  caddy_data:
-  caddy_config:
 
 networks:
   proxy-net:

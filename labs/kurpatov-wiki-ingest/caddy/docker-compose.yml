@@ -1,0 +1,23 @@
+services:
+  caddy:
+    image: caddy:2
+    container_name: kurpatov-wiki-ingest-caddy
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - ACME_EMAIL=${ACME_EMAIL}
+      - BASIC_AUTH_USER=${BASIC_AUTH_USER}
+      - BASIC_AUTH_HASH=${BASIC_AUTH_HASH}
+      - JUPYTER_KURPATOV_WIKI_DOMAIN=${JUPYTER_KURPATOV_WIKI_DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ${STORAGE_ROOT}/labs/kurpatov-wiki-ingest/caddy-data:/data
+      - ${STORAGE_ROOT}/labs/kurpatov-wiki-ingest/caddy-config:/config
+    networks:
+      - proxy-net
+    restart: unless-stopped
+
+networks:
+  proxy-net:
+    external: true

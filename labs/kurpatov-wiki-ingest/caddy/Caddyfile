@@ -1,0 +1,10 @@
+{
+    email {$ACME_EMAIL}
+}
+
+{$JUPYTER_KURPATOV_WIKI_DOMAIN} {
+    basic_auth {
+        {$BASIC_AUTH_USER} {$BASIC_AUTH_HASH}
+    }
+    reverse_proxy jupyter-kurpatov-wiki:8888
+}

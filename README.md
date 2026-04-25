@@ -11,13 +11,16 @@ make targets — and rebuild the whole environment.
 
 ## Subsystems
 
-| Service            | What it does                                            | SPEC                                      |
-| ------------------ | ------------------------------------------------------- | ----------------------------------------- |
-| `caddy/`           | HTTPS reverse proxy + basic auth for public services    | [caddy/SPEC.md](caddy/SPEC.md)            |
-| `mlflow/`          | Experiment tracking server                              | [mlflow/SPEC.md](mlflow/SPEC.md)          |
-| `rl-2048/`         | Jupyter sandbox: vLLM + unsloth + transformers          | [rl-2048/SPEC.md](rl-2048/SPEC.md)        |
-| `kurpatov-wiki/`   | Transcription of lectures + Karpathy-style wiki build   | [kurpatov-wiki/SPEC.md](kurpatov-wiki/SPEC.md) |
-| `inference/`       | vLLM OpenAI-compatible HTTP endpoint on Blackwell       | [inference/SPEC.md](inference/SPEC.md)         |
+| Lab                                | What it does                                              | SPEC                                                                              |
+| ---------------------------------- | --------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `labs/kurpatov-wiki-compiler/`     | vLLM serving the LLM that compiles raw → wiki              | [SPEC](labs/kurpatov-wiki-compiler/SPEC.md)                                       |
+| `labs/kurpatov-wiki-ingest/`       | Media → raw transcript pipeline (Whisper, etc.)            | [SPEC](labs/kurpatov-wiki-ingest/SPEC.md)                                         |
+| `labs/kurpatov-wiki-bench/`        | Agent harness: benchmark LLMs on the compiler task         | [SPEC](labs/kurpatov-wiki-bench/SPEC.md)                                          |
+| `labs/rl-2048/`                    | Jupyter sandbox: vLLM + unsloth + transformers + MLflow    | [SPEC](labs/rl-2048/SPEC.md)                                                      |
+
+Each lab is fully self-contained: own caddy, own docker-compose,
+own SPEC. Labs are mutex on host ports 80/443 (each lab's caddy
+binds them). See [docs/adr/0007](docs/adr/0007-labs-restructure-self-contained-caddy.md).
 
 ## Quick start
 
@@ -36,15 +39,14 @@ $EDITOR .env
 make setup
 
 # 3. Bring up base services.
-make base          # caddy + mlflow
-
-# 4. Bring up heavy GPU services one at a time.
-#    Note: `inference` and `rl-2048` are mutex on the Blackwell —
-#    pick one mode and `make stop-gpu` to swap.
-make kurpatov-wiki
-make rl-2048           # 2048 mode (Blackwell → rl-2048)
-# OR:
-# make inference       # inference mode (Blackwell → vLLM)
+# 4. Bring up one lab. Labs are mutex on ports 80/443 + GPU.
+make kurpatov-wiki-compiler   # vLLM for wiki authoring
+# or:
+make kurpatov-wiki-ingest     # transcription pipeline
+# or:
+make rl-2048                  # GRPO + jupyter + MLflow
+# Bench co-runs with compiler:
+# make kurpatov-wiki-compiler && make kurpatov-wiki-bench
 ```
 
 Diagnostics and control:
@@ -55,7 +57,7 @@ make ps                    # containers
 make gpu                   # GPU utilization
 make du                    # size of on-disk data
 make kurpatov-wiki-logs    # tail -f logs
-make stop-gpu              # stop rl-2048 + kurpatov-wiki
+make stop-all              # stop every lab
 ```
 
 ## Architecture (very short)

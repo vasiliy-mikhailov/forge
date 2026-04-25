@@ -1,0 +1,16 @@
+{
+    email {$ACME_EMAIL}
+}
+
+# vLLM inference endpoint — auth via vLLM --api-key, NOT caddy basic auth
+# (OpenAI-compatible clients send Authorization: Bearer …, stacking
+# basic auth on top breaks every standard SDK).
+# See ../docs/adr/0001-vllm-public-openai-compatible-endpoint.md.
+{$INFERENCE_DOMAIN} {
+    reverse_proxy vllm-inference:8000 {
+        transport http {
+            response_header_timeout 600s
+            read_timeout 600s
+        }
+    }
+}

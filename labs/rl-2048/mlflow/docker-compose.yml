@@ -12,7 +12,7 @@ services:
       --default-artifact-root mlflow-artifacts:/
     volumes:
       - ./data:/data                                 # sqlite — on SSD
-      - ${STORAGE_ROOT}/mlflow/mlruns:/mlruns        # artifacts — on the HDD pool
+      - ${STORAGE_ROOT}/labs/rl-2048/mlruns:/mlruns        # artifacts — on the HDD pool
     expose:
       - "5000"
     networks:

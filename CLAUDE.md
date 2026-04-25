@@ -11,19 +11,45 @@ single machine `mikhailov.tech` with two GPUs (Blackwell + RTX 5090). Not
 production, but all the key services run production-style behind caddy +
 basic auth and must survive a host reboot.
 
-Current subsystems (each in its own folder):
+forge is now organized as a **lab metaphor**: each major workload
+lives under `labs/<slug>/` as a fully self-contained "room" with
+its own caddy, docker-compose, SPEC, ADRs. Top-level holds only
+docs, scripts, and the root Makefile that dispatches into labs.
 
-- `caddy/` — edge proxy + Let's Encrypt.
-- `mlflow/` — tracking server (SQLite + artifacts on HDD).
-- `rl-2048/` — Jupyter sandbox for RL/GRPO experiments.
-- `kurpatov-wiki/` — the "video → raw transcript → wiki" pipeline
-  (Karpathy-style LLM notes on Kurpatov's psychology lectures).
-- `inference/` — vLLM serving OpenAI-compatible HTTP API on the
-  Blackwell. Mutually exclusive with `rl-2048` (both want the
-  Blackwell). See `inference/SPEC.md`.
-- `docs/` — repo-level docs (architecture, operations, ADRs).
-- Root `Makefile` + `common.mk` — one remote control: `make <service>`,
-  `make <service>-down`, `make <service>-build`, `make base`, `make stop-gpu`.
+Labs:
+
+- `labs/kurpatov-wiki-compiler/` — vLLM serving the LLM that
+  *compiles* raw transcripts into wiki articles. (Was
+  `forge/inference/` pre-2026-04-25.)
+- `labs/kurpatov-wiki-ingest/` — the "media → raw transcript"
+  pipeline (Whisper, etc.). (Was `forge/kurpatov-wiki/`.)
+- `labs/kurpatov-wiki-bench/` — agent harness that benchmarks
+  different LLMs on the compiler task. (Was the standalone repo
+  `kurpatov-wiki-bench`, imported here.)
+- `labs/rl-2048/` — Jupyter sandbox for RL/GRPO experiments.
+  Includes its own `mlflow/` sublab (mlflow used to live at
+  forge top-level; only rl-2048 uses it, so it moved in).
+
+Each lab carries:
+
+- Its own `caddy/` (binds host :80/:443 — labs are mutex on
+  these ports).
+- Own `docker-compose.yml` for its core services.
+- Own `SPEC.md` + `docs/adr/`.
+
+Top-level:
+
+- `docs/` — cross-lab docs + ADRs (this restructure is ADR 0007).
+- `scripts/` — cross-lab tooling (smoke, push-sources).
+- `Makefile` — dispatcher: `make <lab>`, `make <lab>-down`,
+  `make stop-all`.
+- `common.mk` — shared Make machinery (finds forge root via
+  `git rev-parse --show-toplevel` so it works at any nesting depth).
+
+The "experiment" word is reserved for individual run-instances
+inside a lab (e.g. "experiment 148 = qwen3.6-27b-fp8 on
+2026-04-25" inside the bench lab). A lab is a room; an
+experiment is a run.
 
 ## First thing an agent should do
 
@@ -98,10 +124,15 @@ make du    # on-disk sizes under STORAGE_ROOT
 ## What NOT to do
 
 - Do not run multiple writers against the mlflow SQLite at the same time.
-- Do not run `inference` and `rl-2048` simultaneously — they share the
-  Blackwell. forge has two modes for now: inference and 2048.
-- Do not give rl-2048, inference, and kurpatov-wiki the same GPU UUID —
-  the later one to start will hit OOM.
+- Labs are mutex on host ports 80/443 (each lab's caddy binds them).
+  `kurpatov-wiki-compiler` + `kurpatov-wiki-bench` is the one
+  permitted co-running combination (bench is a client without a
+  caddy). All other lab combinations: stop one, start another via
+  `make <a>-down && make <b>`.
+- Do not give two labs overlapping GPU UUIDs in `.env`. The
+  Blackwell hosts compiler OR rl-2048 (not both); the RTX 5090
+  hosts kurpatov-wiki-ingest. Going to dual-GPU TP for compiler
+  takes both cards — kurpatov-wiki-ingest must be down then.
 - Do not commit `.ipynb` files or large `.pt`/`.bin` blobs.
 - Do not change the `vault/raw/data/<path>/raw.json` format without an ADR —
   the watcher and every downstream layer depend on it.
