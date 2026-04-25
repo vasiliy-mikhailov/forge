@@ -77,25 +77,31 @@ outputs: kurpatov-wiki-wiki  (markdown sources + concepts + index,
   вес + vLLM. Не «улучшаем», а выбираем подходящую под текущий skill.
   Параметры serving'а (vLLM флаги) — улучшаем.
 
-### 1.3 Main thesis
+### 1.3 Main thesis (pivoted 2026-04-25 после F1)
 
-Skill v1 написан под **Opus 4.6** — frontier-модель, которая держит
-65K coherence и сериализует 40-килобайтные Cyrillic JSON tool args
-без ошибок. Open-weight 24–49B-классу такой skill **не подходит**:
-модели рвут JSON args на длинных Cyrillic строках (наблюдаемо
-`Error validating tool 'file_editor': Unterminated string` на
-Qwen3.6-27B-FP8 и AWQ-INT4).
+**Изначальная ставка**: «skill v1 написан под Opus 4.6, и open-weight
+24-49B классу он не по зубам — нужно переписать skill».
 
-**The bet — переписать skill, а не сменить модель.** Skill v2 должен
-ограничивать tool args ≤ 4 KB на каждом вызове (incremental write через
-str_replace, либо terminal heredoc вместо file_editor). Это и есть
-финальный deliverable лаборатории — `skills/benchmark/SKILL.md` v2,
-который воспроизводимо работает на open-weight стеке.
+**После F1 microbench** ставка пересмотрена: F1 показал, что
+Qwen3.6-27B-FP8 в isolated-call setup пишет 49 КБ Cyrillic JSON tool
+args **без единой ошибки** (pass-rate=1.00 от 1 КБ до 49 КБ). Значит
+T3 crash (`Error validating tool 'file_editor': Unterminated string at
+char 285`) — **не архитектурная фрагильность модели на длинных строках**,
+а что-то ещё.
 
-Все остальные категории гипотез (см. §8) — попытки купить проход
-дешевле, без переписывания skill'а. Они полезны как ablations: если все
-провалятся — это **прямое подтверждение**, что skill v1 — антипаттерн
-для open-weight-класса, и можно с уверенностью инвестировать в skill v2.
+**Текущая ставка** — **A1/A8: max_completion_tokens cap в OpenHands
+LLMConfig**. T3 prompt содержит ~50K input токенов (skill + transcript +
+turn history); агент пытается выдать 16K output токенов; OpenHands по
+дефолту ограничивает completion в ~4K → модель усекается на ~285-м
+символе и vLLM возвращает невалидный JSON.
+
+Если ставка верна, фикс — **одна строка** в `bench/run.sh`
+(`max_completion_tokens=32768`). Skill переписывать **не обязательно**:
+он работает, ему просто не дают досчитать. Все D-cluster гипотезы
+(skill v2/v3/v4) понижены — остаются как defense-in-depth, не как THE BET.
+
+Если ставка ложна — поднимется H10 (context starvation иной природы),
+и снова придётся смотреть на skill / context / max_model_len.
 
 ## 2. North Star (target condition)
 
