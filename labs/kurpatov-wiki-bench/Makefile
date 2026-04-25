@@ -61,3 +61,7 @@ down:
 	@true
 logs:
 	@echo "(bench is one-shot — see ${STORAGE_ROOT}/labs/kurpatov-wiki-bench/experiments/<id>/events.jsonl)"
+
+.PHONY: smoke
+smoke:
+	@bash tests/smoke.sh

@@ -1,7 +1,9 @@
 # ADR 0003 — one root Makefile, delegates into subfolders
 
 ## Status
-Accepted (2026-04-19).
+Superseded by [ADR 0007](0007-labs-restructure-self-contained-caddy.md) (2026-04-25). Kept for historical reference; the labs/-restructure made the SERVICES list (`caddy mlflow rl-2048 kurpatov-wiki`) and the no-prefix container-name convention obsolete. The two-level Make layout itself (root dispatches into per-folder Makefiles via pattern rules) is preserved — labs/<lab>/Makefile follows the same shape.
+
+Original status: Accepted (2026-04-19).
 
 ## Context
 Every service needs the same operations: `up`, `down`, `logs`, `build`.

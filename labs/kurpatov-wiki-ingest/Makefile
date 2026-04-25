@@ -10,3 +10,7 @@ up:
 down:
 	$(COMPOSE) down
 	@$(MAKE) -C caddy down
+
+.PHONY: smoke
+smoke:
+	@bash tests/smoke.sh

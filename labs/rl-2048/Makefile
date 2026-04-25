@@ -12,3 +12,7 @@ down:
 	$(COMPOSE) down
 	@$(MAKE) -C caddy down
 	@$(MAKE) -C mlflow down
+
+.PHONY: smoke
+smoke:
+	@bash tests/smoke.sh
