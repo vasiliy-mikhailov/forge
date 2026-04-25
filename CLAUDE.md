@@ -18,6 +18,9 @@ Current subsystems (each in its own folder):
 - `rl-2048/` — Jupyter sandbox for RL/GRPO experiments.
 - `kurpatov-wiki/` — the "video → raw transcript → wiki" pipeline
   (Karpathy-style LLM notes on Kurpatov's psychology lectures).
+- `inference/` — vLLM serving OpenAI-compatible HTTP API on the
+  Blackwell. Mutually exclusive with `rl-2048` (both want the
+  Blackwell). See `inference/SPEC.md`.
 - `docs/` — repo-level docs (architecture, operations, ADRs).
 - Root `Makefile` + `common.mk` — one remote control: `make <service>`,
   `make <service>-down`, `make <service>-build`, `make base`, `make stop-gpu`.
@@ -95,8 +98,10 @@ make du    # on-disk sizes under STORAGE_ROOT
 ## What NOT to do
 
 - Do not run multiple writers against the mlflow SQLite at the same time.
-- Do not give rl-2048 and kurpatov-wiki the same GPU UUID — the second
-  service will hit OOM.
+- Do not run `inference` and `rl-2048` simultaneously — they share the
+  Blackwell. forge has two modes for now: inference and 2048.
+- Do not give rl-2048, inference, and kurpatov-wiki the same GPU UUID —
+  the later one to start will hit OOM.
 - Do not commit `.ipynb` files or large `.pt`/`.bin` blobs.
 - Do not change the `vault/raw/data/<path>/raw.json` format without an ADR —
   the watcher and every downstream layer depend on it.

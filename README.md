@@ -17,6 +17,7 @@ make targets — and rebuild the whole environment.
 | `mlflow/`          | Experiment tracking server                              | [mlflow/SPEC.md](mlflow/SPEC.md)          |
 | `rl-2048/`         | Jupyter sandbox: vLLM + unsloth + transformers          | [rl-2048/SPEC.md](rl-2048/SPEC.md)        |
 | `kurpatov-wiki/`   | Transcription of lectures + Karpathy-style wiki build   | [kurpatov-wiki/SPEC.md](kurpatov-wiki/SPEC.md) |
+| `inference/`       | vLLM OpenAI-compatible HTTP endpoint on Blackwell       | [inference/SPEC.md](inference/SPEC.md)         |
 
 ## Quick start
 
@@ -38,8 +39,12 @@ make setup
 make base          # caddy + mlflow
 
 # 4. Bring up heavy GPU services one at a time.
+#    Note: `inference` and `rl-2048` are mutex on the Blackwell —
+#    pick one mode and `make stop-gpu` to swap.
 make kurpatov-wiki
-make rl-2048
+make rl-2048           # 2048 mode (Blackwell → rl-2048)
+# OR:
+# make inference       # inference mode (Blackwell → vLLM)
 ```
 
 Diagnostics and control:

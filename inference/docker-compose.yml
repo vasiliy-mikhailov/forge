@@ -1,0 +1,47 @@
+services:
+  vllm-inference:
+    image: nvcr.io/nvidia/vllm:25.03-py3
+    container_name: vllm-inference
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=${INFERENCE_GPU_UUID}
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+      - HUGGING_FACE_HUB_TOKEN=${HF_TOKEN}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              capabilities: [gpu, compute, utility]
+              device_ids:
+                - ${INFERENCE_GPU_UUID}
+    volumes:
+      - ${STORAGE_ROOT}/models:/root/.cache/huggingface
+    expose:
+      - "8000"
+    shm_size: "16gb"
+    ipc: host
+    command: >
+      --model ${INFERENCE_MODEL}
+      --quantization awq_marlin
+      --kv-cache-dtype turboquant_4bit_nc
+      --max-model-len ${INFERENCE_MAX_MODEL_LEN}
+      --gpu-memory-utilization 0.92
+      --enable-prefix-caching
+      --tensor-parallel-size 1
+      --host 0.0.0.0
+      --port 8000
+      --api-key ${VLLM_API_KEY}
+      --served-model-name ${INFERENCE_SERVED_NAME}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -H \"Authorization: Bearer ${VLLM_API_KEY}\" http://localhost:8000/v1/models || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 600s
+    networks:
+      - proxy-net
+    restart: unless-stopped
+
+networks:
+  proxy-net:
+    external: true

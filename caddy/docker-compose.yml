@@ -12,6 +12,7 @@ services:
       - JUPYTER_RL_2048_DOMAIN=${JUPYTER_RL_2048_DOMAIN}
       - JUPYTER_KURPATOV_WIKI_DOMAIN=${JUPYTER_KURPATOV_WIKI_DOMAIN}
       - MLFLOW_DOMAIN=${MLFLOW_DOMAIN}
+      - INFERENCE_DOMAIN=${INFERENCE_DOMAIN}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data

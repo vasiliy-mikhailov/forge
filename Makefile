@@ -5,7 +5,7 @@
 export
 
 STORAGE_ROOT ?= /mnt/steam/forge
-SERVICES := caddy mlflow rl-2048 kurpatov-wiki
+SERVICES := caddy mlflow rl-2048 kurpatov-wiki inference
 
 .PHONY: help setup network base base-down stop-gpu ps gpu du smoke push-sources $(SERVICES)
 
@@ -18,7 +18,7 @@ help:
 	@echo "Composite:"
 	@echo "  make base       — caddy + mlflow"
 	@echo "  make base-down  — stop everything"
-	@echo "  make stop-gpu   — stop rl-2048 + kurpatov-wiki"
+	@echo "  make stop-gpu   — stop rl-2048 + kurpatov-wiki + inference"
 	@echo ""
 	@echo "Content:"
 	@echo "  make push-sources — move media from ~/Downloads/Курпатов/ to server over LAN"
@@ -55,6 +55,7 @@ $(SERVICES): network
 # Composite targets
 base: caddy mlflow
 base-down:
+	@$(MAKE) -C inference down
 	@$(MAKE) -C kurpatov-wiki down
 	@$(MAKE) -C rl-2048 down
 	@$(MAKE) -C mlflow down
@@ -62,6 +63,7 @@ base-down:
 stop-gpu:
 	@$(MAKE) -C rl-2048 down
 	@$(MAKE) -C kurpatov-wiki down
+	@$(MAKE) -C inference down
 
 ps:
 	@docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'

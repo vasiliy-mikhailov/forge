@@ -11,6 +11,9 @@ The smoke test assumes:
 - `.env` is present at the forge root. Required variables: `BASIC_AUTH_USER`,
   `MLFLOW_TRACKING_PASSWORD`, `MLFLOW_DOMAIN`, `JUPYTER_RL_2048_DOMAIN`,
   `JUPYTER_KURPATOV_WIKI_DOMAIN`, `RL_2048_GPU_UUID`, `KURPATOV_WIKI_GPU_UUID`.
+  Inference checks additionally need `INFERENCE_DOMAIN`, `VLLM_API_KEY`,
+  `INFERENCE_SERVED_NAME` — but the section is **skipped** if the
+  `vllm-inference` container is not running (see Section 9 below).
 - The host has booted, `docker` is running, GPU driver is the
   MIT/GPL `-open` variant with `uvm_disable_hmm=1` (per
   [`docs/adr/0004-nvidia-driver-open-plus-hmm-off.md`](../docs/adr/0004-nvidia-driver-open-plus-hmm-off.md)).
@@ -340,6 +343,45 @@ stale raws in the vault, which the wiki layer eventually cites.
   complexity.
 
 ---
+
+## Section 9 — inference endpoint live (skip-if-down)
+
+### the served vLLM endpoint answers an OpenAI-compatible request
+
+**Goal.** When forge is in **inference mode** (`vllm-inference` is
+running), `https://${INFERENCE_DOMAIN}/v1/models` returns the
+`${INFERENCE_SERVED_NAME}` registered with vLLM. This proves three
+things at once:
+
+1. caddy reaches `vllm-inference:8000` on `proxy-net`.
+2. vLLM accepts the API key in `Authorization: Bearer ${VLLM_API_KEY}`.
+3. The model loaded successfully (model name is registered after vLLM
+   has finished warmup; if loading failed, the response is `{"object":
+   "list", "data": []}` and we catch it).
+
+**Signals.**
+- `docker ps --format '{{.Names}}'` includes `vllm-inference` — if
+  not, **the section is skipped**, not failed. forge has two GPU modes
+  (inference / 2048); a passing smoke run in 2048 mode must not
+  fail-by-association on inference.
+- `curl -fsS -H "Authorization: Bearer ${VLLM_API_KEY}"
+  https://${INFERENCE_DOMAIN}/v1/models` returns 2xx.
+- The JSON body's `data[].id` includes `${INFERENCE_SERVED_NAME}`.
+
+**Edge cases.**
+- vLLM model load is slow (10–30 min cold; 2–3 min warm). The
+  healthcheck `start_period` is 600s. If the smoke runs while the
+  container is still in `(starting)` state, treat it the same as
+  "not running" and skip — vLLM has not yet bound to `:8000`.
+- Bad `VLLM_API_KEY` returns 401. Don't retry — the failure is
+  diagnostic of the secret, not of vLLM.
+- Wrong `INFERENCE_SERVED_NAME` (env vs `--served-model-name`) shows
+  up as 200 with the model present but under a different `id`. This
+  is a configuration drift, fail with the actual id surfaced.
+- This check does **not** issue a chat completion. The completion
+  prompt covers a different surface (token generation, sampler) that
+  matters for benchmark runs, not for forge health. A runtime
+  generation test would lengthen the smoke window unnecessarily.
 
 ## Known gaps
 

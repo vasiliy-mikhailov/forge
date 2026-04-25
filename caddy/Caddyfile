@@ -22,3 +22,12 @@
     }
     reverse_proxy mlflow:5000
 }
+
+{$INFERENCE_DOMAIN} {
+    reverse_proxy vllm-inference:8000 {
+        transport http {
+            response_header_timeout 600s
+            read_timeout 600s
+        }
+    }
+}

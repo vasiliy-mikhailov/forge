@@ -74,6 +74,7 @@ FAILED_NAMES=()
 
 pass() { printf '  [ OK ] %s\n' "$1"; PASSED=$((PASSED+1)); }
 fail() { printf '  [FAIL] %s\n' "$1"; FAILED=$((FAILED+1)); FAILED_NAMES+=("$1"); }
+skip() { printf '  [SKIP] %s\n' "$1"; }
 section() { printf '\n== %s ==\n' "$1"; }
 
 # ---------- 1. containers ----------
@@ -252,6 +253,40 @@ check_watcher_log \
   "ingest daemon ran [reclaim] startup pass on boot" \
   kurpatov-ingest \
   '\[reclaim\] startup pass complete'
+
+
+# ---------- 9. inference endpoint live (skip-if-down) ----------
+# When forge is in inference mode (`vllm-inference` is running), the
+# OpenAI-compatible endpoint behind caddy must answer `/v1/models`
+# with the served model name registered. forge has two GPU modes
+# (inference / 2048); a passing smoke run in 2048 mode must not
+# fail-by-association on inference. We therefore SKIP this section
+# when the container is not running.
+section "inference endpoint live (skip-if-down)"
+
+inference_running=$(docker inspect --format '{{.State.Running}}' \
+  vllm-inference 2>/dev/null || echo "false")
+
+if [[ "$inference_running" != "true" ]]; then
+  skip "vllm-inference is not running — forge is in 2048 mode (or inference is down)"
+else
+  : "${INFERENCE_DOMAIN:?INFERENCE_DOMAIN must be set in .env to run inference checks}"
+  : "${VLLM_API_KEY:?VLLM_API_KEY must be set in .env to run inference checks}"
+  : "${INFERENCE_SERVED_NAME:?INFERENCE_SERVED_NAME must be set in .env to run inference checks}"
+
+  models_json=$(curl -fsS \
+    -H "Authorization: Bearer ${VLLM_API_KEY}" \
+    "https://${INFERENCE_DOMAIN}/v1/models" 2>/dev/null || echo "")
+
+  if [[ -z "$models_json" ]]; then
+    fail "GET https://${INFERENCE_DOMAIN}/v1/models did not return 2xx"
+  elif python3 -c "import sys, json; d=json.loads(sys.argv[1]); ids=[m.get('id') for m in d.get('data', [])]; sys.exit(0 if '${INFERENCE_SERVED_NAME}' in ids else 1)" "$models_json" 2>/dev/null; then
+    pass "vLLM serves '${INFERENCE_SERVED_NAME}' on https://${INFERENCE_DOMAIN}/v1/models"
+  else
+    actual_ids=$(python3 -c "import sys, json; d=json.loads(sys.argv[1]); print(','.join(m.get('id','?') for m in d.get('data', [])) or '<empty>')" "$models_json" 2>/dev/null || echo "<unparseable>")
+    fail "expected served name '${INFERENCE_SERVED_NAME}' missing from /v1/models (got: $actual_ids)"
+  fi
+fi
 
 # ---------- summary ----------
 TOTAL=$((PASSED + FAILED))

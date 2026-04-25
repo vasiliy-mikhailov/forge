@@ -36,8 +36,8 @@ Input environment variables:
 - `ACME_EMAIL` — required, used as the LE contact.
 - `BASIC_AUTH_USER`, `BASIC_AUTH_HASH` — shared across every site block;
   hash is bcrypt.
-- `JUPYTER_RL_2048_DOMAIN`, `JUPYTER_KURPATOV_WIKI_DOMAIN`, `MLFLOW_DOMAIN`
-  — full FQDNs.
+- `JUPYTER_RL_2048_DOMAIN`, `JUPYTER_KURPATOV_WIKI_DOMAIN`, `MLFLOW_DOMAIN`,
+  `INFERENCE_DOMAIN` — full FQDNs.
 
 ## Invariants
 1. The `proxy-net` network must exist **before** caddy starts (it's created
@@ -47,6 +47,14 @@ Input environment variables:
 3. Ports 80/443 on the host are free.
 4. All backends join `proxy-net` and listen on `:8888` (jupyter) or `:5000`
    (mlflow), matching the Caddyfile.
+
+## Auth exception: inference
+The `INFERENCE_DOMAIN` site block does **not** carry caddy basic auth.
+vLLM serves an OpenAI-compatible API where clients send
+`Authorization: Bearer <api-key>`; stacking caddy basic auth on top of
+that breaks the standard SDKs. The auth layer for that site is vLLM's
+own `--api-key`. TLS still terminates at caddy. See
+`../inference/docs/adr/0001-vllm-public-openai-compatible-endpoint.md`.
 
 ## Status
 Production. Stable. Only changes when a new service is added (one site
