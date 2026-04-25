@@ -36,7 +36,7 @@ models:
     quant: fp8
     tool_call_parser: qwen3_xml
     reasoning_parser: qwen3
-    max_model_len: 65536
+    max_model_len: 131072
     gpus: [blackwell]
     notes: |
       Official Qwen FP8. Tests "is the community AWQ-INT4 quant the
