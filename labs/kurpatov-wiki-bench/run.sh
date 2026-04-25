@@ -26,9 +26,13 @@ set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$HERE"
 
-# --- load .env ---
-[[ -f .env ]] || { echo "FATAL: .env not found. Copy .env.example to .env." >&2; exit 2; }
-set -a; source .env; set +a
+# --- load forge/.env (single source of truth) + optional lab-local override ---
+FORGE_ROOT="$(git -C "$HERE" rev-parse --show-toplevel 2>/dev/null)"
+if [[ -z "$FORGE_ROOT" || ! -f "$FORGE_ROOT/.env" ]]; then
+  echo "FATAL: cannot locate forge/.env (run from inside the forge repo)." >&2
+  exit 2
+fi
+set -a; source "$FORGE_ROOT/.env"; [[ -f .env ]] && source .env; set +a
 
 : "${STORAGE_ROOT:?must be set}"
 : "${INFERENCE_BASE_URL:?must be set}"
