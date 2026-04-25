@@ -143,9 +143,6 @@ New. Smoke-test target lives in `tests/smoke.md` section 9; the script
 runs section 9 only when the container is up, otherwise skips
 (consistent with forge's "not all services run all the time" pattern).
 
-## Reasoning models (Qwen3 family)
-Qwen3 is a reasoning-tuned line: by default it emits a `<think>...</think>` block before its final answer. For benchmark workloads where exposed CoT is not needed (and where token budgets matter), pass `chat_template_kwargs: {enable_thinking: false}` in the request body. With it on, plan for ~10-20× more completion tokens per response.
-
 ## Tool calling and reasoning
 Default config enables OpenAI-compatible tool calls plus reasoning
 extraction:
@@ -187,6 +184,102 @@ When swapping models, pick the parser that matches the new model's
 emitted tool-call format. Same applies to `--reasoning-parser`:
 there are family-specific extractors (qwen3, deepseek_r1, glm45, …)
 for models that emit `<think>` blocks.
+
+## Operations
+
+### Model swap checklist
+A model swap is **not** just an `INFERENCE_MODEL=` edit. Walk through:
+
+1. Confirm the target model exists on HuggingFace at the spelled
+   path. Many community quants are misnamed (e.g. cyankiwi's
+   `Qwen3.6-27B-AWQ-INT4` is actually compressed-tensors INT4, not
+   AWQ — the name is misleading).
+2. Inspect `config.json` to confirm:
+    - Quantization scheme (AWQ / compressed-tensors / FP8 / etc.).
+    - Native `max_position_embeddings` — if smaller than
+      `INFERENCE_MAX_MODEL_LEN`, you need YaRN.
+    - Architecture name. Multimodal models (`*ForConditionalGeneration`)
+      load extra MM components even when run text-only.
+3. Decide quantization flag. Default behaviour: drop the
+   `--quantization` line and let vLLM auto-detect from
+   `config.quantization_config`. Force only when override is needed.
+4. Pick parsers. See
+   [ADR 0002](docs/adr/0002-per-model-parsers.md) and the lookup
+   table there. Update both `--tool-call-parser` and
+   `--reasoning-parser` in `inference/docker-compose.yml`.
+5. Update YaRN params. The defaults
+   (`factor=2.0, original=32768`) are tuned for Qwen3+ family.
+   Other families (Llama, Mistral, Gemma) have different
+   `original_max_position_embeddings` and may use different
+   `rope_type` (e.g. `linear`, `dynamic`).
+6. Update `.env`:
+    - `INFERENCE_MODEL` — full HF id.
+    - `INFERENCE_SERVED_NAME` — short slug for `/v1/models`.
+    - `INFERENCE_MAX_MODEL_LEN` — keep ≥ 64K so Hermes Agent can connect.
+    - `HF_TOKEN` — set if the new model is gated.
+7. Mode-mutex: `make rl-2048-down` if it's running.
+8. `make inference-down && make inference`.
+9. `make inference-logs`. Watch for `Application startup complete`,
+   then run a sanity curl (see `## Sanity tests` below).
+10. If healthy, **manually verify a tools request** before assuming
+    the agent client will work. The HTTP 200 from vLLM is a weaker
+    signal than a well-formed `tool_calls[]` in the response body.
+
+### Sanity tests after model swap
+Three curls in order, increasing complexity. Set `$VLLM_API_KEY`,
+`$INFERENCE_DOMAIN`, `$INFERENCE_SERVED_NAME` from `.env` first.
+
+```
+# 1. Endpoint up + auth + model loaded.
+curl -fsS https://$INFERENCE_DOMAIN/v1/models \
+  -H "Authorization: Bearer $VLLM_API_KEY" | python3 -m json.tool
+
+# 2. Plain chat completion.
+curl -fsS https://$INFERENCE_DOMAIN/v1/chat/completions \
+  -H "Authorization: Bearer $VLLM_API_KEY" -H "Content-Type: application/json" \
+  -d '{"model":"'$INFERENCE_SERVED_NAME'","messages":[{"role":"user","content":"calculate 2+2 and return result in json {result:N}"}],"max_tokens":256,"temperature":0}' \
+  | python3 -m json.tool
+
+# 3. Tool call. The crucial one — exposes parser misconfiguration.
+curl -fsS https://$INFERENCE_DOMAIN/v1/chat/completions \
+  -H "Authorization: Bearer $VLLM_API_KEY" -H "Content-Type: application/json" \
+  -d '{"model":"'$INFERENCE_SERVED_NAME'","messages":[{"role":"user","content":"What is 47*53? Use the calculator tool."}],"tools":[{"type":"function","function":{"name":"calculator","description":"Eval","parameters":{"type":"object","properties":{"expr":{"type":"string"}},"required":["expr"]}}}],"tool_choice":"auto","max_tokens":256,"temperature":0}' \
+  | python3 -m json.tool
+```
+
+The third response must show `finish_reason: "tool_calls"`, populated
+`tool_calls[]`, and `content: null` (or empty) — anything else is a
+parser mismatch (see ADR 0002 diagnostic table).
+
+### Known harmless warnings during startup
+These appear in `make inference-logs` and **do not** indicate a
+problem:
+
+- `WARNING [argparse_utils.py:191] With 'vllm serve', you should
+  provide the model as a positional argument …` — deprecation notice
+  for `--model`. We use `--model` deliberately to keep the model id
+  pinned by env var; we'll migrate when v0.13 actually lands.
+- `Qwen2VLImageProcessorFast is deprecated. The 'Fast' suffix has
+  been removed; use Qwen2VLImageProcessor instead.` — internal
+  transformers shim renaming, harmless.
+- `The 'use_fast' parameter is deprecated and will be removed in a
+  future version.` — same, harmless.
+- `UserWarning: Input tensor shape suggests potential format
+  mismatch: seq_len (16) < num_heads (48). This may indicate the
+  inputs were passed in head-first format …` — emitted by FLA
+  (Flash Linear Attention) on warmup with small seq_len batches; the
+  shape is correct, the heuristic that emits this warning is overly
+  aggressive at small sizes. Disappears once real prompts come in.
+
+If any of these escalate to `ERROR` rather than `WARNING`, escalate
+to the operator.
+
+### Caddy survives the model swap
+caddy is unaffected by `make inference-down && make inference`. The
+`reverse_proxy vllm-inference:8000` directive caches no upstream
+state; when the upstream comes back, requests start flowing again
+on the next health interval. No `make caddy-down` needed unless
+`INFERENCE_DOMAIN` changes (rare).
 
 ## Open questions
 - Do we ever want a second model loaded simultaneously (e.g. a small
