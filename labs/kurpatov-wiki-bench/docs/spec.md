@@ -5,19 +5,107 @@
 лежат в [`backlog.md`](backlog.md) (список идей с ICE-скорами) и в
 `experiments/<id>.md` (детальный спек активной гипотезы).
 
-## 1. Mission
+## 1. What we're improving
 
-`kurpatov-wiki-compiler` — пайплайн «raw-транскрипт → wiki-статья +
-концепты + atomic commit». Эталон поведения задан Opus 4.6. Цель —
-найти cheap self-hosted замену, которая воспроизводимо проходит то
-же качество.
+### 1.1 Главное: **skill**
+
+Лаборатория улучшает не модель и не инференс-движок, а **skill** —
+playbook (markdown-инструкции), который агент читает и выполняет
+для компиляции raw-транскриптов в wiki-статьи. Skill живёт в
+[`kurpatov-wiki-wiki/skills/benchmark/`](https://github.com/vasiliy-mikhailov/kurpatov-wiki-wiki/tree/main/skills/benchmark)
+и определяет:
+
+- **Workflow**: клонировать оба репо (raw + wiki), завести bench-ветку,
+  для каждого source — прочесть prompts, обработать transcript,
+  написать source-статью, написать концепт-статьи, обновить
+  `concept-index.json`, atomic commit + push.
+- **Output формат**: frontmatter schema (`slug`, `course`, `module`,
+  `concepts_touched[]`, `concepts_introduced[]`, `fact_check_performed`),
+  секции `TL;DR` / `Claims — provenance and fact-check` / `New ideas
+  (verified)` / `All ideas` / `Notes`, провенанс-маркеры (`NEW`,
+  `REPEATED (from: ...)`, `CONTRADICTS EARLIER (in: ...)`, `CONTRADICTS
+  FACTS`).
+- **Tool repertoire**: какие OpenHands tools агент использует
+  (`file_editor`, `terminal`, `task_tracker`, `web_search`), и как они
+  обёрнуты в инструкциях skill'а.
+- **Pass condition**: что считается «source готов» (см. §6).
+
+### 1.2 Окружение skill'а
+
+Skill не работает в вакууме. Его выполняет агент в bench-харнессе:
+
+```
+┌────────────────────────────────────────────────────────────┐
+│                Bench Harness                               │
+│  (forge/labs/kurpatov-wiki-bench)                          │
+│                                                            │
+│  Sandboxed Docker (python:3.12-slim + git/jq/curl),        │
+│  bind-mount только /runs/current,                          │
+│  GitHub auth через GITHUB_TOKEN,                           │
+│  entry point: bin/openhands CLI 1.17.0                     │
+│                                                            │
+│   ┌──────────────────────────────────────────────────┐     │
+│   │       OpenHands SDK Agent                        │     │
+│   │       (LLMConfig: max_tok, temp, tools-spec)     │     │
+│   │                                                  │     │
+│   │   reads ─→ SKILL.md ─────┐                       │     │
+│   │                          ↓                       │     │
+│   │      tool calls ←── interpreter (model brain)    │     │
+│   │      JSON tool args                              │     │
+│   │      ↓                                           │     │
+│   │   ┌──────────────────────────────────────────┐   │     │
+│   │   │      vLLM compiler                       │   │     │
+│   │   │  (forge/labs/kurpatov-wiki-compiler)     │   │     │
+│   │   │   model: Qwen3.6-27B-FP8 / Llama-70B     │   │     │
+│   │   │   parser: qwen3_xml / hermes             │   │     │
+│   │   │   max_model_len: 65536                   │   │     │
+│   │   └──────────────────────────────────────────┘   │     │
+│   └──────────────────────────────────────────────────┘     │
+└────────────────────────────────────────────────────────────┘
+
+inputs:  kurpatov-wiki-raw   (Cyrillic JSON transcripts)
+outputs: kurpatov-wiki-wiki  (markdown sources + concepts + index,
+                              на ветке bench/<date>-<model>)
+```
+
+- **Skill** — то, что мы шлифуем; финальный артефакт, который шипуется
+  пользователям-агентам.
+- **Harness** (`labs/kurpatov-wiki-bench/`) — runtime для skill'а: то,
+  что запускает агента, мерит, ловит ошибки, складывает артефакты.
+  Стабилизировался после refactor step 5; правится реже.
+- **Model + serving** (`labs/kurpatov-wiki-compiler/`) — third-party
+  вес + vLLM. Не «улучшаем», а выбираем подходящую под текущий skill.
+  Параметры serving'а (vLLM флаги) — улучшаем.
+
+### 1.3 Main thesis
+
+Skill v1 написан под **Opus 4.6** — frontier-модель, которая держит
+65K coherence и сериализует 40-килобайтные Cyrillic JSON tool args
+без ошибок. Open-weight 24–49B-классу такой skill **не подходит**:
+модели рвут JSON args на длинных Cyrillic строках (наблюдаемо
+`Error validating tool 'file_editor': Unterminated string` на
+Qwen3.6-27B-FP8 и AWQ-INT4).
+
+**The bet — переписать skill, а не сменить модель.** Skill v2 должен
+ограничивать tool args ≤ 4 KB на каждом вызове (incremental write через
+str_replace, либо terminal heredoc вместо file_editor). Это и есть
+финальный deliverable лаборатории — `skills/benchmark/SKILL.md` v2,
+который воспроизводимо работает на open-weight стеке.
+
+Все остальные категории гипотез (см. §8) — попытки купить проход
+дешевле, без переписывания skill'а. Они полезны как ablations: если все
+провалятся — это **прямое подтверждение**, что skill v1 — антипаттерн
+для open-weight-класса, и можно с уверенностью инвестировать в skill v2.
 
 ## 2. North Star (target condition)
 
 - ≥ 1 open-weight self-hosted модель воспроизводимо проходит **Pass**
-  на T3 (полный source) за ≤ 60 мин wall на одном RTX 6000 Pro Blackwell.
+  (§6) на T3 (полный source) за ≤ 60 мин wall на одном RTX 6000 Pro
+  Blackwell, **с улучшенным skill v2**.
 - Cost per source ≤ \$0.01 (электричество + amortized GPU).
 - На T4 (полный модуль 005, 7 source) — ≥ 80% pass rate.
+- Skill v2 публикуется в `kurpatov-wiki-wiki/skills/benchmark/` как
+  стабильная замена v1.
 
 ## 3. Backlog rules
 
@@ -26,10 +114,11 @@
 `ICE = I × C × E`, диапазон 1–1000. Каждое измерение 1–10:
 
 - **Impact** — насколько приближает к North Star, если сработает.
+  Здесь главный фокус: «насколько эта гипотеза улучшит skill либо
+  снимет необходимость его улучшать».
 - **Confidence** — уверенность, что сработает (статьи, прецеденты,
   интуиция). *Низкий C ≠ плохо*: «низкая confidence + высокий impact +
-  лёгкая проверка» — типовой профиль рискованной ставки, которую
-  стоит проверять.
+  лёгкая проверка» — типовой профиль рискованной ставки.
 - **Ease** — 1 = недели работы; 10 = минуты конфига.
 
 Берём top-3 по ICE как кандидатов на следующий детальный спек.
@@ -84,6 +173,9 @@ backlog → triaged → spec → running → done | refuted | skip
 - **Determinism**: temperature=0 → одинаковый prompt даёт sha256-
   совпадающий output между запусками. Если ломается — проблема
   изоляции/инфры, не модели.
+- **Skill quality regression**: при правке skill'а — диффер `summary.json`
+  по полям `claims_count`, `concepts_introduced`, `fact_check_performed`
+  относительно Opus baseline. Деградация > 20% по любому полю — fail.
 
 ## 6. Pass conditions per tier
 
@@ -115,10 +207,34 @@ backlog → triaged → spec → running → done | refuted | skip
 Формат: «гипотеза опровергнута, если выполняется хотя бы одно из:
 [конкретные численные / pattern-based условия]».
 
-Любой исход, не подпадающий под falsifier — **новые данные**, не подтверждение
-гипотезы. Решение pivot/scale принимается в Post-Mortem.
+Любой исход, не подпадающий под falsifier — **новые данные**, не
+подтверждение гипотезы. Решение pivot/scale принимается в Post-Mortem.
 
-## 8. Experiment file template
+## 8. Hypothesis categories: где живёт изменение
+
+Каждая гипотеза в `backlog.md` падает в одну из категорий ниже —
+определяющую, **что именно меняем** в системе из §1.2.
+
+| cat   | где живёт изменение                                       | пример идеи                              | когда полезно                                    |
+| ----- | --------------------------------------------------------- | ---------------------------------------- | ------------------------------------------------ |
+| A     | vLLM флаги / OpenHands LLMConfig                          | swap parser, bump max_tok, guided JSON   | дёшево; снимает конфигурационные косяки          |
+| B     | другая модель, тот же skill v1                            | Qwen3.5 вместо Qwen3.6, Llama-70B        | определяет, виноват ли конкретный вес            |
+| C     | другой inference engine                                   | SGLang вместо vLLM, llama.cpp GGUF       | проверяет, не баг ли это движка                  |
+| **D** | **skill itself** (markdown в kurpatov-wiki-wiki/skills)   | **incremental write, terminal heredoc**  | **THE BET — финальный deliverable лаборатории**  |
+| E     | preprocessing данных до agent run                         | trim transcript, pre-summarize           | дёшево уменьшает нагрузку на skill+model         |
+| F     | evals / metrics (instrumentation)                         | microbench L*, GPT-4o pairwise judge     | строит axes для сравнения остальных гипотез      |
+| G     | infrastructure (compose, GPU layout)                      | dual-GPU TP, speculative decoding        | расширяет потолок размера модели                 |
+
+**D — это the bet.** Skill v2 — конечный артефакт, который мы шипуем
+в `kurpatov-wiki-wiki/skills/benchmark/SKILL.md`. Все остальные
+категории — это либо инструментация (F), либо дешёвые ablations,
+проверяющие «можно ли обойтись без правки skill'а» (A/B/C/E/G).
+
+Если A/B/C/E/G **закрываются** до того, как мы успеваем потрогать
+D — отлично, мы выиграли дёшево. Если все провалятся — у нас твёрдое
+обоснование инвестировать в D.
+
+## 9. Experiment file template
 
 `experiments/<id>.md` (где `<id>` — стабильный идентификатор из backlog,
 например `F1`, `D2`, `B3`):
@@ -143,7 +259,7 @@ backlog → triaged → spec → running → done | refuted | skip
 как «памятник истории» — в `backlog.md` строка получает статус `done`
 и колонка Spec продолжает на него ссылаться.
 
-## 9. Artifact paths
+## 10. Artifact paths
 
 Все артефакты прогонов кладутся в `${STORAGE_ROOT}/labs/kurpatov-wiki-bench/`:
 
@@ -155,20 +271,22 @@ backlog → triaged → spec → running → done | refuted | skip
 В `experiments/<id>.md` Execution Log колонка `artifact` обязана давать
 работающий путь до того, как переходим к следующей гипотезе.
 
-## 10. Document conventions
+## 11. Document conventions
 
 - ID идеи стабильный: `A1`, `B3`, `F1` — даже после refute не переиспользуется.
 - Если гипотеза при «pivot»'е принципиально меняется — заводится новая
   идея с новым ID, старая остаётся как `refuted`.
-- `spec.md` (этот файл) меняется только при изменении методологии.
-  Не трогаем при добавлении/закрытии конкретных экспериментов.
+- `spec.md` (этот файл) меняется только при изменении методологии или
+  переосмыслении §1 (что улучшаем). Не трогаем при добавлении/закрытии
+  конкретных экспериментов.
 - `backlog.md` — точка входа: оттуда видим, что в работе и что в очереди.
 
-## 11. Ревизии методологии
+## 12. Ревизии методологии
 
-| ver | дата       | что изменилось                                                                                                |
-| --- | ---------- | ------------------------------------------------------------------------------------------------------------- |
-| 0.1 | 2026-04-25 | factorial-DoE-style 13-cell matrix как «спек»                                                                |
-| 0.2 | 2026-04-25 | Lean Validation Board                                                                                         |
-| 0.3 | 2026-04-25 | AI-lab format: Context+North Star / Backlog / Design / Evals / Execution / Post-Mortem; tiers T1..T4         |
-| 0.4 | 2026-04-25 | split: backlog → backlog.md; spec.md → методология; детальный спек активной гипотезы → experiments/<id>.md   |
+| ver | дата       | что изменилось                                                                                                                                            |
+| --- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0.1 | 2026-04-25 | factorial-DoE-style 13-cell matrix как «спек»                                                                                                            |
+| 0.2 | 2026-04-25 | Lean Validation Board                                                                                                                                     |
+| 0.3 | 2026-04-25 | AI-lab format: Context+North Star / Backlog / Design / Evals / Execution / Post-Mortem; tiers T1..T4                                                     |
+| 0.4 | 2026-04-25 | split: backlog → backlog.md; spec.md → методология; детальный спек активной гипотезы → experiments/<id>.md                                              |
+| 0.5 | 2026-04-25 | добавлено §1 «What we're improving» — skill как главный артефакт под улучшением; §8 категории гипотез по «где живёт изменение»; D помечен как THE BET   |
