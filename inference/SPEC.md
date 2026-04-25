@@ -185,6 +185,36 @@ emitted tool-call format. Same applies to `--reasoning-parser`:
 there are family-specific extractors (qwen3, deepseek_r1, glm45, …)
 for models that emit `<think>` blocks.
 
+## Default chat-template kwargs (Qwen3 reasoning-off-by-default)
+
+Qwen3-family models are reasoning-tuned: by default they emit a
+`<think>...</think>` block before the visible answer. With
+`--reasoning-parser qwen3` we extract that into the `reasoning` field
+so `content` stays clean — but the **token cost is paid regardless**.
+If the client sends `max_tokens` low (e.g. Hermes Agent's default
+256), the entire budget can be burned on reasoning tokens, leaving
+`content: null` and `finish_reason: length`. Visually on the client
+this looks like an agent stalling mid-word ("**Fin..." truncation).
+
+Fix: bake `enable_thinking=false` as the server-side default for
+Qwen3.6, regardless of what the client sends:
+
+```
+--default-chat-template-kwargs.enable_thinking false
+```
+
+Requests that explicitly pass `chat_template_kwargs.enable_thinking:
+true` still get reasoning. The default just shifts to off, so naive
+clients (Hermes Agent, raw OpenAI SDK with no extra_body, etc.) get
+concise responses by default.
+
+When swapping to a non-reasoning model (e.g. Llama 3.3 70B Instruct,
+Gemma 3 27B), this flag is harmless — the model just ignores the
+chat-template kwarg. When swapping to a different reasoning-tuned
+family (e.g. DeepSeek-R1), check whether their template uses the
+same `enable_thinking` key or a different one (`reasoning`,
+`enable_chain_of_thought`, …) and adjust accordingly.
+
 ## Operations
 
 ### Model swap checklist
