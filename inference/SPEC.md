@@ -143,6 +143,31 @@ runs section 9 only when the container is up, otherwise skips
 ## Reasoning models (Qwen3 family)
 Qwen3 is a reasoning-tuned line: by default it emits a `<think>...</think>` block before its final answer. For benchmark workloads where exposed CoT is not needed (and where token budgets matter), pass `chat_template_kwargs: {enable_thinking: false}` in the request body. With it on, plan for ~10-20× more completion tokens per response.
 
+## Tool calling
+Default config enables OpenAI-compatible tool calls:
+
+```
+--enable-auto-tool-choice
+--tool-call-parser hermes
+```
+
+The `hermes` parser extracts tool calls from the
+NousResearch/Hermes-style output Qwen3-Instruct emits in chat mode.
+Without these flags vLLM returns HTTP 400 to any request that includes
+a `tools:[...]` block: `"auto" tool choice requires --enable-auto-tool-choice
+and --tool-call-parser to be set`.
+
+Other parser names available in vLLM v0.19 (`--help=tool-call-parser`):
+`deepseek_v3*`, `gemma4`, `glm45/47`, `granite*`, `hermes`, `kimi_k2`,
+`llama3_json`, `llama4_*`, `minimax*`, `mistral`, `qwen3_coder`,
+`qwen3_xml`, `pythonic`, … When swapping models, pick the parser that
+matches the new model's emitted tool-call format.
+
+Caveat: the `hermes` parser used here is named after the **NousResearch
+Hermes finetune lineage** (the format), not after **Hermes Agent** (the
+client harness our operator uses). They share a name. The two are
+unrelated; the parser does not care which client makes the request.
+
 ## Open questions
 - Do we ever want a second model loaded simultaneously (e.g. a small
   draft model on RTX 5090 for speculative decoding)? Not now; the RTX
