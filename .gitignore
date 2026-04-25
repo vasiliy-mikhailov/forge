@@ -1,0 +1,20 @@
+# Runtime artifacts; per-run dirs are gitignored to keep the repo small.
+# Selectively commit interesting runs by force-adding their summary.json
+# (and bench-report.md) — full event traces stay local.
+runs/*/
+!runs/.gitkeep
+
+# Local secrets.
+.env
+
+# Editor/OS noise.
+.vscode/
+.idea/
+.DS_Store
+*.swp
+*~
+bin/
+
+# Local clones the agent might create (when run directly w/o sandbox)
+raw/
+wiki/
