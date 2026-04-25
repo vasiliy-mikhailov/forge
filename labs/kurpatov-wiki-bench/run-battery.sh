@@ -1,146 +1,191 @@
 #!/usr/bin/env bash
-# kurpatov-wiki-bench/run-battery.sh — iterate the configs/models.yml
-# roster and run one experiment per model.
+# kurpatov-wiki-bench/run-battery.sh — bench-as-battery driver.
+#
+# After ADR 0008, this script changes the *active model selector*
+# (forge/.env: INFERENCE_ACTIVE_MODEL_ID) and lets the compiler lab
+# render the rest from its own registry. Battery never patches model
+# parameters directly.
 #
 # Usage:
-#   ./run-battery.sh                  — run all non-skip models
-#   ./run-battery.sh qwen3.6-27b-fp8  — run a specific model by id
+#   ./run-battery.sh                # iterate every entry where bench_skip != true
+#   ./run-battery.sh <id>           # single id (skip-flag ignored)
+#   ./run-battery.sh --tier A       # all bench_tier == A, skip-flag ignored
 #
-# Per model: stop compiler, swap forge/.env (INFERENCE_MODEL,
-# INFERENCE_SERVED_NAME, INFERENCE_MAX_MODEL_LEN), bring compiler
-# back up, wait healthy, run one ./run.sh experiment.
-#
-# NOTE — first iteration: per-model quant / tool-call-parser /
-# reasoning-parser flags in models.yml are NOT yet rendered into
-# labs/kurpatov-wiki-compiler/docker-compose.yml; the operator must
-# either pre-edit the compose for parser-compatibility across the
-# battery roster, or extend this script to template them. Lift to a
-# follow-up commit once we see whether all-Qwen runs work with the
-# qwen3_xml/qwen3 parser pair without per-row tweaks.
+# For each picked entry:
+#   1. patch forge/.env: INFERENCE_ACTIVE_MODEL_ID=<id>
+#   2. make -C labs/kurpatov-wiki-compiler down ; make -C labs/kurpatov-wiki-compiler up
+#   3. wait for vLLM healthy (poll /v1/models until served_name appears)
+#   4. ./run.sh
+#   5. continue on failure; restore the original active id at the end.
 
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$HERE"
-
 FORGE_ROOT="$(git -C "$HERE" rev-parse --show-toplevel)"
-ENV_FILE="$FORGE_ROOT/.env"
-MODELS_YML="$HERE/configs/models.yml"
+REGISTRY="$FORGE_ROOT/labs/kurpatov-wiki-compiler/configs/models.yml"
 
-[[ -f "$ENV_FILE" ]] || { echo "FATAL: $ENV_FILE not found" >&2; exit 2; }
-[[ -f "$MODELS_YML" ]] || { echo "FATAL: $MODELS_YML not found" >&2; exit 2; }
-python3 -c 'import yaml' 2>/dev/null || { echo "FATAL: PyYAML not installed" >&2; exit 2; }
+[[ -f "$REGISTRY" ]] || { echo "FATAL: registry not found at $REGISTRY" >&2; exit 2; }
+[[ -f "$FORGE_ROOT/.env" ]] || { echo "FATAL: $FORGE_ROOT/.env not found" >&2; exit 2; }
 
-set -a; source "$ENV_FILE"; set +a
-: "${STORAGE_ROOT:?must be set in forge/.env}"
+# --- arg parsing ---
+mode="all"
+arg_id=""
+arg_tier=""
+case "${1:-}" in
+  --tier)
+    mode="tier"; arg_tier="${2:-}"; shift 2 || true
+    [[ -n "$arg_tier" ]] || { echo "usage: $0 --tier <A|B|C|D>" >&2; exit 2; }
+    ;;
+  -h|--help)
+    sed -n '2,16p' "$0"; exit 0
+    ;;
+  "")
+    mode="all"
+    ;;
+  *)
+    mode="single"; arg_id="$1"
+    ;;
+esac
 
-BATTERY_TS=$(date +"%Y-%m-%d-%H%M%S")
-BATTERY_LOG_DIR="$STORAGE_ROOT/labs/kurpatov-wiki-bench/battery-runs"
-mkdir -p "$BATTERY_LOG_DIR"
-BATTERY_LOG="$BATTERY_LOG_DIR/$BATTERY_TS.log"
-exec > >(tee -a "$BATTERY_LOG") 2>&1
-echo "[battery] start $BATTERY_TS"
-echo "[battery] log: $BATTERY_LOG"
-
-# Resolve model id list. If $1 given, run only that one (even if skip:true).
-filter_id="${1:-}"
-mapfile -t ids < <(python3 - <<PY "$MODELS_YML" "$filter_id"
+# --- pick ids from registry ---
+mapfile -t ids < <(python3 - "$REGISTRY" "$mode" "$arg_id" "$arg_tier" <<'PY'
 import sys, yaml
-path, filt = sys.argv[1], sys.argv[2]
-with open(path) as f: data = yaml.safe_load(f)
-for m in data.get('models', []):
-    if filt:
-        if m.get('id') == filt: print(m['id'])
-    else:
-        if not m.get('skip', False): print(m['id'])
+registry, mode, arg_id, arg_tier = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
+data = yaml.safe_load(open(registry, encoding="utf-8"))
+for m in data.get("models", []):
+    if mode == "single":
+        if m["id"] == arg_id:
+            print(m["id"])
+    elif mode == "tier":
+        if m.get("bench_tier") == arg_tier:
+            print(m["id"])
+    else:  # all
+        if not m.get("bench_skip", False):
+            print(m["id"])
 PY
 )
-total=${#ids[@]}
-if [[ $total -eq 0 ]]; then
-  echo "FATAL: no models matched (filter='$filter_id')" >&2
-  exit 3
-fi
-echo "[battery] $total model(s) to run: ${ids[*]}"
 
-# Helper: extract a field for a model id.
-field() {
-  local id="$1" field="$2" default="$3"
-  python3 - <<PY "$MODELS_YML" "$id" "$field" "$default"
+if [[ ${#ids[@]} -eq 0 ]]; then
+  case "$mode" in
+    single) echo "FATAL: model id '$arg_id' not in registry" >&2 ;;
+    tier)   echo "FATAL: no models with bench_tier=$arg_tier in registry" >&2 ;;
+    all)    echo "FATAL: no non-skipped models in registry" >&2 ;;
+  esac
+  exit 2
+fi
+
+# --- preserve original active id ---
+orig_active=$(grep -E '^INFERENCE_ACTIVE_MODEL_ID=' "$FORGE_ROOT/.env" | head -1 | cut -d= -f2- || echo "")
+
+# --- per-model runtime knobs from forge/.env ---
+set -a; source "$FORGE_ROOT/.env"; set +a
+
+: "${STORAGE_ROOT:?must be set}"
+: "${INFERENCE_BASE_URL:?must be set}"
+: "${VLLM_API_KEY:?must be set}"
+
+ts=$(date +"%Y-%m-%d-%H%M%S")
+log_dir="${STORAGE_ROOT}/labs/kurpatov-wiki-bench/battery-runs"
+mkdir -p "$log_dir"
+battery_log="${log_dir}/${ts}.log"
+
+echo "[battery] start ${ts}" | tee "$battery_log"
+echo "[battery] log: $battery_log" | tee -a "$battery_log"
+echo "[battery] ${#ids[@]} model(s) to run: ${ids[*]}" | tee -a "$battery_log"
+
+set_active_id() {
+  local id=$1
+  if grep -qE '^INFERENCE_ACTIVE_MODEL_ID=' "$FORGE_ROOT/.env"; then
+    sed -i.bak -E "s|^INFERENCE_ACTIVE_MODEL_ID=.*|INFERENCE_ACTIVE_MODEL_ID=${id}|" "$FORGE_ROOT/.env"
+  else
+    echo "INFERENCE_ACTIVE_MODEL_ID=${id}" >> "$FORGE_ROOT/.env"
+  fi
+  rm -f "$FORGE_ROOT/.env.bak"
+}
+
+served_name_for() {
+  python3 - "$REGISTRY" "$1" <<'PY'
 import sys, yaml
-path, mid, fld, default = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
-with open(path) as f: data = yaml.safe_load(f)
-for m in data.get('models', []):
-    if m.get('id') == mid:
-        v = m.get(fld, default)
-        if v is None: v = default
-        print(v)
-        sys.exit(0)
-print(default)
+data = yaml.safe_load(open(sys.argv[1], encoding="utf-8"))
+m = next((x for x in data["models"] if x["id"] == sys.argv[2]), None)
+print(m["served_name"] if m else "")
 PY
 }
 
+wait_for_served() {
+  local want=$1
+  local deadline=$(($(date +%s) + 1200))   # 20 min
+  while (( $(date +%s) < deadline )); do
+    served=$(curl -fsS "${INFERENCE_BASE_URL}/models" \
+      -H "Authorization: Bearer ${VLLM_API_KEY}" 2>/dev/null \
+      | python3 -c "import sys,json; d=json.load(sys.stdin); print((d.get('data') or [{}])[0].get('id',''))" 2>/dev/null \
+      || echo "")
+    if [[ "$served" == "$want" ]]; then
+      return 0
+    fi
+    sleep 10
+  done
+  return 1
+}
+
 i=0
+ok=()
+fail=()
 for id in "${ids[@]}"; do
   i=$((i+1))
-  echo
-  echo "================================================================"
-  echo "[battery] [$i/$total] model: $id"
-  echo "================================================================"
+  echo "" | tee -a "$battery_log"
+  echo "================================================================" | tee -a "$battery_log"
+  echo "[battery] [${i}/${#ids[@]}] model: $id" | tee -a "$battery_log"
+  echo "================================================================" | tee -a "$battery_log"
+  expected=$(served_name_for "$id")
+  echo "[battery]   expected served_name=$expected" | tee -a "$battery_log"
 
-  hf=$(field "$id" hf "")
-  served_name=$(field "$id" served_name "$id")
-  max_len=$(field "$id" max_model_len 65536)
+  set_active_id "$id"
 
-  echo "[battery]   hf=$hf"
-  echo "[battery]   served_name=$served_name  max_len=$max_len"
+  echo "[battery]   make kurpatov-wiki-compiler-down" | tee -a "$battery_log"
+  ( cd "$FORGE_ROOT" && make kurpatov-wiki-compiler-down ) >> "$battery_log" 2>&1 || true
+  sleep 2
 
-  if [[ -z "$hf" ]]; then
-    echo "[battery]   skip (no hf field — likely a baseline reference entry)"
-    continue
-  fi
+  echo "[battery]   make kurpatov-wiki-compiler" | tee -a "$battery_log"
+  ( cd "$FORGE_ROOT" && make kurpatov-wiki-compiler ) >> "$battery_log" 2>&1 || true
 
-  # Patch forge/.env
-  sed -i "s|^INFERENCE_MODEL=.*|INFERENCE_MODEL=$hf|" "$ENV_FILE"
-  sed -i "s|^INFERENCE_SERVED_NAME=.*|INFERENCE_SERVED_NAME=$served_name|" "$ENV_FILE"
-  sed -i "s|^INFERENCE_MAX_MODEL_LEN=.*|INFERENCE_MAX_MODEL_LEN=$max_len|" "$ENV_FILE"
-  set -a; source "$ENV_FILE"; set +a
-
-  # Restart compiler with new model
-  echo "[battery]   make kurpatov-wiki-compiler-down"
-  make -C "$FORGE_ROOT" kurpatov-wiki-compiler-down 2>&1 | tail -3 || true
-
-  echo "[battery]   make kurpatov-wiki-compiler"
-  make -C "$FORGE_ROOT" kurpatov-wiki-compiler 2>&1 | tail -3
-
-  # Wait for healthy with served_name match (up to 20 minutes for cold loads)
-  echo "[battery]   waiting for vLLM healthy ..."
-  ok=0
-  for attempt in $(seq 1 120); do
-    sleep 10
-    served=$(curl -fsS "${INFERENCE_BASE_URL}/models" -H "Authorization: Bearer ${VLLM_API_KEY}" 2>/dev/null | jq -r '.data[0].id' 2>/dev/null || echo "")
-    if [[ "$served" == "$served_name" ]]; then
-      echo "[battery]   healthy after ${attempt}0 seconds"
-      ok=1
-      break
-    fi
-  done
-  if [[ $ok -ne 1 ]]; then
-    echo "[battery]   FAIL: vLLM not healthy after 20 minutes — skipping experiment for $id"
-    continue
-  fi
-
-  # Run one experiment
-  echo "[battery]   ./run.sh"
-  if "$HERE/run.sh"; then
-    echo "[battery]   ✓ experiment $id succeeded"
+  echo "[battery]   waiting for vLLM healthy ..." | tee -a "$battery_log"
+  t0=$(date +%s)
+  if wait_for_served "$expected"; then
+    elapsed=$(( $(date +%s) - t0 ))
+    echo "[battery]   healthy after ${elapsed} seconds" | tee -a "$battery_log"
   else
-    rc=$?
-    echo "[battery]   ✗ experiment $id failed (exit=$rc); continuing battery"
+    echo "[battery]   ✗ vLLM did not serve '$expected' within 20m; skipping run.sh" | tee -a "$battery_log"
+    fail+=("$id (compiler-not-healthy)")
+    continue
+  fi
+
+  echo "[battery]   ./run.sh" | tee -a "$battery_log"
+  set +e
+  ( cd "$HERE" && ./run.sh ) >> "$battery_log" 2>&1
+  exp_rc=$?
+  set -e
+  if (( exp_rc == 0 )); then
+    echo "[battery]   ✓ experiment $id finished (exit=0)" | tee -a "$battery_log"
+    ok+=("$id")
+  else
+    echo "[battery]   ✗ experiment $id failed (exit=$exp_rc); continuing battery" | tee -a "$battery_log"
+    fail+=("$id (run.sh exit=$exp_rc)")
   fi
 done
 
-echo
-echo "================================================================"
-echo "[battery] done. Log: $BATTERY_LOG"
-echo "[battery] Per-experiment artifacts: $STORAGE_ROOT/labs/kurpatov-wiki-bench/experiments/"
-echo "================================================================"
+# Restore original selector if any
+if [[ -n "$orig_active" && "$orig_active" != "${ids[-1]}" ]]; then
+  echo "" | tee -a "$battery_log"
+  echo "[battery] restoring original INFERENCE_ACTIVE_MODEL_ID=$orig_active" | tee -a "$battery_log"
+  set_active_id "$orig_active"
+fi
+
+echo "" | tee -a "$battery_log"
+echo "================================================================" | tee -a "$battery_log"
+echo "[battery] done. ok=${#ok[@]}/${#ids[@]} fail=${#fail[@]}" | tee -a "$battery_log"
+[[ ${#ok[@]} -gt 0 ]] && printf '[battery]   ok:   %s\n' "${ok[@]}" | tee -a "$battery_log"
+[[ ${#fail[@]} -gt 0 ]] && printf '[battery]   fail: %s\n' "${fail[@]}" | tee -a "$battery_log"
+echo "[battery] log: $battery_log" | tee -a "$battery_log"
+echo "[battery] per-experiment artifacts: ${STORAGE_ROOT}/labs/kurpatov-wiki-bench/experiments/" | tee -a "$battery_log"
+echo "================================================================" | tee -a "$battery_log"

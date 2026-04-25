@@ -20,24 +20,29 @@ services:
       - "8000"
     shm_size: "16gb"
     ipc: host
+    # All MODEL_* vars come from .env.active-model, rendered by
+    # bin/load-active-model.sh from configs/models.yml using the
+    # INFERENCE_ACTIVE_MODEL_ID selector in forge/.env.
+    # See ADR 0008.
     command: >
-      --model ${INFERENCE_MODEL}
-      --kv-cache-dtype fp8
-      --max-model-len ${INFERENCE_MAX_MODEL_LEN}
-      --hf-overrides.rope_scaling.rope_type yarn
-      --hf-overrides.rope_scaling.factor 4.0
-      --hf-overrides.rope_scaling.original_max_position_embeddings 32768
-      --gpu-memory-utilization 0.92
+      --model ${MODEL_HF}
+      --served-model-name ${MODEL_SERVED_NAME}
+      --quantization ${MODEL_QUANTIZATION:-}
+      --kv-cache-dtype ${MODEL_KV_CACHE_DTYPE}
+      --max-model-len ${MODEL_MAX_MODEL_LEN}
+      --hf-overrides.rope_scaling.rope_type ${MODEL_ROPE_TYPE}
+      --hf-overrides.rope_scaling.factor ${MODEL_ROPE_FACTOR}
+      --hf-overrides.rope_scaling.original_max_position_embeddings ${MODEL_ROPE_ORIG_MAX}
+      --tool-call-parser ${MODEL_TOOL_CALL_PARSER}
+      --reasoning-parser ${MODEL_REASONING_PARSER:-}
+      --default-chat-template-kwargs.enable_thinking ${MODEL_ENABLE_THINKING}
+      --tensor-parallel-size ${MODEL_TENSOR_PARALLEL_SIZE}
+      --gpu-memory-utilization ${MODEL_GPU_MEMORY_UTILIZATION}
       --enable-prefix-caching
       --enable-auto-tool-choice
-      --tool-call-parser qwen3_xml
-      --reasoning-parser qwen3
-      --default-chat-template-kwargs.enable_thinking false
-      --tensor-parallel-size 1
       --host 0.0.0.0
       --port 8000
       --api-key ${VLLM_API_KEY}
-      --served-model-name ${INFERENCE_SERVED_NAME}
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS -H \"Authorization: Bearer ${VLLM_API_KEY}\" http://localhost:8000/v1/models || exit 1"]
       interval: 30s
