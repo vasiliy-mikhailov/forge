@@ -32,10 +32,14 @@ The Makefile does not enforce the mutex; forge convention is one
 operator, the operator manages mode transitions deliberately.
 
 ## Architecture
-A single container `vllm-inference`, built from `nvcr.io/nvidia/vllm`
-(NGC image — has Blackwell SM120 paths landed by the March 2026 release;
-upstream `vllm/vllm-openai` lags). GPU passthrough via
-`INFERENCE_GPU_UUID`, defaulting to `${GPU_BLACKWELL_UUID}`.
+A single container `vllm-inference`, built from
+`vllm/vllm-openai:v0.19.1-cu130-ubuntu2404` (Docker Hub, stable release
+from 2026-04-20). Earlier draft of this SPEC referenced an
+`nvcr.io/nvidia/vllm` NGC tag that did not exist at deploy time; the
+Docker Hub stable image carries Blackwell SM120 paths and is the
+working choice. CUDA 13 runtime, requires driver 580+ (we run 590-open
+per ADR 0004). GPU passthrough via `INFERENCE_GPU_UUID`, defaulting to
+`${GPU_BLACKWELL_UUID}`.
 
 The container speaks OpenAI-compatible HTTP on `:8000` inside the
 `proxy-net` docker network. Caddy reverse-proxies `${INFERENCE_DOMAIN}`
@@ -52,16 +56,27 @@ Volumes:
 
 Quantization stack at default config:
 - **Weights**: 4-bit, AWQ via Marlin kernels (`--quantization awq_marlin`).
-- **KV cache**: 4-bit, TurboQuant K4V4 (`--kv-cache-dtype turboquant_4bit_nc`).
-  Hadamard-rotated scalar quantization, sub-4-bit-equivalent compression
-  with ~zero quality loss; ICLR 2026, merged into vLLM late 2025.
-- **Activations**: model-native (FP16/BF16). FP4 activations on Blackwell
+  vLLM auto-converts the AWQ checkpoint to AWQ-Marlin runtime kernels
+  on load (`The model is convertible to awq_marlin during runtime`).
+- **KV cache**: FP8 (`--kv-cache-dtype fp8`). TurboQuant K4V4
+  (Hadamard-rotated scalar quantization, ICLR 2026) is the eventual
+  target — sub-4-bit-equivalent compression with ~zero quality loss —
+  but as of 2026-04 it lives only in vLLM nightlies
+  (`turboquant_4bit_nc` errors `invalid choice` on stable v0.19.1).
+  FP8 KV cache is half the memory footprint of FP16 with negligible
+  accuracy loss for chat workloads; we'll migrate to TurboQuant when
+  it lands in a stable vLLM release.
+- **Activations**: model-native (FP16). FP4 activations on Blackwell
   are a future option once vLLM exposes a stable W4A4 path; not on by
   default here.
 
-For Qwen3-72B-Instruct-AWQ at 32K context this means ~35 GB weights +
-~8 GB compressed KV cache + ~10 GB activations/overhead — comfortably
-inside 96 GB with headroom for batched concurrency.
+For `Qwen/Qwen3-32B-AWQ` (default) at 32K context this means ~18 GB
+weights + FP8 KV cache giving 546k-token cache pool (≈16.7× concurrency
+at 32K) + ~2 GB CUDA-graph + activation overhead — comfortably inside
+the 96 GB Blackwell with massive headroom. Qwen 3.6/Qwen3 had no
+official dense 72B-Instruct-AWQ at deploy time; community 72B GGUFs
+are not vLLM-loadable, so 32B-AWQ is the apples-to-apples comparison
+class for our open-weight benchmark runs.
 
 ## Data contracts
 Input environment variables (all from forge root `.env`):
@@ -98,6 +113,9 @@ Output:
 New. Smoke-test target lives in `tests/smoke.md` section 9; the script
 runs section 9 only when the container is up, otherwise skips
 (consistent with forge's "not all services run all the time" pattern).
+
+## Reasoning models (Qwen3 family)
+Qwen3 is a reasoning-tuned line: by default it emits a `<think>...</think>` block before its final answer. For benchmark workloads where exposed CoT is not needed (and where token budgets matter), pass `chat_template_kwargs: {enable_thinking: false}` in the request body. With it on, plan for ~10-20× more completion tokens per response.
 
 ## Open questions
 - Do we ever want a second model loaded simultaneously (e.g. a small

@@ -34,12 +34,21 @@ Blackwell SM120 path through NVIDIA's NGC container as of the March
 Reversibility: low cost — swapping serving framework is one subsystem
 edit, not a forge-wide change.
 
-### 2. NGC vLLM image, not upstream
-`nvcr.io/nvidia/vllm:25.03-py3` ships with Blackwell SM120 paths
-working out of the box. The Docker Hub `vllm/vllm-openai` image lagged
-through late 2025 for SM120 — required custom builds. NGC also pins
-CUDA + driver expectations matching the host's `nvidia-driver-590-open`
-(see ADR 0004). Reversibility: high — one image tag swap.
+### 2. Docker Hub stable vLLM, not NGC
+First pass at this ADR favored `nvcr.io/nvidia/vllm` (NGC) on the
+assumption that NGC was the canonical Blackwell-friendly distribution.
+At deploy time (2026-04-25) the specific tag `25.03-py3` was unreachable
+(`manifest unknown`). Switched to Docker Hub
+`vllm/vllm-openai:v0.19.1-cu130-ubuntu2404` (released 2026-04-20), which
+works first-try on SM120 with the same host's `nvidia-driver-590-open`
+(CUDA 13.1 reported by `nvidia-smi`). Docker Hub vLLM has caught up to
+NGC for Blackwell support during 2026; the historical lag through
+late 2025 no longer applies. Reversibility: high — one image tag swap.
+
+Also swapped `--kv-cache-dtype turboquant_4bit_nc` → `fp8` at deploy:
+TurboQuant lives only in vLLM nightlies as of v0.19.1 stable; FP8 KV
+cache is the documented stable fallback the SPEC already mentioned.
+Will upgrade when TurboQuant ships in a stable release.
 
 ### 3. vLLM API-key auth, no caddy basic auth
 caddy fronts every other forge service with shared basic auth
@@ -77,6 +86,8 @@ back to basic auth via caddy as before.
   edit + `make inference-down && make inference`.
 
 ## Alternatives rejected
+- **NGC `nvcr.io/nvidia/vllm:25.03-py3`.** Tag did not exist at deploy.
+  Docker Hub stable was strictly the right call.
 - **Use OpenRouter paid tier instead.** Solves the reliability issue but
   not the "use the Blackwell that's already paid for" point. Also locks
   benchmarks to whatever models OpenRouter happens to host.

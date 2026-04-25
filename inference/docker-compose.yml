@@ -1,6 +1,6 @@
 services:
   vllm-inference:
-    image: nvcr.io/nvidia/vllm:25.03-py3
+    image: vllm/vllm-openai:v0.19.1-cu130-ubuntu2404
     container_name: vllm-inference
     environment:
       - NVIDIA_VISIBLE_DEVICES=${INFERENCE_GPU_UUID}
@@ -23,7 +23,7 @@ services:
     command: >
       --model ${INFERENCE_MODEL}
       --quantization awq_marlin
-      --kv-cache-dtype turboquant_4bit_nc
+      --kv-cache-dtype fp8
       --max-model-len ${INFERENCE_MAX_MODEL_LEN}
       --gpu-memory-utilization 0.92
       --enable-prefix-caching
