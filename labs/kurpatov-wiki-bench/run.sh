@@ -38,6 +38,7 @@ set -a; source "$FORGE_ROOT/.env"; [[ -f .env ]] && source .env; set +a
 : "${INFERENCE_BASE_URL:?must be set}"
 : "${VLLM_API_KEY:?must be set}"
 : "${INFERENCE_SERVED_NAME:?must be set}"
+: "${EXPERIMENTS_ROOT:=$STORAGE_ROOT/labs/kurpatov-wiki-bench/experiments}"
 : "${OPENHANDS_VERSION:?must be set}"
 : "${WIKI_REPO_URL:?must be set}"
 : "${RAW_REPO_URL:?must be set}"
