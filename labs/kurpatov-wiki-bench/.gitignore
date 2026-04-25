@@ -18,3 +18,7 @@ bin/
 # Local clones the agent might create (when run directly w/o sandbox)
 raw/
 wiki/
+
+# Explicit allow: synthetic test fixtures (raw/wiki/scripts under tests/)
+!tests/synthetic/fixtures/
+!tests/synthetic/fixtures/**
