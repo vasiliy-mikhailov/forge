@@ -70,10 +70,13 @@ Quantization stack at default config:
   are a future option once vLLM exposes a stable W4A4 path; not on by
   default here.
 
-For `Qwen/Qwen3-32B-AWQ` (default) at 64K context (YaRN-extended,
-see below) this means ~18 GB weights + FP8 KV cache giving 547k-token
-cache pool (≈8.3× concurrency at full 64K) + ~2 GB CUDA-graph +
-activation overhead — comfortably inside the 96 GB Blackwell. Qwen 3.6/Qwen3 had no
+For `cyankiwi/Qwen3.6-27B-AWQ-INT4` (default) at 64K context
+(YaRN-extended, see below) this means ~50 GB GPU at load + FP8 KV
+cache giving 60 GB pool / ~26× concurrency at full 64K + ~5 GB
+CUDA-graph and activation overhead. The model is a multimodal VL
+variant we run in text-only mode here; the multimodal path is
+dormant unless requests carry images. Quantization auto-detected
+(compressed-tensors INT4 → MarlinLinearKernel). Qwen 3.6/Qwen3 had no
 official dense 72B-Instruct-AWQ at deploy time; community 72B GGUFs
 are not vLLM-loadable, so 32B-AWQ is the apples-to-apples comparison
 class for our open-weight benchmark runs.
@@ -143,30 +146,47 @@ runs section 9 only when the container is up, otherwise skips
 ## Reasoning models (Qwen3 family)
 Qwen3 is a reasoning-tuned line: by default it emits a `<think>...</think>` block before its final answer. For benchmark workloads where exposed CoT is not needed (and where token budgets matter), pass `chat_template_kwargs: {enable_thinking: false}` in the request body. With it on, plan for ~10-20× more completion tokens per response.
 
-## Tool calling
-Default config enables OpenAI-compatible tool calls:
+## Tool calling and reasoning
+Default config enables OpenAI-compatible tool calls plus reasoning
+extraction:
 
 ```
 --enable-auto-tool-choice
---tool-call-parser hermes
+--tool-call-parser qwen3_xml
+--reasoning-parser qwen3
 ```
 
-The `hermes` parser extracts tool calls from the
-NousResearch/Hermes-style output Qwen3-Instruct emits in chat mode.
-Without these flags vLLM returns HTTP 400 to any request that includes
-a `tools:[...]` block: `"auto" tool choice requires --enable-auto-tool-choice
-and --tool-call-parser to be set`.
+The `qwen3_xml` tool-call parser extracts Qwen3/Qwen3.6 XML-tagged
+tool calls (`<tool_call>{...}</tool_call>`) into the OpenAI
+`tool_calls[]` field. Earlier setups used the `hermes` parser; that
+works for trivial cases but loses fidelity on Qwen3's actual emission
+format — the model's reasoning leaks into `content` and complex tool
+calls fail to parse. `qwen3_xml` is the right pick for any Qwen3+
+family model.
 
-Other parser names available in vLLM v0.19 (`--help=tool-call-parser`):
-`deepseek_v3*`, `gemma4`, `glm45/47`, `granite*`, `hermes`, `kimi_k2`,
-`llama3_json`, `llama4_*`, `minimax*`, `mistral`, `qwen3_coder`,
-`qwen3_xml`, `pythonic`, … When swapping models, pick the parser that
-matches the new model's emitted tool-call format.
+The `qwen3` reasoning parser extracts `<think>...</think>` blocks
+into a separate `reasoning` (or `reasoning_content`) field on the
+response, leaving `content` clean. Without it, the closing `</think>`
+tag and the chain-of-thought leak into `content` and confuse agent
+harnesses (e.g. Hermes Agent silently wedges).
 
-Caveat: the `hermes` parser used here is named after the **NousResearch
-Hermes finetune lineage** (the format), not after **Hermes Agent** (the
-client harness our operator uses). They share a name. The two are
-unrelated; the parser does not care which client makes the request.
+With both parsers active, a `tools` request returns:
+  `finish_reason: tool_calls`
+  `content: null`
+  `reasoning: "...the chain of thought..."`
+  `tool_calls: [{...properly extracted...}]`
+Without `--enable-auto-tool-choice` vLLM returns HTTP 400 to any
+request that includes a `tools:[...]` block:
+`"auto" tool choice requires --enable-auto-tool-choice and --tool-call-parser to be set`.
+
+Other parser names available in vLLM v0.19
+(`--help=tool-call-parser`): `deepseek_v3*`, `gemma4`, `glm45/47`,
+`granite*`, `hermes`, `kimi_k2`, `llama3_json`, `llama4_*`,
+`minimax*`, `mistral`, `qwen3_coder`, `qwen3_xml`, `pythonic`, …
+When swapping models, pick the parser that matches the new model's
+emitted tool-call format. Same applies to `--reasoning-parser`:
+there are family-specific extractors (qwen3, deepseek_r1, glm45, …)
+for models that emit `<think>` blocks.
 
 ## Open questions
 - Do we ever want a second model loaded simultaneously (e.g. a small
