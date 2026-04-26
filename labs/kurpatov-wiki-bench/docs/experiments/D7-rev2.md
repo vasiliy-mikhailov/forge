@@ -17,6 +17,10 @@ Active spec. Methodology: [`../spec.md`](../spec.md). Backlog:
 > agent running bare `curl` for sanity-checks gets a clean env), (4)
 > launch prompt that pins Cyrillic course/module paths and forbids
 > romanization,
+> and (5) `factcheck.py` auto-simplifies the query when Wikipedia
+> OpenSearch returns empty (last-2-words → last-word → first-word
+> fallback ladder) so the agent never sees confusing empty results
+> and never debugs a non-broken tool,
 > **THEN** the same Qwen3.6-27B-FP8 producing source 000 ✓ but sources
 > 001–006 abandoned-as-bare-`# Title` in D7 attempt #1 will hold the
 > ritual across more sources, because the ~10 minutes (D7 #1) and ~28
@@ -68,7 +72,7 @@ skills/benchmark/SKILL.md (skill v2, paths fixed — kurpatov-wiki-wiki:skill-v2
    /usr/local/bin/python3 — wrapper: unset LD_LIBRARY_PATH; exec /usr/local/bin/python3.12
    build-time smoke verifies HTTPS works under simulated PyInstaller LD_LIBRARY_PATH leak
  ↓ helper scripts
-   factcheck.py — curl-with-cleaned-env primary path (kurpatov-wiki-wiki:skill-v2 eec8404)
+   factcheck.py — curl-with-cleaned-env primary path (kurpatov-wiki-wiki:skill-v2 9ef4529)
                   defense-in-depth: still works even if image wrapper is bypassed
  ↓ launch prompt (prompts/launch-D7-rev2.md)
    pinned-Cyrillic cheatsheet; explicit "if you type Psychologist-consultant/ — STOP"
@@ -144,8 +148,8 @@ slate per attempt is the norm — if a run is killed, branch is purged).
 
 ### Skill / image / launch versions
 
-- `kurpatov-wiki-wiki:skill-v2` HEAD must be ≥ commit `eec8404`
-  (factcheck.py rewrite). Path bug fix is `749e9b3`.
+- `kurpatov-wiki-wiki:skill-v2` HEAD must be ≥ commit `9ef4529`
+  (factcheck.py rewrite + fallback ladder). Path bug fix is `749e9b3`; curl-cleaned-LD_LIBRARY_PATH primary path is `eec8404`.
 - `kurpatov-wiki-bench` Docker image — built from `forge:main` ≥ commit
   `853bf2c` (Dockerfile wrappers + 4-phase build smoke).
 - Launch prompt: `prompts/launch-D7-rev2.md`.
