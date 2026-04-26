@@ -113,6 +113,7 @@ docker run --rm \
   --cpus "$SANDBOX_CPUS" \
   --pids-limit "$SANDBOX_PIDS" \
   -v "${run_dir}:/runs/current:rw" \
+  -v "$(pwd)/prompts:/task:ro" \
   -e LLM_BASE_URL="$INFERENCE_BASE_URL" \
   -e LLM_API_KEY="$VLLM_API_KEY" \
   -e LLM_MODEL="openai/$served" \

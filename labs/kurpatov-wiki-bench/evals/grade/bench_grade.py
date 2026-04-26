@@ -61,8 +61,10 @@ def parse_frontmatter(text: str):
 #   Qwen:   "1. text [NEW] — explanation"
 # So we look for the marker token anywhere in the line.
 MARKER_PATTERNS = {
-    "CONTRADICTS_FACTS":   re.compile(r"`?CONTRADICTS\s+FACTS`?|\[CONTRADICTS\s+FACTS\]", re.I),
-    "CONTRADICTS_EARLIER": re.compile(r"`?CONTRADICTS\s+EARLIER\s*\([^)]*\)?`?|\[CONTRADICTS\s+EARLIER", re.I),
+    # Accept both "CONTRADICTS FACTS" (space) and "CONTRADICTS_FACTS" (underscore)
+    # as separators — skill v2 spec uses underscore but earlier prose used space.
+    "CONTRADICTS_FACTS":   re.compile(r"`?CONTRADICTS[\s_]+FACTS`?|\[CONTRADICTS[\s_]+FACTS\]", re.I),
+    "CONTRADICTS_EARLIER": re.compile(r"`?CONTRADICTS[\s_]+EARLIER\s*\([^)]*\)?`?|\[CONTRADICTS[\s_]+EARLIER", re.I),
     "REPEATED":            re.compile(r"`?REPEATED\s*\([^)]*\)?`?|\[REPEATED", re.I),
     "NEW":                 re.compile(r"`NEW`|\[NEW\]", re.I),
 }
@@ -372,12 +374,102 @@ def fmt_compare(cand, gold):
             print(f"    + {s}")
 
 
+
+def grade_single_source_json(repo: Path, source_n: int):
+    """
+    Find the source-N file in the repo (matches files starting with `<NNN> `
+    under data/sources/**), grade it, and emit the D7-rev3 verify-script
+    contract JSON to stdout.
+
+    Used by orchestrator agent in D7-rev3 to verify per-source artifact
+    after sub-agent returns.
+    """
+    sources_root = repo / "data" / "sources"
+    if not sources_root.exists():
+        out = {"verified": "fail", "violations": [f"no data/sources at {repo}"]}
+        print(json.dumps(out, ensure_ascii=False))
+        return
+
+    prefix = f"{source_n:03d} "
+    matches = [m for m in sources_root.rglob(f"{prefix}*.md") if m.stem.startswith(prefix)]
+    # Filter out _template
+    matches = [m for m in matches if not m.name.startswith("_template")]
+    if not matches:
+        out = {"verified": "fail", "violations": [f"no source file matching '{prefix}*.md'"]}
+        print(json.dumps(out, ensure_ascii=False))
+        return
+    if len(matches) > 1:
+        out = {"verified": "fail", "violations": [f"multiple source files matching '{prefix}*.md': {[str(m) for m in matches]}"]}
+        print(json.dumps(out, ensure_ascii=False))
+        return
+
+    src_path = matches[0]
+    g = grade_source(src_path)
+
+    # Try to get current commit_sha of the repo HEAD
+    commit_sha = None
+    try:
+        import subprocess
+        r = subprocess.run(["git", "-C", str(repo), "rev-parse", "--short", "HEAD"],
+                           capture_output=True, text=True, timeout=5)
+        if r.returncode == 0:
+            commit_sha = r.stdout.strip()
+    except Exception:
+        pass
+
+    metrics = g["metrics"]
+    violations = list(g["violations"])
+
+    sections_count = 0
+    body_text = src_path.read_text(encoding="utf-8")
+    for sec in REQUIRED_SOURCE_SECTIONS:
+        if re.search(r"(?m)^" + re.escape(sec), body_text):
+            sections_count += 1
+
+    has_claims_section = "## Claims" in body_text
+    frontmatter_ok = (g["frontmatter"]["slug"] is not None and
+                      g["frontmatter"]["fact_check_performed"] is not None)
+
+    # Decision rule
+    verified = "ok" if (
+        frontmatter_ok
+        and sections_count >= 5
+        and has_claims_section
+        and metrics["claims_total"] > 0
+        and metrics["claims_unmarked"] == 0
+    ) else "fail"
+
+    out = {
+        "verified": verified,
+        "commit_sha": commit_sha,
+        "source_file": str(src_path.relative_to(repo)),
+        "frontmatter_ok": frontmatter_ok,
+        "sections_count": sections_count,
+        "has_claims_section": has_claims_section,
+        "claims_total": metrics["claims_total"],
+        "claims_NEW": metrics["claims_NEW"],
+        "claims_REPEATED": metrics["claims_REPEATED"],
+        "claims_CF": metrics["claims_CONTRADICTS_FACTS"],
+        "claims_unmarked": metrics["claims_unmarked"],
+        "wiki_url_count": metrics["fact_check_citations"],
+        "concepts_introduced_count": g["frontmatter"]["concepts_introduced_count"],
+        "violations": violations,
+    }
+    print(json.dumps(out, ensure_ascii=False))
+
+
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("repo", help="path to a kurpatov-wiki-wiki checkout (bench branch)")
     p.add_argument("--compare-with", help="path to gold checkout (e.g. opus baseline)")
     p.add_argument("--json", help="write per-source/aggregate JSON to this path")
+    p.add_argument("--single-source", type=int, metavar="N", help="grade a single source by index (e.g. 5 for `005 ...`)")
+    p.add_argument("--single-source-json", action="store_true", help="emit D7-rev3 verify-script contract JSON to stdout for the --single-source target")
     args = p.parse_args()
+
+    if args.single_source is not None and args.single_source_json:
+        grade_single_source_json(Path(args.repo), args.single_source)
+        return
 
     cand = grade_repo(Path(args.repo))
     fmt_aggregate(cand, "candidate")

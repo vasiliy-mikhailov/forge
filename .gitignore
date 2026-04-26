@@ -65,3 +65,6 @@ rl-2048/.vllm_cache/
 
 # --- per-lab mlflow runtime ---
 labs/*/mlflow/data/
+
+# venv for orchestrator TDD
+labs/kurpatov-wiki-bench/tests/synthetic-orchestrator/.venv/
