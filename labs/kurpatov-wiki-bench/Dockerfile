@@ -33,6 +33,23 @@ RUN apt-get update \
 COPY bin/openhands /usr/local/bin/openhands
 RUN chmod +x /usr/local/bin/openhands
 
+# Build-time HTTPS smoke. The bench depends on factcheck.py reaching
+# Wikipedia from inside the container; if either ca-certificates or system
+# curl is broken, fail the build now rather than mid-experiment. The smoke
+# also exercises the LD_LIBRARY_PATH="" workaround used by factcheck.py at
+# runtime (PyInstaller-bundled openhands sets LD_LIBRARY_PATH to /tmp/_MEI*
+# which shadows system libssl — see kurpatov-wiki-wiki/skills/benchmark/
+# scripts/factcheck.py).
+RUN set -e \
+ && python3 -c "import urllib.request, ssl; \
+        req = urllib.request.Request('https://en.wikipedia.org/wiki/Test', headers={'User-Agent': 'kurpatov-wiki-bench-smoke/1.0'}); \
+        r = urllib.request.urlopen(req, timeout=10); \
+        assert r.status == 200, r.status; \
+        print('[smoke] python urllib HTTPS ok')" \
+ && LD_LIBRARY_PATH="" curl -fsS -A kurpatov-wiki-bench-smoke/1.0 \
+        -o /dev/null -w '[smoke] curl HTTPS ok (HTTP %{http_code})\n' \
+        "https://en.wikipedia.org/wiki/Test"
+
 # Working directory the agent operates in. The agent will git clone
 # kurpatov-wiki-{raw,wiki} into here. /runs/current is the only
 # bind-mount back to the host.
