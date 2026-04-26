@@ -1,76 +1,102 @@
-# ADR 0009 — Per-source agent isolation via OpenHands `task` tool delegation
+# ADR 0009 — Per-source agent isolation via Python SDK orchestrator + DelegateTool
 
-Status: **Proposed** (2026-04-26)
-Supersedes: none
-Related: [ADR 0007](0007-labs-restructure.md), [ADR 0008](0008-model-registry.md), experiments [`D7.md`](../../labs/kurpatov-wiki-bench/docs/experiments/D7.md), [`D7-rev2.md`](../../labs/kurpatov-wiki-bench/docs/experiments/D7-rev2.md), [`D7-rev3.md`](../../labs/kurpatov-wiki-bench/docs/experiments/D7-rev3.md)
+Status: **Accepted** (revised 2026-04-26 after spike)
+Supersedes: none. Revises the original Proposed draft of this ADR (2026-04-26 morning) which had `task` CLI tool as the chosen mechanism — that path is rejected here.
+Related: [ADR 0007](0007-labs-restructure.md), [ADR 0008](0008-model-registry.md), experiments [`D7.md`](../experiments/D7.md), [`D7-rev2.md`](../experiments/D7-rev2.md), [`D7-rev3.md`](../experiments/D7-rev3.md), skill [`openhands-sdk-orchestration`](../../.agents/skills/openhands-sdk-orchestration.md).
 
 ## Context
 
-The bench harness for `kurpatov-wiki-bench` runs an OpenHands agent inside a Docker container against a Russian-transcript corpus. The skill (`benchmark` v2) defines a 12-step ritual the agent applies to each source: extract transcript → pull known claims → factcheck empirical claims via Wikipedia → write a structured `source.md` with frontmatter + 5 sections + claim markers + URL citations → commit + push.
+The bench harness for `kurpatov-wiki-bench` runs an OpenHands agent inside a Docker container. The skill (`benchmark` v2) defines a 12-step ritual the agent applies to each of 7 sources of module 005: extract transcript → load prior known claims → factcheck empirical claims via Wikipedia → write a structured `source.md` (frontmatter + 5 sections + claim markers + URL citations) → commit + push.
 
 Three production runs across two experiments demonstrate a robust failure mode:
 
 | run                              | sources clean / 7 | failure mode                                                |
 | -------------------------------- | ----------------: | ----------------------------------------------------------- |
-| D7 attempt #1 (skill v2 baseline)|              1/7 | bulk-action shortcut for sources 001-006 after source 000  |
-| D7-rev2 attempt #3 (4 fixes)     |              4/7 | killed at 16:31 elapsed, would have likely degraded further |
-| D7-rev2 attempt #4 (5 fixes)     |              5/7 | clean exit_code=0 after source 000 self-verify; agent declared task done |
+| D7 #1 (skill v2 baseline)         |              1/7 | bulk-action shortcut for sources 001-006 after source 000  |
+| D7-rev2 #3 (4 fixes)              |              4/7 | killed at 16:31 elapsed; ritual was holding              |
+| D7-rev2 #4 (5 fixes)              |              5/7 | clean exit_code=0 after source 000 self-verify; agent declared task done |
 
-The pattern across all three: a single OpenHands agent processing all 7 sources in one session accumulates context, then either degrades (loses ritual discipline mid-run) or exits early (decides the task is complete). The per-source attention budget on Qwen3.6-27B-FP8 is the binding constraint, not environment friction (D7-rev2's five environmental fixes — path bug, factcheck SSL, image wrappers, Cyrillic pin, fallback ladder — closed all known env-level distractions, yet the ceiling moved only from 1/7 to 5/7).
+The pattern across all three: a single OpenHands agent processing all 7 sources in one session accumulates context, then either degrades (loses ritual discipline mid-run) or exits early (decides the task is complete). The five environment-level fixes applied in D7-rev2 (path bug, factcheck SSL, image wrappers, Cyrillic pin, fallback ladder) closed all known external distractions, yet the ceiling moved only from 1/7 to 5/7. With friction removed, the binding constraint is the single agent's per-source attention budget and self-determined "I'm done" signal at high context size.
 
-D7-rev2.md§Post-Mortem records the empirical ceiling: **roughly 4-5 sources before single-agent context-budget reasoning collapses**.
+D7-rev2.md§Post-Mortem records the empirical ceiling: **roughly 4–5 sources before single-agent context-budget reasoning collapses**.
+
+## Spike findings (added 2026-04-26 afternoon, see `tests/synthetic-orchestrator/step1..5a_orchestrator.py`)
+
+The original Proposed draft of this ADR named the OpenHands SDK CLI's `task` tool (in headless mode) as the chosen delegation mechanism. Spike testing falsified that:
+
+- **The `task` tool is exposed in the headless CLI's tool loadout** with the schema `{description: str, prompt: str}` and the description "Launch a subagent to handle complex, multi-step tasks autonomously". Initial signal looked promising.
+- **First failure**: invoking `task` produces `ValueError: Unknown agent 'general-purpose'. Available types: none registered.` — the bundled subagent presets at `<MEI>/openhands/tools/preset/subagents/{default,…}.md` are not auto-loaded by the CLI in `--task` mode.
+- **Workaround**: place a project-level `<cwd>/.agents/agents/general-purpose.md` file (per directory conventions in upstream [agent-creator fallback.md](https://docs.openhands.dev/sdk/guides/agent-file-based)). This makes the type registered.
+- **Second failure (blocking)** after the workaround: `RuntimeError: no running event loop` thrown from `task → start_task → _create_task → ... → mount → _register → _start_messages → create_task`. The headless mode does not initialise the asyncio event loop required for delegation. Reproducible in CLI versions 1.15.0 and 1.17.0.
+
+The Python SDK pattern (used by upstream examples [25_agent_delegation.py](https://github.com/OpenHands/software-agent-sdk/blob/main/examples/01_standalone_sdk/25_agent_delegation.py), [41_task_tool_set.py](https://github.com/OpenHands/software-agent-sdk/blob/main/examples/01_standalone_sdk/41_task_tool_set.py), [42_file_based_subagents.py](https://github.com/OpenHands/software-agent-sdk/blob/main/examples/01_standalone_sdk/42_file_based_subagents.py)) is the canonical path and works first-try. Steps 0–5a of the synthetic-orchestrator TDD harness validated the pattern end-to-end:
+
+| step | what                                                            | result                                                           |
+|----: | ----                                                            | ----                                                             |
+|    0 | pip install + import smoke                                     | ✓ openhands-sdk 1.17.0 + openhands-tools 1.18.1                 |
+|    1 | DelegateTool + builtin default subagent → echo                 | ✓ first try                                                      |
+|    2 | custom AgentDefinition `source-author` → echo                  | ✓ first try                                                      |
+|    3 | sub-agent writes file at `source-N/output.md`                  | ✓ second try (path semantics — relative to workspace, not absolute) |
+|    4 | sub-agent writes skill-v2-compliant source.md (synth fixture 1) | ✓ second try (parser bug — `bench_grade.py` regex required space in `[CONTRADICTS FACTS]` but skill v2 uses underscore; fix shipped) |
+|    5 | orchestrator iterates 4 synth sources sequentially             | ✓ first try, 4/4 verified=ok, orchestrator events=14            |
+|   5a | master prompt control-flow only, transcripts read from disk    | ✓ first try, 4/4 verified=ok, master prompt 1.1 KB regardless of transcript size |
 
 ## Decision
 
-**Adopt orchestrator + per-source sub-agent architecture** for the bench harness, using OpenHands SDK CLI 1.17.0's built-in `task` tool for delegation.
+**Adopt orchestrator + per-source sub-agent architecture using the Python SDK** (`openhands-sdk` + `openhands-tools` packages, version 1.17.0 / 1.18.1) with `DelegateTool` and `AgentDefinition`. Concretely:
 
-Concretely:
+1. Bench `run.sh` invokes a Python orchestrator script (`labs/kurpatov-wiki-bench/orchestrator/run-d7-rev3.py` or similar) inside the Docker sandbox. The orchestrator is a `Conversation` driven by a `main_agent` whose only tool is `DelegateTool`.
+2. The orchestrator's `send_message(...)` body is **control-flow only** — a master prompt (≤ ~1.5 KB) that lists per-source `(source_n, raw_path, target_path)` tuples and instructs `for each S: spawn → delegate → on failure stop`. Transcripts and source content are NOT inlined in the master prompt; sub-agents read transcripts from disk in their own (fresh) context.
+3. Per-source sub-agent: a single `AgentDefinition` named `source-author`, registered via `agent_definition_to_factory`. Tools: `terminal`, `file_editor`, plus per-D7-rev3 helpers for fact-checking and known-claims discovery (Step 5c). `system_prompt` is the full skill v2 ritual scoped to one source.
+4. Workspace layout: shared `/workspace` containing per-source subdirs `/workspace/source-{N}/` (created by orchestrator before each delegation). Sub-agent operates strictly inside its subdir.
+5. Sub-agent's `finish` reply: literal `done` or `failed: <one-line-reason>`. Anything longer accumulates in orchestrator context.
+6. Verification: orchestrator (or its Python wrapper) runs `bench_grade.py --single-source N --json` as **subprocess** (not as a tool inside the conversation). The verification JSON enters orchestrator state as a small structured observation (~200 tokens). On `verified=fail` the orchestrator stops the run — fail-fast.
+7. Sub-agent owns retry of transient failures (Wikipedia 503, network blips) up to a small cap (e.g. 3 retries). Orchestrator does NOT retry.
 
-1. The bench `run.sh` invokes ONE `openhands` process. That process runs the **orchestrator** agent.
-2. The orchestrator's task prompt instructs it to do *no source authoring itself*. Its job is purely:
-   a. Clone the wiki + raw repos once into the shared `/workspace`.
-   b. Create the experiment branch.
-   c. For each source N in `[000, 001, ..., 006]`, sequentially:
-      - Create per-source workdir `/workspace/source-N/`.
-      - Copy or symlink `raw/` and `wiki/` clones into the workdir (or have sub-agent re-clone — see Consequences).
-      - Invoke the `task` tool with a tightly-scoped sub-agent prompt: "process source N from `/workspace/source-N/wiki`, follow `skills/benchmark/SKILL.md`, return only `done` or `failed: <reason>`".
-      - Wait for the sub-agent to return.
-      - Run `verify-source.sh /workspace/source-N` (deterministic bash, reuses `bench_grade.py --single-source`) → JSON metrics.
-      - Accumulate per-source result into orchestrator state.
-      - Fail-fast if `verified=fail`: stop the run, surface to operator.
-   d. After all sources processed, write `bench-report.md` from accumulated per-source JSON, commit, push.
-3. Each sub-agent gets a **fresh context** (the `task` tool's contract) and a **scoped workdir** (per-source-N subdirectory of the shared workspace).
-4. Sub-agent owns retry of transient failures (Wikipedia 503, network blips). Orchestrator does NOT retry — fail-fast.
-5. The `task` tool's parameters (`description`, `prompt`) are the only contract surface between orchestrator and sub-agent at the agent level. The orchestrator does NOT trust sub-agent self-reports of metrics — it verifies the artifact (`source.md` on disk + commit on branch) via deterministic script.
+The contract details for D7-rev3 specifically live in `docs/experiments/D7-rev3.md`. The how-to (gotchas, code snippets, links to upstream examples) lives in skill `.agents/skills/openhands-sdk-orchestration.md`.
 
 ## Consequences
 
 ### Positive
 
-- **Per-source clean context.** Each sub-agent reads SKILL.md fresh, sees no prior-source conversational history, has no accumulated reasoning debt to draw conclusions from. This directly addresses the empirical ceiling demonstrated by D7-rev2.
-- **Clean responsibility split.** Orchestrator = control flow + verification. Sub-agent = ritual on one source. Easier to debug failures (per-source events.jsonl, per-source workdir, per-source verify JSON) and easier to reason about correctness.
-- **Orchestrator context stays small.** ~150-200 tokens per source (sub-agent ack + verify JSON), accumulated to ~1.5K across full run. Initial prompt + state at end of run is well below any model context limit.
-- **Verifies fact, not claim.** Orchestrator decides accept/fail per-source on **what was written** (deterministic script reads the artifact), not on **what the sub-agent says it wrote** (which a hallucinating LLM might lie about).
-- **Idiomatic OpenHands.** Uses `task` tool already shipped in sdk-cli 1.17.0 — no Python authoring, no harness changes beyond launch prompts and a verification script.
+- **Per-source clean context.** Each delegated sub-agent gets a fresh `Conversation` from the SDK's perspective — its `state.events` starts empty. The empirical D7-rev2 single-agent ceiling (4–5 sources before degradation) is removed at the architectural level.
+- **Orchestrator context bounded by design.** With master prompt ≤ 1.5 KB and per-source observation ≤ 200 tokens, orchestrator context grows by O(N) where N is sources, not by O(transcript_size × N). Synthetic Step 5a measured ~35 KB total events for 4 sources.
+- **Verify by fact, not by claim.** `bench_grade.py --single-source-json` reads the artifact on disk and emits deterministic JSON. Orchestrator decides accept/fail based on that, not on sub-agent self-report. Aligns with the lab principle in `AGENTS.md`.
+- **Single Python process, single LLM session, single Docker container.** No 7× container startup overhead (the bash-loop alternative would have incurred ~30s × 7 = ~3.5 min wasted). One `vllm-snapshot-start.json` and one `vllm-snapshot-end.json` per run.
+- **Idiomatic OpenHands SDK usage.** Same pattern as upstream examples 25/41/42 — easier to extend later (parallel sub-agents, custom visualizer, agent_server-based remote workspaces, etc.) when needed.
 
 ### Negative / costs
 
-- **Shared workspace, not isolated container per source.** OpenHands' `task` tool delegates within the same runtime — sub-agents share the orchestrator's filesystem. Workaround is per-source-N subdirs, but this means workspace size grows linearly (7 × ~50MB = ~350MB peak from raw + wiki clones; can be wiped after each source completes if needed).
-- **No parallelism in the basic design.** Sequential is the safe starting point. Parallel sub-agents would race on git push and on shared concept-index.json. A future revision could use isolated branches per-source-N and a final merge step, but that's out of scope for D7-rev3.
-- **Sub-agent prompt eats orchestrator output budget.** The orchestrator must include the sub-agent's full prompt (skill v2 ritual, paths, Cyrillic pin) in *its* `task` tool call. ~2K tokens per call × 7 calls = ~14K tokens of orchestrator output budget on prompt content alone. Acceptable but not free.
-- **Verification script needed.** Adds `evals/grade/verify_source.sh` (or extends `bench_grade.py` with `--single-source N --json`). Keep it small and deterministic.
-- **Failure surfaces less granularly to user.** With fail-fast, a single sub-agent failure stops the whole run. Trade-off is that this gives clean signal ("source 003 failed") rather than ambiguous partial completion.
+- **Shared filesystem for sub-agents.** OpenHands' `DelegateTool` runs sub-agents in the same process as the orchestrator and shares the workspace directory. Per-source isolation is achieved by convention (subdirs + sub-agent prompt that forbids cross-source touching), not by sandboxing. A misbehaving sub-agent can in principle read or write outside its assigned subdir.
+- **No parallelism in the basic design.** Sequential is the safe starting point. Parallel sub-agents would race on git push to the experiment branch and on shared `concept-index.json`. A future revision could use isolated branches per-source-N + final merge step; out of scope for D7-rev3.
+- **Verification is a separate Python subprocess.** Orchestrator must call `bench_grade.py` between delegations; can't be a single `conv.run()`. The Python wrapper around `Conversation` interleaves `send_message → run → verify → next send_message`. This is fine, just a deviation from "one big conversation".
+- **PyInstaller binary still in the image** for any tool-side or shell-side use. Mitigated by curl/python3 wrappers (forge:main `853bf2c`); see skill `openhands-sdk-orchestration` § PyInstaller leak.
+- **`bench_grade.py` regex was buggy** before this experiment — the `CONTRADICTS_FACTS` marker required a space (`[CONTRADICTS FACTS]`) but skill v2 uses underscore (`[CONTRADICTS_FACTS]`). All prior D7 / D7-rev2 numbers for that one metric column are suspect; retro re-grade is a small (10 min) follow-up task. Fix in forge:main `1eae7b1`.
 
 ### Rejected alternatives
 
-- **Bash-loop orchestrator** (run.sh invokes openhands 7 times sequentially, each with one source's prompt). Architecturally equivalent to the chosen design. Rejected because: (a) loses idiomatic OpenHands integration; (b) each invocation incurs full container startup overhead (~30s × 7 = ~3.5 min wasted); (c) can't naturally surface a "run-level orchestrator's view" (each invocation is independent, no cross-source state). Kept as **fallback** if the `task` tool turns out to have unexpected limitations during D7-rev3 implementation.
-- **Single-agent with raised `max_iterations`** (the OpenHands per-conversation step ceiling). Rejected because the failure mode in D7-rev2 #4 was *not* hitting an iteration cap — agent decided the task was complete and called `finish`. Bigger ceiling doesn't fix premature task-completion reasoning.
-- **Per-claim sub-sub-agent (tree-of-subagents)**, where each empirical claim gets its own micro-sub-agent for fact-check + dedup. Rejected at this stage as premature optimization. Revisit if D7-rev3's single-level isolation proves insufficient.
+- **`task` CLI tool in `--headless` mode** — what the original Proposed draft of this ADR named. Falsified by spike: `RuntimeError: no running event loop` even after providing a `.agents/agents/general-purpose.md` to satisfy registration. The CLI's `--headless` path doesn't initialise the asyncio loop the `task` tool's delegation needs. Could be revisited if upstream fixes the headless event-loop init.
+- **Bash-loop orchestrator** — `run.sh` launches 7 sequential `docker run openhands --headless --task <prompt>` invocations, one per source. Architecturally equivalent isolation guarantee. Rejected because: (a) loses the orchestrator-as-LLM-state-machine ergonomics; (b) ~30s × 7 = ~3.5 min container-startup overhead; (c) cross-source state (run-level summary, fail-fast control flow) has to live entirely in bash variables. Kept as documented fallback if Python SDK turns out to have a blocker we don't yet know about.
+- **Single agent + raised `max_iterations`** — does not address the actual D7-rev2 #4 failure mode (agent decided task was done, called `finish` cleanly with exit_code=0). Bigger ceiling does not fix premature task-completion reasoning.
+- **Per-claim sub-sub-agent (tree of subagents)** — each empirical claim its own micro-agent for factcheck + dedup. Rejected at this stage as premature optimisation. Revisit only if D7-rev3's single-level isolation proves insufficient.
 
 ## Implementation pointers
 
-- New launch prompts: `prompts/launch-D7-rev3-orchestrator.md` (small, control-flow-only, no skill content) and either inline sub-agent prompt or `.agents/skills/source-author.md` (full skill v2 ritual, scoped to one source).
-- New script: `evals/grade/verify_source.sh` (or `bench_grade.py --single-source N --json`).
-- No `run.sh` change needed beyond passing the new launch prompt via `LAUNCH_PROMPT=prompts/launch-D7-rev3-orchestrator.md`.
-- Branch naming: `experiment/D7-rev3-<YYYY-MM-DD>-<served-name>`.
-- Falsifiability locked in `D7-rev3.md` before run.
+Concrete code:
+
+- `tests/synthetic-orchestrator/step5a_orchestrator.py` — minimum viable orchestrator (4 synth sources, master prompt 1.1 KB, sub-agent reads transcript from disk).
+- `tests/synthetic-orchestrator/step5b_orchestrator.py` — pending — adds `get_known_claims.py` + `factcheck.py` integration (sub-agent has the full skill-v2 ritual), addresses gaps identified at the end of Step 5a (REPEATED detection, fact_check honesty).
+- `tests/synthetic-orchestrator/step6_orchestrator.py` — pending — fail-fast policy: on verified=fail orchestrator stops without continuing to N+1.
+- `tests/synthetic-orchestrator/step7_…` — pending — production module 005, all 7 sources.
+
+Tooling:
+
+- `evals/grade/bench_grade.py --single-source N --single-source-json` — verify-script contract for orchestrator. Emits the JSON shape spec'd in D7-rev3.md§Contract.
+- `Dockerfile` — installs openhands-sdk + openhands-tools via pip in addition to the standalone CLI binary; mounts `prompts/` to `/task:ro` so launch prompts are reachable.
+- `run.sh` — accepts `LAUNCH_PROMPT=…` env to choose which orchestrator-launch script to invoke.
+
+Key references:
+
+- Skill `.agents/skills/openhands-sdk-orchestration.md` — SDK gotchas the upstream docs do not cover explicitly.
+- Upstream SDK examples 25 / 41 / 42.
+- Upstream design principles: <https://docs.openhands.dev/sdk/arch/design>.
