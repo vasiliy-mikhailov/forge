@@ -33,22 +33,54 @@ RUN apt-get update \
 COPY bin/openhands /usr/local/bin/openhands
 RUN chmod +x /usr/local/bin/openhands
 
-# Build-time HTTPS smoke. The bench depends on factcheck.py reaching
-# Wikipedia from inside the container; if either ca-certificates or system
-# curl is broken, fail the build now rather than mid-experiment. The smoke
-# also exercises the LD_LIBRARY_PATH="" workaround used by factcheck.py at
-# runtime (PyInstaller-bundled openhands sets LD_LIBRARY_PATH to /tmp/_MEI*
-# which shadows system libssl — see kurpatov-wiki-wiki/skills/benchmark/
-# scripts/factcheck.py).
+# Wrappers for `curl` and `python3` that strip LD_LIBRARY_PATH before
+# exec'ing the real binary. This neutralises the PyInstaller-openhands env
+# leak: when /usr/local/bin/openhands runs as PyInstaller, it sets
+# LD_LIBRARY_PATH=/tmp/_MEI<random>/ so its bundled python finds bundled
+# libs. That LD_LIBRARY_PATH is inherited by every shell subprocess, and
+# the bundled libssl.so.3 (older) shadows system libssl/libcurl, breaking
+# bare `curl` and bare `python3 urllib`. The agent in D7-rev2 attempt #1
+# wasted ~28s rediscovering this. Wrappers eliminate the symptom at source.
+# /usr/local/bin/ precedes /usr/bin/ in PATH; /usr/local/bin/python3 was
+# a symlink to python3.12 which we replace with a wrapper that exec's
+# python3.12 directly.
+RUN set -e \
+ && rm -f /usr/local/bin/python3 \
+ && printf '%s\n' '#!/bin/sh' 'unset LD_LIBRARY_PATH' 'exec /usr/local/bin/python3.12 "$@"' \
+        > /usr/local/bin/python3 \
+ && chmod +x /usr/local/bin/python3 \
+ && printf '%s\n' '#!/bin/sh' 'unset LD_LIBRARY_PATH' 'exec /usr/bin/curl "$@"' \
+        > /usr/local/bin/curl \
+ && chmod +x /usr/local/bin/curl
+
+# Build-time HTTPS smoke. Two phases:
+#   (a) clean env — verifies CA chain, network reachability.
+#   (b) simulated PyInstaller leak — populate /tmp/_MEI_FAKE with a faux
+#       libssl.so.3 that would crash the linker, set LD_LIBRARY_PATH to it,
+#       then exercise bare `curl` and bare `python3` (which now go through
+#       the wrappers above and must succeed despite the broken
+#       LD_LIBRARY_PATH).
 RUN set -e \
  && python3 -c "import urllib.request, ssl; \
         req = urllib.request.Request('https://en.wikipedia.org/wiki/Test', headers={'User-Agent': 'kurpatov-wiki-bench-smoke/1.0'}); \
         r = urllib.request.urlopen(req, timeout=10); \
         assert r.status == 200, r.status; \
-        print('[smoke] python urllib HTTPS ok')" \
- && LD_LIBRARY_PATH="" curl -fsS -A kurpatov-wiki-bench-smoke/1.0 \
-        -o /dev/null -w '[smoke] curl HTTPS ok (HTTP %{http_code})\n' \
-        "https://en.wikipedia.org/wiki/Test"
+        print('[smoke 1a] python urllib HTTPS ok (clean env)')" \
+ && curl -fsS -A kurpatov-wiki-bench-smoke/1.0 \
+        -o /dev/null -w '[smoke 1b] curl HTTPS ok (HTTP %{http_code}, clean env)\n' \
+        "https://en.wikipedia.org/wiki/Test" \
+ && mkdir -p /tmp/_MEI_FAKE \
+ && printf '' > /tmp/_MEI_FAKE/libssl.so.3 \
+ && printf '' > /tmp/_MEI_FAKE/libcrypto.so.3 \
+ && LD_LIBRARY_PATH=/tmp/_MEI_FAKE python3 -c "import urllib.request; \
+        req = urllib.request.Request('https://en.wikipedia.org/wiki/Test', headers={'User-Agent': 'kurpatov-wiki-bench-smoke/1.0'}); \
+        r = urllib.request.urlopen(req, timeout=10); \
+        assert r.status == 200, r.status; \
+        print('[smoke 2a] python urllib HTTPS ok under PyInstaller LD_LIBRARY_PATH leak')" \
+ && LD_LIBRARY_PATH=/tmp/_MEI_FAKE curl -fsS -A kurpatov-wiki-bench-smoke/1.0 \
+        -o /dev/null -w '[smoke 2b] curl HTTPS ok under PyInstaller LD_LIBRARY_PATH leak (HTTP %{http_code})\n' \
+        "https://en.wikipedia.org/wiki/Test" \
+ && rm -rf /tmp/_MEI_FAKE
 
 # Working directory the agent operates in. The agent will git clone
 # kurpatov-wiki-{raw,wiki} into here. /runs/current is the only
