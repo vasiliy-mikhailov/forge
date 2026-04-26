@@ -226,27 +226,25 @@ Comparison plane (numbers from already-completed runs):
 
 These are gaps identified at the end of Step 5a that the production run must not fail on. Each addressed in subsequent TDD step on synth, NOT in production.
 
-### `get_known_claims.py` integration (Step 5b)
+### Step 5b — get_known_claims.py integration ✓ DONE
 
-Step 5a produced `claims_REPEATED_sum=0` because each sub-agent had no access to prior-source state. Even though synth fixtures 003 and 004 deliberately repeat claims from 001 and 002, all 4 sources were marked entirely NEW. To fix:
+Single-level source-author calls `cd wiki && python3 skills/benchmark/scripts/get_known_claims.py` before classification. 4/4 sources verified=ok, claims_REPEATED_sum=5 (synth fixtures 003/004 correctly mark Moore/Everest as REPEATED from sources 001/002). Forge commit `177f6ac`. Step file `tests/synthetic-orchestrator/step5b_orchestrator.py`.
 
-- Each per-source workdir must have its own wiki clone freshly pulled before the sub-agent starts (so its filesystem reflects what prior sub-agents pushed to remote).
-- Sub-agent `system_prompt` must explicitly require: "Run `python3 wiki/skills/benchmark/scripts/get_known_claims.py` once before authoring. Use its JSON output to mark any repeating claim as `[REPEATED (from: <slug-from-output>)]`."
+### Step 5c — 3-level orchestration on 1 source ✓ DONE
 
-### `factcheck.py` integration (Step 5c)
+Top orchestrator → source-author → fan-out per claim to idea-classifier (pure-LLM) + fact-checker (terminal w/ factcheck.py). 1/1 source verified=ok, 1 CONTRADICTS_FACTS caught (1950-Pareto error), 3 real Wikipedia URLs from factcheck.py invocations (verified visible in events). Top orchestrator: 10 events / 25 KB. Forge commit `177f6ac`. Step file `step5c_orchestrator.py`.
 
-Step 5a produced `fact_check_performed: true` in every frontmatter — but no sub-agent actually invoked `factcheck.py`. URLs came from training-data memory. To fix:
+### Step 5d — 3-level on 4 sources + concept-curator ✓ DONE
 
-- `wiki/skills/benchmark/scripts/factcheck.py` must be in each per-source workdir's wiki clone.
-- Sub-agent `system_prompt` must explicitly require: "For every empirical claim, run `python3 wiki/skills/benchmark/scripts/factcheck.py "<claim>"`. The Wikipedia URL inline in `## Claims` block MUST be from this output. If the script returns empty after its fallback ladder, mark the claim `[NEW]` without a URL — DO NOT invent a URL."
+Adds concept-curator (terminal + file_editor): creates `data/concepts/<slug>.md`, updates `concept-index.json`. Idempotent (Mount Everest from src2 not duplicated when src4 references it). Hit DelegateTool's `max_children=5` cap; resolved via spawn-once-reuse pattern (per upstream example 41). 4/4 verified=ok, REPEATED_sum=5, CF=1, URLs=30, concepts=6, top orchestrator 22 events / 37 KB. Wall ~13 min. Forge commit `177f6ac`. Step file `step5d_orchestrator.py`.
 
-### Failure-fast end-to-end (Step 6)
+### Step 6 — fail-fast end-to-end (PENDING)
 
-Synth fixture with deliberately broken transcript (e.g. JSON missing `segments`). Sub-agent should return `failed: <reason>`. Orchestrator wrapper should stop without delegating subsequent sources. Verify partial bench-report shows where it stopped.
+Synth fixture with deliberately broken transcript (JSON missing `segments` or unreadable). Source-author should return `failed: <reason>`. Orchestrator wrapper should stop without delegating subsequent sources. Verify partial bench-report shows where it stopped.
 
-### Production readiness (Step 7)
+### Step 7 — production module 005 (PENDING)
 
-Once 5b/5c/6 are GREEN, port to production: real raw transcripts, real factcheck.py against Wikipedia (over real network), branch push to `experiment/D7-rev3-<date>-<served>`. Run end-to-end. Re-grade. Fill Results below.
+Once Step 6 is GREEN, port to production: real raw transcripts (~30 KB each), real factcheck.py against Wikipedia (over real network), branch push to `experiment/D7-rev3-<date>-<served>`. Run end-to-end. Re-grade against Opus baseline. Fill Results below.
 
 ## Execution log
 

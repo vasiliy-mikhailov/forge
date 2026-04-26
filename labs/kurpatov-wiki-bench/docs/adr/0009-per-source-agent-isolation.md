@@ -80,12 +80,28 @@ The contract details for D7-rev3 specifically live in `docs/experiments/D7-rev3.
 - **Single agent + raised `max_iterations`** — does not address the actual D7-rev2 #4 failure mode (agent decided task was done, called `finish` cleanly with exit_code=0). Bigger ceiling does not fix premature task-completion reasoning.
 - **Per-claim sub-sub-agent (tree of subagents)** — each empirical claim its own micro-agent for factcheck + dedup. Rejected at this stage as premature optimisation. Revisit only if D7-rev3's single-level isolation proves insufficient.
 
+## DelegateTool deprecation (added 2026-04-26 after Step 5d)
+
+The decision above commits to `DelegateTool` (used in upstream example 25 and in our `step5{c,d}_orchestrator.py`). Mid-Step 5d we discovered:
+
+- `DelegateTool` is **deprecated since openhands-tools 1.16.0**, scheduled for removal in 1.23.0. Replacement is `TaskToolSet` (upstream example 41).
+- The 5-spawn cap that surfaced as a Step 5d failure is a `max_children=5` parameter on `DelegateTool.create()`, not a hard limit. We resolved by spawn-once-reuse pattern (per upstream example 41 with `animal_expert`); raising `max_children` would have been the alternative.
+- `TaskToolSet` has no equivalent cap and per-call sub-agent state isolation by default — closer to "fire and wait" semantics. Migration is mechanical (replace 2-step spawn+delegate with single `task()` calls).
+
+**Migration deferred** until production D7-rev3 stabilises and we have headroom. We are 5+ minor versions away from removal (currently on 1.18.1). DelegateTool's spawn-once-reuse pattern (Step 5d) handles our current synth scope. When migrating: each `task()` call is fresh — for our per-claim fan-out use case this is actually what we want (no leaking state between independent claims).
+
+This ADR's Decision §1–§7 carry over unchanged on a TaskToolSet backbone — only the tool registration and per-claim delegation calls in source-author's prompt need rewriting.
+
+Recorded in skill `.agents/skills/openhands-sdk-orchestration.md` under "DelegateTool is deprecated" and "DelegateTool spawn cap is max_children=5".
+
 ## Implementation pointers
 
 Concrete code:
 
 - `tests/synthetic-orchestrator/step5a_orchestrator.py` — minimum viable orchestrator (4 synth sources, master prompt 1.1 KB, sub-agent reads transcript from disk).
-- `tests/synthetic-orchestrator/step5b_orchestrator.py` — pending — adds `get_known_claims.py` + `factcheck.py` integration (sub-agent has the full skill-v2 ritual), addresses gaps identified at the end of Step 5a (REPEATED detection, fact_check honesty).
+- `tests/synthetic-orchestrator/step5b_orchestrator.py` — DONE (forge:main `177f6ac`) — adds `get_known_claims.py` integration. 4/4 verified=ok, claims_REPEATED_sum=5.
+- `tests/synthetic-orchestrator/step5c_orchestrator.py` — DONE — 3-level orchestration on 1 synth source. Per-claim fan-out: idea-classifier (pure-LLM) + fact-checker (terminal w/ factcheck.py). 1/1 verified=ok, 1 CONTRADICTS_FACTS caught, 3 real Wikipedia URLs.
+- `tests/synthetic-orchestrator/step5d_orchestrator.py` — DONE — 3-level on 4 sources + concept-curator. Spawn-once-reuse pattern (per upstream example 41) to handle DelegateTool's max_children=5 cap. 4/4 verified=ok, REPEATED=5, CF=1, URLs=30, concepts=6.
 - `tests/synthetic-orchestrator/step6_orchestrator.py` — pending — fail-fast policy: on verified=fail orchestrator stops without continuing to N+1.
 - `tests/synthetic-orchestrator/step7_…` — pending — production module 005, all 7 sources.
 

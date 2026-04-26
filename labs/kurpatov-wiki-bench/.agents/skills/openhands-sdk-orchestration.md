@@ -12,12 +12,17 @@ triggers:
   - subagent
   - delegate
   - DelegateTool
+  - TaskToolSet
+  - task tool
+  - max_children
   - source-author
   - register_agent
   - register_tool
   - openhands sdk
   - AgentDefinition
   - file-based agents
+  - 3-level orchestration
+  - per-claim fan-out
 ---
 
 # OpenHands SDK orchestration — bench-side gotchas
@@ -173,6 +178,79 @@ The agent panics, tries `LD_LIBRARY_PATH=""` workarounds manually, burns minutes
 
 For TDD synthetic runs the default visualizer is fine — easy to read in the log.
 
+## DelegateTool is deprecated as of openhands-tools 1.16.0
+
+`from openhands.tools.delegate import DelegateTool` (used in upstream example 25 and in our `step5{c,d}_orchestrator.py`) is **deprecated** since openhands-tools 1.16.0 and scheduled for removal in 1.23.0. The deprecation warning fires at import:
+
+```
+DelegateTool is deprecated. Will be removed in 1.23.0.
+Use TaskToolSet instead.
+```
+
+The replacement is `from openhands.tools.task import TaskToolSet` — used in upstream [example 41](https://github.com/OpenHands/software-agent-sdk/blob/main/examples/01_standalone_sdk/41_task_tool_set.py). Schema differences:
+
+| aspect              | DelegateTool (deprecated)                                       | TaskToolSet (current)                              |
+|---------------------|-----------------------------------------------------------------|---------------------------------------------------|
+| schema              | two commands: `spawn` (id, agent_type) + `delegate` (id, task)  | single call: `task(description, prompt, subagent_type, resume?)` |
+| state across calls  | sub-agent's `state.events` persists across delegations to same id | each `task()` is a fresh sub-agent unless `resume=<task_id>` |
+| concurrency cap     | `max_children=5` parameter on `DelegateTool.create()`            | no equivalent cap; backed by `TaskManager`        |
+| natural-language fit| more procedural (spawn then delegate)                           | one call per task — closer to "fire and wait"     |
+
+**Migration plan** for `kurpatov-wiki-bench`: defer until production D7-rev3 stabilises and we have headroom. Both work in 1.17.0/1.18.1; we are 5+ minor versions away from removal. Migration is mechanical (replace 2-step spawn+delegate with single `task()` calls) and removes the spawn-once-reuse workaround needed for 5-cap.
+
+When you do migrate: sub-agent state isolation **per call** is the simpler default (each `task()` is fresh) — no need to think about prior delegations leaking into next one's context. The trade-off is loss of "warm" sub-agent state across rounds; for our per-claim fan-out where each claim is independent, this is in fact what we want.
+
+## DelegateTool spawn cap is `max_children=5` (parameter, not hardcoded)
+
+When source-author tries to spawn its 6th sub-agent in a single Conversation it gets:
+
+```
+ConversationError: Cannot spawn 1 agents. Already have 5 agents, maximum is 5
+```
+
+This is `DelegateTool.create(max_children=5)`. To raise: instantiate the tool with a higher number when registering — but in our usage we instead apply the **spawn-once-reuse** pattern (used in upstream example 41 with the `animal_expert` agent across two rounds):
+
+- At the start of source-author's workflow: spawn three sub-agents `classifier`, `factchecker`, `curator`.
+- For each claim: `delegate` with all three task strings to those same ids.
+- Sub-agents accumulate state.events across calls (small claim text per call, ≤5 calls per source). Acceptable bloat.
+
+This pattern keeps spawn count at 3 (well under the 5 cap) regardless of how many claims a source has.
+
+In TaskToolSet (the current API) this concern goes away — there is no per-conversation child cap, and each `task()` is fresh by default.
+
+## 3-level orchestration validated empirically
+
+D7-rev3 Step 5d (`tests/synthetic-orchestrator/step5d_orchestrator.py`) confirms a 3-level architecture works end-to-end on Qwen3.6-27B-FP8:
+
+```
+Top orchestrator (DelegateTool only)
+    │  spawn id='src{N}', delegate 'process source N'
+    ▼
+source-author (terminal + file_editor + DelegateTool)
+    │  spawn classifier + factchecker + curator (once)
+    │  for each claim: delegate(classifier, factchecker)
+    │  for each new concept: delegate(curator)
+    ▼
+[idea-classifier (no tools, pure-LLM)]
+[fact-checker (terminal w/ factcheck.py)]
+[concept-curator (terminal + file_editor)]
+```
+
+Measured on 4 synthetic sources × ~3 claims each:
+- 4/4 sources verified=ok
+- claims_REPEATED_sum = 5 (cross-source detection works through shared filesystem)
+- claims_CONTRADICTS_FACTS_sum = 1 (fact-checker caught 1950-Pareto error)
+- wiki_url_count_sum = 30 (every URL traceable to a real factcheck.py invocation in events.jsonl)
+- concepts created = 6 (idempotent — concept-curator does not duplicate)
+- top orchestrator: 22 events, ~37 KB total bytes
+- wall time: ~13 min (vs 2-level Step 5b's ~3.5 min — 3-level overhead is the trade-off for per-claim isolation)
+
+The 27B model sustains the behavioural complexity of 3-level delegation when:
+
+- each level's prompt is narrowly scoped (idea-classifier prompt is ~250 chars; fact-checker ~400; source-author ~3 KB)
+- each sub-sub-agent returns a single line (`NEW`, `REPEATED from <slug>`, `URL: ...`, `CONTRADICTS_FACTS: ... | <url>`, `concept <slug> ready`)
+- source-author keeps its own state by appending to a small in-LLM scratchpad (claim list with markers + URLs accumulated in the assistant's reasoning, not in tool outputs)
+
 ## Two cost-calculation warnings to ignore
 
 ```
@@ -190,4 +268,5 @@ litellm doesn't know the price for our self-hosted qwen, so the SDK can't comput
 - [File-based agents guide](https://docs.openhands.dev/sdk/guides/agent-file-based) — frontmatter fields and directory conventions.
 - Local: `forge/labs/kurpatov-wiki-bench/docs/adr/0009-per-source-agent-isolation.md` — the architectural decision.
 - Local: `forge/labs/kurpatov-wiki-bench/docs/experiments/D7-rev3.md` — the experiment using these patterns.
-- Local: `forge/labs/kurpatov-wiki-bench/tests/synthetic-orchestrator/step{1..5,5a}_orchestrator.py` — TDD progression demonstrating the patterns.
+- Local: `forge/labs/kurpatov-wiki-bench/tests/synthetic-orchestrator/step{1..5,5a..5d}_orchestrator.py` — TDD progression demonstrating the patterns. Step 5b adds REPEATED detection; 5c introduces 3-level orchestration on 1 source; 5d extends to 4 sources + concept-curator.
+- Local: `.agents/skills/tdd-on-synthetic-fixtures.md` — methodology for the progressive TDD that produced this skill's findings.

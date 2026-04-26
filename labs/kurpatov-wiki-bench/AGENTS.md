@@ -18,7 +18,8 @@ This lab benchmarks open-weight LLMs on the task of compiling Russian whisper-tr
 forge/labs/kurpatov-wiki-bench/
 ├── AGENTS.md                           # this file
 ├── .agents/skills/                     # project-scoped skills (auto-loaded by OpenHands SDK)
-│   └── openhands-sdk-orchestration.md  # how we use OpenHands SDK; gotchas; canonical patterns
+│   ├── openhands-sdk-orchestration.md  # how we use OpenHands SDK; gotchas; canonical patterns
+│   └── tdd-on-synthetic-fixtures.md    # progressive TDD methodology for complex agent orchestrations
 ├── docs/
 │   ├── spec.md                         # methodology — hypothesis lifecycle, falsifiability, tier definitions
 │   ├── backlog.md                      # ranked hypothesis backlog (A/B/C/D/E/F/G clusters)
