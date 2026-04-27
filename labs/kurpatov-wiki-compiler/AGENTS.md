@@ -4,7 +4,7 @@ This file follows the same Phase A-H structure as forge-level
 `AGENTS.md`. Read forge-level first for cross-cutting rules; this
 file is scoped to the compiler lab.
 
-## Phase A — Vision (lab-scoped)
+## Phase A — Architecture Vision
 
 This lab provides the **LLM inference service** that every other lab
 in forge consumes. It hosts vLLM serving the open-weight model that
@@ -12,7 +12,7 @@ realises the wiki product's "Compile lecture into source.md"
 capability. Without it, no compilation, no benchmarking, no RL with
 verifiable rewards.
 
-## Phase B — Capabilities + quality dimensions
+## Phase B — Business Architecture
 
 This lab does not own a wiki product capability directly. It owns the
 **production-framework** capability that realises every wiki
@@ -26,7 +26,7 @@ Specifically: enable other labs (bench, future RL trainers) to point
 an OpenAI-compatible client at `${INFERENCE_BASE_URL}` and get
 useful output without reasoning about the underlying serving stack.
 
-## Phase C — Data shapes
+## Phase C — Information Systems Architecture
 
 The compiler lab is mostly stateless from a data perspective:
 
@@ -36,7 +36,7 @@ The compiler lab is mostly stateless from a data perspective:
   `${STORAGE_ROOT}/labs/kurpatov-wiki-compiler/hf-cache/`. No
   per-experiment state.
 
-## Phase D — Tech services this lab provides + components
+## Phase D — Technology Architecture
 
 **Service: LLM inference** (forge-wide, consumed by bench + future
 trainers).
@@ -61,14 +61,26 @@ L2 stability target: ≤ 5 % crash rate over 7-source pilots. G1
 hypotheses tested in pilot v5+ (400 W power cap + persistence,
 optionally `--gpu-memory-utilization 0.85`).
 
-## Phase E/F — Active trajectories
+## Phase E — Opportunities and Solutions
+
+Gap analysis for this lab — what capabilities are not yet at Level 2.
+If a `STATE-OF-THE-LAB.md` exists, it is the canonical gap audit;
+otherwise the Phase H trajectories table below stands in.
+
+## Phase F — Migration Planning
+
+Active experiment specs at `docs/experiments/<id>.md` are the
+sequenced work packages closing those gaps. Only Active and
+Closed-but-still-cited experiments are kept; superseded ones go to
+git history per Phase H.
+
 
 - **G1 (in flight):** Blackwell stability under sustained 27B-FP8
   inference. Test matrix in `outputs/G1-blackwell-stability.md`.
   Pilot v5 launched 2026-04-27 19:07 MSK as the H1 sole-test.
 - (None other active.)
 
-## Phase G — Lab-local operational rules
+## Phase G — Implementation Governance
 
 - **Single-card vLLM only** on the Blackwell. Going to dual-GPU TP
   would take both cards, conflicting with the ingest lab on RTX 5090
@@ -98,7 +110,7 @@ optionally `--gpu-memory-utilization 0.85`).
   `docker stop --time 10 <name>` over `docker rm -f <name>` to avoid
   leaving orphan kernel-side CUDA contexts (G1-H3).
 
-## Phase H — Trajectories
+## Phase H — Architecture Change Management
 
 | Capability | Level 1 (today) | Level 2 (next) | Metric delta |
 |------------|-----------------|----------------|--------------|

@@ -4,7 +4,7 @@ This file follows the same Phase A-H structure as forge-level
 `AGENTS.md`. Read forge-level first for cross-cutting rules; this
 file is scoped to the rl-2048 lab.
 
-## Phase A — Vision (lab-scoped)
+## Phase A — Architecture Vision
 
 This lab is the **program-synthesis-via-AI** track of forge — the
 sibling of Kurpatov Wiki under the same Motivation
@@ -17,7 +17,7 @@ The 2048 game is the first verifiable-reward domain. The real
 product is the methodology + harness; future siblings (other RLVR
 domains) plug in alongside.
 
-## Phase B — Capabilities + quality dimensions
+## Phase B — Business Architecture
 
 The wiki and rl-2048 are different products with different
 quality-dimension slates:
@@ -30,7 +30,7 @@ quality-dimension slates:
 
 (All "TBD" — rl-2048 is in the Jupyter-sandbox phase, pre-spec.)
 
-## Phase C — Data shapes
+## Phase C — Information Systems Architecture
 
 (In flux. Currently:)
 
@@ -41,7 +41,7 @@ quality-dimension slates:
 - **MLflow run records:** `${STORAGE_ROOT}/labs/rl-2048/mlruns/`
   (the SQLite + artifact tree that `mlflow ui` reads).
 
-## Phase D — Tech services this lab provides + components
+## Phase D — Technology Architecture
 
 **Service: Notebook sandbox** (consumer: rl-2048 only).
 
@@ -67,11 +67,23 @@ L2: TBD when STATE-OF-THE-LAB.md is written. Likely first L2 is
 "falsifiable 2048-solver-quality metric locked + a baseline run
 recorded in MLflow".
 
-## Phase E/F — Active trajectories
+## Phase E — Opportunities and Solutions
+
+Gap analysis for this lab — what capabilities are not yet at Level 2.
+If a `STATE-OF-THE-LAB.md` exists, it is the canonical gap audit;
+otherwise the Phase H trajectories table below stands in.
+
+## Phase F — Migration Planning
+
+Active experiment specs at `docs/experiments/<id>.md` are the
+sequenced work packages closing those gaps. Only Active and
+Closed-but-still-cited experiments are kept; superseded ones go to
+git history per Phase H.
+
 
 (None active. Lab is in pre-methodology phase.)
 
-## Phase G — Lab-local operational rules
+## Phase G — Implementation Governance
 
 - **GPU choice:** the Blackwell hosts rl-2048 *or*
   `kurpatov-wiki-compiler`, not both. The two labs are mutex on the
@@ -91,7 +103,7 @@ recorded in MLflow".
   `mlruns/` directory layout — `mlflow ui` and downstream tooling
   encode the paths.
 
-## Phase H — Trajectories
+## Phase H — Architecture Change Management
 
 | Capability | Level 1 (today) | Level 2 (next) | Metric delta |
 |------------|-----------------|----------------|--------------|

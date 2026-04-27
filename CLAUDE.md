@@ -161,7 +161,7 @@ Documents, or Architecture Roadmaps as formal deliverables. Each lab
 keeps its own concrete artefacts in `labs/<lab>/docs/` (ADRs,
 experiments, STATE-OF-THE-LAB.md).
 
-### Phase A — Vision (the why)
+### Phase A — Architecture Vision
 
 **Forge saves human time with AI agents.**
 
@@ -172,7 +172,7 @@ Two products today, each its own value stream:
 | **Kurpatov Wiki** | Video / audio lectures → smart-reading format markdown wiki.    |
 | **rl-2048**       | 2048 board states → solver actions, trained via RL with verifiable rewards (RLVR). |
 
-### Phase B — Business architecture (capabilities + quality)
+### Phase B — Business Architecture
 
 Each product is a stack of capabilities; each capability has a quality
 dimension that defines "good".
@@ -197,7 +197,7 @@ dimension that defines "good".
 (The rl-2048 row is a stub — populate when its STATE-OF-THE-LAB.md
 gets written. Out of scope for the wiki product's flow.)
 
-### Phase C — Information architecture (data shapes)
+### Phase C — Information Systems Architecture
 
 | Data set                                  | Shape                                    |
 |-------------------------------------------|------------------------------------------|
@@ -208,7 +208,7 @@ gets written. Out of scope for the wiki product's flow.)
 
 Per-product detailed shapes live in their lab's STATE-OF-THE-LAB.md.
 
-### Phase D — Technology architecture (services + components)
+### Phase D — Technology Architecture
 
 The Forge platform realises Phase B capabilities through a small set
 of **technology services**, each provided by one or more **technology
@@ -329,7 +329,24 @@ Specific version pins live in `Dockerfile`s and `.env`. Specific
 *decisions* about why those versions/components were picked live in
 lab ADRs.
 
-### Phase E/F — Opportunities, solutions, migration (active experiments)
+### Phase E — Opportunities and Solutions
+
+Per-lab gap analyses live in their lab’s `STATE-OF-THE-LAB.md`
+(capability trajectories Level 1 → Level 2). The combined gap set
+across forge is the union of those.
+
+- `labs/kurpatov-wiki-bench/docs/STATE-OF-THE-LAB.md` — current
+  capability trajectories for the wiki bench.
+- `labs/rl-2048/docs/STATE-OF-THE-LAB.md` — TBD (when rl-2048
+  grows beyond the Jupyter sandbox).
+
+### Phase F — Migration Planning
+
+Active experiment specs at `labs/<lab>/docs/experiments/<id>.md` are
+the sequenced work packages that close those gaps. Only Active and
+Closed-but-still-cited experiments are kept in the working tree;
+superseded ones go to git history per Phase H.
+
 
 Per lab, the active trajectory toward Level 2 (TOGAF would call this
 the Transition Architecture). Updated when an experiment opens or
@@ -344,7 +361,7 @@ Concrete experiment specs sit at `labs/<lab>/docs/experiments/<id>.md`
 (only Active and Closed-but-still-cited experiments — superseded ones
 go to git history per Phase H).
 
-### Phase G — Implementation governance (how we operate)
+### Phase G — Implementation Governance
 
 - **Architect of record**: one person (the repo owner). All trajectory
   changes pass through them.
@@ -353,42 +370,25 @@ go to git history per Phase H).
   forge-level CLAUDE.md (this file) carries cross-cutting rules.
 - **No PR review automation** beyond the AGENTS.md convention.
 
-#### Per-lab AGENTS.md must follow the same Phase A-H structure
+#### Per-lab AGENTS.md must follow the canonical template
 
-The TOGAF-style framework is meant to *permeate*, not just live at the
-top. Every lab's `labs/<lab>/AGENTS.md` must use the same Phase A-H
-sections, scoped to that lab. This is what tells an agent reading the
-lab "what is the lab's mission, capabilities, services, etc." in a
-consistent vocabulary.
+The TOGAF ADM phase structure is meant to *permeate*, not just live at
+the top. Every lab’s `labs/<lab>/AGENTS.md` must use the canonical
+phase headers (Phase A through Phase H, classic TOGAF names — see
+`docs/lab-AGENTS-template.md`), scoped to that lab. The template is
+the source of truth for section ordering and wording; copy from it
+when adding or editing a lab AGENTS.md.
 
-Required sections per lab AGENTS.md:
+Symlink convention: each lab keeps `AGENTS.md` as the regular file and
+`CLAUDE.md` as a symlink → `AGENTS.md`. Forge root inverts the direction
+(`AGENTS.md` → `CLAUDE.md`) for historical reasons — leave that
+as is.
 
-- **Phase A — Vision (lab-scoped):** what this lab contributes to the
-  forge-level mission ("Forge saves human time with AI agents"). One
-  paragraph.
-- **Phase B — Lab capabilities + quality dimensions:** the table from
-  forge-level Phase B, but only the rows owned by this lab.
-- **Phase C — Lab data shapes:** schemas, paths, file formats produced
-  or consumed by this lab.
-- **Phase D — Tech services this lab provides + components:** the
-  technology services from the Phase D forge table for which this lab
-  is the provider, plus the components this lab uses internally
-  (caddy, docker-compose, etc.). Cross-link to forge-level Phase D for
-  cross-cutting forge-wide services.
-- **Phase E/F:** lab's `STATE-OF-THE-LAB.md` if it has one; or active
-  `docs/experiments/<id>.md` files.
-- **Phase G — Lab-local operational rules:** what to do / not do
-  inside this lab specifically (e.g. for `kurpatov-wiki-bench`: branch
-  naming, image tag conventions, fail-fast triggers).
-- **Phase H — Trajectories:** Level 1 / Level 2 of each lab capability
-  with metric deltas.
-
-Labs that don't yet have AGENTS.md (currently: `kurpatov-wiki-compiler`,
-`kurpatov-wiki-ingest`, `rl-2048`) must add one when their next
+Labs that don’t yet have AGENTS.md must add one when their next
 substantive change lands. Until then, the forge-level CLAUDE.md is the
 authoritative reference for those labs.
 
-### Phase H — Change management (capability trajectories)
+### Phase H — Architecture Change Management
 
 Architecture is organised around capabilities, each with two states:
 

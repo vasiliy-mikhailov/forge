@@ -4,7 +4,7 @@ This file follows the same Phase A-H structure as forge-level
 `AGENTS.md`. Read forge-level first for cross-cutting rules; this
 file is scoped to the ingest lab.
 
-## Phase A — Vision (lab-scoped)
+## Phase A — Architecture Vision
 
 This lab provides the **media → raw transcript** pipeline. Every
 Курпатов lecture starts as audio/video; this lab turns it into
@@ -12,7 +12,7 @@ whisper-segment JSON that downstream labs (bench, compiler) consume
 to produce wiki articles. Ingest is the first step in the wiki
 product's collect/filter/adapt mechanism.
 
-## Phase B — Capabilities + quality dimensions
+## Phase B — Business Architecture
 
 | Capability                     | Quality dimension                                  |
 |--------------------------------|----------------------------------------------------|
@@ -20,7 +20,7 @@ product's collect/filter/adapt mechanism.
 | Raw-data publication           | Fresh raw.json visible to downstream labs ≤ N min after audio drops |
 | Append-only raw-source archive | No source ever silently mutates after publication  |
 
-## Phase C — Data shapes
+## Phase C — Information Systems Architecture
 
 - **Input:** audio/video files in `${STORAGE_ROOT}/labs/kurpatov-wiki-ingest/vault/raw/data/<course>/<module>/<source>/source.mp3` (or `.mp4`).
 - **Output:** whisper-segment JSON at the same path replacing
@@ -49,7 +49,7 @@ product's collect/filter/adapt mechanism.
   + pushes from there. See ADR
   `labs/kurpatov-wiki-ingest/docs/adr/0005-split-transcribe-and-push.md`.
 
-## Phase D — Tech services this lab provides + components
+## Phase D — Technology Architecture
 
 **Service: Audio → text transcription** (consumer:
 `kurpatov-wiki-wiki` source-of-truth, eventually populated through
@@ -70,11 +70,23 @@ L1: ~200 lectures (Курпатов "Психолог-консультант" co
 
 L2: stable; not currently on the active trajectory.
 
-## Phase E/F — Active trajectories
+## Phase E — Opportunities and Solutions
+
+Gap analysis for this lab — what capabilities are not yet at Level 2.
+If a `STATE-OF-THE-LAB.md` exists, it is the canonical gap audit;
+otherwise the Phase H trajectories table below stands in.
+
+## Phase F — Migration Planning
+
+Active experiment specs at `docs/experiments/<id>.md` are the
+sequenced work packages closing those gaps. Only Active and
+Closed-but-still-cited experiments are kept; superseded ones go to
+git history per Phase H.
+
 
 (None active. Ingest is in steady state.)
 
-## Phase G — Lab-local operational rules
+## Phase G — Implementation Governance
 
 - **GPU choice:** the RTX 5090 hosts ingest. The Blackwell hosts
   compiler (or rl-2048, when active). Don't reassign without an ADR.
@@ -94,7 +106,7 @@ L2: stable; not currently on the active trajectory.
   resume cleanly. Re-transcribing already-`raw.json`'d sources is
   forbidden (append-only invariant).
 
-## Phase H — Trajectories
+## Phase H — Architecture Change Management
 
 | Capability | Level 1 (today) | Level 2 (next) | Metric delta |
 |------------|-----------------|----------------|--------------|
