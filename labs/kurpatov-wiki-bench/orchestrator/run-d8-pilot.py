@@ -1,12 +1,18 @@
 """
 D8 pilot production orchestrator — module 005 of "Психолог-консультант".
 
-Ports the validated step7 architecture to production:
+Ports the validated step7 architecture to production, with retrieval
+plugged in (D8 Steps 4-7):
   - Python `for` loop top-orchestrator (Invariant A — bounded context)
-  - Concept template v3: backlinks + per-source excerpts + timestamps (Invariant B)
+  - Canonical skill v2 concept shape (Invariant B — `## Contributions
+    by source` + per-touched-by `### <slug>` sub-sections)
   - source-author extracts excerpt+timestamp_sec from whisper segments
   - Per-source git commit on success (each source = its own commit)
   - Fail-fast on first verify=fail
+  - Retrieval-augmented dedup: orchestrator rebuilds embed_helpers index
+    before each source; source-author calls find-claims per-claim and
+    feeds top-K candidates to idea-classifier (replaces bulk
+    prior_claims_json that didn't scale past ~7 sources).
 
 Validated on synth (step7_orchestrator.py): 4/4 verified=ok,
 claims=21, REPEATED=7, CF=2, urls=12, top-orch events=5-6 per source,
@@ -52,7 +58,11 @@ SKILL_BRANCH = "skill-v2"
 COURSE = "Психолог-консультант"
 MODULE = "005 Природа внутренних конфликтов. Базовые психологические потребности"
 
-BENCH_GRADE = "/home/vmihaylov/forge/labs/kurpatov-wiki-bench/evals/grade/bench_grade.py"
+# bench_grade.py path: container has it baked at /opt/forge/, host venv runs use the repo path.
+BENCH_GRADE = (
+    "/opt/forge/bench_grade.py" if Path("/opt/forge/bench_grade.py").exists()
+    else "/home/vmihaylov/forge/labs/kurpatov-wiki-bench/evals/grade/bench_grade.py"
+)
 
 # Per-source bounds — see openhands-sdk-orchestration.md
 TOP_ORCH_INPUT_TOKENS_PER_SOURCE_LIMIT = 100_000
@@ -65,12 +75,23 @@ IDEA_CLASSIFIER_PROMPT = """\
 You are idea-classifier. Each task message contains:
   - claim: the empirical claim text
   - lecture_transcript: full lecture transcript (read-only context)
-  - prior_claims_json: output of get_known_claims.py (may be empty for source 0)
+  - candidate_prior_claims: top-K nearest prior claims from the
+    retrieval index (JSON array of {claim, source_slug, score}).
+    Max 5 candidates. Empty for source 0.
 
-Step 1: Decide NEW vs REPEATED based on prior_claims_json.
-  - If `claim` essentially matches a claim in any prior source's claims:
-    output `REPEATED from <exact slug from that prior source>`.
-  - Otherwise: `NEW`.
+Step 1: Decide NEW vs REPEATED based on candidate_prior_claims.
+  - If `claim` covers the same proposition as one of the candidates
+    (paraphrase, restatement, or near-lexical match) AND the
+    candidate's `score` is ≥ 0.78 → output
+    `REPEATED from <source_slug from that candidate>`.
+  - Otherwise (no candidate, all scores < 0.78, or the high-scoring
+    candidate is on a clearly different proposition) → `NEW`.
+
+Calibration of the score field (multilingual-e5-base, normalised):
+  - score ≥ 0.85 — near-lexical match (definitely REPEATED)
+  - 0.78 ≤ score < 0.85 — paraphrase of the same idea (REPEATED)
+  - 0.65 ≤ score < 0.78 — related topic but different proposition (NEW)
+  - score < 0.65 — not returned (filtered by retrieval)
 
 Step 2: Pick a thematic_category from this list (or propose new kebab-case):
   architecture-of-the-method | neuroanatomy | psychology-and-instinct |
@@ -223,11 +244,16 @@ python3 -c "import json; d=json.load(open('<raw_path>')); print(json.dumps({{'se
 Save segments list (each has start, end, text). You'll search them
 in step E for excerpts/timestamps.
 
-### B. Get known claims
-```
-cd wiki && python3 skills/benchmark/scripts/get_known_claims.py
-```
-Save the full JSON output as `prior_claims_json`.
+### B. (Removed — retrieval is per-claim in step D)
+
+The idea-classifier no longer receives the bulk `prior_claims_json`.
+Instead, the orchestrator pre-builds a numpy + sqlite retrieval index
+of all prior claims (across every committed source). In step D you
+will call `embed_helpers.py find-claims` per-claim to fetch the
+top-K nearest candidates (~3 KB context) and pass those to the
+classifier.
+
+Skip directly to step C.
 
 ### C. Extract claims (LLM reasoning, no tools)
 Identify ALL distinct empirical claims. Density target:
@@ -246,9 +272,19 @@ attributions, specific numbers, controversial. Default true when unsure.
 
 ### D. Per-claim sub-agent calls — record marker for EACH claim
 For claim i (sequential):
-  1. ALWAYS task(idea-classifier, prompt=claim + lecture + prior_claims_json)
+  1. RETRIEVE top-5 prior claim candidates via the embed_helpers CLI:
+     ```
+     python3 /opt/forge/embed_helpers.py find-claims wiki \\
+       --claim "<claim_text>" --k 5
+     ```
+     The output is a JSON array of objects
+     `[{{"claim": "...", "source_slug": "...", "score": 0.91}}, ...]`
+     (empty `[]` for source 0 or when no neighbours pass the
+     threshold). Capture this verbatim as `candidate_prior_claims`.
+  2. ALWAYS task(idea-classifier, prompt=claim + lecture +
+     candidate_prior_claims)
      → parse `<verdict> | category=<theme>`
-  2. IF needs_factcheck[i]: task(fact-checker, prompt=claim + lecture)
+  3. IF needs_factcheck[i]: task(fact-checker, prompt=claim + lecture)
      → parse marker/url/notes
 
   Combine into final_marker[i]:
@@ -258,6 +294,10 @@ For claim i (sequential):
 
   ⚠️ Persist (claim_text, final_marker, url, notes, thematic_category)
      for every claim — you will need ALL of these in step F.
+
+⚙️ Retrieval contract: the index is built/updated by the orchestrator
+   BEFORE this source-author runs (covers every prior committed
+   source). You do NOT rebuild it. You only QUERY via find-claims.
 
 ### E. Concept curator calls — for EVERY concept in concepts_touched
 
@@ -374,6 +414,12 @@ def setup_workspace():
                 shutil.rmtree(child)
             else:
                 child.unlink()
+
+    # git author identity for in-container commits — env vars or fallback.
+    user_email = os.environ.get("GIT_AUTHOR_EMAIL", "bench@kurpatov-wiki-bench.local")
+    user_name = os.environ.get("GIT_AUTHOR_NAME", "kurpatov-wiki-bench")
+    subprocess.run(["git", "config", "--global", "user.email", user_email], check=True)
+    subprocess.run(["git", "config", "--global", "user.name", user_name], check=True)
 
     # GitHub token: env first (canonical for containers), then `gh` CLI fallback (host).
     token = os.environ.get("GITHUB_TOKEN", "").strip()
@@ -498,35 +544,47 @@ def parse_frontmatter(text):
 
 
 def validate_concept_v3(concept_path):
+    """Canonical skill v2 concept shape (matches bench_grade.py L1.5):
+
+      ## Definition
+      ## Contributions by source
+        ### <source-slug 1>
+          - bullets …
+          - See [<short title>](../sources/<slug>.md). [optional mm:ss]
+        ### <source-slug 2>
+          - …
+      ## Related concepts
+    """
     violations = []
+    name = concept_path.name
+    if name == "_template.md":
+        return violations
     text = concept_path.read_text()
     fm = parse_frontmatter(text)
     touched_by = fm.get("touched_by", [])
     if not touched_by:
-        violations.append(f"{concept_path.name}: touched_by empty/missing")
+        violations.append(f"{name}: touched_by empty/missing")
         return violations
-    if "## Touched in sources" not in text:
-        violations.append(f"{concept_path.name}: ## Touched in sources missing")
+    if "## Definition" not in text:
+        violations.append(f"{name}: ## Definition heading missing")
+    if "## Contributions by source" not in text:
+        violations.append(f"{name}: ## Contributions by source heading missing")
         return violations
-    section_match = re.search(r"^## Touched in sources\s*\n(.*?)(?=\n## |\Z)",
-                              text, re.MULTILINE | re.DOTALL)
-    section = section_match.group(1) if section_match else ""
-    bullets = _BULLET_RE.findall(section)
-    if len(bullets) < len(touched_by):
-        violations.append(
-            f"{concept_path.name}: {len(bullets)} bullets but "
-            f"touched_by has {len(touched_by)}"
-        )
-    for label, link, excerpt in bullets:
-        excerpt_clean = re.sub(r"\[≈[^\]]+\]", "", excerpt).strip()
-        if len(excerpt_clean) < 30:
+    contrib_match = re.search(
+        r"^## Contributions by source\s*\n(.*?)(?=\n## |\Z)",
+        text, re.MULTILINE | re.DOTALL,
+    )
+    contrib_section = contrib_match.group(1) if contrib_match else ""
+    sub_headings = re.findall(r"^### (.+)$", contrib_section, re.MULTILINE)
+    sub_set = {h.strip() for h in sub_headings}
+    for slug in touched_by:
+        if slug not in sub_set:
             violations.append(
-                f"{concept_path.name}: excerpt for '{label[:40]}' "
-                f"only {len(excerpt_clean)} chars"
+                f"{name}: touched_by '{slug[:60]}…' has no "
+                f"### sub-section in Contributions by source"
             )
-        target = (concept_path.parent / link).resolve()
-        if not target.exists():
-            violations.append(f"{concept_path.name}: dead link '{link}'")
+    if "## Related concepts" not in text:
+        violations.append(f"{name}: ## Related concepts heading missing")
     return violations
 
 
@@ -591,10 +649,36 @@ def main():
     stopped_at = None
     t0_total = time.time()
 
+    # Resolve embed_helpers.py path (container-baked vs host).
+    embed_helpers_path = (
+        "/opt/forge/embed_helpers.py"
+        if Path("/opt/forge/embed_helpers.py").exists()
+        else "/home/vmihaylov/forge/labs/kurpatov-wiki-bench/orchestrator/embed_helpers.py"
+    )
+
     for (n, raw_path, target_path, slug) in inputs:
         print(f"\n{'=' * 70}", file=sys.stderr)
         print(f"=== SRC {n}: {slug}", file=sys.stderr)
         print(f"{'=' * 70}", file=sys.stderr)
+
+        # ── Rebuild retrieval index over committed sources (every prior
+        # source.md + concept.md is now embedded). For source 0 the
+        # index will be empty; for source N≥1 it covers sources 0..N-1.
+        # The source-author calls find-claims via embed_helpers.py.
+        print(f"[retrieval] rebuilding index before SRC {n}…", file=sys.stderr)
+        rebuild_r = subprocess.run(
+            ["python3", embed_helpers_path, "rebuild", str(WORKDIR / "wiki")],
+            capture_output=True, text=True,
+        )
+        if rebuild_r.returncode != 0:
+            print(f"!!! retrieval rebuild failed before SRC {n}: "
+                  f"{rebuild_r.stderr[:400]}", file=sys.stderr)
+            stopped_at = n
+            state.append({"n": n, "slug": slug,
+                          "stopped": "retrieval_rebuild_fail"})
+            break
+        else:
+            print(f"[retrieval] {rebuild_r.stdout.strip()}", file=sys.stderr)
 
         # FRESH Conversation per source
         main_agent = Agent(llm=llm, tools=[Tool(name="task_tool_set")])
@@ -633,7 +717,14 @@ def main():
         # Functional verify
         v = verify_source(n)
         if v.get("verified") == "ok":
-            commit = commit_and_push_per_source(n, slug, branch)
+            try:
+                commit = commit_and_push_per_source(n, slug, branch)
+            except Exception as e:
+                # Don't let a transient git/push failure stop the whole pipeline;
+                # source.md is on disk and verify=ok, that's the canonical truth.
+                commit = f"commit-failed: {type(e).__name__}: {e}"
+                print(f"=== SRC {n}: commit_and_push failed but verify=ok, continuing: {e}",
+                      file=sys.stderr)
             state.append({"n": n, "slug": slug, "verify": v,
                           "orch_metrics": orch_metrics, "commit": commit})
             print(f"=== SRC {n}: verified=ok, claims={v.get('claims_total')}, "
