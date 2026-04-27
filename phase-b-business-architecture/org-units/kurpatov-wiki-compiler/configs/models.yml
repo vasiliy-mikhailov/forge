@@ -1,10 +1,10 @@
 # Compiler model registry — single source of truth for vLLM serving config.
 #
 # Used by:
-#   labs/kurpatov-wiki-compiler/bin/load-active-model.sh
+#   phase-b-business-architecture/org-units/kurpatov-wiki-compiler/bin/load-active-model.sh
 #     — renders .env.active-model from the entry referenced by
 #       INFERENCE_ACTIVE_MODEL_ID in forge/.env.
-#   labs/kurpatov-wiki-bench/run-battery.sh
+#   phase-b-business-architecture/org-units/kurpatov-wiki-bench/run-battery.sh
 #     — iterates over `id`s, swaps INFERENCE_ACTIVE_MODEL_ID,
 #       calls make kurpatov-wiki-compiler-down/up, runs ./run.sh.
 #

@@ -70,10 +70,10 @@ outputs: kurpatov-wiki-wiki  (markdown sources + concepts + index,
 
 - **Skill** — то, что мы шлифуем; финальный артефакт, который шипуется
   пользователям-агентам.
-- **Harness** (`labs/kurpatov-wiki-bench/`) — runtime для skill'а: то,
+- **Harness** (`phase-b-business-architecture/org-units/kurpatov-wiki-bench/`) — runtime для skill'а: то,
   что запускает агента, мерит, ловит ошибки, складывает артефакты.
   Стабилизировался после refactor step 5; правится реже.
-- **Model + serving** (`labs/kurpatov-wiki-compiler/`) — third-party
+- **Model + serving** (`phase-b-business-architecture/org-units/kurpatov-wiki-compiler/`) — third-party
   вес + vLLM. Не «улучшаем», а выбираем подходящую под текущий skill.
   Параметры serving'а (vLLM флаги) — улучшаем.
 

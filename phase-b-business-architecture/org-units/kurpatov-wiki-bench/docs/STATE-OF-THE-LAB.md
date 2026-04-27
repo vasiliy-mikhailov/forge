@@ -1,6 +1,6 @@
 # State of the Lab — capability trajectories
 
-`labs/kurpatov-wiki-bench`. The goal: a reproducible, model-agnostic
+`phase-b-business-architecture/org-units/kurpatov-wiki-bench`. The goal: a reproducible, model-agnostic
 harness that compiles all ~200 Курпатов lecture transcripts into a
 structured wiki at-or-better-than Claude Opus baseline. Architecture
 management is capability-based per `forge/CLAUDE.md` ("TOGAF-style

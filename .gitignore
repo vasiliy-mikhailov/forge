@@ -47,24 +47,29 @@ tmp/
 
 # --- rl-2048 working clutter ---
 # experimental Dockerfile variants pile up next to the live one
-rl-2048/Dockerfile-*
-rl-2048/Dockerfile.*
-!rl-2048/Dockerfile
-rl-2048/Caddyfile
-rl-2048/hello.py
-rl-2048/.aider.chat.history.md
-# GRPO/test run outputs (sit next to the notebook during training)
-rl-2048/gpu-*/
-rl-2048/grpo_*/
-rl-2048/mlflow-data/
-rl-2048/mlruns/
-rl-2048/outputs/
-rl-2048/.inductor_cache/
-rl-2048/.triton_cache/
-rl-2048/.vllm_cache/
+# --- rl-2048 lab clutter (matches both legacy labs/ path and new phase-b/org-units path) ---
+**/rl-2048/Dockerfile-*
+**/rl-2048/Dockerfile.*
+**/rl-2048/Caddyfile
+**/rl-2048/hello.py
+**/rl-2048/.aider.chat.history.md
+**/rl-2048/gpu-*/
+**/rl-2048/grpo_*/
+**/rl-2048/mlflow-data/
+**/rl-2048/mlruns/
+**/rl-2048/outputs/
+**/rl-2048/.inductor_cache/
+**/rl-2048/.triton_cache/
+**/rl-2048/.vllm_cache/
 
-# --- per-lab mlflow runtime ---
-labs/*/mlflow/data/
+# --- per-lab mlflow runtime (matches any lab path including phase-b/org-units) ---
+**/mlflow/data/
 
-# venv for orchestrator TDD
-labs/kurpatov-wiki-bench/tests/synthetic-orchestrator/.venv/
+# venv for orchestrator TDD (matches any lab path)
+**/tests/synthetic-orchestrator/.venv/
+
+# --- unsloth runtime caches (auto-generated next to notebooks) ---
+**/unsloth_compiled_cache/
+
+# --- stray rl-2048 dir at forge root (notebooks-only artefact, not the lab) ---
+/rl-2048/

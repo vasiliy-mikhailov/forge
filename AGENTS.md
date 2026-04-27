@@ -18,13 +18,13 @@ docs, scripts, and the root Makefile that dispatches into labs.
 
 Labs:
 
-- `labs/kurpatov-wiki-compiler/` — vLLM serving the LLM that
+- `phase-b-business-architecture/org-units/kurpatov-wiki-compiler/` — vLLM serving the LLM that
   *compiles* raw transcripts into wiki articles.
-- `labs/kurpatov-wiki-ingest/` — the "media → raw transcript"
+- `phase-b-business-architecture/org-units/kurpatov-wiki-ingest/` — the "media → raw transcript"
   pipeline (Whisper, etc.).
-- `labs/kurpatov-wiki-bench/` — agent harness that benchmarks
+- `phase-b-business-architecture/org-units/kurpatov-wiki-bench/` — agent harness that benchmarks
   different LLMs on the compiler task.
-- `labs/rl-2048/` — Jupyter sandbox for RL/GRPO experiments.
+- `phase-b-business-architecture/org-units/rl-2048/` — Jupyter sandbox for RL/GRPO experiments.
   Includes its own `mlflow/` sublab (mlflow used to live at
   forge top-level; only rl-2048 uses it, so it moved in).
 
@@ -74,7 +74,7 @@ experiment is a run.
   committed to forge. Note: `vault/raw/` (under `${STORAGE_ROOT}/labs/kurpatov-wiki-ingest/vault/raw/`) **is** a git working tree —
   but for a *separate* repo (`kurpatov-wiki-raw`), pushed by the
   `kurpatov-wiki-raw-pusher` container. See
-  `labs/kurpatov-wiki-ingest/docs/adr/0005-split-transcribe-and-push.md`.
+  `phase-b-business-architecture/org-units/kurpatov-wiki-ingest/docs/adr/0005-split-transcribe-and-push.md`.
 - **ADR for irreversible decisions.** If on-disk data format changes, the
   framework choice changes, or the network topology changes — add
   `docs/adr/NNNN-*.md` or `labs/<lab>/docs/adr/NNNN-*.md` where NNNN is the
@@ -424,9 +424,9 @@ Per-lab gap analyses live in their lab’s `STATE-OF-THE-LAB.md`
 (capability trajectories Level 1 → Level 2). The combined gap set
 across forge is the union of those.
 
-- `labs/kurpatov-wiki-bench/docs/STATE-OF-THE-LAB.md` — current
+- `phase-b-business-architecture/org-units/kurpatov-wiki-bench/docs/STATE-OF-THE-LAB.md` — current
   capability trajectories for the wiki bench.
-- `labs/rl-2048/docs/STATE-OF-THE-LAB.md` — TBD (when rl-2048
+- `phase-b-business-architecture/org-units/rl-2048/docs/STATE-OF-THE-LAB.md` — TBD (when rl-2048
   grows beyond the Jupyter sandbox).
 
 ### Phase F — Migration Planning
@@ -441,9 +441,9 @@ Per lab, the active trajectory toward Level 2 (TOGAF would call this
 the Transition Architecture). Updated when an experiment opens or
 closes:
 
-- `labs/kurpatov-wiki-bench/docs/STATE-OF-THE-LAB.md` — current
+- `phase-b-business-architecture/org-units/kurpatov-wiki-bench/docs/STATE-OF-THE-LAB.md` — current
   capability trajectories for the wiki bench.
-- `labs/rl-2048/docs/STATE-OF-THE-LAB.md` — TBD (when rl-2048 grows
+- `phase-b-business-architecture/org-units/rl-2048/docs/STATE-OF-THE-LAB.md` — TBD (when rl-2048 grows
   beyond the Jupyter sandbox).
 
 Concrete experiment specs sit at `labs/<lab>/docs/experiments/<id>.md`

@@ -13,7 +13,7 @@
 #
 # For each picked entry:
 #   1. patch forge/.env: INFERENCE_ACTIVE_MODEL_ID=<id>
-#   2. make -C labs/kurpatov-wiki-compiler down ; make -C labs/kurpatov-wiki-compiler up
+#   2. make -C phase-b-business-architecture/org-units/kurpatov-wiki-compiler down ; make -C phase-b-business-architecture/org-units/kurpatov-wiki-compiler up
 #   3. wait for vLLM healthy (poll /v1/models until served_name appears)
 #   4. ./run.sh
 #   5. continue on failure; restore the original active id at the end.

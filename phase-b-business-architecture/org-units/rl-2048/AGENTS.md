@@ -70,12 +70,12 @@ quality-dimension slates:
 
 **Service: Notebook sandbox** (consumer: rl-2048 only).
 
-- Component: Jupyter (in `labs/rl-2048/jupyter/`).
+- Component: Jupyter (in `phase-b-business-architecture/org-units/rl-2048/jupyter/`).
 - Component: caddy 2 at `jupyter-rl-2048.mikhailov.tech`.
 
 **Service: ML training tracking** (consumer: rl-2048 only).
 
-- Component: MLflow (in `labs/rl-2048/mlflow/` — the mlflow service
+- Component: MLflow (in `phase-b-business-architecture/org-units/rl-2048/mlflow/` — the mlflow service
   used to live at forge top-level; it moved here when rl-2048 was
   identified as the only consumer).
 - Component: caddy 2 at `mlflow.mikhailov.tech`.

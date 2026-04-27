@@ -89,12 +89,12 @@ make kurpatov-wiki-ingest    # transcription pipeline (Whisper + watchers + git 
 # or:
 # make rl-2048                 # GRPO sandbox + jupyter + mlflow
 # Bench is co-runnable with compiler:
-# make kurpatov-wiki-compiler && make -C labs/kurpatov-wiki-bench bench
+# make kurpatov-wiki-compiler && make -C phase-b-business-architecture/org-units/kurpatov-wiki-bench bench
 
 # 4. Add source media for kurpatov-wiki-ingest under
 #    ${STORAGE_ROOT}/labs/kurpatov-wiki-ingest/sources/<course>/<module>/*.<ext>
 #    (extensions: see INGEST_EXTENSIONS in
-#    labs/kurpatov-wiki-ingest/notebooks/0{2,3}_*_ingest*.py)
+#    phase-b-business-architecture/org-units/kurpatov-wiki-ingest/notebooks/0{2,3}_*_ingest*.py)
 ```
 
 ## Rebuilding a single service image
@@ -118,9 +118,9 @@ watchdog, ~200 MB). `make kurpatov-wiki-ingest-build` runs
 `docker compose build` which walks every service with a `build:`
 block, so both images rebuild together — no per-image target is
 needed. See
-[labs/kurpatov-wiki-ingest/docs/adr/0005-split-transcribe-and-push.md](../labs/kurpatov-wiki-ingest/docs/adr/0005-split-transcribe-and-push.md)
+[phase-b-business-architecture/org-units/kurpatov-wiki-ingest/docs/adr/0005-split-transcribe-and-push.md](../labs/kurpatov-wiki-ingest/docs/adr/0005-split-transcribe-and-push.md)
 and
-[labs/kurpatov-wiki-ingest/docs/adr/0006-lean-pusher-image.md](../labs/kurpatov-wiki-ingest/docs/adr/0006-lean-pusher-image.md).
+[phase-b-business-architecture/org-units/kurpatov-wiki-ingest/docs/adr/0006-lean-pusher-image.md](../labs/kurpatov-wiki-ingest/docs/adr/0006-lean-pusher-image.md).
 
 ### Pinned-core build (keeps ssh responsive)
 
@@ -173,7 +173,7 @@ What to back up, in order of priority:
    `kurpatov-wiki-raw` private GitHub repo by the
    `kurpatov-wiki-raw-pusher` container, so in practice a fresh
    `git clone` recovers this layer without re-running whisper (see
-   [labs/kurpatov-wiki-ingest/docs/adr/0005-split-transcribe-and-push.md](../labs/kurpatov-wiki-ingest/docs/adr/0005-split-transcribe-and-push.md)).
+   [phase-b-business-architecture/org-units/kurpatov-wiki-ingest/docs/adr/0005-split-transcribe-and-push.md](../labs/kurpatov-wiki-ingest/docs/adr/0005-split-transcribe-and-push.md)).
 4. `${STORAGE_ROOT}/labs/rl-2048/mlflow/data/mlflow.db` + `${STORAGE_ROOT}/labs/rl-2048/mlruns/` — experiment
    history.
 5. `${STORAGE_ROOT}/labs/kurpatov-wiki-ingest/checkpoints/`,
@@ -225,7 +225,7 @@ Per-lab smoke models: [`labs/<lab>/tests/smoke.md`](../labs/).
 Shared assertion helpers: [`scripts/smoke-lib.sh`](../scripts/smoke-lib.sh).
 Coverage map and TDD loop: [`tests/README.md`](../tests/README.md).
 
-What is verified per lab is documented in each lab's `tests/smoke.md`. The compiler lab asserts vLLM healthy + caddy up + correct served model on `/v1/models`; ingest asserts the four pipeline containers + GPU pinning + watchers + pusher image discipline; rl-2048 asserts jupyter + mlflow + caddy + REST API; bench (invoked separately via `make -C labs/kurpatov-wiki-bench smoke`) asserts the openhands binary + image build + gh auth + compiler endpoint reachable.
+What is verified per lab is documented in each lab's `tests/smoke.md`. The compiler lab asserts vLLM healthy + caddy up + correct served model on `/v1/models`; ingest asserts the four pipeline containers + GPU pinning + watchers + pusher image discipline; rl-2048 asserts jupyter + mlflow + caddy + REST API; bench (invoked separately via `make -C phase-b-business-architecture/org-units/kurpatov-wiki-bench smoke`) asserts the openhands binary + image build + gh auth + compiler endpoint reachable.
 
 Exit code is `0` iff all checks pass. Run it after bringing one lab up (`make <lab>`; bench co-runs with compiler), after any rebuild, and as a periodic sanity check.
 
@@ -307,7 +307,7 @@ ffmpeg, so `.mp3` and friends go through the same path as `.mp4`.
 HTML files (`.html`, `.htm` — typically getcourse.ru lesson exports)
 take the HTML-extractor path instead, producing the same segments[]
 shape minus timing — see
-[labs/kurpatov-wiki-ingest/docs/adr/0008-ingest-dispatch.md](../labs/kurpatov-wiki-ingest/docs/adr/0008-ingest-dispatch.md).
+[phase-b-business-architecture/org-units/kurpatov-wiki-ingest/docs/adr/0008-ingest-dispatch.md](../labs/kurpatov-wiki-ingest/docs/adr/0008-ingest-dispatch.md).
 
 Defaults live in `scripts/push-sources.sh` and are currently:
 
@@ -344,7 +344,7 @@ default, which lacks `-s` and `--append-verify`; fix once with
 ## Transcript migration
 
 If the directory layout under `vault/raw/` changes, there's a migration
-script at `labs/kurpatov-wiki-ingest/notebooks/migrate_vault_hierarchy.py`. Run it from
+script at `phase-b-business-architecture/org-units/kurpatov-wiki-ingest/notebooks/migrate_vault_hierarchy.py`. Run it from
 inside the container (raw files are root-owned):
 
 ```bash

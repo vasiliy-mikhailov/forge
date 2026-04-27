@@ -13,10 +13,10 @@ make targets — and rebuild the whole environment.
 
 | Lab                                | What it does                                              | SPEC                                                                              |
 | ---------------------------------- | --------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| `labs/kurpatov-wiki-compiler/`     | vLLM serving the LLM that compiles raw → wiki              | [SPEC](labs/kurpatov-wiki-compiler/SPEC.md)                                       |
-| `labs/kurpatov-wiki-ingest/`       | Media → raw transcript pipeline (Whisper, etc.)            | [SPEC](labs/kurpatov-wiki-ingest/SPEC.md)                                         |
-| `labs/kurpatov-wiki-bench/`        | Agent harness: benchmark LLMs on the compiler task         | [SPEC](labs/kurpatov-wiki-bench/SPEC.md)                                          |
-| `labs/rl-2048/`                    | Jupyter sandbox: vLLM + unsloth + transformers + MLflow    | [SPEC](labs/rl-2048/SPEC.md)                                                      |
+| `phase-b-business-architecture/org-units/kurpatov-wiki-compiler/`     | vLLM serving the LLM that compiles raw → wiki              | [SPEC](phase-b-business-architecture/org-units/kurpatov-wiki-compiler/SPEC.md)                                       |
+| `phase-b-business-architecture/org-units/kurpatov-wiki-ingest/`       | Media → raw transcript pipeline (Whisper, etc.)            | [SPEC](phase-b-business-architecture/org-units/kurpatov-wiki-ingest/SPEC.md)                                         |
+| `phase-b-business-architecture/org-units/kurpatov-wiki-bench/`        | Agent harness: benchmark LLMs on the compiler task         | [SPEC](phase-b-business-architecture/org-units/kurpatov-wiki-bench/SPEC.md)                                          |
+| `phase-b-business-architecture/org-units/rl-2048/`                    | Jupyter sandbox: vLLM + unsloth + transformers + MLflow    | [SPEC](phase-b-business-architecture/org-units/rl-2048/SPEC.md)                                                      |
 
 Each lab is fully self-contained: own caddy, own docker-compose,
 own SPEC. Labs are mutex on host ports 80/443 (each lab's caddy

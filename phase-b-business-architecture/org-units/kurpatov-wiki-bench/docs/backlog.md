@@ -68,7 +68,7 @@ file_editor вызове даже при max=32K. Тогда — H10 (context st
 
 **ICE 180 (6 · 3 · 10) · backlog**
 
-В `labs/kurpatov-wiki-compiler/docker-compose.yml` — флаг
+В `phase-b-business-architecture/org-units/kurpatov-wiki-compiler/docker-compose.yml` — флаг
 `--tool-call-parser` с `qwen3_xml` на `hermes`. `qwen3_xml` — относительно
 свежий парсер, может неправильно обрамлять Cyrillic в XML-обёртке;
 `hermes` — старее и обкатан.

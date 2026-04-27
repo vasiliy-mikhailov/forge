@@ -1,4 +1,4 @@
-# forge — root Makefile. Disp atches into labs/<lab>/.
+# forge — root Makefile. Dispatches into phase-b-business-architecture/org-units/<lab>/.
 #
 # Each lab is fully self-contained: own caddy, own docker-compose,
 # own SPEC. Labs are mutually exclusive on host ports 80/443
@@ -48,18 +48,18 @@ network:
 
 # make <lab>           → bring up
 $(LABS): network
-	@$(MAKE) -C labs/$@ up
+	@$(MAKE) -C phase-b-business-architecture/org-units/$@ up
 
 # Pattern rules: make <lab>-{down,logs,build}.
 %-down:
-	@$(MAKE) -C labs/$* down
+	@$(MAKE) -C phase-b-business-architecture/org-units/$* down
 %-logs:
-	@$(MAKE) -C labs/$* logs
+	@$(MAKE) -C phase-b-business-architecture/org-units/$* logs
 %-build:
-	@$(MAKE) -C labs/$* build
+	@$(MAKE) -C phase-b-business-architecture/org-units/$* build
 
 stop-all:
-	@for lab in $(LABS); do $(MAKE) -C labs/$$lab down 2>/dev/null || true; done
+	@for lab in $(LABS); do $(MAKE) -C phase-b-business-architecture/org-units/$$lab down 2>/dev/null || true; done
 
 ps:
 	@docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'

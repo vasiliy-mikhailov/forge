@@ -82,7 +82,7 @@ collect/filter/adapt mechanism.
   is a git checkout of the *separate* `kurpatov-wiki-raw` repo
   (NOT a subdirectory of forge). The `raw-pusher` container commits
   + pushes from there. See ADR
-  `labs/kurpatov-wiki-ingest/docs/adr/0005-split-transcribe-and-push.md`.
+  `phase-b-business-architecture/org-units/kurpatov-wiki-ingest/docs/adr/0005-split-transcribe-and-push.md`.
 
 ## Phase D — Technology Architecture
 

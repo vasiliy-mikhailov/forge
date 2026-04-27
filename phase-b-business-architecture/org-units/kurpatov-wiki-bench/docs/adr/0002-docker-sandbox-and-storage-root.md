@@ -76,7 +76,7 @@ Deliberately **not** present:
   `${STORAGE_ROOT}/kurpatov-wiki-bench/runs/<run_id>/`
   — `events.jsonl`, `stderr.log`, `summary.json`,
   `vllm-snapshot-{start,end}.json`, optional `bench-report.md`.
-- vLLM HF cache (already in place via `labs/kurpatov-wiki-compiler/`):
+- vLLM HF cache (already in place via `phase-b-business-architecture/org-units/kurpatov-wiki-compiler/`):
   `${STORAGE_ROOT}/models/` mounted at `/root/.cache/huggingface`
   inside the vLLM container. No change here; documenting the
   convention.

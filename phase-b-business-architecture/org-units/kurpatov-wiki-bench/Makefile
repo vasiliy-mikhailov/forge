@@ -15,7 +15,7 @@ export
 .PHONY: help build bench preflight storage-init clean-experiments up down logs
 
 help:
-	@echo "labs/kurpatov-wiki-bench — agent benchmark harness"
+	@echo "phase-b-business-architecture/org-units/kurpatov-wiki-bench — agent benchmark harness"
 	@echo ""
 	@echo "  make build               — build the sandbox image"
 	@echo "  make storage-init        — create experiments dir"
