@@ -1,4 +1,4 @@
-# AGENTS.md / CLAUDE.md — instructions for LLM agents in this repo
+# CLAUDE.md / AGENTS.md — instructions for LLM agents in this repo
 
 This file is read by agents (Claude Code, Codex CLI, Cowork, etc.) before
 they change anything. Keep it short and practical — tools don't digest
@@ -220,18 +220,37 @@ programs.
 
 ### Phase B — Business Architecture
 
-Forge realizes the Phase A vision through two **value streams**, each
-producing a **product** with its own **capability stack** and quality
-dimensions.
+Forge is, first and foremost, an **R&D organization**. Its primary
+business capability is research-and-development: turning ideas about
+AI saving human time on cognitive work into shipped, falsifiable
+tools. Products (Kurpatov Wiki, rl-2048) are *outputs* of that R&D —
+not the top of the architecture.
 
-**Value streams + products:**
+**Primary capability: R&D**
 
-| Value stream                                       | Product           | Mechanism (collect → filter → adapt) |
-|----------------------------------------------------|-------------------|--------------------------------------|
-| Lecture → smart-reading wiki                       | **Kurpatov Wiki** | audio→transcript ingest → dedup + factcheck filter → smart-reading markdown adapt |
-| Verifiable-reward problem → AI-written solver      | **rl-2048**       | (state, reward) observe → RLVR filter → program/policy adapt |
+| Capability sub-area                       | Quality dimension                                  |
+|-------------------------------------------|----------------------------------------------------|
+| Run hypothesis-driven experiments         | Architect-velocity: capability advances per architect-hour |
+| Reproduce + audit experiments             | Replay from `(Dockerfile + raw transcripts)` only |
+| Ship verified outputs to consumers        | Branch hygiene; verify-by-artifact, not by agent  |
 
-**Business capabilities — Kurpatov Wiki:**
+**Labs realize R&D, they are not products.** Each lab is a specialized
+"workshop" inside forge that hosts a slice of R&D for one domain or
+one production-framework component. Labs have services + components
+(Phase D) and trajectories (Phase H) but no separate Phase A vision
+of their own — their vision is a lab-scoped restatement of forge's
+R&D vision.
+
+| Lab                          | R&D scope                                                 |
+|------------------------------|-----------------------------------------------------------|
+| `kurpatov-wiki-compiler`     | LLM inference research + reliable serving infrastructure  |
+| `kurpatov-wiki-bench`        | Benchmarking methodology + the wiki-compilation harness   |
+| `kurpatov-wiki-ingest`       | Audio→text pipeline research + maintenance                |
+| `rl-2048`                    | Program-synthesis-via-RLVR methodology research           |
+
+**R&D output #1: the Kurpatov Wiki product**
+
+Value stream: lecture → smart-reading wiki (collect → filter → adapt).
 
 | Capability                           | Quality dimension                          |
 |--------------------------------------|--------------------------------------------|
@@ -241,7 +260,10 @@ dimensions.
 | Concept extraction + linking         | (in service of the above three) |
 | Benchmark open-weight LLMs vs Opus   | (gates the production runs) |
 
-**Business capabilities — rl-2048:**
+**R&D output #2: rl-2048 (program-synthesis methodology)**
+
+Value stream: verifiable-reward problem → AI-written solver
+(observe → train → emit).
 
 | Capability                           | Quality dimension                          |
 |--------------------------------------|--------------------------------------------|
@@ -249,7 +271,7 @@ dimensions.
 | RLVR training loop                   | (TBD) |
 
 (The rl-2048 row is a stub — populate when its STATE-OF-THE-LAB.md
-gets written. Out of scope for the wiki product's flow.)
+gets written.)
 
 ### Phase C — Information Systems Architecture
 
@@ -421,7 +443,7 @@ go to git history per Phase H).
   changes pass through them.
 - **All work runs in containers** (`docs/policies/containers.md`).
 - **AGENTS.md per lab** carries operational rules for that lab; the
-  forge-level AGENTS.md (this file) carries cross-cutting rules.
+  forge-level CLAUDE.md (this file) carries cross-cutting rules.
 - **No PR review automation** beyond the AGENTS.md convention.
 
 #### Per-lab AGENTS.md must follow the canonical template
@@ -433,13 +455,13 @@ phase headers (Phase A through Phase H, classic TOGAF names — see
 the source of truth for section ordering and wording; copy from it
 when adding or editing a lab AGENTS.md.
 
-Symlink convention: every directory (lab or forge root) keeps
-`AGENTS.md` as the regular file and `CLAUDE.md` as a symlink →
-`AGENTS.md`. Both names resolve to the same content; agent tools can
-look for either.
+Symlink convention: each lab keeps `AGENTS.md` as the regular file and
+`CLAUDE.md` as a symlink → `AGENTS.md`. Forge root inverts the direction
+(`AGENTS.md` → `CLAUDE.md`) for historical reasons — leave that
+as is.
 
 Labs that don’t yet have AGENTS.md must add one when their next
-substantive change lands. Until then, the forge-level AGENTS.md is the
+substantive change lands. Until then, the forge-level CLAUDE.md is the
 authoritative reference for those labs.
 
 ### Phase H — Architecture Change Management

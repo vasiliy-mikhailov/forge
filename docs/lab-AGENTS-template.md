@@ -47,9 +47,14 @@ Phase A answers *who* cares about this lab as an architecture, *why*
 they care, and *what target state* the lab exists to reach. Products
 and capability tables go in Phase B, not here.
 
+**Lab as R&D unit.** <One paragraph: this lab is part of forge R&D
+capability, scoped to *<lab's R&D scope from forge Phase B labs
+table>*. Not a product; it is the workshop where forge does R&D on
+<domain>.>
+
 **Vision (lab-scoped).** <One sentence: what this lab provides to
 the forge mission "Forge builds AI tools that save human time on
-cognitive work".>
+cognitive work". A lab-scoped restatement of forge's R&D vision.>
 
 **Lab-scoped stakeholders.** <Who cares about this lab specifically.
 Cross-link to forge-level stakeholders (architect of record, future
