@@ -9,10 +9,16 @@ plugged in (D8 Steps 4-7):
   - source-author extracts excerpt+timestamp_sec from whisper segments
   - Per-source git commit on success (each source = its own commit)
   - Fail-fast on first verify=fail
-  - Retrieval-augmented dedup: orchestrator rebuilds embed_helpers index
-    before each source; source-author calls find-claims per-claim and
-    feeds top-K candidates to idea-classifier (replaces bulk
-    prior_claims_json that didn't scale past ~7 sources).
+  - Retrieval-augmented dedup (claims): orchestrator rebuilds
+    embed_helpers index before each source; source-author calls
+    find-claims per-claim and feeds top-K candidates to
+    idea-classifier (replaces bulk prior_claims_json that didn't
+    scale past ~7 sources).
+  - Retrieval-augmented dedup (concepts): source-author also calls
+    find-concepts per concept_touched slug to canonicalise it
+    against the existing concept index (threshold ≥ 0.85). Closes
+    the concept-count gap by collapsing near-synonym slugs into
+    one canonical slug + one concept file.
 
 Validated on synth (step7_orchestrator.py): 4/4 verified=ok,
 claims=21, REPEATED=7, CF=2, urls=12, top-orch events=5-6 per source,
@@ -171,9 +177,15 @@ Workflow:
 Step 0. `pwd` to know the workspace absolute path. file_editor
         requires ABSOLUTE paths.
 
-Step 1. Check existence:
+Step 1. Check file-system existence with the slug you were given.
+   The source-author has already canonicalised the slug via
+   `embed_helpers.py find-concepts` before calling you, so the
+   slug here is the canonical name to use directly:
+
         `ls wiki/data/concepts/<concept_slug>.md 2>/dev/null && \\
          echo EXISTS || echo NEW`
+
+   (Do NOT re-run find-concepts here — that work is done.)
 
 Step 2a. **If NEW** (file does not exist):
    Use file_editor (ABSOLUTE path) to CREATE with the canonical
@@ -308,18 +320,57 @@ the ones first-introduced here. The curator handles NEW vs EXISTS:
   `## Contributions by source`, updates `touched_by:` frontmatter
 
 For each concept slug in concepts_touched:
-  - Find segments where the concept is discussed (search by Russian
-    title or kebab keyword translation). Pick 2-4 substantive bullets
-    summarizing what THIS source adds about THIS concept (each ≥ 30
-    chars). These go in the `### <source_slug>` sub-section.
-  - Find the FIRST such segment's `start` field (round int) as
-    `timestamp_sec` — used as `[mm:ss]` annotation on the See-link
-    bullet.
-  - task(concept-curator, prompt with: concept_slug, definition
-    (1 paragraph grounded in lecture, used only if NEW), source_slug
-    (full slug — Course/Module/Stem form), lecture_transcript,
-    related_concepts, this_source_bullets (the 2-4 strings),
-    this_source_timestamp_sec)
+
+  1. **CANONICALISE the slug via retrieval.** Before deciding which
+     concept file the curator should write/append to, look up
+     semantically-similar existing concepts:
+
+     ```
+     python3 /opt/forge/embed_helpers.py find-concepts wiki \\
+       --slug-or-text "<proposed_concept_slug>" --k 3
+     ```
+
+     The output is a JSON array of candidates
+     `[{{"slug": "...", "definition": "...", "score": 0.91}}, ...]`
+     (empty `[]` if the index has no related concepts yet).
+
+     Calibration of the score field
+     (multilingual-e5-base, normalised; same as REPEATED-claim
+     thresholds in step D):
+       - score ≥ 0.85 — near-lexical / unambiguous match. Replace
+         your proposed slug with the candidate's slug.
+       - 0.78 ≤ score < 0.85 — paraphrase / semantic match. Replace
+         your proposed slug with the candidate's slug ONLY if the
+         candidate's `definition` covers the same idea you intended;
+         otherwise keep proposed.
+       - score < 0.78 — different concept; keep your proposed slug.
+
+     Call the slug after this step `canonical_slug`. Use it
+     everywhere downstream (frontmatter `concepts_touched`, body
+     cross-refs `[label](../../../concepts/<canonical_slug>.md)`,
+     and the `concept_slug` arg to the concept-curator task below).
+
+  2. Find segments where the concept is discussed (search by Russian
+     title or kebab keyword translation). Pick 2-4 substantive bullets
+     summarizing what THIS source adds about THIS concept (each ≥ 30
+     chars). These go in the `### <source_slug>` sub-section.
+
+  3. Find the FIRST such segment's `start` field (round int) as
+     `timestamp_sec` — used as `[mm:ss]` annotation on the See-link
+     bullet.
+
+  4. task(concept-curator, prompt with: concept_slug=canonical_slug,
+     definition (1 paragraph grounded in lecture, used only if NEW),
+     source_slug (full slug — Course/Module/Stem form),
+     lecture_transcript, related_concepts (also canonicalised via
+     find-concepts), this_source_bullets (the 2-4 strings),
+     this_source_timestamp_sec)
+
+⚙️ Retrieval contract for concepts: the same index that powers
+   find-claims also indexes concept slugs + definitions. The
+   orchestrator rebuilds it before each source. If the rebuild fails
+   or the index is stale, find-concepts will return `[]` and you
+   fall back to using your proposed slug as the canonical one.
 
 Do NOT skip concepts you think "already exist" — the curator handles
 that case via the EXISTS branch. Skipping is the source of cross-ref
