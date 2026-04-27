@@ -144,54 +144,135 @@ make du    # on-disk sizes under STORAGE_ROOT
 - Enter a container: `docker exec -it <container> bash`.
 
 
-## Architecture management — capability trajectories (TOGAF-style)
+## Architecture — TOGAF-style layered structure
 
-We follow **TOGAF-style** discipline — vocabulary, not certification.
-Architecture is organized around **capabilities**, each with a
-trajectory:
+This section organises every architecture decision in Forge by the
+TOGAF ADM phase it belongs to. The point is **layering**: a decision
+about wiki concept structure (Phase B) lives one layer below "Forge
+saves human time" (Phase A), and a decision about which embedding
+model (Phase D) lives two layers below that. When you read this
+file you do not have to wade through libblas3 to reach the mission;
+when you debug embed_helpers.py you do not have to re-derive why
+the wiki exists.
+
+We adopt TOGAF *vocabulary and layering*, not certification. We do
+not produce Architecture Vision Statements, Architecture Definition
+Documents, or Architecture Roadmaps as formal deliverables. Each lab
+keeps its own concrete artefacts in `labs/<lab>/docs/` (ADRs,
+experiments, STATE-OF-THE-LAB.md).
+
+### Phase A — Vision (the why)
+
+**Forge saves human time with AI agents.**
+
+Two products today, each its own value stream:
+
+| Product           | Value stream                                                    |
+|-------------------|-----------------------------------------------------------------|
+| **Kurpatov Wiki** | Video / audio lectures → smart-reading format markdown wiki.    |
+| **rl-2048**       | 2048 board states → solver actions, trained via RL with verifiable rewards (RLVR). |
+
+### Phase B — Business architecture (capabilities + quality)
+
+Each product is a stack of capabilities; each capability has a quality
+dimension that defines "good".
+
+**Kurpatov Wiki**
+
+| Capability                           | Quality dimension                          |
+|--------------------------------------|--------------------------------------------|
+| Compile lecture into source.md       | **Fast for reading** — bullets, TL;DR, no narrative bloat |
+| Cross-source dedup of claims         | **No repetitions** — REPEATED markers, retrieval-augmented |
+| Fact-check empirical claims          | **No fake statements** — Wikipedia URLs, CONTRADICTS_FACTS markers |
+| Concept extraction + linking         | (in service of the above three) |
+| Benchmark open-weight LLMs vs Opus   | (gates the production runs) |
+
+**rl-2048**
+
+| Capability                           | Quality dimension                          |
+|--------------------------------------|--------------------------------------------|
+| Solve 2048 faster                    | (TBD — falsifiable metric to be locked) |
+| RLVR training loop                   | (TBD) |
+
+(The rl-2048 row is a stub — populate when its STATE-OF-THE-LAB.md
+gets written. Out of scope for the wiki product's flow.)
+
+### Phase C — Information architecture (data shapes)
+
+| Data set                                  | Shape                                    |
+|-------------------------------------------|------------------------------------------|
+| `kurpatov-wiki-raw`                       | per-source `raw.json` (whisper segments) |
+| `kurpatov-wiki-wiki:skill-v2`             | `data/sources/<slug>.md`, `data/concepts/<slug>.md`, `data/concept-index.json` |
+| Bench artefacts                           | `${STORAGE_ROOT}/labs/kurpatov-wiki-bench/experiments/<run_id>/` |
+| Retrieval index (D8)                      | `wiki/data/embeddings/{claims,concepts}.{sqlite,npz}` (numpy + sqlite hybrid) |
+
+Per-product detailed shapes live in their lab's STATE-OF-THE-LAB.md.
+
+### Phase D — Technology architecture (the stack)
+
+Forge-wide:
+- GPU host (Blackwell + RTX 5090); single-server deployment
+- Docker (containers-only invariant — see `docs/policies/containers.md`)
+- GitHub for source-of-truth + bench branches
+- vLLM (in `kurpatov-wiki-compiler` lab) for LLM serving
+
+Per-lab key tech choices:
+- `kurpatov-wiki-bench`: OpenHands SDK 1.17.0, sentence-transformers, e5-base
+- `kurpatov-wiki-ingest`: faster-whisper
+- `kurpatov-wiki-compiler`: vLLM with Qwen3.6-27B-FP8, YaRN factor 4.0 → 128K context
+
+Specific version pins live in `Dockerfile`s and `.env`. Specific
+*decisions* about why those versions were picked live in lab ADRs.
+
+### Phase E/F — Opportunities, solutions, migration (active experiments)
+
+Per lab, the active trajectory toward Level 2 (TOGAF would call this
+the Transition Architecture). Updated when an experiment opens or
+closes:
+
+- `labs/kurpatov-wiki-bench/docs/STATE-OF-THE-LAB.md` — current
+  capability trajectories for the wiki bench.
+- `labs/rl-2048/docs/STATE-OF-THE-LAB.md` — TBD (when rl-2048 grows
+  beyond the Jupyter sandbox).
+
+Concrete experiment specs sit at `labs/<lab>/docs/experiments/<id>.md`
+(only Active and Closed-but-still-cited experiments — superseded ones
+go to git history per Phase H).
+
+### Phase G — Implementation governance (how we operate)
+
+- **Architect of record**: one person (the repo owner). All trajectory
+  changes pass through them.
+- **All work runs in containers** (`docs/policies/containers.md`).
+- **AGENTS.md per lab** carries operational rules for that lab; the
+  forge-level CLAUDE.md (this file) carries cross-cutting rules.
+- **No PR review automation** beyond the AGENTS.md convention.
+
+### Phase H — Change management (capability trajectories)
+
+Architecture is organised around capabilities, each with two states:
 
 - **Level 1** = as-is (how the capability works today)
-- **Level 2** = to-be (the next planned state of that capability)
+- **Level 2** = to-be (the next planned state)
 
-When Level 2 is reached, it **becomes** the new Level 1, and the prior
-Level 1 description is deleted from the docs. Git history keeps every
+When Level 2 is reached it **becomes** the new Level 1; the prior
+Level 1 description is **deleted from docs**. Git history keeps every
 prior level — that is the archive. We do not maintain `legacy/` tiers,
-`Superseded by NNNN` cross-links, or `archive/` directories: if it is
-not Level 1 or Level 2 of a current capability, it has no place in the
-working tree.
+`Superseded by NNNN` cross-links, `archive/` directories, or
+`Withdrawn`/`Deprecated`/`Closed` status flags. Presence of text in
+the working tree means current; absence means git history.
 
-### Capabilities (current)
+**Brainstorm experiments** is itself a capability:
 
-| Capability                | Level 1 (as-is)                                   | Level 2 (to-be)                                                        |
-|---------------------------|---------------------------------------------------|------------------------------------------------------------------------|
-| **Brainstorm experiments**| Triggered by metric gaps. Single architect drives. Pruning baggage and proposing experiments are the same activity, both targeting time-to-market and token efficiency. | (TBD as needed) |
-| (others)                  | Each lab's `STATE-OF-THE-LAB.md` defines its current capabilities and their trajectories. | |
+> Triggered by metric gaps. Single architect drives. Pruning baggage
+> and proposing experiments are the same activity, both targeting
+> time-to-market and token efficiency. Output: a new
+> `docs/experiments/<id>.md` (Level 2 proposal) + deletions in any
+> docs that contain stale historical content.
 
-### Operating rules
-
-1. **Architect of record** — one person (the repo owner). All
-   trajectory changes — moving Level 2 → Level 1, defining a new
-   Level 2, deleting prior content — pass through this person.
-2. **Baggage = anything that does not contribute to a current
-   capability's Level 1 or Level 2.** Test: ask "if I delete this,
-   does any current architecture conversation lose information?"
-   If no, delete it. Git keeps the trace.
-3. **No supersession metadata in docs.** No `Superseded by`,
-   `Withdrawn`, `Deprecated`, `Closed`, `Active`. The presence of
-   text in the working tree means it is current; absence means git
-   history.
-4. **Brainstorm-and-prune is one activity.** When proposing
-   experiments to lift a metric, the same session removes content
-   that no longer contributes. The two are bundled because they
-   share the same input (current state of the capability) and the
-   same metric goal (time-to-market, token efficiency).
-
-### What this *replaces*
-
-This section is the highest-level statement; lab-level
-`AGENTS.md` files inherit these rules. We do **not** add: Architecture
-Vision Statements, Architecture Definition Documents, Architecture
-Roadmaps, Capability Maturity Models beyond Level 1/2, formal
-stakeholder maps, PR compliance scripts, or `archive/` tiers.
+**Baggage** = anything that does not contribute to a current
+capability's Level 1 or Level 2. Test: ask "if I delete this, does
+any current architecture conversation lose information?" If no,
+delete it.
 
 Reference: <https://www.opengroup.org/togaf>. Style only.
