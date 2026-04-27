@@ -142,3 +142,53 @@ make du    # on-disk sizes under STORAGE_ROOT
   and in `docs/` (ADRs + SPECs).
 - Service logs: `make <lab>-logs` (tail -f of `docker logs <container>`).
 - Enter a container: `docker exec -it <container> bash`.
+
+
+## Architecture management — TOGAF-style (lite)
+
+We follow **TOGAF-style** discipline for experiments and architecture
+decisions. This is a *style*, not strict compliance — we adopt
+TOGAF's vocabulary (Baseline / Target / Transition Architecture,
+Architecture Repository, supersession, Compliance Review) and a small
+set of operating routines, without formal deliverables (no Architecture
+Vision Statement, no Architecture Definition Document, no Capability
+Maturity assessments).
+
+Concrete artefacts (the Architecture Repository):
+
+- **Baseline state** — `labs/<lab>/docs/STATE-OF-THE-LAB.md` (where it
+  exists) is the as-is / to-be / gaps audit; updated when a major
+  experiment closes.
+- **ADRs** — `labs/<lab>/docs/adr/NNNN-<slug>.md`. Status header is
+  authoritative: `Proposed | Accepted | Superseded by NNNN | Withdrawn`.
+  When an ADR is superseded, the originating ADR's Status header is
+  updated *in the same commit* that lands the successor.
+- **Experiments** — `labs/<lab>/docs/experiments/<id>.md`. Status
+  header: `Active | Closed | Superseded by <id>`. Closed experiments
+  remain as research records; superseded experiments stay verbatim
+  with a one-line pointer.
+- **Legacy code/docs** — superseded artefacts move to a sibling
+  `legacy/` directory with a one-line README pointing at the
+  canonical successor. Never delete; never edit in place.
+- **Post-mortems** — withdrawn proposals and design notes that didn't
+  ship live in `labs/<lab>/docs/post-mortems/`.
+
+Routines:
+
+| Routine                 | Trigger                                  | Output                                                                       |
+|-------------------------|------------------------------------------|------------------------------------------------------------------------------|
+| **Supersession review** | ADR or experiment closes                 | Status flip on the superseded ADR/experiment + one-line pointer to successor |
+| **Baggage pruning**     | (cadence — see open question below)      | Stale historical content removed from active docs; legacy content moved to `legacy/` |
+| **Compliance review**   | PR adding/changing an ADR-level artefact | Reviewer checks against the lab's AGENTS.md invariants                       |
+| **Baseline refresh**    | Major experiment closes                  | STATE-OF-THE-LAB.md updated                                                  |
+
+Open governance questions (intentionally unspecified — codify when
+answered, see commit history for the most recent decision):
+
+- Cadence and scope of baggage pruning sweeps
+- Whether peer review is required for ADR/experiment supersession, or
+  whether a single architect approves
+- Whether to introduce a formal `archive/` tier for content >1 year old
+
+Reference: <https://www.opengroup.org/togaf>. We do not claim
+certification or full compliance — only the discipline.
