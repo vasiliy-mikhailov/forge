@@ -82,6 +82,41 @@ RUN set -e \
         "https://en.wikipedia.org/wiki/Test" \
  && rm -rf /tmp/_MEI_FAKE
 
+
+# ─── D8: Python SDK + retrieval deps (added 2026-04-26) ────────────────
+#
+# Replaces standalone PyInstaller CLI for D7-rev3+ orchestrators.
+# numpy used instead of sqlite-vss to avoid libblas3 system pkg.
+
+RUN pip install --no-cache-dir \
+        "openhands-sdk==1.17.0" \
+        "openhands-tools==1.18.1" \
+        "sentence-transformers>=2.7" \
+        "numpy>=1.24" \
+        "pyyaml>=6.0"
+
+# Pre-download e5-base into image (~280 MB) so HF Hub is not hit on
+# every `make bench` invocation (saves ~5 min cold start).
+RUN python3 -c "from sentence_transformers import SentenceTransformer; \
+    m = SentenceTransformer('intfloat/multilingual-e5-base'); \
+    v = m.encode('passage: smoke', normalize_embeddings=True); \
+    assert v.shape == (768,), v.shape; \
+    print('[smoke 3] sentence-transformers e5-base ok, dim=768')"
+
+# Install our D8 scripts. Run them via `docker run --entrypoint python3
+# kurpatov-wiki-bench:V /opt/forge/<script>`.
+RUN mkdir -p /opt/forge
+COPY orchestrator/run-d8-pilot.py /opt/forge/run-d8-pilot.py
+COPY orchestrator/embed_helpers.py /opt/forge/embed_helpers.py
+COPY tests/synthetic-orchestrator/step8_smoke.py /opt/forge/step8_smoke.py
+COPY tests/synthetic-orchestrator/step7_orchestrator.py /opt/forge/step7_orchestrator.py
+COPY evals/grade/bench_grade.py /opt/forge/bench_grade.py
+
+# Build-time D8 retrieval smoke. Pure-Python, no external network beyond
+# the e5-base download already cached above.
+RUN python3 /opt/forge/step8_smoke.py \
+ && echo "[smoke 4] D8 retrieval helpers ok"
+
 # Working directory the agent operates in. The agent will git clone
 # kurpatov-wiki-{raw,wiki} into here. /runs/current is the only
 # bind-mount back to the host.

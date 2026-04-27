@@ -18,8 +18,7 @@ This lab benchmarks open-weight LLMs on the task of compiling Russian whisper-tr
 forge/labs/kurpatov-wiki-bench/
 ├── AGENTS.md                           # this file
 ├── .agents/skills/                     # project-scoped skills (auto-loaded by OpenHands SDK)
-│   ├── openhands-sdk-orchestration.md  # how we use OpenHands SDK; gotchas; canonical patterns
-│   └── tdd-on-synthetic-fixtures.md    # progressive TDD methodology for complex agent orchestrations
+│   └── openhands-sdk-orchestration.md  # how we use OpenHands SDK; gotchas; canonical patterns
 ├── docs/
 │   ├── spec.md                         # methodology — hypothesis lifecycle, falsifiability, tier definitions
 │   ├── backlog.md                      # ranked hypothesis backlog (A/B/C/D/E/F/G clusters)
@@ -71,6 +70,127 @@ Earlier the regex required a SPACE between the words: `r"\[CONTRADICTS\s+FACTS\]
 - `experiment/D7-rev2-2026-04-26-qwen3.6-27b-fp8` — reported `claims_CONTRADICTS_FACTS_sum=0`. Same suspicion.
 
 After the regex fix the parser now accepts `[CONTRADICTS\s_+FACTS]` (space OR underscore). Retro re-grade of all three branches with the fixed parser is a small task (10 min); pending.
+
+### Forge-wide invariant: all work runs in containers
+
+**Rule (forge-level, applies to every lab):** every executable artifact —
+orchestrators, helper scripts, evaluators, retrieval indexes — MUST run
+inside a Docker container. No host-Python runs in production. No
+host-pip installs of new dependencies.
+
+**Why:** isolation, reproducibility, system-package consistency
+(libblas, libssl, glibc). Without containerization, runs become
+host-dependent ("works on Vasiliy's server, not on a fresh box"), which
+breaks the "every run is replayable from the artifact + Dockerfile"
+contract underlying the bench.
+
+**What we drifted on (2026-04-26 audit):** D7-rev3 onwards we ran
+orchestrators directly from the Python venv at
+`tests/synthetic-orchestrator/.venv/`. Convenient for iteration
+(no docker rebuild per change), but breaks the forge contract.
+
+D7-rev2 ran inside a wrapped image (per ADR
+`forge:0049-Dockerfile-LD_LIBRARY_PATH-leak`). D7-rev3 dropped that
+because openhands-sdk Python imports were easier to iterate without
+rebuilding the image. **This was a tactical compromise, not a strategic
+shift.** Production-grade runs MUST go back into a container.
+
+**Concrete next steps:**
+- Bake `sentence-transformers`, `numpy`, `openhands-sdk`, `openhands-tools`,
+  `requests`, `pyyaml` into the bench Docker image (`forge/labs/kurpatov-wiki-bench/Dockerfile`).
+- Promote `embed_helpers.py`, `bench_grade.py`, the orchestrator
+  drivers (`run-d8-pilot.py`, etc) into `/usr/local/bin/` inside the
+  image so `make bench` runs them.
+- Container build = single source of truth; venv mode is allowed for
+  spike testing only and must be flagged in any post-mortem.
+
+**numpy vs sqlite-vss decision (2026-04-26):** chose numpy fallback
+because sqlite-vss requires `libblas3` system package (apt sudo). Inside
+the bench container this is trivially `apt install libblas3` — but until
+we re-containerize, numpy is the portable path. Either backend works
+with the same `embed_helpers.py` API once libblas is present.
+
+### Concept articles: follow canonical skill v2 shape (LAB-WIDE INVARIANT)
+
+**Rule**: every concept article in `wiki/data/concepts/<slug>.md` MUST
+match the canonical shape defined in
+`kurpatov-wiki-wiki:skill-v2/prompts/concept-article.md`:
+
+```yaml
+---
+slug:
+first_introduced_in: <full source slug>
+touched_by:
+  - <full source slug>
+---
+# <Russian title>
+
+## Definition
+(2 paragraphs grounded in lecture; optional **How Kurpatov uses this**)
+
+## Contributions by source
+### <full source slug>
+- bullet on what this source adds
+- See [<short title>](../sources/<source-slug>.md). [mm:ss]
+
+## Related concepts
+- [other-slug](other-slug.md) — relationship.
+```
+
+**Why**: this contract has been in skill v2 since 2026-04-25.
+D7-rev3 / D7-rev4-v2 / D8-pilot v1 deviated from it because
+`bench_grade.py`'s `REQUIRED_CONCEPT_SECTIONS` was lenient
+(`["## Definition"]` only) and the spec gap I "discovered" in
+D7-rev4-v2 audit was a confabulation — the spec was always there,
+I hadn't read it. Post-mortem: `outputs/concept-template-v3.md`
+(WITHDRAWN status).
+
+**Enforcement (bench_grade.py L1.5, post-2026-04-27)**:
+- per-concept: `## Contributions by source` present
+- per-concept: one `### <slug>` sub-section per `touched_by` entry
+- per-concept: each sub-section body ≥ 30 chars
+- per-concept: frontmatter has `first_introduced_in`
+- skip files starting with `_` (template baselines)
+
+**Concept-curator behavior** (per `prompts/per-source-summarize.md`):
+- on NEW concept: create the file from
+  `prompts/concept-article.md` (first-introduction prompt)
+- on EXISTING concept: append a new `### <source-slug>` sub-section
+  under `## Contributions by source`; never edit earlier entries
+- update `concept-index.json:processed_sources` after writing source.md
+
+### Top-orchestrator context must NOT grow across sources (LAB-WIDE INVARIANT)
+
+**Rule**: in any orchestrator architecture we adopt going forward, the
+top-level orchestrator's conversation history MUST be bounded — ideally
+**flat per source** (fresh Conversation per source via Python loop), and
+in no case may it accumulate task() / delegate() return values across
+all sources.
+
+**Why this is now an invariant:**
+D7-rev4-v2 production (2026-04-26, branch
+`experiment/D7-rev4-v2-2026-04-26-qwen3.6-27b-fp8`) revealed that
+TaskToolSet's fresh-context-per-call semantics fix sub-agent context
+bloat but *not* the top-orchestrator's own context. After 5 source-author
+task() returns, top-orch input grew to 8.93 M cumulative tokens; the
+agent then "forgot" to process sources 5-6 and exited with
+`Source 4 processed successfully` — a fresh manifestation of the same
+linear-scan attention failure we documented one layer down in ADR 0009.
+
+**Concrete enforcement:**
+- Smoke / synth orchestrator MUST assert `top_orch_input_tokens_per_source
+  ≤ 100 K` (or fewer, model-dependent). See
+  `tests/synthetic-orchestrator/step6_*` (D8 Step 0).
+- Production driver MUST instantiate a fresh `Conversation(...)` per
+  source inside a Python `for` loop. Long-lived
+  `conv.send_message(master_for_all_sources)` followed by
+  single `conv.run()` is the anti-pattern.
+- Code review for any new run-*.py: confirm Python loop topology
+  before merge.
+
+This generalizes ADR 0009 (per-source sub-agent isolation) one layer up:
+also per-source TOP-orchestrator isolation. Captured in ADR 0010 +
+D8 spec Step 0.
 
 ### `claims_REPEATED_sum` requires `get_known_claims.py` cross-source
 

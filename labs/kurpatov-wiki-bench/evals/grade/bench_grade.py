@@ -190,6 +190,32 @@ def grade_concept(path: Path):
             violations.append(f"missing section: {sec}")
     contributions_block = extract_section(body, "## Contributions by source")
     contrib_subs = re.findall(r"(?m)^### ", contributions_block or "") if contributions_block else []
+
+    # L1.5: canonical skill v2 concept shape (per wiki:prompts/concept-article.md).
+    # Soft layer — surface violations, do not change pass/fail.
+    touched_by = list(fm.get("touched_by") or [])
+    v15_violations = []
+    if touched_by:
+        if "## Contributions by source" not in body:
+            v15_violations.append("L1.5: ## Contributions by source missing")
+        else:
+            sub_pat = re.compile(
+                r"(?ms)^### (\S.*?)\n(.*?)(?=\n### |\n## |\Z)"
+            )
+            subs = sub_pat.findall(contributions_block or "")
+            if len(subs) < len(touched_by):
+                v15_violations.append(
+                    f"L1.5: {len(subs)} ### sub-sections vs {len(touched_by)} touched_by entries"
+                )
+            for slug_line, sub_body in subs:
+                if len(sub_body.strip()) < 30:
+                    v15_violations.append(
+                        f"L1.5: ### sub-section for {slug_line[:40]} too short"
+                    )
+        if "first_introduced_in" not in fm:
+            v15_violations.append("L1.5: frontmatter missing first_introduced_in")
+    violations.extend(v15_violations)
+
     return {
         "path": str(path),
         "slug": path.stem,
@@ -217,6 +243,8 @@ def grade_repo(repo: Path):
     sources = []
     if sources_root.exists():
         for src in sorted(sources_root.rglob("*.md")):
+            if src.stem.startswith("_"):
+                continue
             sources.append(grade_source(src))
 
     concepts = []

@@ -218,6 +218,177 @@ This pattern keeps spawn count at 3 (well under the 5 cap) regardless of how man
 
 In TaskToolSet (the current API) this concern goes away — there is no per-conversation child cap, and each `task()` is fresh by default.
 
+## Concept-curator follows canonical skill v2 shape (corrected 2026-04-27)
+
+**Lab-wide invariant**: concept articles follow
+`kurpatov-wiki-wiki:skill-v2/prompts/concept-article.md`. See
+`forge/labs/kurpatov-wiki-bench/AGENTS.md` for the full spec.
+
+> Every concept article has `## Definition`, `## Contributions by
+> source` with `### <source-slug>` sub-sections (append-only log of
+> every source mentioning the concept, with bullets, back-link, and
+> `[mm:ss]` timestamp), and `## Related concepts`.
+
+**Earlier confabulation:** I previously documented a "v3 template"
+with `## Touched in sources` bullets and `[≈ MM:SS]` annotation,
+believing the skill v2 SKILL.md had a spec gap. This was wrong —
+the canonical shape was always defined in
+`prompts/concept-article.md`. `bench_grade.py`'s leniency
+(`REQUIRED_CONCEPT_SECTIONS = ["## Definition"]`) hid my drift.
+See `outputs/concept-template-v3.md` (WITHDRAWN) for the post-mortem.
+
+D7-rev3, D7-rev4-v2, and D8 pilot v1 produced concepts in the
+incorrect "v3" shape. Recovery: prompts in `run-d8-pilot.py` updated
+to the canonical shape on 2026-04-27, and `bench_grade.py` L1.5
+layer added to enforce it. D8 pilot v2 is the first canonical run.
+
+### Curator + source-author prompt requirements
+
+Both prompts must follow the canonical skill v2 spec from
+`kurpatov-wiki-wiki:skill-v2/prompts/concept-article.md` and
+`prompts/per-source-summarize.md`. See
+`forge/labs/kurpatov-wiki-bench/orchestrator/run-d8-pilot.py` for the
+reference implementation (post-2026-04-27 calibrated prompts).
+
+Key requirements:
+
+1. **Source-author calls curator for every `concepts_touched` slug**
+   (NOT just `concepts_introduced`). Curator handles NEW vs EXISTS
+   internally.
+
+2. **Source-author extracts `this_source_bullets`** (2-4 bullet
+   strings per concept, each ≥ 30 chars) from the lecture transcript
+   — these go into the `### <source-slug>` sub-section.
+
+3. **Source-author extracts `timestamp_sec`** from whisper segments
+   for the See-link bullet.
+
+4. **Curator on NEW concept** creates the file with canonical
+   frontmatter (`slug`, `first_introduced_in`, `touched_by`),
+   `## Definition`, first `### <source>` sub-section under
+   `## Contributions by source`, and `## Related concepts`.
+
+5. **Curator on EXISTS concept** appends a new `### <source>`
+   sub-section, updates `touched_by:` (deduplicate), never edits
+   earlier sub-sections or `## Definition`.
+
+6. **Source-author updates `concept-index.json:processed_sources`**
+   after writing source.md.
+
+### Validation: bench_grade.py L1.5
+
+`evals/grade/bench_grade.py` validates the canonical concept shape
+post-2026-04-27:
+
+- `## Contributions by source` present whenever `touched_by` non-empty
+- one `### <slug>` sub-section per `touched_by` entry
+- each sub-section body ≥ 30 chars
+- frontmatter has `first_introduced_in`
+- skip files starting with `_` (template baselines)
+
+These are L1.5 violations (soft layer between L1 frontmatter and L2
+claims) that surface in `bench_grade --json` per-concept output.
+
+## Top-orchestrator MUST NOT span multiple sources in one Conversation
+
+**Lab-wide invariant** (introduced 2026-04-26 after D7-rev4-v2 production
+collapse at 5/7 sources):
+
+> The top-level orchestrator's `Conversation(...)` must be **fresh per source**.
+> Driving "process all N sources" through one `conv.send_message + conv.run`
+> is a forbidden pattern.
+
+### Why
+
+`Conversation.run()` is append-only on `state.events`. Whether you use
+`DelegateTool` or `TaskToolSet`, every `delegate(...)` / `task(...)` round
+adds the sub-agent's return value (the `done` ack, plus the visualizer's
+echoed result block) to the **top** orchestrator's history. After enough
+sources, the orchestrator's own context grows past attention budget and
+the LLM forgets there were more sources to process.
+
+Empirically observed in D7-rev4-v2 production
+(`experiment/D7-rev4-v2-2026-04-26-qwen3.6-27b-fp8`, run 2026-04-26):
+
+| metric                                  | value             |
+|-----------------------------------------|-------------------|
+| top-orch cumulative input tokens        | **8.93 M** over ~10 round-trips |
+| top-orch input on the final round-trip  | ~70-100 K (estimated from cumulative / round-trips) |
+| sources written                         | **5/7** (planned 7) |
+| top-orch's final action                 | `Source 4 processed successfully.` (declared done — never called task() for sources 5, 6) |
+
+This is the same "linear-scan attention failure" we documented one layer
+down (single-agent ceiling at 1/7 sources in D7, fixed by ADR 0009 +
+sub-agent isolation). It now reappears at the orchestrator layer, because
+TaskToolSet's fresh-per-call semantics fix the *sub-agent's* context but
+not the *parent's*.
+
+### The right shape — Python `for` loop, fresh `Conversation` per source
+
+```python
+# WRONG — single Conversation processes all sources
+conv = Conversation(agent=main_agent, ...)
+conv.send_message(
+    "Process the 7 sources sequentially. For each N: task(...). After all done, finish."
+)
+conv.run()  # state.events grows linearly with N → ceiling at ~5 in our setup
+
+# RIGHT — one Conversation per source, no shared LLM history
+for n, (raw_path, target_path) in enumerate(sources):
+    main_agent = Agent(llm=llm, tools=[Tool(name="task_tool_set")])
+    conv = Conversation(agent=main_agent, workspace=str(WORKDIR), ...)
+    conv.send_message(
+        f"Process source N={n}. raw_path={raw_path}. target_path={target_path}. "
+        "Use the `task` tool with subagent_type='source-author'. "
+        "Wait for `done` ack, then finish."
+    )
+    conv.run()
+    if verify_source(n).get("verified") != "ok":
+        break  # fail-fast
+    commit_and_push_per_source(n, ...)
+```
+
+The Python `for` loop is the new top-orchestrator. Each iteration:
+- builds a fresh `Agent` + `Conversation` (state.events starts at zero),
+- sends a message describing **only this source's** N + paths,
+- waits for `task(source-author)` to write the file and ack `done`,
+- runs the deterministic verify step (subprocess, not LLM),
+- commits + pushes,
+- loop continues.
+
+Cross-source semantic state (REPEATED detection, concept dedup) lives
+*outside* the LLM — in the wiki repo's filesystem (per skill v2:
+`get_known_claims.py`) and, in D8+, in a sqlite-vss embeddings index.
+Top-level LLM does **not** carry that state in its conversation.
+
+### Smoke / TDD assertion
+
+Synthetic-orchestrator harness MUST assert top-orch token bound:
+
+```python
+# step6_orchestrator.py (D8 Step 0 spec)
+n_events = len(conv.state.events)
+input_tokens_per_source = ...  # sum of Tokens: lines for top-orch this iter
+assert input_tokens_per_source <= 100_000, (
+    f"top-orch context grew to {input_tokens_per_source}; "
+    f"orchestrator should be bounded per source"
+)
+```
+
+Until step6 lands, `step5d_rev_v2_orchestrator.py` already enforces
+`n_events < 100` on the orchestrator — but as a single-Conversation that
+metric is upper-bounded only because the synth has 4 sources. Production
+with 7 broke that assumption. Step 6 hardens the metric to be
+**per-source**, not per-run.
+
+### Trade-off accepted
+
+We lose the master agent's ability to "see" the sweep of sources and
+batch reasoning about them. Both runs to date show the master never did
+this in practice — it just looped sequentially. Sequential processing is
+exactly what `bench_grade.py` measures. Cross-source intelligence
+(retrieval-augmented dedup) is in D8 spec, fed by the sqlite index.
+
 ## 3-level orchestration validated empirically
 
 D7-rev3 Step 5d (`tests/synthetic-orchestrator/step5d_orchestrator.py`) confirms a 3-level architecture works end-to-end on Qwen3.6-27B-FP8:

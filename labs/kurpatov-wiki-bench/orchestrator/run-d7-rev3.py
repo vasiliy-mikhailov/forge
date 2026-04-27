@@ -251,23 +251,34 @@ def setup_workspace():
 
 
 def list_sources():
-    """Run list_sources.py to get the source indices for module 005."""
+    """Run list_sources.py to get the source indices for module 005.
+
+    Returns list of source dicts: {index, stem, raw_json_path, slug}.
+    Filters to indices 0..6 (the canonical 7-source set per skill v2 spec
+    and Opus baseline). Module 005 may contain extra sources (e.g. 098, 099)
+    in the raw repo; we ignore them for parity with prior D7 baselines.
+    """
     r = run_cmd("python3 wiki/skills/benchmark/list_sources.py", cwd=str(WORKDIR))
-    data = json.loads(r.stdout)
-    if "error" in data:
+    data = json.loads(r.stdout)  # data is a list, not a dict
+    if isinstance(data, dict) and "error" in data:
         raise RuntimeError(f"list_sources.py: {data['error']}")
-    # Filter to module 005
-    return [s for s in data.get("sources", []) if MODULE in s.get("path", "")]
+    in_module = [s for s in data if MODULE in s.get("slug", "")]
+    return [s for s in in_module if 0 <= s.get("index", -1) <= 6]
 
 
 def build_inputs_text(sources):
-    """For each source, derive raw_path + target_path."""
+    """For each source, derive raw_path + target_path (relative to WORKDIR)."""
     inputs = []
     for s in sources:
         n = s["index"]
-        slug_filename = s["filename"]   # "000 Вводная лекция. ...Md"
-        raw_path = f"raw/{s['raw_path']}/raw.json" if s.get("raw_path") else f"raw/{s['filename']}/raw.json"
-        target_path = f"wiki/data/sources/{COURSE}/{MODULE}/{slug_filename}.md"
+        # raw_json_path is absolute; convert to relative-to-WORKDIR
+        abs_raw = s["raw_json_path"]
+        prefix = str(WORKDIR) + "/"
+        if not abs_raw.startswith(prefix):
+            raise RuntimeError(f"unexpected raw_json_path: {abs_raw}")
+        raw_path = abs_raw[len(prefix):]   # raw/data/.../<src dir>/raw.json
+        # target_path: wiki/data/sources/<slug>.md
+        target_path = f"wiki/data/sources/{s['slug']}.md"
         inputs.append((n, raw_path, target_path))
     return inputs
 
@@ -415,7 +426,7 @@ def main():
     state = []
     stopped_at = None
     for (n, raw_path, target_path) in inputs:
-        slug = target_path.replace("wiki/", "").rsplit(".md", 1)[0]
+        slug = target_path[len("wiki/data/sources/"):-len(".md")]
         v = verify_source(n, branch)
         ack = "done" if v.get("verified") == "ok" else "missing-or-fail"
         commit = None
