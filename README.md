@@ -13,10 +13,10 @@ make targets — and rebuild the whole environment.
 
 | Lab                                | What it does                                              | SPEC                                                                              |
 | ---------------------------------- | --------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| `phase-b-business-architecture/org-units/wiki-compiler/`     | vLLM serving the LLM that compiles raw → wiki              | [SPEC](phase-b-business-architecture/org-units/wiki-compiler/SPEC.md)                                       |
-| `phase-b-business-architecture/org-units/wiki-ingest/`       | Media → raw transcript pipeline (Whisper, etc.)            | [SPEC](phase-b-business-architecture/org-units/wiki-ingest/SPEC.md)                                         |
-| `phase-b-business-architecture/org-units/wiki-bench/`        | Agent harness: benchmark LLMs on the compiler task         | [SPEC](phase-b-business-architecture/org-units/wiki-bench/SPEC.md)                                          |
-| `phase-b-business-architecture/org-units/rl-2048/`                    | Jupyter sandbox: vLLM + unsloth + transformers + MLflow    | [SPEC](phase-b-business-architecture/org-units/rl-2048/SPEC.md)                                                      |
+| `phase-c-information-systems-architecture/application-architecture/wiki-compiler/`     | vLLM serving the LLM that compiles raw → wiki              | [SPEC](phase-c-information-systems-architecture/application-architecture/wiki-compiler/SPEC.md)                                       |
+| `phase-c-information-systems-architecture/application-architecture/wiki-ingest/`       | Media → raw transcript pipeline (Whisper, etc.)            | [SPEC](phase-c-information-systems-architecture/application-architecture/wiki-ingest/SPEC.md)                                         |
+| `phase-c-information-systems-architecture/application-architecture/wiki-bench/`        | Agent harness: benchmark LLMs on the compiler task         | [SPEC](phase-c-information-systems-architecture/application-architecture/wiki-bench/SPEC.md)                                          |
+| `phase-c-information-systems-architecture/application-architecture/rl-2048/`                    | Jupyter sandbox: vLLM + unsloth + transformers + MLflow    | [SPEC](phase-c-information-systems-architecture/application-architecture/rl-2048/SPEC.md)                                                      |
 
 Each lab is fully self-contained: own caddy, own docker-compose,
 own SPEC. Labs are mutex on host ports 80/443 (each lab's caddy

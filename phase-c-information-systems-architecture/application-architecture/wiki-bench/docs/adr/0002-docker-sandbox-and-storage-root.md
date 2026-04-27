@@ -76,7 +76,7 @@ Deliberately **not** present:
   `${STORAGE_ROOT}/wiki-bench/runs/<run_id>/`
   — `events.jsonl`, `stderr.log`, `summary.json`,
   `vllm-snapshot-{start,end}.json`, optional `bench-report.md`.
-- vLLM HF cache (already in place via `phase-b-business-architecture/org-units/wiki-compiler/`):
+- vLLM HF cache (already in place via `phase-c-information-systems-architecture/application-architecture/wiki-compiler/`):
   `${STORAGE_ROOT}/models/` mounted at `/root/.cache/huggingface`
   inside the vLLM container. No change here; documenting the
   convention.

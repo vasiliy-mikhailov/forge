@@ -123,7 +123,7 @@ Input environment variables (all from forge root `.env`):
 - `VLLM_API_KEY` — required. The `Authorization: Bearer …` value. Generate
   with e.g. `openssl rand -hex 32`.
 - `INFERENCE_MODEL` — HuggingFace model id, e.g.
-  the value of `INFERENCE_MODEL` in `.env` (currently `Qwen/Qwen3.6-27B-FP8`; see `forge/.env` and `phase-b-business-architecture/org-units/wiki-bench/configs/models.yml` for swap candidates).
+  the value of `INFERENCE_MODEL` in `.env` (currently `Qwen/Qwen3.6-27B-FP8`; see `forge/.env` and `phase-c-information-systems-architecture/application-architecture/wiki-bench/configs/models.yml` for swap candidates).
 - `INFERENCE_SERVED_NAME` — public model name in the OpenAI API
   (`/v1/models` returns this). Default: the value of `INFERENCE_SERVED_NAME` in `.env` (currently `qwen3.6-27b-fp8`).
 - `INFERENCE_MAX_MODEL_LEN` — context window cap in tokens. Default:
@@ -247,7 +247,7 @@ A model swap is **not** just an `INFERENCE_MODEL=` edit. Walk through:
 4. Pick parsers. See
    [ADR 0002](docs/adr/0002-per-model-parsers.md) and the lookup
    table there. Update both `--tool-call-parser` and
-   `--reasoning-parser` in `phase-b-business-architecture/org-units/wiki-compiler/docker-compose.yml`.
+   `--reasoning-parser` in `phase-c-information-systems-architecture/application-architecture/wiki-compiler/docker-compose.yml`.
 5. Update YaRN params. The defaults
    (`factor=2.0, original=32768`) are tuned for Qwen3+ family.
    Other families (Llama, Mistral, Gemma) have different

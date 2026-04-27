@@ -156,10 +156,10 @@ caches — model weights are read-only public artifacts.
   data copy. Done in this commit.
 
 ## Touched files
-- `git mv inference/ → phase-b-business-architecture/org-units/wiki-compiler/`
-- `git mv kurpatov-wiki/ → phase-b-business-architecture/org-units/wiki-ingest/`
-- `git mv rl-2048/ → phase-b-business-architecture/org-units/rl-2048/`
-- `git mv mlflow/ → phase-b-business-architecture/org-units/rl-2048/mlflow/`
+- `git mv inference/ → phase-c-information-systems-architecture/application-architecture/wiki-compiler/`
+- `git mv kurpatov-wiki/ → phase-c-information-systems-architecture/application-architecture/wiki-ingest/`
+- `git mv rl-2048/ → phase-c-information-systems-architecture/application-architecture/rl-2048/`
+- `git mv mlflow/ → phase-c-information-systems-architecture/application-architecture/rl-2048/mlflow/`
 - `git rm -rf caddy/`
 - New per-lab `caddy/` folders with extracted site blocks.
 - Compose volume paths updated: `${STORAGE_ROOT}/models →
@@ -171,4 +171,4 @@ caches — model weights are read-only public artifacts.
 - New top-level ADR (this file).
 - CLAUDE.md, README.md, phase-d-technology-architecture/architecture.md updated.
 - `wiki-bench` repo content imported under
-  `phase-b-business-architecture/org-units/wiki-bench/` (separate commit / subtree).
+  `phase-c-information-systems-architecture/application-architecture/wiki-bench/` (separate commit / subtree).

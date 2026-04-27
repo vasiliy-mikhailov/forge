@@ -11,7 +11,7 @@ that it *is invoked*.
 Bench depends on the compiler lab being up (it talks to vLLM behind
 caddy). It is co-runnable with the compiler lab. Top-level dispatcher
 does NOT route to bench — bench's smoke is invoked explicitly via
-`make -C phase-b-business-architecture/org-units/wiki-bench smoke`.
+`make -C phase-c-information-systems-architecture/application-architecture/wiki-bench smoke`.
 
 ## Preconditions
 
@@ -24,7 +24,7 @@ does NOT route to bench — bench's smoke is invoked explicitly via
 ### bin/openhands exists and is executable
 
 **Goal.** The OpenHands SDK CLI binary is present at
-`phase-b-business-architecture/org-units/wiki-bench/bin/openhands`. The Dockerfile `COPY`s it
+`phase-c-information-systems-architecture/application-architecture/wiki-bench/bin/openhands`. The Dockerfile `COPY`s it
 into the bench image during `make build`; if it's missing, the build
 fails silently or the image runs without the agent.
 
@@ -90,7 +90,7 @@ model without updating .env) produces silent benchmark mismatches.
 - This smoke does NOT issue a chat completion. A real round-trip
   test would catch parser-side drift, but it's expensive enough to
   warrant being a separate bench command (see
-  `make -C phase-b-business-architecture/org-units/wiki-bench preflight` for an existing
+  `make -C phase-c-information-systems-architecture/application-architecture/wiki-bench preflight` for an existing
   cheaper version of this).
 - No assertion that `${STORAGE_ROOT}/labs/wiki-bench/experiments/`
   exists with write permissions. `make storage-init` is supposed to

@@ -8,7 +8,7 @@
 #
 # Bench is a one-shot client of compiler, not a service; its smoke
 # (image built, openhands binary present, etc.) is invoked separately
-# via `make -C phase-b-business-architecture/org-units/wiki-bench smoke` and bundled into the
+# via `make -C phase-c-information-systems-architecture/application-architecture/wiki-bench smoke` and bundled into the
 # compiler's smoke when bench is co-running with compiler.
 #
 # Usage:
@@ -29,9 +29,9 @@ ROOT_DIR=$(cd -- "$SCRIPT_DIR/.." &>/dev/null && pwd)
 
 # Map: caddy container name → lab dir (relative to forge root).
 declare -A LAB_OF_CADDY=(
-  [kurpatov-wiki-compiler-caddy]=phase-b-business-architecture/org-units/wiki-compiler
-  [kurpatov-wiki-ingest-caddy]=phase-b-business-architecture/org-units/wiki-ingest
-  [rl-2048-caddy]=phase-b-business-architecture/org-units/rl-2048
+  [kurpatov-wiki-compiler-caddy]=phase-c-information-systems-architecture/application-architecture/wiki-compiler
+  [kurpatov-wiki-ingest-caddy]=phase-c-information-systems-architecture/application-architecture/wiki-ingest
+  [rl-2048-caddy]=phase-c-information-systems-architecture/application-architecture/rl-2048
 )
 
 active_caddies=()
@@ -51,7 +51,7 @@ No lab caddy is running. Bring one up first, e.g.:
   make rl-2048
 
 (Bench is a client of compiler — bring up compiler, then run bench
-separately via make -C phase-b-business-architecture/org-units/wiki-bench bench.)
+separately via make -C phase-c-information-systems-architecture/application-architecture/wiki-bench bench.)
 EOF
   exit 2
 fi

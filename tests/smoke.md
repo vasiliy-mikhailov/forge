@@ -9,10 +9,10 @@ This file is the source of truth for the **dispatcher** in
 [`scripts/smoke.sh`](../scripts/smoke.sh), not for individual checks.
 Per-lab smoke contracts live alongside each lab:
 
-- [`phase-b-business-architecture/org-units/wiki-compiler/tests/smoke.md`](../labs/wiki-compiler/tests/smoke.md)
-- [`phase-b-business-architecture/org-units/wiki-ingest/tests/smoke.md`](../labs/wiki-ingest/tests/smoke.md)
-- [`phase-b-business-architecture/org-units/rl-2048/tests/smoke.md`](../labs/rl-2048/tests/smoke.md)
-- [`phase-b-business-architecture/org-units/wiki-bench/tests/smoke.md`](../labs/wiki-bench/tests/smoke.md)
+- [`phase-c-information-systems-architecture/application-architecture/wiki-compiler/tests/smoke.md`](../labs/wiki-compiler/tests/smoke.md)
+- [`phase-c-information-systems-architecture/application-architecture/wiki-ingest/tests/smoke.md`](../labs/wiki-ingest/tests/smoke.md)
+- [`phase-c-information-systems-architecture/application-architecture/rl-2048/tests/smoke.md`](../labs/rl-2048/tests/smoke.md)
+- [`phase-c-information-systems-architecture/application-architecture/wiki-bench/tests/smoke.md`](../labs/wiki-bench/tests/smoke.md)
 
 Shared helpers (pretty-print, container/GPU/HTTP/log assertions) are in
 [`scripts/smoke-lib.sh`](../scripts/smoke-lib.sh) — every per-lab
@@ -34,14 +34,14 @@ caddy containers. Exactly **one** of the following must be in
 
 | caddy container                    | active lab                       |
 | ---------------------------------- | -------------------------------- |
-| `kurpatov-wiki-compiler-caddy`     | `phase-b-business-architecture/org-units/wiki-compiler/`   |
-| `kurpatov-wiki-ingest-caddy`       | `phase-b-business-architecture/org-units/wiki-ingest/`     |
-| `rl-2048-caddy`                    | `phase-b-business-architecture/org-units/rl-2048/`                  |
+| `kurpatov-wiki-compiler-caddy`     | `phase-c-information-systems-architecture/application-architecture/wiki-compiler/`   |
+| `kurpatov-wiki-ingest-caddy`       | `phase-c-information-systems-architecture/application-architecture/wiki-ingest/`     |
+| `rl-2048-caddy`                    | `phase-c-information-systems-architecture/application-architecture/rl-2048/`                  |
 
 If exactly one matches, the dispatcher `exec`s that lab's
 `tests/smoke.sh`. Bench is a client of compiler (no caddy of its own);
 its smoke is invoked separately via
-`make -C phase-b-business-architecture/org-units/wiki-bench smoke`.
+`make -C phase-c-information-systems-architecture/application-architecture/wiki-bench smoke`.
 
 ### Exit codes
 
@@ -64,7 +64,7 @@ its smoke is invoked separately via
   on its container-up assertion (status doesn't start with `Up`).
 - **Bench co-running with compiler**. Bench has no caddy, so the
   dispatcher routes to the compiler lab. Bench's own smoke
-  (`make -C phase-b-business-architecture/org-units/wiki-bench smoke`) is a separate command,
+  (`make -C phase-c-information-systems-architecture/application-architecture/wiki-bench smoke`) is a separate command,
   not a fallthrough — the user explicitly asks for it.
 
 ## Why per-lab, not whole-forge

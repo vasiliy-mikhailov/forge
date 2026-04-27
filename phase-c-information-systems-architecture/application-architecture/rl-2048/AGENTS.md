@@ -6,7 +6,7 @@ file is scoped to the rl-2048 lab.
 
 ## Phase A — Architecture Vision
 
-**Lab role within forge.** This lab is one of forge's four org units. It realises the following forge-level capabilities for the *program-synthesis-via-RLVR* domain: **R&D** (RLVR methodology, falsifiable solver-quality metrics) and **Service operation** (Jupyter sandbox + MLflow tracking).
+**Lab role within forge.** This lab is one of forge's four application components. It realises the following forge-level capabilities for the *program-synthesis-via-RLVR* domain: **R&D** (RLVR methodology, falsifiable solver-quality metrics) and **Service operation** (Jupyter sandbox + MLflow tracking).
 
 **Vision (lab-scoped).** Explore "AI writes programs from verifiable
 rewards" using 2048 as the first verifiable-reward domain. The product
@@ -70,12 +70,12 @@ quality-dimension slates:
 
 **Service: Notebook sandbox** (consumer: rl-2048 only).
 
-- Component: Jupyter (in `phase-b-business-architecture/org-units/rl-2048/jupyter/`).
+- Component: Jupyter (in `phase-c-information-systems-architecture/application-architecture/rl-2048/jupyter/`).
 - Component: caddy 2 at `jupyter-rl-2048.mikhailov.tech`.
 
 **Service: ML training tracking** (consumer: rl-2048 only).
 
-- Component: MLflow (in `phase-b-business-architecture/org-units/rl-2048/mlflow/` — the mlflow service
+- Component: MLflow (in `phase-c-information-systems-architecture/application-architecture/rl-2048/mlflow/` — the mlflow service
   used to live at forge top-level; it moved here when rl-2048 was
   identified as the only consumer).
 - Component: caddy 2 at `mlflow.mikhailov.tech`.

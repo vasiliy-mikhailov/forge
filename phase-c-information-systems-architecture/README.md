@@ -6,5 +6,6 @@ This folder is the supplementary depth for **Phase C — Information Systems Arc
 
 - `adr/` — Architecture Decision Records scoped to this phase.
 - `data-architecture/` — data-shape descriptions.
-- `application-architecture/` — application-component descriptions.
+- `application-architecture/` — application components (labs):
+  `wiki-compiler/`, `wiki-bench/`, `wiki-ingest/`, `rl-2048/`.
 

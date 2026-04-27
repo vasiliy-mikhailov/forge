@@ -1,6 +1,6 @@
 # State of the Lab — capability trajectories
 
-`phase-b-business-architecture/org-units/wiki-bench`. The goal: a reproducible,
+`phase-c-information-systems-architecture/application-architecture/wiki-bench`. The goal: a reproducible,
 model-agnostic harness that compiles all ~200 Курпатов lecture
 transcripts into a structured wiki at-or-better-than Claude Opus
 baseline. Architecture management is capability-based per

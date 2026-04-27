@@ -13,7 +13,7 @@ ones. We have a Blackwell RTX PRO 6000 96 GB sitting idle when rl-2048
 is not running. Use it.
 
 ## Decision
-Add a new forge subsystem (now lab `phase-b-business-architecture/org-units/wiki-compiler/` per
+Add a new forge subsystem (now lab `phase-c-information-systems-architecture/application-architecture/wiki-compiler/` per
 ADR 0007) that runs **vLLM in a single
 docker container**, GPU-pinned to the Blackwell, exposing an
 **OpenAI-compatible HTTP API** at `https://${INFERENCE_DOMAIN}/v1/...`.

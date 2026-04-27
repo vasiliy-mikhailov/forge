@@ -6,6 +6,5 @@ This folder is the supplementary depth for **Phase B — Business Architecture**
 
 - `adr/` — Architecture Decision Records scoped to this phase.
 - `capabilities/` — one file per business capability.
-- `org-units/` — one file per organization unit (lab).
 - `products/` — one file per product (R&D output).
 

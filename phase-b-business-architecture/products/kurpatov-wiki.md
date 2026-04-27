@@ -56,6 +56,6 @@ human reader — saves ~60 min per lecture per use
 ## Trajectories (Phase H)
 
 Per-capability trajectories live in
-`phase-b-business-architecture/org-units/wiki-bench/docs/STATE-OF-THE-LAB.md`.
+`phase-c-information-systems-architecture/application-architecture/wiki-bench/docs/STATE-OF-THE-LAB.md`.
 Headline next step: scale the same pilot driver to 200+ sources
 without quality regression.

@@ -18,13 +18,13 @@ docs, scripts, and the root Makefile that dispatches into labs.
 
 Labs:
 
-- `phase-b-business-architecture/org-units/wiki-compiler/` — vLLM serving the LLM that
+- `phase-c-information-systems-architecture/application-architecture/wiki-compiler/` — vLLM serving the LLM that
   *compiles* raw transcripts into wiki articles.
-- `phase-b-business-architecture/org-units/wiki-ingest/` — the "media → raw transcript"
+- `phase-c-information-systems-architecture/application-architecture/wiki-ingest/` — the "media → raw transcript"
   pipeline (Whisper, etc.).
-- `phase-b-business-architecture/org-units/wiki-bench/` — agent harness that benchmarks
+- `phase-c-information-systems-architecture/application-architecture/wiki-bench/` — agent harness that benchmarks
   different LLMs on the compiler task.
-- `phase-b-business-architecture/org-units/rl-2048/` — Jupyter sandbox for RL/GRPO experiments.
+- `phase-c-information-systems-architecture/application-architecture/rl-2048/` — Jupyter sandbox for RL/GRPO experiments.
   Includes its own `mlflow/` sublab (mlflow used to live at
   forge top-level; only rl-2048 uses it, so it moved in).
 
@@ -74,7 +74,7 @@ experiment is a run.
   committed to forge. Note: `vault/raw/` (under `${STORAGE_ROOT}/labs/wiki-ingest/vault/raw/`) **is** a git working tree —
   but for a *separate* repo (`kurpatov-wiki-raw`), pushed by the
   `kurpatov-wiki-raw-pusher` container. See
-  `phase-b-business-architecture/org-units/wiki-ingest/docs/adr/0005-split-transcribe-and-push.md`.
+  `phase-c-information-systems-architecture/application-architecture/wiki-ingest/docs/adr/0005-split-transcribe-and-push.md`.
 - **ADR for irreversible decisions.** If on-disk data format changes, the
   framework choice changes, or the network topology changes — add
   `docs/adr/NNNN-*.md` or `labs/<lab>/docs/adr/NNNN-*.md` where NNNN is the
@@ -238,23 +238,16 @@ These capabilities are not products. They are forge's repeatable
 abilities. Each is realised partially by every lab; some labs lean
 heavily on one.
 
-#### Organization units (labs)
+#### Organization units
 
-Forge is composed of four labs. Each is an *org unit*, not a
-capability. Each lab realises some subset of the forge-level
-capabilities for a specific domain.
+Today there is one organization unit: the architect of record
+(see Phase A stakeholders). When a future operator or external
+consumer joins, they will be added here. The labs are *not* org
+units — they are application components and live in Phase C.
 
-| Lab            | Forge capabilities this lab realises                                                                                | Serves products       |
-|----------------|----------------------------------------------------------------------------------------------------------------------|-----------------------|
-| `wiki-compiler` | Service operation (LLM inference); R&D (Blackwell stability — G1)                                                   | All wiki products     |
-| `wiki-bench`    | R&D (benchmarking + experimentation); Product delivery (canonical wiki); Architecture knowledge mgmt (skill v2 contract) | All wiki products     |
-| `wiki-ingest`   | Service operation (transcription pipeline); Product delivery (raw.json publication)                                 | All wiki products     |
-| `rl-2048`       | R&D (RLVR methodology); Service operation (Jupyter / MLflow)                                                        | rl-2048               |
-
-The `wiki-*` labs are content-agnostic — the same infrastructure
-serves every wiki product. Adding a new wiki product (e.g. for a new
-author/corpus) requires only a new pair of `<author>-wiki-{raw,wiki}`
-GitHub repos plus per-pilot env config; no lab changes needed.
+Detail on which application components (labs) realise which
+capabilities lives in Phase C — see
+[`phase-c-information-systems-architecture/application-architecture/`](phase-c-information-systems-architecture/application-architecture/).
 
 Each lab's own AGENTS.md Phase B holds the *lab-scoped* capability
 subset (with quality dimensions appropriate to that lab's domain).
@@ -300,6 +293,28 @@ gets written.)
 
 ### Phase C — Information Systems Architecture
 
+#### Application Architecture: components (labs)
+
+Forge has four application components, each a cohesive group of
+software functionality. Implementation lives at
+`phase-c-information-systems-architecture/application-architecture/<lab>/`;
+each component carries its own AGENTS.md (Phase A-H scoped) plus
+Dockerfile / docker-compose / SPEC.
+
+| Component       | Forge capabilities it realises                                                                                       | Serves products   |
+|-----------------|----------------------------------------------------------------------------------------------------------------------|-------------------|
+| `wiki-compiler` | Service operation (LLM inference); R&D (Blackwell stability — G1)                                                   | All wiki products |
+| `wiki-bench`    | R&D (benchmarking + experimentation); Product delivery (canonical wiki); Architecture knowledge mgmt (skill v2)     | All wiki products |
+| `wiki-ingest`   | Service operation (transcription pipeline); Product delivery (raw.json publication)                                 | All wiki products |
+| `rl-2048`       | R&D (RLVR methodology); Service operation (Jupyter / MLflow)                                                        | rl-2048           |
+
+The `wiki-*` components are content-agnostic — the same
+infrastructure serves every wiki product. Adding a new wiki
+product (e.g. for a new author/corpus) requires only a new pair
+of `<author>-wiki-{raw,wiki}` GitHub repos plus per-pilot env
+config; no component change needed.
+
+#### Data Architecture
 | Data set                                  | Shape                                    |
 |-------------------------------------------|------------------------------------------|
 | `kurpatov-wiki-raw`                       | per-source `raw.json` (whisper segments) |
@@ -436,9 +451,9 @@ Per-lab gap analyses live in their lab’s `STATE-OF-THE-LAB.md`
 (capability trajectories Level 1 → Level 2). The combined gap set
 across forge is the union of those.
 
-- `phase-b-business-architecture/org-units/wiki-bench/docs/STATE-OF-THE-LAB.md` — current
+- `phase-c-information-systems-architecture/application-architecture/wiki-bench/docs/STATE-OF-THE-LAB.md` — current
   capability trajectories for the wiki bench.
-- `phase-b-business-architecture/org-units/rl-2048/docs/STATE-OF-THE-LAB.md` — TBD (when rl-2048
+- `phase-c-information-systems-architecture/application-architecture/rl-2048/docs/STATE-OF-THE-LAB.md` — TBD (when rl-2048
   grows beyond the Jupyter sandbox).
 
 ### Phase F — Migration Planning
@@ -453,9 +468,9 @@ Per lab, the active trajectory toward Level 2 (TOGAF would call this
 the Transition Architecture). Updated when an experiment opens or
 closes:
 
-- `phase-b-business-architecture/org-units/wiki-bench/docs/STATE-OF-THE-LAB.md` — current
+- `phase-c-information-systems-architecture/application-architecture/wiki-bench/docs/STATE-OF-THE-LAB.md` — current
   capability trajectories for the wiki bench.
-- `phase-b-business-architecture/org-units/rl-2048/docs/STATE-OF-THE-LAB.md` — TBD (when rl-2048 grows
+- `phase-c-information-systems-architecture/application-architecture/rl-2048/docs/STATE-OF-THE-LAB.md` — TBD (when rl-2048 grows
   beyond the Jupyter sandbox).
 
 Concrete experiment specs sit at `labs/<lab>/docs/experiments/<id>.md`

@@ -6,7 +6,7 @@ file is scoped to the ingest lab.
 
 ## Phase A — Architecture Vision
 
-**Lab role within forge.** This lab is one of forge's four org units. It realises the following forge-level capabilities for the *audio-to-text* domain: **Service operation** (the watcher + raw-pusher pipeline) and **Product delivery** (append-only raw.json publication to the kurpatov-wiki-raw GitHub repo).
+**Lab role within forge.** This lab is one of forge's four application components. It realises the following forge-level capabilities for the *audio-to-text* domain: **Service operation** (the watcher + raw-pusher pipeline) and **Product delivery** (append-only raw.json publication to the kurpatov-wiki-raw GitHub repo).
 
 **Vision (lab-scoped).** Provide the audio→text pipeline that turns
 Kurpatov's ~200 lectures into the `raw.json` shape every downstream
@@ -82,7 +82,7 @@ collect/filter/adapt mechanism.
   is a git checkout of the *separate* `kurpatov-wiki-raw` repo
   (NOT a subdirectory of forge). The `raw-pusher` container commits
   + pushes from there. See ADR
-  `phase-b-business-architecture/org-units/wiki-ingest/docs/adr/0005-split-transcribe-and-push.md`.
+  `phase-c-information-systems-architecture/application-architecture/wiki-ingest/docs/adr/0005-split-transcribe-and-push.md`.
 
 ## Phase D — Technology Architecture
 

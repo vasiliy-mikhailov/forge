@@ -89,12 +89,12 @@ make wiki-ingest    # transcription pipeline (Whisper + watchers + git pusher)
 # or:
 # make rl-2048                 # GRPO sandbox + jupyter + mlflow
 # Bench is co-runnable with compiler:
-# make wiki-compiler && make -C phase-b-business-architecture/org-units/wiki-bench bench
+# make wiki-compiler && make -C phase-c-information-systems-architecture/application-architecture/wiki-bench bench
 
 # 4. Add source media for wiki-ingest under
 #    ${STORAGE_ROOT}/labs/wiki-ingest/sources/<course>/<module>/*.<ext>
 #    (extensions: see INGEST_EXTENSIONS in
-#    phase-b-business-architecture/org-units/wiki-ingest/notebooks/0{2,3}_*_ingest*.py)
+#    phase-c-information-systems-architecture/application-architecture/wiki-ingest/notebooks/0{2,3}_*_ingest*.py)
 ```
 
 ## Rebuilding a single service image
@@ -118,9 +118,9 @@ watchdog, ~200 MB). `make kurpatov-wiki-ingest-build` runs
 `docker compose build` which walks every service with a `build:`
 block, so both images rebuild together — no per-image target is
 needed. See
-[phase-b-business-architecture/org-units/wiki-ingest/docs/adr/0005-split-transcribe-and-push.md](../labs/wiki-ingest/docs/adr/0005-split-transcribe-and-push.md)
+[phase-c-information-systems-architecture/application-architecture/wiki-ingest/docs/adr/0005-split-transcribe-and-push.md](../labs/wiki-ingest/docs/adr/0005-split-transcribe-and-push.md)
 and
-[phase-b-business-architecture/org-units/wiki-ingest/docs/adr/0006-lean-pusher-image.md](../labs/wiki-ingest/docs/adr/0006-lean-pusher-image.md).
+[phase-c-information-systems-architecture/application-architecture/wiki-ingest/docs/adr/0006-lean-pusher-image.md](../labs/wiki-ingest/docs/adr/0006-lean-pusher-image.md).
 
 ### Pinned-core build (keeps ssh responsive)
 
@@ -173,7 +173,7 @@ What to back up, in order of priority:
    `kurpatov-wiki-raw` private GitHub repo by the
    `kurpatov-wiki-raw-pusher` container, so in practice a fresh
    `git clone` recovers this layer without re-running whisper (see
-   [phase-b-business-architecture/org-units/wiki-ingest/docs/adr/0005-split-transcribe-and-push.md](../labs/wiki-ingest/docs/adr/0005-split-transcribe-and-push.md)).
+   [phase-c-information-systems-architecture/application-architecture/wiki-ingest/docs/adr/0005-split-transcribe-and-push.md](../labs/wiki-ingest/docs/adr/0005-split-transcribe-and-push.md)).
 4. `${STORAGE_ROOT}/labs/rl-2048/mlflow/data/mlflow.db` + `${STORAGE_ROOT}/labs/rl-2048/mlruns/` — experiment
    history.
 5. `${STORAGE_ROOT}/labs/wiki-ingest/checkpoints/`,
@@ -225,7 +225,7 @@ Per-lab smoke models: [`labs/<lab>/tests/smoke.md`](../labs/).
 Shared assertion helpers: [`scripts/smoke-lib.sh`](../scripts/smoke-lib.sh).
 Coverage map and TDD loop: [`tests/README.md`](../tests/README.md).
 
-What is verified per lab is documented in each lab's `tests/smoke.md`. The compiler lab asserts vLLM healthy + caddy up + correct served model on `/v1/models`; ingest asserts the four pipeline containers + GPU pinning + watchers + pusher image discipline; rl-2048 asserts jupyter + mlflow + caddy + REST API; bench (invoked separately via `make -C phase-b-business-architecture/org-units/wiki-bench smoke`) asserts the openhands binary + image build + gh auth + compiler endpoint reachable.
+What is verified per lab is documented in each lab's `tests/smoke.md`. The compiler lab asserts vLLM healthy + caddy up + correct served model on `/v1/models`; ingest asserts the four pipeline containers + GPU pinning + watchers + pusher image discipline; rl-2048 asserts jupyter + mlflow + caddy + REST API; bench (invoked separately via `make -C phase-c-information-systems-architecture/application-architecture/wiki-bench smoke`) asserts the openhands binary + image build + gh auth + compiler endpoint reachable.
 
 Exit code is `0` iff all checks pass. Run it after bringing one lab up (`make <lab>`; bench co-runs with compiler), after any rebuild, and as a periodic sanity check.
 
@@ -307,7 +307,7 @@ ffmpeg, so `.mp3` and friends go through the same path as `.mp4`.
 HTML files (`.html`, `.htm` — typically getcourse.ru lesson exports)
 take the HTML-extractor path instead, producing the same segments[]
 shape minus timing — see
-[phase-b-business-architecture/org-units/wiki-ingest/docs/adr/0008-ingest-dispatch.md](../labs/wiki-ingest/docs/adr/0008-ingest-dispatch.md).
+[phase-c-information-systems-architecture/application-architecture/wiki-ingest/docs/adr/0008-ingest-dispatch.md](../labs/wiki-ingest/docs/adr/0008-ingest-dispatch.md).
 
 Defaults live in `scripts/push-sources.sh` and are currently:
 
@@ -344,7 +344,7 @@ default, which lacks `-s` and `--append-verify`; fix once with
 ## Transcript migration
 
 If the directory layout under `vault/raw/` changes, there's a migration
-script at `phase-b-business-architecture/org-units/wiki-ingest/notebooks/migrate_vault_hierarchy.py`. Run it from
+script at `phase-c-information-systems-architecture/application-architecture/wiki-ingest/notebooks/migrate_vault_hierarchy.py`. Run it from
 inside the container (raw files are root-owned):
 
 ```bash

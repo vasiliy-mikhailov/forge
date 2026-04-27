@@ -69,7 +69,7 @@ docker network. Only one caddy at a time can hold host :80/:443.
           to GitHub)
 ```
 
-Bench (`phase-b-business-architecture/org-units/wiki-bench/`) launches one short-lived sandboxed
+Bench (`phase-c-information-systems-architecture/application-architecture/wiki-bench/`) launches one short-lived sandboxed
 container per `make bench` invocation. It has no caddy, attaches to
 docker `bridge`, and reaches the compiler over the public TLS endpoint.
 
@@ -77,10 +77,10 @@ docker `bridge`, and reaches the compiler over the public TLS endpoint.
 
 | Lab                                | Containers (per-lab caddy + workers)                                                                                                                  | GPU                                  | Caddy hosts                          |
 | ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ | ------------------------------------ |
-| `phase-b-business-architecture/org-units/wiki-compiler/`     | `kurpatov-wiki-compiler-caddy`, `vllm-inference`                                                                                                      | `INFERENCE_GPU_UUID` (Blackwell)     | `${INFERENCE_DOMAIN}`                 |
-| `phase-b-business-architecture/org-units/wiki-ingest/`       | `kurpatov-wiki-ingest-caddy`, `jupyter-kurpatov-wiki`, `kurpatov-ingest`, `kurpatov-wiki-raw-pusher`                                                   | `KURPATOV_WIKI_GPU_UUID` (5090)      | `${JUPYTER_KURPATOV_WIKI_DOMAIN}`     |
-| `phase-b-business-architecture/org-units/wiki-bench/`        | one-shot `bench-<run_id>`                                                                                                                             | none (CPU only)                      | none                                 |
-| `phase-b-business-architecture/org-units/rl-2048/`                    | `rl-2048-caddy`, `jupyter-rl-2048`, `mlflow`                                                                                                          | `RL_2048_GPU_UUID` (Blackwell)       | `${MLFLOW_DOMAIN}`, `${JUPYTER_RL_2048_DOMAIN}` |
+| `phase-c-information-systems-architecture/application-architecture/wiki-compiler/`     | `kurpatov-wiki-compiler-caddy`, `vllm-inference`                                                                                                      | `INFERENCE_GPU_UUID` (Blackwell)     | `${INFERENCE_DOMAIN}`                 |
+| `phase-c-information-systems-architecture/application-architecture/wiki-ingest/`       | `kurpatov-wiki-ingest-caddy`, `jupyter-kurpatov-wiki`, `kurpatov-ingest`, `kurpatov-wiki-raw-pusher`                                                   | `KURPATOV_WIKI_GPU_UUID` (5090)      | `${JUPYTER_KURPATOV_WIKI_DOMAIN}`     |
+| `phase-c-information-systems-architecture/application-architecture/wiki-bench/`        | one-shot `bench-<run_id>`                                                                                                                             | none (CPU only)                      | none                                 |
+| `phase-c-information-systems-architecture/application-architecture/rl-2048/`                    | `rl-2048-caddy`, `jupyter-rl-2048`, `mlflow`                                                                                                          | `RL_2048_GPU_UUID` (Blackwell)       | `${MLFLOW_DOMAIN}`, `${JUPYTER_RL_2048_DOMAIN}` |
 
 ## GPU ↔ lab mapping
 
@@ -89,9 +89,9 @@ Set via `.env`:
 - `RL_2048_GPU_UUID` → `jupyter-rl-2048`. Default: Blackwell.
 - `KURPATOV_WIKI_GPU_UUID` → both `jupyter-kurpatov-wiki` and
   `kurpatov-ingest` (they share one GPU per
-  [phase-b-business-architecture/org-units/wiki-ingest/docs/adr/0003-watcher-reactive-not-cron.md](../labs/wiki-ingest/docs/adr/0003-watcher-reactive-not-cron.md)).
+  [phase-c-information-systems-architecture/application-architecture/wiki-ingest/docs/adr/0003-watcher-reactive-not-cron.md](../labs/wiki-ingest/docs/adr/0003-watcher-reactive-not-cron.md)).
   Default: RTX 5090. `kurpatov-wiki-raw-pusher` is CPU-only (per
-  [phase-b-business-architecture/org-units/wiki-ingest/docs/adr/0006-lean-pusher-image.md](../labs/wiki-ingest/docs/adr/0006-lean-pusher-image.md)).
+  [phase-c-information-systems-architecture/application-architecture/wiki-ingest/docs/adr/0006-lean-pusher-image.md](../labs/wiki-ingest/docs/adr/0006-lean-pusher-image.md)).
 - `INFERENCE_GPU_UUID` → `vllm-inference`. Default: Blackwell.
 
 **Mutex consequences:** Blackwell hosts compiler OR rl-2048 (not both
