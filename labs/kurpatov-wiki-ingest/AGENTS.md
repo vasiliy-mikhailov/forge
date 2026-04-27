@@ -6,7 +6,7 @@ file is scoped to the ingest lab.
 
 ## Phase A — Architecture Vision
 
-**Lab as R&D unit.** This lab is part of forge R&D capability, scoped to *audio-to-text pipeline research and maintenance*. It is not a product; it is the workshop where forge does R&D on reliable transcription at lecture-corpus scale.
+**Lab role within forge.** This lab is one of forge's four org units. It realises the following forge-level capabilities for the *audio-to-text* domain: **Service operation** (the watcher + raw-pusher pipeline) and **Product delivery** (append-only raw.json publication to the kurpatov-wiki-raw GitHub repo).
 
 **Vision (lab-scoped).** Provide the audio→text pipeline that turns
 Kurpatov's ~200 lectures into the `raw.json` shape every downstream

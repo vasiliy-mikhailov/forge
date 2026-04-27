@@ -6,7 +6,7 @@ file is scoped to the rl-2048 lab.
 
 ## Phase A — Architecture Vision
 
-**Lab as R&D unit.** This lab is part of forge R&D capability, scoped to *program-synthesis-via-RLVR methodology research*. It is not a product; it is the workshop where forge does R&D on automating solver creation against verifiable rewards.
+**Lab role within forge.** This lab is one of forge's four org units. It realises the following forge-level capabilities for the *program-synthesis-via-RLVR* domain: **R&D** (RLVR methodology, falsifiable solver-quality metrics) and **Service operation** (Jupyter sandbox + MLflow tracking).
 
 **Vision (lab-scoped).** Explore "AI writes programs from verifiable
 rewards" using 2048 as the first verifiable-reward domain. The product

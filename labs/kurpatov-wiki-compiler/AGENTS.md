@@ -6,7 +6,7 @@ file is scoped to the compiler lab.
 
 ## Phase A — Architecture Vision
 
-**Lab as R&D unit.** This lab is part of forge R&D capability, scoped to *LLM inference research + reliable serving infrastructure*. It is not a product; it is the workshop where forge does R&D on running open-weight LLMs reliably.
+**Lab role within forge.** This lab is one of forge's four org units. It realises the following forge-level capabilities for the *LLM inference* domain: **Service operation** (serving the open-weight LLM that other labs consume) and **R&D** (Blackwell stability and inference performance — see experiment G1). It does not own *Product delivery* or *Architecture knowledge management* directly; those are realised through bench.
 
 **Vision (lab-scoped).** Provide the LLM inference service that
 realises every wiki-product capability and every future RL trainer's

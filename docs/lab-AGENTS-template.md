@@ -47,10 +47,12 @@ Phase A answers *who* cares about this lab as an architecture, *why*
 they care, and *what target state* the lab exists to reach. Products
 and capability tables go in Phase B, not here.
 
-**Lab as R&D unit.** <One paragraph: this lab is part of forge R&D
-capability, scoped to *<lab's R&D scope from forge Phase B labs
-table>*. Not a product; it is the workshop where forge does R&D on
-<domain>.>
+**Lab role within forge.** <One paragraph: this lab is one of
+forge's N org units. It realises the following forge-level
+capabilities for the *<domain>* domain: <list of forge capabilities
+the lab covers — see forge AGENTS.md Phase B labs table>. It does not
+own *<excluded capabilities>* directly; those are realised through
+<other labs>.>
 
 **Vision (lab-scoped).** <One sentence: what this lab provides to
 the forge mission "Forge builds AI tools that save human time on

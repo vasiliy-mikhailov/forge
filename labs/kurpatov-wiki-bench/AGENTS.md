@@ -10,7 +10,7 @@ the bench lab.
 Phase A answers *who* cares about this lab as an architecture, *why*
 they care, and *what target state* the lab exists to reach.
 
-**Lab as R&D unit.** This lab is part of forge R&D capability, scoped to *benchmarking methodology + the wiki-compilation harness*. It is not a product; it is the workshop where forge does R&D on measuring open-weight LLM quality and producing the canonical wiki.
+**Lab role within forge.** This lab is one of forge's four org units. It realises the following forge-level capabilities for the *wiki-compilation* domain: **R&D** (hypothesis-driven experimentation on agent harness + retrieval), **Product delivery** (each pilot's branch is the canonical wiki output), and **Architecture knowledge management** (skill v2 contract; bench_grade.py as the deterministic verifier).
 
 **Vision (lab-scoped).** Provide the agent harness that compiles
 Russian whisper-transcripted lectures into structured wiki articles

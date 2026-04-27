@@ -220,57 +220,70 @@ programs.
 
 ### Phase B — Business Architecture
 
-Forge is, first and foremost, an **R&D organization**. Its primary
-business capability is research-and-development: turning ideas about
-AI saving human time on cognitive work into shipped, falsifiable
-tools. Products (Kurpatov Wiki, rl-2048) are *outputs* of that R&D —
-not the top of the architecture.
+In TOGAF terms, *capability* (what forge can do) and *organization
+unit* (who does it) are independent. Forge has several business
+capabilities; it is structured into org units (labs) that each
+realize a subset of those capabilities for a specific domain.
 
-**Primary capability: R&D**
+#### Forge-level capabilities
 
-| Capability sub-area                       | Quality dimension                                  |
-|-------------------------------------------|----------------------------------------------------|
-| Run hypothesis-driven experiments         | Architect-velocity: capability advances per architect-hour |
-| Reproduce + audit experiments             | Replay from `(Dockerfile + raw transcripts)` only |
-| Ship verified outputs to consumers        | Branch hygiene; verify-by-artifact, not by agent  |
+| Capability                           | Quality dimension                                                      |
+|--------------------------------------|------------------------------------------------------------------------|
+| **Research & Development**           | Architect-velocity (capability advances per architect-hour); falsifiability (every change has IF-THEN-BECAUSE); reproducibility (replay from `Dockerfile + raw` only) |
+| **Service operation (production framework)** | Stability (mean-time-to-crash); throughput; cost-per-output-token |
+| **Product delivery to consumers**    | Branch hygiene; verify-by-artifact (not by agent); canonical-branch promotion |
+| **Architecture knowledge management** | TOGAF-style doc threading; single source of truth (AGENTS.md per location); "git is the archive" — no `Withdrawn`/`Deprecated`/`Closed` flags |
 
-**Labs realize R&D, they are not products.** Each lab is a specialized
-"workshop" inside forge that hosts a slice of R&D for one domain or
-one production-framework component. Labs have services + components
-(Phase D) and trajectories (Phase H) but no separate Phase A vision
-of their own — their vision is a lab-scoped restatement of forge's
-R&D vision.
+These capabilities are not products. They are forge's repeatable
+abilities. Each is realised partially by every lab; some labs lean
+heavily on one.
 
-| Lab                          | R&D scope                                                 |
-|------------------------------|-----------------------------------------------------------|
-| `kurpatov-wiki-compiler`     | LLM inference research + reliable serving infrastructure  |
-| `kurpatov-wiki-bench`        | Benchmarking methodology + the wiki-compilation harness   |
-| `kurpatov-wiki-ingest`       | Audio→text pipeline research + maintenance                |
-| `rl-2048`                    | Program-synthesis-via-RLVR methodology research           |
+#### Organization units (labs)
 
-**R&D output #1: the Kurpatov Wiki product**
+Forge is composed of four labs. Each is an *org unit*, not a
+capability. Each lab realises some subset of the forge-level
+capabilities for a specific domain.
 
-Value stream: lecture → smart-reading wiki (collect → filter → adapt).
+| Lab                          | Forge capabilities this lab realises                                                                                |
+|------------------------------|----------------------------------------------------------------------------------------------------------------------|
+| `kurpatov-wiki-compiler`     | Service operation (LLM inference); R&D (Blackwell stability — G1)                                                   |
+| `kurpatov-wiki-bench`        | R&D (benchmarking + experimentation); Product delivery (canonical wiki); Architecture knowledge mgmt (skill v2 contract) |
+| `kurpatov-wiki-ingest`       | Service operation (transcription pipeline); Product delivery (raw.json publication)                                 |
+| `rl-2048`                    | R&D (RLVR methodology); Service operation (Jupyter / MLflow)                                                        |
 
-| Capability                           | Quality dimension                          |
-|--------------------------------------|--------------------------------------------|
-| Compile lecture into source.md       | **Fast for reading** — bullets, TL;DR, no narrative bloat |
-| Cross-source dedup of claims         | **No repetitions** — REPEATED markers, retrieval-augmented |
-| Fact-check empirical claims          | **No fake statements** — Wikipedia URLs, CONTRADICTS_FACTS markers |
-| Concept extraction + linking         | (in service of the above three) |
-| Benchmark open-weight LLMs vs Opus   | (gates the production runs) |
+Each lab's own AGENTS.md Phase B holds the *lab-scoped* capability
+subset (with quality dimensions appropriate to that lab's domain).
 
-**R&D output #2: rl-2048 (program-synthesis methodology)**
+#### R&D outputs: the products
 
-Value stream: verifiable-reward problem → AI-written solver
-(observe → train → emit).
+R&D capability produces shippable products. There are two today:
 
-| Capability                           | Quality dimension                          |
-|--------------------------------------|--------------------------------------------|
-| Solve 2048 faster                    | (TBD — falsifiable metric to be locked) |
-| RLVR training loop                   | (TBD) |
+| Product | Realised across | Status |
+|---------|-----------------|--------|
+| **Kurpatov Wiki** | ingest (transcribe) + bench (compile) + compiler (LLM inference) | Active — module 005 in pilot |
+| **rl-2048** | rl-2048 lab | Pre-methodology phase |
 
-(The rl-2048 row is a stub — populate when its STATE-OF-THE-LAB.md
+Per-product capability stacks (each row lives in the lab marked):
+
+**Kurpatov Wiki**
+
+| Capability                           | Lab          | Quality dimension                                          |
+|--------------------------------------|--------------|------------------------------------------------------------|
+| Audio → text transcription           | ingest       | Russian-WER on a held-out audit set                        |
+| Compile lecture into source.md       | bench        | **Fast for reading** — bullets, TL;DR, no narrative bloat  |
+| Cross-source dedup of claims         | bench        | **No repetitions** — REPEATED markers, retrieval-augmented |
+| Fact-check empirical claims          | bench        | **No fake statements** — Wikipedia URLs, CONTRADICTS_FACTS |
+| Concept extraction + linking         | bench        | Canonical skill v2 shape                                   |
+| Benchmark open-weight LLMs vs Opus   | bench        | Reproducible from `(Dockerfile + transcripts)` only        |
+
+**rl-2048**
+
+| Capability                           | Lab          | Quality dimension                          |
+|--------------------------------------|--------------|--------------------------------------------|
+| Solve 2048 faster                    | rl-2048      | (TBD — falsifiable metric to be locked)    |
+| RLVR training loop                   | rl-2048      | (TBD)                                      |
+
+(The rl-2048 rows are stubs — populate when its STATE-OF-THE-LAB.md
 gets written.)
 
 ### Phase C — Information Systems Architecture
