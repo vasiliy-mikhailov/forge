@@ -1,5 +1,5 @@
 CONTAINER := jupyter-rl-2048
-include ../../common.mk
+include $(shell git rev-parse --show-toplevel)/common.mk
 
 .PHONY: up down
 

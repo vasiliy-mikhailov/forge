@@ -1,5 +1,5 @@
 CONTAINER := vllm-inference
-include ../../common.mk
+include $(shell git rev-parse --show-toplevel)/common.mk
 
 # Override COMPOSE: stack two --env-file's. Order matters — last wins on
 # duplicate keys. .env.active-model is rendered by load-active-model.sh
