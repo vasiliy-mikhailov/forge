@@ -1,2 +1,2 @@
 CONTAINER := caddy
-include ../../../common.mk
+include $(shell git rev-parse --show-toplevel)/common.mk
