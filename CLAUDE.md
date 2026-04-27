@@ -19,13 +19,11 @@ docs, scripts, and the root Makefile that dispatches into labs.
 Labs:
 
 - `labs/kurpatov-wiki-compiler/` — vLLM serving the LLM that
-  *compiles* raw transcripts into wiki articles. (Was
-  `labs/kurpatov-wiki-compiler/` pre-2026-04-25.)
+  *compiles* raw transcripts into wiki articles.
 - `labs/kurpatov-wiki-ingest/` — the "media → raw transcript"
-  pipeline (Whisper, etc.). (Was `forge/kurpatov-wiki/`.)
+  pipeline (Whisper, etc.).
 - `labs/kurpatov-wiki-bench/` — agent harness that benchmarks
-  different LLMs on the compiler task. (Was the standalone repo
-  `kurpatov-wiki-bench`, imported here.)
+  different LLMs on the compiler task.
 - `labs/rl-2048/` — Jupyter sandbox for RL/GRPO experiments.
   Includes its own `mlflow/` sublab (mlflow used to live at
   forge top-level; only rl-2048 uses it, so it moved in).

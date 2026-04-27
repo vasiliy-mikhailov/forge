@@ -18,30 +18,38 @@ This lab benchmarks open-weight LLMs on the task of compiling Russian whisper-tr
 forge/labs/kurpatov-wiki-bench/
 ├── AGENTS.md                           # this file
 ├── .agents/skills/                     # project-scoped skills (auto-loaded by OpenHands SDK)
-│   └── openhands-sdk-orchestration.md  # how we use OpenHands SDK; gotchas; canonical patterns
+│   └── openhands-sdk-orchestration.md  # canonical orchestration patterns; SDK gotchas
 ├── docs/
-│   ├── spec.md                         # methodology — hypothesis lifecycle, falsifiability, tier definitions
-│   ├── backlog.md                      # ranked hypothesis backlog (A/B/C/D/E/F/G clusters)
+│   ├── spec.md                         # methodology — hypothesis lifecycle, falsifiability, tiers
+│   ├── backlog.md                      # ranked hypothesis backlog
+│   ├── STATE-OF-THE-LAB.md             # as-is/to-be/gaps audit (entry point for new contributors)
 │   ├── adr/
-│   │   ├── 0001-…0008-…                # earlier infra ADRs
-│   │   └── 0009-per-source-agent-isolation.md   # current architecture decision for D7-rev3
-│   └── experiments/                    # one .md per experiment with hypothesis, locked falsifiability, results, post-mortem
-│       ├── A8.md / F1.md               # closed
-│       ├── D7.md                       # skill v2 single-agent — falsified at L0 parser
-│       ├── D7-rev2.md                  # skill v2 + 5 env fixes — partial PASS (5/7 sources)
-│       └── D7-rev3.md                  # skill v2 + per-source sub-agent isolation — active
-├── prompts/
-│   ├── launch.md / launch-D7.md / launch-D7-rev2.md   # CLI-mode launch prompts (legacy)
-│   └── launch-D7-rev3-orchestrator.md                  # control-flow only; lives in /task at runtime
-├── evals/grade/bench_grade.py          # L0-L2 quality grader
-├── tests/synthetic/                    # H-Q2/H-Q5 single-agent regression test (4 sources, 10/10 GREEN)
-├── tests/synthetic-orchestrator/       # D7-rev3 TDD harness (Python SDK + DelegateTool)
+│   │   ├── 0001-…0008-…                # infra ADRs (server, sandbox, restructure, model registry)
+│   │   ├── 0009-…                      # per-source agent isolation (Superseded by 0010)
+│   │   └── 0010-retrieval-augmented-dedup.md   # current architecture decision
+│   ├── experiments/
+│   │   ├── A8.md / F1.md               # closed (KV-budget / microbench)
+│   │   ├── D7.md / D7-rev2.md / D7-rev3.md / D7-rev4.md   # closed (each superseded by next)
+│   │   ├── D8.md                       # current spec (Steps 0-7)
+│   │   └── D8-pilot-results.md         # pilot v1 post-mortem
+│   └── post-mortems/                   # withdrawn proposals + design notes
+├── prompts/legacy/                     # CLI-era launch prompts (container entrypoint replaces)
+├── orchestrator/
+│   ├── run-d8-pilot.py                 # canonical production driver
+│   ├── embed_helpers.py                # D8 retrieval (encode/index/find-claims/find-concepts)
+│   └── legacy/                         # superseded run-d7-rev*.py drivers
+├── evals/grade/bench_grade.py          # L0-L2 quality grader (+ L1.5 concept template)
+├── tests/synthetic/                    # H-Q2/H-Q5 single-agent regression test
+├── tests/synthetic-orchestrator/
 │   ├── .venv/                          # gitignored — openhands-sdk + openhands-tools
-│   └── step{1..5,5a}_orchestrator.py   # progressive TDD scripts on synth fixtures
-├── configs/models.yml                  # active model registry (single source of truth — ADR 0008)
-├── Dockerfile                          # bench sandbox image (PyInstaller openhands binary + curl/python3 wrappers)
-├── Makefile / common.mk                # per-lab `make up/down/build/bench`
-└── run.sh                              # one-shot bench runner (LAUNCH_PROMPT env-var override supported)
+│   ├── step7_orchestrator.py           # current synth GREEN gate (Python-loop + concept v3)
+│   ├── step8_smoke.py                  # retrieval helpers smoke (D8 Step 1-3)
+│   ├── embed_helpers.py
+│   └── legacy/                         # progressive TDD ladder D7-rev3 → D7-rev4-v2
+├── configs/models.yml                  # active model registry (ADR 0008)
+├── Dockerfile                          # bench image kurpatov-wiki-bench:1.17.0-d8-cal
+├── Makefile / common.mk                # per-lab `make build/bench/preflight`
+└── run.sh                              # legacy CLI entrypoint; canonical = `docker run --entrypoint python3 ... /opt/forge/run-d8-pilot.py`
 ```
 
 ## Engineering principles (lab-specific)
@@ -56,20 +64,13 @@ These layer on top of the upstream OpenHands AGENTS.md (collaborative software e
 
 ## Active experimental track
 
-D7-rev3: orchestrator + per-source sub-agent isolation via OpenHands SDK Python orchestrator with `DelegateTool`. See `docs/experiments/D7-rev3.md` for the spec and `docs/adr/0009-per-source-agent-isolation.md` for the architectural decision. Concrete how-to lives in skill `openhands-sdk-orchestration`.
+D8: Python-loop top-orchestrator + canonical skill v2 concept shape (`## Contributions by source` per `wiki/prompts/concept-article.md`) + retrieval-augmented dedup (Steps 1-7 of D8 spec). See `docs/experiments/D8.md` for the spec, `docs/adr/0010-retrieval-augmented-dedup.md` for the ADR (which supersedes 0009), and `docs/STATE-OF-THE-LAB.md` for the as-is/to-be audit. Concrete patterns in skill `openhands-sdk-orchestration`.
 
 ## Known issues with metric history
 
-### `bench_grade.py` `CONTRADICTS_FACTS` regex fix (forge:main `1eae7b1`, 2026-04-26)
+### `bench_grade.py` `CONTRADICTS_FACTS` regex now accepts both spellings
 
-Earlier the regex required a SPACE between the words: `r"\[CONTRADICTS\s+FACTS\]"`. Skill v2 spec uses an UNDERSCORE: `[CONTRADICTS_FACTS]`. Three earlier baseline / experiment runs may have hidden `claims_CONTRADICTS_FACTS` markers that the parser silently skipped:
-
-- `bench/2026-04-25-claude-opus-4-6-cowork` (Opus baseline) — reported `claims_CONTRADICTS_FACTS_sum=6`. Probably accurate (Opus uses space format).
-- `bench/2026-04-25-qwen3.6-27b-fp8` (Qwen baseline, skill v1) — reported `claims_CONTRADICTS_FACTS_sum=0`. Could be 0 because skill v1 did not enforce the marker, or because qwen used underscore. Re-grade is cheap; not yet done.
-- `experiment/D7-2026-04-25-qwen3.6-27b-fp8` — reported `claims_CONTRADICTS_FACTS_sum=0`. Almost certainly under-counted; the agent emitted underscore-format markers in source 000 (the only source with skill v2 shape).
-- `experiment/D7-rev2-2026-04-26-qwen3.6-27b-fp8` — reported `claims_CONTRADICTS_FACTS_sum=0`. Same suspicion.
-
-After the regex fix the parser now accepts `[CONTRADICTS\s_+FACTS]` (space OR underscore). Retro re-grade of all three branches with the fixed parser is a small task (10 min); pending.
+Skill v2 produces `[CONTRADICTS_FACTS]` (underscore); Opus baseline runs produced `[CONTRADICTS FACTS]` (space). Regex (`\[CONTRADICTS[\s_]+FACTS\]`) accepts either. Pre-fix bench-reports for `bench/2026-04-25-qwen3.6-27b-fp8`, `experiment/D7-…`, `experiment/D7-rev2-…` show `claims_CONTRADICTS_FACTS_sum=0`; under-counted. Re-grade with current parser if the historical numbers matter for a comparison.
 
 ### Forge-wide invariant: all work runs in containers
 
@@ -191,10 +192,6 @@ linear-scan attention failure we documented one layer down in ADR 0009.
 This generalizes ADR 0009 (per-source sub-agent isolation) one layer up:
 also per-source TOP-orchestrator isolation. Captured in ADR 0010 +
 D8 spec Step 0.
-
-### `claims_REPEATED_sum` requires `get_known_claims.py` cross-source
-
-If a sub-agent does not call `get_known_claims.py` to learn what prior sources already claimed, it cannot mark anything as REPEATED. D7-rev3 Step 5a verified structural compliance (5 sections + Claims block + markers + URLs) but produced `claims_REPEATED_sum=0` because the sub-agent had no access to prior-source claims. This is addressed in D7-rev3 Step 5c — see `docs/experiments/D7-rev3.md` open issues.
 
 ## Cross-references
 

@@ -11,8 +11,6 @@ local vLLM endpoint is currently serving. Per-run artifacts (event
 trace + summary + the bench branch the agent pushed) land under
 `${STORAGE_ROOT}/labs/kurpatov-wiki-bench/experiments/<run_id>/`.
 
-This used to be a standalone repo; as of forge ADR 0007 it lives at `labs/kurpatov-wiki-bench/` inside forge alongside the other labs (compiler, ingest, rl-2048).
-
 Bench is one of forge's labs (since ADR 0007); it co-runs with the
 compiler lab and consumes its `${INFERENCE_DOMAIN}` endpoint as a
 client — there's no in-process coupling.
