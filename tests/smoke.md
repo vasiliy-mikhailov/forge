@@ -83,6 +83,6 @@ the per-section assertions.
 ## See also
 
 - [`tests/README.md`](README.md) — TDD workflow + check conventions.
-- [`docs/operations.md`](../docs/operations.md) — runbook for `make smoke`.
+- [`docs/phase-g-implementation-governance/operations.md`](../docs/phase-g-implementation-governance/operations.md) — runbook for `make smoke`.
 - ADR [`0007-labs-restructure-self-contained-caddy.md`](../docs/adr/0007-labs-restructure-self-contained-caddy.md)
   — why labs are mutex on :80/:443.

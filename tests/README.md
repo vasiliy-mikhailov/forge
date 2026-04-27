@@ -96,7 +96,7 @@ about this."
 
 ## See also
 
-- [`docs/operations.md`](../docs/operations.md) → End-to-end smoke.
+- [`docs/phase-g-implementation-governance/operations.md`](../docs/phase-g-implementation-governance/operations.md) → End-to-end smoke.
 - [`CLAUDE.md`](../CLAUDE.md) — agent rules.
 - [ADR 0007](../docs/adr/0007-labs-restructure-self-contained-caddy.md)
   — why smoke is per-lab now.

@@ -77,7 +77,7 @@ sudo systemctl restart docker
 - Plus: the fix is declarative — it survives reboot because it lives in
   modprobe.d.
 - Minus: requires an explicit post-install step (modprobe.d + reboot).
-  This is documented in `docs/operations.md` → "GPU host setup".
+  This is documented in `docs/phase-g-implementation-governance/operations.md` → "GPU host setup".
 - Minus: HMM is off → some CUDA managed-memory flows might behave
   unexpectedly. Within forge we haven't seen it bite (whisper + vllm +
   unsloth all work).

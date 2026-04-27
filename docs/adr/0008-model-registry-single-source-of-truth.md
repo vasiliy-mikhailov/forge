@@ -130,7 +130,7 @@ serving configuration:
 - Modified: `labs/kurpatov-wiki-bench/run-battery.sh` (only patches selector).
 - Modified: `labs/kurpatov-wiki-bench/run.sh` (preflight via `/v1/models`).
 - Modified: `labs/kurpatov-wiki-bench/SPEC.md` (client of registry).
-- Modified: `docs/architecture.md` (registry layer in topology).
+- Modified: `docs/phase-d-technology-architecture/architecture.md` (registry layer in topology).
 
 ## Alternatives considered
 

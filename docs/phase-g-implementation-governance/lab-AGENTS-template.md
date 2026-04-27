@@ -37,7 +37,7 @@ lab's `AGENTS.md` and fill in the `<...>` placeholders.
 # <lab-slug> — agent context
 
 This file follows the canonical TOGAF ADM Phase A-H structure
-(see `forge/docs/lab-AGENTS-template.md`). Read forge-level
+(see `forge/docs/phase-g-implementation-governance/lab-AGENTS-template.md`). Read forge-level
 `AGENTS.md` first for cross-cutting rules; this file is scoped to
 the <lab-slug> lab.
 

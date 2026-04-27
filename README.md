@@ -25,7 +25,7 @@ binds them). See [docs/adr/0007](docs/adr/0007-labs-restructure-self-contained-c
 ## Quick start
 
 > On a fresh host, do the **GPU host setup** from
-> [docs/operations.md](docs/operations.md) first — `nvidia-driver-590-open`
+> [docs/phase-g-implementation-governance/operations.md](docs/phase-g-implementation-governance/operations.md) first — `nvidia-driver-590-open`
 > and `uvm_disable_hmm=1` do not install themselves, and multi-GPU on Blackwell
 > will not come up without them. This is not optional; see
 > [ADR 0004](docs/adr/0004-nvidia-driver-open-plus-hmm-off.md).
@@ -76,14 +76,14 @@ make stop-all              # stop every lab
   The root `Makefile` delegates targets into them via `%-down`/`%-logs`/
   `%-build` pattern rules.
 
-More detail in `docs/architecture.md` and the SPEC of each service.
+More detail in `docs/phase-d-technology-architecture/architecture.md` and the SPEC of each service.
 
 ## Docs
 
 - [CLAUDE.md](CLAUDE.md) — instructions for LLM agents working on this repo.
   `AGENTS.md` is a symlink to the same file for cross-tool compatibility.
-- [docs/architecture.md](docs/architecture.md) — overall architecture.
-- [docs/operations.md](docs/operations.md) — runbook: host prerequisites,
+- [docs/phase-d-technology-architecture/architecture.md](docs/phase-d-technology-architecture/architecture.md) — overall architecture.
+- [docs/phase-g-implementation-governance/operations.md](docs/phase-g-implementation-governance/operations.md) — runbook: host prerequisites,
   backups, disaster recovery, GPU rotation.
 - [docs/adr/](docs/adr/) — repo-level architecture decision records.
 - [tests/](tests/) — plain-English test model (goals + signals + edge
@@ -94,7 +94,7 @@ More detail in `docs/architecture.md` and the SPEC of each service.
 
 ## Disaster recovery
 
-See `docs/operations.md`. In short:
+See `docs/phase-g-implementation-governance/operations.md`. In short:
 
 1. `git clone https://github.com/vasiliy-mikhailov/forge.git`
 2. Restore `.env` from the password manager.
@@ -106,4 +106,4 @@ See `docs/operations.md`. In short:
    adjust `.env`, start the services you need.
 
 Code and configs are in git. Data (models, sources, vault, mlflow) lives
-outside and needs its own backup strategy (see `docs/operations.md`).
+outside and needs its own backup strategy (see `docs/phase-g-implementation-governance/operations.md`).

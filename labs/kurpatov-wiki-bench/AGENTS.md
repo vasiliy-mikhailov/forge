@@ -1,7 +1,7 @@
 # kurpatov-wiki-bench — agent context
 
 This file follows the canonical TOGAF ADM Phase A-H structure
-(see `forge/docs/lab-AGENTS-template.md`). Read forge-level
+(see `forge/docs/phase-g-implementation-governance/lab-AGENTS-template.md`). Read forge-level
 `AGENTS.md` first for cross-cutting rules; this file is scoped to
 the bench lab.
 
@@ -271,7 +271,7 @@ in `bench_grade.py` L1.5 layer (post-2026-04-27).
 **Containers-only invariant** (forge-wide, applies here too).
 Every executable artefact runs inside Docker. No host-Python runs in
 production. See `forge/AGENTS.md` and
-`forge/docs/policies/containers.md`.
+`forge/docs/phase-g-implementation-governance/containers.md`.
 
 **Useful commands:**
 
@@ -335,7 +335,7 @@ forge/labs/kurpatov-wiki-bench/
 
 - Forge-level: `forge/AGENTS.md` (Phase A vision + cross-cutting
   rules; Phase D service tenancy table).
-- Template: `forge/docs/lab-AGENTS-template.md`.
+- Template: `forge/docs/phase-g-implementation-governance/lab-AGENTS-template.md`.
 - Upstream OpenHands SDK design principles:
   <https://docs.openhands.dev/sdk/arch/design>
 - Upstream SDK examples (especially 25 / 41 / 42):
