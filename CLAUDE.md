@@ -163,21 +163,75 @@ experiments, STATE-OF-THE-LAB.md).
 
 ### Phase A — Architecture Vision
 
-**Forge saves human time with AI agents.**
+This phase answers *who* cares about Forge as an architecture, *why*
+they care, and *what target state* the architecture exists to reach.
+The product portfolio (which products and their value streams) is not
+here — that lives in Phase B.
 
-Two products today, each its own value stream:
+**Vision statement.** Forge builds AI tools that save human time on
+cognitive work — both consuming information and writing/optimizing
+programs.
 
-| Product           | Value stream                                                    |
-|-------------------|-----------------------------------------------------------------|
-| **Kurpatov Wiki** | Video / audio lectures → smart-reading format markdown wiki.    |
-| **rl-2048**       | 2048 board states → solver actions, trained via RL with verifiable rewards (RLVR). |
+**Stakeholders.**
+
+- **Architect of record** — one person (the repo owner). Sole driver
+  of trajectory changes, sole reviewer, today the only consumer of
+  every output.
+- **Future operator** — the architect's future self, who will inherit
+  these docs, debug failures, and extend the platform. Most of what
+  is written here is for them.
+- **End users** — TBD. Currently identical with the architect; the
+  Practical-Time-Saved goal becomes meaningful only once there are
+  non-architect users.
+
+**Drivers.**
+
+- Time spent consuming information from Russian psychology lectures
+  (Kurpatov: ~60-90 min each, ~200 in catalog).
+- Time spent writing/optimizing programs in domains where RL with
+  verifiable rewards (RLVR) can do the slog automatically.
+- Architect-velocity: every minute the architect spends recovering
+  GPUs or rerunning failed pilots is a minute not spent on the real
+  work.
+
+**Goals (Motivation-layer; quantified in Phase H trajectories).**
+
+- **TTS — Theoretical Time Saved.** Minutes saved per use,
+  conditional on the product's quality dimensions holding.
+- **PTS — Practical Time Saved.** Cumulative minutes saved across
+  all users (= TTS × users × engagement).
+- **EB — Economic Balance.** Revenue minus operational cost
+  (GPU-hours + storage + architect-hours at shadow rate).
+- **Architect-velocity.** Capability advances per architect-hour.
+  Cross-cuts every other goal — speed of forge's own improvement.
+
+**Principles.**
+
+- **Single architect of record.** No committee, no formal review
+  process beyond AGENTS.md conventions.
+- **Capability trajectories.** Every capability has Level 1 (today)
+  and Level 2 (next planned state). When L2 is reached, it becomes
+  the new L1 and the prior L1 is deleted from docs; git is the
+  archive. No `Withdrawn` / `Deprecated` / `Closed` status flags in
+  the working tree.
+- **Containers-only execution** (`docs/policies/containers.md`).
+- **Single-server deployment** on `mikhailov.tech` — all services
+  share one host, one network, two GPUs.
 
 ### Phase B — Business Architecture
 
-Each product is a stack of capabilities; each capability has a quality
-dimension that defines "good".
+Forge realizes the Phase A vision through two **value streams**, each
+producing a **product** with its own **capability stack** and quality
+dimensions.
 
-**Kurpatov Wiki**
+**Value streams + products:**
+
+| Value stream                                       | Product           | Mechanism (collect → filter → adapt) |
+|----------------------------------------------------|-------------------|--------------------------------------|
+| Lecture → smart-reading wiki                       | **Kurpatov Wiki** | audio→transcript ingest → dedup + factcheck filter → smart-reading markdown adapt |
+| Verifiable-reward problem → AI-written solver      | **rl-2048**       | (state, reward) observe → RLVR filter → program/policy adapt |
+
+**Business capabilities — Kurpatov Wiki:**
 
 | Capability                           | Quality dimension                          |
 |--------------------------------------|--------------------------------------------|
@@ -187,7 +241,7 @@ dimension that defines "good".
 | Concept extraction + linking         | (in service of the above three) |
 | Benchmark open-weight LLMs vs Opus   | (gates the production runs) |
 
-**rl-2048**
+**Business capabilities — rl-2048:**
 
 | Capability                           | Quality dimension                          |
 |--------------------------------------|--------------------------------------------|

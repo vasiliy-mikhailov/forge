@@ -6,16 +6,39 @@ file is scoped to the rl-2048 lab.
 
 ## Phase A — Architecture Vision
 
-This lab is the **program-synthesis-via-AI** track of forge — the
-sibling of Kurpatov Wiki under the same Motivation
-("Forge builds AI tools that save human time on cognitive work").
-Where Wiki saves time on *consuming* information, rl-2048 saves
-time on *writing/optimizing programs* by using RL with verifiable
-rewards (RLVR) to produce solvers automatically.
+**Vision (lab-scoped).** Explore "AI writes programs from verifiable
+rewards" using 2048 as the first verifiable-reward domain. The product
+is the methodology + harness; future siblings (other RLVR domains)
+plug in alongside.
 
-The 2048 game is the first verifiable-reward domain. The real
-product is the methodology + harness; future siblings (other RLVR
-domains) plug in alongside.
+**Lab-scoped stakeholders.**
+
+- **Architect of record** (forge-wide).
+- **Lab consumer** — currently the architect (no external users).
+
+**Lab-scoped drivers.**
+
+- Time spent hand-coding solvers for verifiable-reward problems
+  (the meta-driver for this whole lab).
+- The wiki product is the *information-consumption* sibling; rl-2048
+  is the *program-synthesis* sibling. Both serve the same
+  forge-level goal: save human time on cognitive work.
+
+**Lab-scoped goals.**
+
+- **Falsifiable 2048-solver-quality metric** locked + a baseline
+  run recorded in MLflow.
+- **First end-to-end RLVR loop** that produces a checkpoint better
+  than a hand-coded baseline.
+
+**Lab-scoped principles.**
+
+- The Blackwell hosts compiler OR rl-2048, not both. Mutex.
+- MLflow SQLite is single-writer; one trainer at a time.
+- `.ipynb` files are NOT committed; mature notebooks port to
+  `.py` modules.
+- Large checkpoints (`.pt`, `.bin`) live under `${STORAGE_ROOT}`,
+  never in git.
 
 ## Phase B — Business Architecture
 

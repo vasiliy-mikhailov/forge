@@ -44,13 +44,34 @@ the <lab-slug> lab.
 
 ## Phase A — Architecture Vision
 
-<One paragraph: what this lab contributes to the forge mission
-"Forge builds AI tools that save human time on cognitive work".
-What service(s) it provides. Why it exists. Lab-scoped.>
+Phase A answers *who* cares about this lab as an architecture, *why*
+they care, and *what target state* the lab exists to reach. Products
+and capability tables go in Phase B, not here.
+
+**Vision (lab-scoped).** <One sentence: what this lab provides to
+the forge mission "Forge builds AI tools that save human time on
+cognitive work".>
+
+**Lab-scoped stakeholders.** <Who cares about this lab specifically.
+Cross-link to forge-level stakeholders (architect of record, future
+operator) — don't duplicate them.>
+
+**Lab-scoped drivers.** <What forces motivate the work in this lab.
+Examples: GPU instability, transcription volume, single-architect
+attention budget.>
+
+**Lab-scoped goals.** <Measurable target states for this lab. These
+roll up to forge-level Motivation goals (TTS, PTS, EB,
+Architect-velocity).>
+
+**Lab-scoped principles.** <Constraints specific to this lab's
+operation. Cross-cutting principles like "containers-only" live in
+forge-level Phase A — don't repeat them here.>
 
 ## Phase B — Business Architecture
 
-<Subset of forge-level Phase B owned by THIS lab. Same table format:>
+<Subset of forge-level Phase B owned by THIS lab. The lab realises
+the relevant rows of the forge-level capability tables. Same format:>
 
 | Capability | Quality dimension |
 |------------|-------------------|

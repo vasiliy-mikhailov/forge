@@ -6,11 +6,44 @@ file is scoped to the ingest lab.
 
 ## Phase A — Architecture Vision
 
-This lab provides the **media → raw transcript** pipeline. Every
-Курпатов lecture starts as audio/video; this lab turns it into
-whisper-segment JSON that downstream labs (bench, compiler) consume
-to produce wiki articles. Ingest is the first step in the wiki
-product's collect/filter/adapt mechanism.
+**Vision (lab-scoped).** Provide the audio→text pipeline that turns
+Kurpatov's ~200 lectures into the `raw.json` shape every downstream
+lab consumes. Ingest is the *collect* step in the wiki product's
+collect/filter/adapt mechanism.
+
+**Lab-scoped stakeholders.**
+
+- **Architect of record** (forge-wide).
+- **Downstream consumers** — `kurpatov-wiki-bench` (reads `raw.json`
+  to compile wiki articles), `kurpatov-wiki-wiki` (the source-of-truth
+  repo where compiled wiki articles cite raw paths).
+
+**Lab-scoped drivers.**
+
+- Volume: ~200 lectures, hours each. Manual transcription is
+  intractable.
+- Append-only invariant: once a `raw.json` is published, downstream
+  consumers cite paths into it forever. Mutating in place breaks
+  citations.
+
+**Lab-scoped goals.**
+
+- **Transcription accuracy** on Russian psychology register
+  (Kurpatov has dense compound terms — `системно-поведенческая
+  психотерапия` etc.). Quality dim: word-error rate on a held-out
+  audit set.
+- **Latency** from new audio drop to `raw.json` published in
+  `kurpatov-wiki-raw` GitHub repo.
+
+**Lab-scoped principles.**
+
+- `raw.json` shape is load-bearing — schema change requires an ADR
+  + downstream consumer review.
+- Append-only: re-transcribing produces a new run identifier, never
+  overwrites.
+- The vault `raw/` checkout is a working tree of the
+  `kurpatov-wiki-raw` repo, not a forge subdirectory; only the
+  `raw-pusher` container performs git operations there.
 
 ## Phase B — Business Architecture
 

@@ -6,11 +6,39 @@ file is scoped to the compiler lab.
 
 ## Phase A — Architecture Vision
 
-This lab provides the **LLM inference service** that every other lab
-in forge consumes. It hosts vLLM serving the open-weight model that
-realises the wiki product's "Compile lecture into source.md"
-capability. Without it, no compilation, no benchmarking, no RL with
-verifiable rewards.
+**Vision (lab-scoped).** Provide the LLM inference service that
+realises every wiki-product capability and every future RL trainer's
+verifiable reward call. Without compiler, no wiki, no bench, no
+program-synthesis loop.
+
+**Lab-scoped stakeholders.**
+
+- **Architect of record** (forge-wide; see `forge/AGENTS.md`).
+- **Consumer labs** — `kurpatov-wiki-bench` today, future RL trainers
+  tomorrow. The compiler lab's API contract is the
+  OpenAI-compatible HTTP endpoint at `${INFERENCE_BASE_URL}`.
+
+**Lab-scoped drivers.**
+
+- GPU instability under sustained 27B-FP8 inference (G1 experiment;
+  every crash costs ~30-60 min recovery and aborts whatever pilot is
+  in flight).
+- GPU $/output token under a single Blackwell card.
+
+**Lab-scoped goals.**
+
+- **Stability** — ≥ 95 % pilot completion rate without GPU recovery.
+  Feeds forge-wide architect-velocity.
+- **Throughput at memory-bandwidth ceiling** for batch=1 on Qwen3.6-27B-FP8
+  (currently ~47 tok/s decode, ~80 % of theoretical ceiling).
+
+**Lab-scoped principles.**
+
+- Single-card vLLM only; the Blackwell hosts compiler OR rl-2048,
+  not both.
+- Power cap mandatory before vLLM starts
+  (`/etc/systemd/system/nvidia-power-limit.service`).
+- Pin vLLM image tag; no `:latest`.
 
 ## Phase B — Business Architecture
 
