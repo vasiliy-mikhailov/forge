@@ -52,7 +52,7 @@ experiment is a run.
 ## First thing an agent should do
 
 1. Read this file.
-2. Read `README.md` and `docs/phase-d-technology-architecture/architecture.md` to understand the physical
+2. Read `README.md` and `phase-d-technology-architecture/architecture.md` to understand the physical
    layout (where `STORAGE_ROOT` lives, what docker network, which images).
 3. Open the SPEC.md of the service being edited (`labs/<lab>/SPEC.md`).
 4. Skim `docs/adr/` and `labs/<lab>/docs/adr/` — architectural decisions
@@ -133,8 +133,8 @@ make du    # on-disk sizes under STORAGE_ROOT
 - Do not reinstall the proprietary nvidia driver (without `-open`) and
   do not delete `/etc/modprobe.d/nvidia-uvm.conf`. Multi-GPU on Blackwell
   does not forgive this. Details and symptoms →
-  `docs/adr/0004-nvidia-driver-open-plus-hmm-off.md`, diagnostics →
-  `docs/phase-g-implementation-governance/operations.md` → "GPU suddenly unavailable".
+  `phase-d-technology-architecture/adr/0004-nvidia-driver-open-plus-hmm-off.md`, diagnostics →
+  `phase-g-implementation-governance/operations.md` → "GPU suddenly unavailable".
 
 ## Useful commands for the agent
 
@@ -214,7 +214,7 @@ programs.
   the new L1 and the prior L1 is deleted from docs; git is the
   archive. No `Withdrawn` / `Deprecated` / `Closed` status flags in
   the working tree.
-- **Containers-only execution** (`docs/phase-g-implementation-governance/containers.md`).
+- **Containers-only execution** (`phase-g-implementation-governance/policies/containers.md`).
 - **Single-server deployment** on `mikhailov.tech` — all services
   share one host, one network, two GPUs.
 
@@ -385,7 +385,7 @@ architect-velocity and EB; they do not directly move TTS.
 
 **Forge-wide invariants (apply to every service):**
 - Single-server deployment on `mikhailov.tech`.
-- Containers-only execution (`docs/phase-g-implementation-governance/containers.md`).
+- Containers-only execution (`phase-g-implementation-governance/policies/containers.md`).
 - Persistence-aware GPU power management
   (`/etc/systemd/system/nvidia-power-limit.service` — 400 W cap with
   `-pm 1`).
@@ -454,7 +454,7 @@ go to git history per Phase H).
 
 - **Architect of record**: one person (the repo owner). All trajectory
   changes pass through them.
-- **All work runs in containers** (`docs/phase-g-implementation-governance/containers.md`).
+- **All work runs in containers** (`phase-g-implementation-governance/policies/containers.md`).
 - **AGENTS.md per lab** carries operational rules for that lab; the
   forge-level CLAUDE.md (this file) carries cross-cutting rules.
 - **No PR review automation** beyond the AGENTS.md convention.
@@ -464,7 +464,7 @@ go to git history per Phase H).
 The TOGAF ADM phase structure is meant to *permeate*, not just live at
 the top. Every lab’s `labs/<lab>/AGENTS.md` must use the canonical
 phase headers (Phase A through Phase H, classic TOGAF names — see
-`docs/phase-g-implementation-governance/lab-AGENTS-template.md`), scoped to that lab. The template is
+`phase-g-implementation-governance/lab-AGENTS-template.md`), scoped to that lab. The template is
 the source of truth for section ordering and wording; copy from it
 when adding or editing a lab AGENTS.md.
 

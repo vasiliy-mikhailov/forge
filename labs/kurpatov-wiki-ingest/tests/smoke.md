@@ -50,7 +50,7 @@ leakage from the rl-2048 GPU.
 
 **Goal.** GPU is not just visible but actually usable for compute.
 Catches "GPU visible but driver/UVM unhappy" — the failure mode
-[ADR 0004](../../../docs/adr/0004-nvidia-driver-open-plus-hmm-off.md)
+[ADR 0004](../../../phase-d-technology-architecture/adr/0004-nvidia-driver-open-plus-hmm-off.md)
 exists to prevent.
 
 **Signals.** `docker exec jupyter-kurpatov-wiki python -c <snippet>`

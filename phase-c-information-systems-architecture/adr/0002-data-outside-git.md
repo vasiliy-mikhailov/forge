@@ -40,7 +40,7 @@ exception concerns a different repo entirely. A symmetric
 - Plus: forced separation — it's obvious what to back up as code vs. as
   data.
 - Minus: disaster recovery needs two sources: git and a separate data
-  backup. See `docs/phase-g-implementation-governance/operations.md` → "Disaster recovery".
+  backup. See `phase-g-implementation-governance/operations.md` → "Disaster recovery".
 - Minus: when onboarding a new agent/tool I have to separately explain
   where data actually lives.
 

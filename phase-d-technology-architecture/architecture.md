@@ -191,7 +191,7 @@ in every case.
   any overlap → OOM on the second container.
 - `apt full-upgrade` pulled in the wrong nvidia driver (proprietary
   instead of `-open`, or a newer major) → multi-GPU silently breaks.
-  Diagnostics: [`docs/phase-g-implementation-governance/operations.md`](../phase-g-implementation-governance/operations.md) → "GPU suddenly
+  Diagnostics: [`phase-g-implementation-governance/operations.md`](../phase-g-implementation-governance/operations.md) → "GPU suddenly
   unavailable".
 - `nvidia_uvm` loaded without `uvm_disable_hmm=1` → CUDA hangs.
   See [ADR 0004](../adr/0004-nvidia-driver-open-plus-hmm-off.md).

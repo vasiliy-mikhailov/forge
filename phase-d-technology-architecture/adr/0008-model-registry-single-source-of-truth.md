@@ -116,7 +116,7 @@ serving configuration:
 
 ## Touched files
 
-- New: `docs/adr/0008-model-registry-single-source-of-truth.md` (this).
+- New: `phase-d-technology-architecture/adr/0008-model-registry-single-source-of-truth.md` (this).
 - New: `labs/kurpatov-wiki-compiler/configs/models.yml`.
 - New: `labs/kurpatov-wiki-compiler/bin/load-active-model.sh`.
 - New: `labs/kurpatov-wiki-compiler/.gitignore` (ignores `.env.active-model`).
@@ -130,7 +130,7 @@ serving configuration:
 - Modified: `labs/kurpatov-wiki-bench/run-battery.sh` (only patches selector).
 - Modified: `labs/kurpatov-wiki-bench/run.sh` (preflight via `/v1/models`).
 - Modified: `labs/kurpatov-wiki-bench/SPEC.md` (client of registry).
-- Modified: `docs/phase-d-technology-architecture/architecture.md` (registry layer in topology).
+- Modified: `phase-d-technology-architecture/architecture.md` (registry layer in topology).
 
 ## Alternatives considered
 

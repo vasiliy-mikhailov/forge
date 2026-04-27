@@ -130,7 +130,7 @@ ADR 0005 didn't anticipate, and SPEC.md is the up-to-date how-to.
   Pydantic quantization-mismatch error we recognize the shape.
 
 ## Touched files
-- New: `docs/adr/0006-inference-deploy-session-2026-04-25.md` (this).
+- New: `phase-f-migration-planning/adr/0006-inference-deploy-session-2026-04-25.md` (this).
 - New: `inference/docs/adr/0002-per-model-parsers.md`.
 - Edits: `inference/SPEC.md` (operations + sanity-test sections,
   parser/reasoning section), `inference/docker-compose.yml`

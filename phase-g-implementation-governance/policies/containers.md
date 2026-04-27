@@ -5,7 +5,7 @@
 **Scope:** every lab under `forge/labs/`, every executable artifact
 
 This policy belongs at forge-level: promote into `forge/AGENTS.md` (or
-`forge/docs/phase-g-implementation-governance/containers.md` if a dedicated policies dir exists).
+`forge/phase-g-implementation-governance/policies/containers.md` if a dedicated policies dir exists).
 
 ---
 

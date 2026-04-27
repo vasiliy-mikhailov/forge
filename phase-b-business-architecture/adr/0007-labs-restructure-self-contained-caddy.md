@@ -169,6 +169,6 @@ caches — model weights are read-only public artifacts.
 - `common.mk` now finds forge root via `git rev-parse
   --show-toplevel`, so it works at any nesting depth.
 - New top-level ADR (this file).
-- CLAUDE.md, README.md, docs/phase-d-technology-architecture/architecture.md updated.
+- CLAUDE.md, README.md, phase-d-technology-architecture/architecture.md updated.
 - `kurpatov-wiki-bench` repo content imported under
   `labs/kurpatov-wiki-bench/` (separate commit / subtree).

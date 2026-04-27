@@ -20,15 +20,15 @@ make targets — and rebuild the whole environment.
 
 Each lab is fully self-contained: own caddy, own docker-compose,
 own SPEC. Labs are mutex on host ports 80/443 (each lab's caddy
-binds them). See [docs/adr/0007](docs/adr/0007-labs-restructure-self-contained-caddy.md).
+binds them). See [docs/adr/0007](phase-b-business-architecture/adr/0007-labs-restructure-self-contained-caddy.md).
 
 ## Quick start
 
 > On a fresh host, do the **GPU host setup** from
-> [docs/phase-g-implementation-governance/operations.md](docs/phase-g-implementation-governance/operations.md) first — `nvidia-driver-590-open`
+> [phase-g-implementation-governance/operations.md](phase-g-implementation-governance/operations.md) first — `nvidia-driver-590-open`
 > and `uvm_disable_hmm=1` do not install themselves, and multi-GPU on Blackwell
 > will not come up without them. This is not optional; see
-> [ADR 0004](docs/adr/0004-nvidia-driver-open-plus-hmm-off.md).
+> [ADR 0004](phase-d-technology-architecture/adr/0004-nvidia-driver-open-plus-hmm-off.md).
 
 ```bash
 # 1. Fill in secrets and GPU identifiers.
@@ -64,10 +64,10 @@ make stop-all              # stop every lab
 - One docker network `proxy-net`, every service attached to it.
 - Public services are fronted by **per-lab caddy**: each lab carries its
   own `caddy/` and binds host :80/:443 — labs are mutex on these ports
-  (see [ADR 0007](docs/adr/0007-labs-restructure-self-contained-caddy.md)).
+  (see [ADR 0007](phase-b-business-architecture/adr/0007-labs-restructure-self-contained-caddy.md)).
   Auth is basic, on top of TLS from Let's Encrypt; the inference
   endpoint is the documented exception (vLLM Bearer auth, see
-  [ADR 0005](docs/adr/0005-inference-subsystem.md)).
+  [ADR 0005](phase-d-technology-architecture/adr/0005-inference-subsystem.md)).
 - Heavy data (models, sources, transcripts, checkpoints, mlflow artifacts)
   live on a separate disk at `STORAGE_ROOT` (on my box it's a ZFS pool at
   `/mnt/steam/forge`); layout: `${STORAGE_ROOT}/{shared/models,labs/<lab>/...}`.
@@ -76,14 +76,14 @@ make stop-all              # stop every lab
   The root `Makefile` delegates targets into them via `%-down`/`%-logs`/
   `%-build` pattern rules.
 
-More detail in `docs/phase-d-technology-architecture/architecture.md` and the SPEC of each service.
+More detail in `phase-d-technology-architecture/architecture.md` and the SPEC of each service.
 
 ## Docs
 
 - [CLAUDE.md](CLAUDE.md) — instructions for LLM agents working on this repo.
   `AGENTS.md` is a symlink to the same file for cross-tool compatibility.
-- [docs/phase-d-technology-architecture/architecture.md](docs/phase-d-technology-architecture/architecture.md) — overall architecture.
-- [docs/phase-g-implementation-governance/operations.md](docs/phase-g-implementation-governance/operations.md) — runbook: host prerequisites,
+- [phase-d-technology-architecture/architecture.md](phase-d-technology-architecture/architecture.md) — overall architecture.
+- [phase-g-implementation-governance/operations.md](phase-g-implementation-governance/operations.md) — runbook: host prerequisites,
   backups, disaster recovery, GPU rotation.
 - [docs/adr/](docs/adr/) — repo-level architecture decision records.
 - [tests/](tests/) — plain-English test model (goals + signals + edge
@@ -94,7 +94,7 @@ More detail in `docs/phase-d-technology-architecture/architecture.md` and the SP
 
 ## Disaster recovery
 
-See `docs/phase-g-implementation-governance/operations.md`. In short:
+See `phase-g-implementation-governance/operations.md`. In short:
 
 1. `git clone https://github.com/vasiliy-mikhailov/forge.git`
 2. Restore `.env` from the password manager.
@@ -106,4 +106,4 @@ See `docs/phase-g-implementation-governance/operations.md`. In short:
    adjust `.env`, start the services you need.
 
 Code and configs are in git. Data (models, sources, vault, mlflow) lives
-outside and needs its own backup strategy (see `docs/phase-g-implementation-governance/operations.md`).
+outside and needs its own backup strategy (see `phase-g-implementation-governance/operations.md`).

@@ -114,7 +114,7 @@ add an L2.5 layer.
 ## Capability: All work runs in containers
 
 **Level 1 (as-is)**
-`forge/docs/phase-g-implementation-governance/containers.md` codifies the policy.
+`forge/phase-g-implementation-governance/policies/containers.md` codifies the policy.
 `kurpatov-wiki-bench:1.17.0-d8-cal` image bakes openhands-sdk +
 sentence-transformers + numpy + e5-base + our scripts at
 `/opt/forge/`. Build-time smoke runs `step8_smoke.py` inside
@@ -146,7 +146,7 @@ finishes):
 
 - `forge/CLAUDE.md` § Architecture management — TOGAF-style
   capability trajectories
-- `forge/docs/phase-g-implementation-governance/containers.md` — containers-only invariant
+- `forge/phase-g-implementation-governance/policies/containers.md` — containers-only invariant
 - `kurpatov-wiki-wiki:skill-v2/prompts/concept-article.md` — canonical
   concept shape
 - `kurpatov-wiki-wiki:skill-v2/skills/benchmark/SKILL.md` — skill v2
