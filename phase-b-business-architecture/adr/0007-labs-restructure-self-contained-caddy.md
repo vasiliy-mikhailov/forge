@@ -13,7 +13,7 @@ two cards).
 
 Three things converged that called for a redesign:
 
-1. The new bench-as-battery (ADR 0006 kurpatov-wiki-bench) added
+1. The new bench-as-battery (ADR 0006 wiki-bench) added
    a fourth GPU-using subsystem. The flat structure was already
    crowded; adding bench as another sibling at the top level
    would have made it harder to read what's an "experiment" vs
@@ -24,7 +24,7 @@ Three things converged that called for a redesign:
    service per GPU" partition; we need a cleaner mutex story.
 3. MLflow was top-level but only `rl-2048` actually uses it.
    Compiler doesn't track experiments through MLflow (per-run
-   artifacts under `${STORAGE_ROOT}/labs/kurpatov-wiki-bench/experiments/`),
+   artifacts under `${STORAGE_ROOT}/labs/wiki-bench/experiments/`),
    ingest doesn't either. MLflow at the root was implying a
    shared dependency that wasn't real.
 
@@ -42,18 +42,18 @@ lab is fully self-contained:
 forge/
 ├── docs/                          ← repo-level docs + ADRs
 ├── labs/
-│   ├── kurpatov-wiki-compiler/    ← was forge/inference/  — vLLM serving
+│   ├── wiki-compiler/    ← was forge/inference/  — vLLM serving
 │   │   ├── SPEC.md
 │   │   ├── docker-compose.yml
 │   │   ├── caddy/                 ← own caddy (binds 80/443)
 │   │   │   ├── Caddyfile
 │   │   │   └── docker-compose.yml
 │   │   └── docs/adr/
-│   ├── kurpatov-wiki-ingest/      ← was forge/kurpatov-wiki/  — transcribe
+│   ├── wiki-ingest/      ← was forge/kurpatov-wiki/  — transcribe
 │   │   ├── SPEC.md, Dockerfile*, docker-compose.yml
 │   │   ├── caddy/
 │   │   └── docs/adr/
-│   ├── kurpatov-wiki-bench/       ← was the standalone repo — agent harness
+│   ├── wiki-bench/       ← was the standalone repo — agent harness
 │   │   ├── SPEC.md, Dockerfile, docker-compose.yml
 │   │   ├── configs/models.yml     ← bench-as-battery config
 │   │   ├── run.sh, run-battery.sh
@@ -75,17 +75,17 @@ forge/
 
 ### Naming choices
 - **`labs/`** beats `experiments/`, `usecases/`, `workspaces/`.
-  An "experiment" is a single run/trial (in `kurpatov-wiki-bench`,
+  An "experiment" is a single run/trial (in `wiki-bench`,
   e.g. "experiment 148 = qwen3.6-27b-fp8 on 2026-04-25"). A "lab"
   is the room those experiments happen in. Reusing the word
   "experiment" for the room would be confusing.
-- **`kurpatov-wiki-compiler`** beats `-inference`, `-author`. The
+- **`wiki-compiler`** beats `-inference`, `-author`. The
   inference-server is just the instrument; the *purpose* is to
   compile raw transcripts into wiki articles. The compiler
   metaphor (raw → wiki, like source → binary) makes the bench
   lab's job legible too: it tests different compilers on the
   same source set.
-- **`kurpatov-wiki-bench`** keeps the existing repo name; gets
+- **`wiki-bench`** keeps the existing repo name; gets
   imported here.
 - **`rl-2048`** unchanged.
 
@@ -97,8 +97,8 @@ doesn't collide across labs.
 
 This means **only one lab's caddy can hold ports 80/443 at a
 time** — labs become mutex on the host port. We accept this:
-- `kurpatov-wiki-bench` doesn't run a caddy (it's a client of
-  `kurpatov-wiki-compiler`'s endpoint), so compiler + bench can
+- `wiki-bench` doesn't run a caddy (it's a client of
+  `wiki-compiler`'s endpoint), so compiler + bench can
   co-run.
 - All other lab combinations are already mutex by GPU anyway
   once we go dual-GPU TP, so the port mutex doesn't add
@@ -118,9 +118,9 @@ ${STORAGE_ROOT}/
 ├── shared/
 │   └── models/                          ← HF cache, shared by every lab
 └── labs/
-    ├── kurpatov-wiki-compiler/{caddy-data,caddy-config}/
-    ├── kurpatov-wiki-ingest/{sources,vault/raw,checkpoints,caddy-data,caddy-config}/
-    ├── kurpatov-wiki-bench/experiments/<NN-timestamp-slug>/
+    ├── wiki-compiler/{caddy-data,caddy-config}/
+    ├── wiki-ingest/{sources,vault/raw,checkpoints,caddy-data,caddy-config}/
+    ├── wiki-bench/experiments/<NN-timestamp-slug>/
     └── rl-2048/{checkpoints,mlruns,caddy-data,caddy-config}/
 ```
 
@@ -156,19 +156,19 @@ caches — model weights are read-only public artifacts.
   data copy. Done in this commit.
 
 ## Touched files
-- `git mv inference/ → phase-b-business-architecture/org-units/kurpatov-wiki-compiler/`
-- `git mv kurpatov-wiki/ → phase-b-business-architecture/org-units/kurpatov-wiki-ingest/`
+- `git mv inference/ → phase-b-business-architecture/org-units/wiki-compiler/`
+- `git mv kurpatov-wiki/ → phase-b-business-architecture/org-units/wiki-ingest/`
 - `git mv rl-2048/ → phase-b-business-architecture/org-units/rl-2048/`
 - `git mv mlflow/ → phase-b-business-architecture/org-units/rl-2048/mlflow/`
 - `git rm -rf caddy/`
 - New per-lab `caddy/` folders with extracted site blocks.
 - Compose volume paths updated: `${STORAGE_ROOT}/models →
   /shared/models`, `${STORAGE_ROOT}/kurpatov-wiki/ → /labs/
-  kurpatov-wiki-ingest/`, etc.
+  wiki-ingest/`, etc.
 - Root Makefile rewritten as labs/ dispatcher.
 - `common.mk` now finds forge root via `git rev-parse
   --show-toplevel`, so it works at any nesting depth.
 - New top-level ADR (this file).
 - CLAUDE.md, README.md, phase-d-technology-architecture/architecture.md updated.
-- `kurpatov-wiki-bench` repo content imported under
-  `phase-b-business-architecture/org-units/kurpatov-wiki-bench/` (separate commit / subtree).
+- `wiki-bench` repo content imported under
+  `phase-b-business-architecture/org-units/wiki-bench/` (separate commit / subtree).

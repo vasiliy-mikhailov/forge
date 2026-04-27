@@ -1,7 +1,7 @@
 # ADR 0005 — inference subsystem (vLLM on Blackwell)
 
 ## Status
-Accepted (2026-04-25). **Subsystem became lab `phase-b-business-architecture/org-units/kurpatov-wiki-compiler/` later the same day (ADR 0007).** All design decisions in this ADR carry over verbatim; only the directory layout changed.
+Accepted (2026-04-25). **Subsystem became lab `phase-b-business-architecture/org-units/wiki-compiler/` later the same day (ADR 0007).** All design decisions in this ADR carry over verbatim; only the directory layout changed.
 
 ## Context
 forge needs a long-running inference endpoint that external agents
@@ -25,7 +25,7 @@ at `https://${INFERENCE_DOMAIN}/v1/...` fronted by caddy.
 Three cross-cutting design choices captured here; the
 **implementation-level** sub-decisions (vLLM vs alternatives, NGC
 image vs upstream, vLLM API key vs caddy basic auth) live in
-[`phase-b-business-architecture/org-units/kurpatov-wiki-compiler/docs/adr/0001`](../../labs/kurpatov-wiki-compiler/docs/adr/0001-vllm-public-openai-compatible-endpoint.md).
+[`phase-b-business-architecture/org-units/wiki-compiler/docs/adr/0001`](../../labs/wiki-compiler/docs/adr/0001-vllm-public-openai-compatible-endpoint.md).
 
 ### 1. Mode mutex with rl-2048
 `inference` and `rl-2048` both want the Blackwell. forge has effectively
@@ -77,7 +77,7 @@ new `${STORAGE_ROOT}` subdir.
   benchmark endpoint simultaneously. For our usage pattern this is
   fine: experiments are bursts, benchmarks are scheduled.
 - API key is a single shared secret; rotation is an `.env` edit +
-  `make kurpatov-wiki-compiler-down && make kurpatov-wiki-compiler`.
+  `make kurpatov-wiki-compiler-down && make wiki-compiler`.
 
 ## Touched files
 - New: `inference/{SPEC.md,docker-compose.yml,Makefile,docs/adr/0001-…}`.

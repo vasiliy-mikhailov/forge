@@ -12,7 +12,7 @@
 export
 
 STORAGE_ROOT ?= /mnt/steam/forge
-LABS := kurpatov-wiki-compiler kurpatov-wiki-ingest kurpatov-wiki-bench rl-2048
+LABS := wiki-compiler wiki-ingest wiki-bench rl-2048
 
 .PHONY: help setup network stop-all ps gpu du smoke push-sources $(LABS)
 
@@ -30,16 +30,16 @@ help:
 	@echo ""
 	@echo "Lab discipline (mutex):"
 	@echo "  - Only one lab at a time can hold ports 80/443 (own caddy)."
-	@echo "  - kurpatov-wiki-compiler can co-run with kurpatov-wiki-bench"
+	@echo "  - wiki-compiler can co-run with wiki-bench"
 	@echo "    (bench is a client, no caddy)."
 	@echo "  - Going to dual-GPU TP for compiler also locks both GPUs."
 
 setup:
 	@: "$${STORAGE_ROOT:?STORAGE_ROOT must be set in .env}"
 	@mkdir -p $(STORAGE_ROOT)/shared/models
-	@mkdir -p $(STORAGE_ROOT)/labs/kurpatov-wiki-compiler/{caddy-data,caddy-config}
-	@mkdir -p $(STORAGE_ROOT)/labs/kurpatov-wiki-ingest/{sources,vault/raw,checkpoints,caddy-data,caddy-config}
-	@mkdir -p $(STORAGE_ROOT)/labs/kurpatov-wiki-bench/experiments
+	@mkdir -p $(STORAGE_ROOT)/labs/wiki-compiler/{caddy-data,caddy-config}
+	@mkdir -p $(STORAGE_ROOT)/labs/wiki-ingest/{sources,vault/raw,checkpoints,caddy-data,caddy-config}
+	@mkdir -p $(STORAGE_ROOT)/labs/wiki-bench/experiments
 	@mkdir -p $(STORAGE_ROOT)/labs/rl-2048/{checkpoints,mlruns,caddy-data,caddy-config}
 	@echo "ready: $(STORAGE_ROOT)/{shared,labs}/"
 

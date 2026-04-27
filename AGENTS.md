@@ -18,11 +18,11 @@ docs, scripts, and the root Makefile that dispatches into labs.
 
 Labs:
 
-- `phase-b-business-architecture/org-units/kurpatov-wiki-compiler/` — vLLM serving the LLM that
+- `phase-b-business-architecture/org-units/wiki-compiler/` — vLLM serving the LLM that
   *compiles* raw transcripts into wiki articles.
-- `phase-b-business-architecture/org-units/kurpatov-wiki-ingest/` — the "media → raw transcript"
+- `phase-b-business-architecture/org-units/wiki-ingest/` — the "media → raw transcript"
   pipeline (Whisper, etc.).
-- `phase-b-business-architecture/org-units/kurpatov-wiki-bench/` — agent harness that benchmarks
+- `phase-b-business-architecture/org-units/wiki-bench/` — agent harness that benchmarks
   different LLMs on the compiler task.
 - `phase-b-business-architecture/org-units/rl-2048/` — Jupyter sandbox for RL/GRPO experiments.
   Includes its own `mlflow/` sublab (mlflow used to live at
@@ -71,10 +71,10 @@ experiment is a run.
   If you see something that looks like a secret — stop and ask.
 - **Data lives under `${STORAGE_ROOT}`**, not in the forge repo.
   `vault/`, `sources/`, `models/`, `checkpoints/`, `mlruns/` are never
-  committed to forge. Note: `vault/raw/` (under `${STORAGE_ROOT}/labs/kurpatov-wiki-ingest/vault/raw/`) **is** a git working tree —
+  committed to forge. Note: `vault/raw/` (under `${STORAGE_ROOT}/labs/wiki-ingest/vault/raw/`) **is** a git working tree —
   but for a *separate* repo (`kurpatov-wiki-raw`), pushed by the
   `kurpatov-wiki-raw-pusher` container. See
-  `phase-b-business-architecture/org-units/kurpatov-wiki-ingest/docs/adr/0005-split-transcribe-and-push.md`.
+  `phase-b-business-architecture/org-units/wiki-ingest/docs/adr/0005-split-transcribe-and-push.md`.
 - **ADR for irreversible decisions.** If on-disk data format changes, the
   framework choice changes, or the network topology changes — add
   `docs/adr/NNNN-*.md` or `labs/<lab>/docs/adr/NNNN-*.md` where NNNN is the
@@ -101,8 +101,8 @@ make setup
 Bring up one lab (labs are mutex on host :80/:443; only one at a time):
 
 ```bash
-make kurpatov-wiki-compiler   # vLLM endpoint
-make kurpatov-wiki-ingest     # whisper + ingest
+make wiki-compiler   # vLLM endpoint
+make wiki-ingest     # whisper + ingest
 make rl-2048                  # GRPO sandbox
 # ↑ labs are mutex on host :80/:443 — bring up only one (bench co-runs with compiler).
 ```
@@ -119,16 +119,16 @@ make du    # on-disk sizes under STORAGE_ROOT
 
 - Do not run multiple writers against the mlflow SQLite at the same time.
 - Labs are mutex on host ports 80/443 (each lab's caddy binds them).
-  `kurpatov-wiki-compiler` + `kurpatov-wiki-bench` is the one
+  `wiki-compiler` + `wiki-bench` is the one
   permitted co-running combination (bench is a client without a
   caddy). All other lab combinations: stop one, start another via
   `make <a>-down && make <b>`.
 - Do not give two labs overlapping GPU UUIDs in `.env`. The
   Blackwell hosts compiler OR rl-2048 (not both); the RTX 5090
-  hosts kurpatov-wiki-ingest. Going to dual-GPU TP for compiler
-  takes both cards — kurpatov-wiki-ingest must be down then.
+  hosts wiki-ingest. Going to dual-GPU TP for compiler
+  takes both cards — wiki-ingest must be down then.
 - Do not commit `.ipynb` files or large `.pt`/`.bin` blobs.
-- Do not change the `${STORAGE_ROOT}/labs/kurpatov-wiki-ingest/vault/raw/data/<path>/raw.json` format without an ADR —
+- Do not change the `${STORAGE_ROOT}/labs/wiki-ingest/vault/raw/data/<path>/raw.json` format without an ADR —
   the watcher and every downstream layer depend on it.
 - Do not reinstall the proprietary nvidia driver (without `-open`) and
   do not delete `/etc/modprobe.d/nvidia-uvm.conf`. Multi-GPU on Blackwell
@@ -244,37 +244,49 @@ Forge is composed of four labs. Each is an *org unit*, not a
 capability. Each lab realises some subset of the forge-level
 capabilities for a specific domain.
 
-| Lab                          | Forge capabilities this lab realises                                                                                |
-|------------------------------|----------------------------------------------------------------------------------------------------------------------|
-| `kurpatov-wiki-compiler`     | Service operation (LLM inference); R&D (Blackwell stability — G1)                                                   |
-| `kurpatov-wiki-bench`        | R&D (benchmarking + experimentation); Product delivery (canonical wiki); Architecture knowledge mgmt (skill v2 contract) |
-| `kurpatov-wiki-ingest`       | Service operation (transcription pipeline); Product delivery (raw.json publication)                                 |
-| `rl-2048`                    | R&D (RLVR methodology); Service operation (Jupyter / MLflow)                                                        |
+| Lab            | Forge capabilities this lab realises                                                                                | Serves products       |
+|----------------|----------------------------------------------------------------------------------------------------------------------|-----------------------|
+| `wiki-compiler` | Service operation (LLM inference); R&D (Blackwell stability — G1)                                                   | All wiki products     |
+| `wiki-bench`    | R&D (benchmarking + experimentation); Product delivery (canonical wiki); Architecture knowledge mgmt (skill v2 contract) | All wiki products     |
+| `wiki-ingest`   | Service operation (transcription pipeline); Product delivery (raw.json publication)                                 | All wiki products     |
+| `rl-2048`       | R&D (RLVR methodology); Service operation (Jupyter / MLflow)                                                        | rl-2048               |
+
+The `wiki-*` labs are content-agnostic — the same infrastructure
+serves every wiki product. Adding a new wiki product (e.g. for a new
+author/corpus) requires only a new pair of `<author>-wiki-{raw,wiki}`
+GitHub repos plus per-pilot env config; no lab changes needed.
 
 Each lab's own AGENTS.md Phase B holds the *lab-scoped* capability
 subset (with quality dimensions appropriate to that lab's domain).
 
 #### R&D outputs: the products
 
-R&D capability produces shippable products. There are two today:
+R&D capability produces shippable products. Per-product detail
+(value stream, capabilities, status, trajectories) lives in
+`phase-b-business-architecture/products/<product>.md`. Three products today:
 
-| Product | Realised across | Status |
-|---------|-----------------|--------|
-| **Kurpatov Wiki** | ingest (transcribe) + bench (compile) + compiler (LLM inference) | Active — module 005 in pilot |
-| **rl-2048** | rl-2048 lab | Pre-methodology phase |
+| Product | Realised across | Status | Per-product detail |
+|---------|-----------------|--------|--------------------|
+| **Kurpatov Wiki** | wiki-ingest + wiki-bench + wiki-compiler | Active — module 005 published as canonical Qwen3.6-27B-FP8 result | [`products/kurpatov-wiki.md`](phase-b-business-architecture/products/kurpatov-wiki.md) |
+| **Tarasov Wiki**  | wiki-ingest + wiki-bench + wiki-compiler | Pre-pilot — content acquisition phase | [`products/tarasov-wiki.md`](phase-b-business-architecture/products/tarasov-wiki.md) |
+| **rl-2048** | rl-2048 lab | Pre-methodology phase | [`products/rl-2048.md`](phase-b-business-architecture/products/rl-2048.md) |
 
 Per-product capability stacks (each row lives in the lab marked):
 
-**Kurpatov Wiki**
+**Wiki product line (applies to Kurpatov Wiki + Tarasov Wiki + future authors)**
 
-| Capability                           | Lab          | Quality dimension                                          |
-|--------------------------------------|--------------|------------------------------------------------------------|
-| Audio → text transcription           | ingest       | Russian-WER on a held-out audit set                        |
-| Compile lecture into source.md       | bench        | **Fast for reading** — bullets, TL;DR, no narrative bloat  |
-| Cross-source dedup of claims         | bench        | **No repetitions** — REPEATED markers, retrieval-augmented |
-| Fact-check empirical claims          | bench        | **No fake statements** — Wikipedia URLs, CONTRADICTS_FACTS |
-| Concept extraction + linking         | bench        | Canonical skill v2 shape                                   |
-| Benchmark open-weight LLMs vs Opus   | bench        | Reproducible from `(Dockerfile + transcripts)` only        |
+The same capability stack applies to every wiki product; differences
+between products live in the input corpus + fact-check domain, not in
+the lab structure.
+
+| Capability                           | Lab           | Quality dimension                                          |
+|--------------------------------------|---------------|------------------------------------------------------------|
+| Audio → text transcription           | wiki-ingest   | Russian-WER on a held-out audit set                        |
+| Compile lecture into source.md       | wiki-bench    | **Fast for reading** — bullets, TL;DR, no narrative bloat  |
+| Cross-source dedup of claims         | wiki-bench    | **No repetitions** — REPEATED markers, retrieval-augmented |
+| Fact-check empirical claims          | wiki-bench    | **No fake statements** — Wikipedia URLs, CONTRADICTS_FACTS |
+| Concept extraction + linking         | wiki-bench    | Canonical skill v2 shape                                   |
+| Benchmark open-weight LLMs vs Opus   | wiki-bench    | Reproducible from `(Dockerfile + transcripts)` only        |
 
 **rl-2048**
 
@@ -292,7 +304,7 @@ gets written.)
 |-------------------------------------------|------------------------------------------|
 | `kurpatov-wiki-raw`                       | per-source `raw.json` (whisper segments) |
 | `kurpatov-wiki-wiki:skill-v2`             | `data/sources/<slug>.md`, `data/concepts/<slug>.md`, `data/concept-index.json` |
-| Bench artefacts                           | `${STORAGE_ROOT}/labs/kurpatov-wiki-bench/experiments/<run_id>/` |
+| Bench artefacts                           | `${STORAGE_ROOT}/labs/wiki-bench/experiments/<run_id>/` |
 | Retrieval index (D8)                      | `wiki/data/embeddings/{claims,concepts}.{sqlite,npz}` (numpy + sqlite hybrid) |
 
 Per-product detailed shapes live in their lab's STATE-OF-THE-LAB.md.
@@ -317,7 +329,7 @@ architect-velocity and EB; they do not directly move TTS.
 **Service: LLM inference**
 - Component: vLLM 0.19.1 (cu130) serving Qwen3.6-27B-FP8 on the
   Blackwell, 128 K context via YaRN factor 4.0, single-card.
-- Lab: `kurpatov-wiki-compiler/`.
+- Lab: `wiki-compiler/`.
 - L1 throughput: ~47 tok/s decode batch=1, ~6.3 K tok/s prefill.
 - L1 stability: ~50 % UVM-crash rate within 2.5 h at default settings;
   failure mode is `gdn_linear_attn._forward_core` →
@@ -330,7 +342,7 @@ architect-velocity and EB; they do not directly move TTS.
 **Service: Agent orchestration & sub-agent delegation**
 - Component: OpenHands SDK 1.17.0 + TaskToolSet, file-based
   sub-agent definitions.
-- Lab: `kurpatov-wiki-bench/orchestrator/`.
+- Lab: `wiki-bench/orchestrator/`.
 - L1: top-orch context bounded per source (Invariant A — Python-loop
   driver creates fresh `Conversation` per source); but 0 % KV-cache
   reuse across sub-agent delegations within a Conversation, so each
@@ -344,7 +356,7 @@ architect-velocity and EB; they do not directly move TTS.
 - Component: `orchestrator/embed_helpers.py` +
   `intfloat/multilingual-e5-base` + numpy + sqlite. Index lives in
   the wiki repo at `wiki/data/embeddings/{claims,concepts}.{sqlite,npz}`.
-- Lab: `kurpatov-wiki-bench/`.
+- Lab: `wiki-bench/`.
 - L1 claim retrieval: wired into source-author per-claim via
   `find-claims --k 5`; threshold 0.78 for REPEATED (calibrated against
   e5-base paraphrase distribution — see step9 synth gate).
@@ -370,7 +382,7 @@ architect-velocity and EB; they do not directly move TTS.
 
 **Service: Audio → text transcription**
 - Component: faster-whisper.
-- Lab: `kurpatov-wiki-ingest/`.
+- Lab: `wiki-ingest/`.
 - L1: ~200 Курпатов lectures transcribed end-to-end. Output is the
   `raw.json` whisper-segment shape consumed downstream.
 - L2: stable; not on the active trajectory.
@@ -401,10 +413,10 @@ live inside one lab. The split helps decide where a change lands.
 | Persistence-aware GPU power mgmt         | host (`nvidia-power-limit.service`)        | every GPU-using lab                                        |
 | Reverse proxy + TLS termination          | per-lab caddy (mutex on host :80/:443)     | the lab's own public services                              |
 | Source-of-truth + per-experiment branch storage | GitHub remotes                       | every lab                                                  |
-| LLM inference                            | `kurpatov-wiki-compiler` (vLLM)            | `kurpatov-wiki-bench`, future RL trainers                  |
-| Audio → text transcription               | `kurpatov-wiki-ingest` (faster-whisper)    | `kurpatov-wiki-wiki` source-of-truth                       |
-| Agent orchestration & sub-agent delegation | `kurpatov-wiki-bench` (OpenHands SDK)    | bench's per-source pipelines                               |
-| Vector retrieval (claim/concept dedup)   | `kurpatov-wiki-bench` (`embed_helpers.py`) | bench's source-author + (planned) curator                  |
+| LLM inference                            | `wiki-compiler` (vLLM)            | `wiki-bench`, future RL trainers                  |
+| Audio → text transcription               | `wiki-ingest` (faster-whisper)    | `kurpatov-wiki-wiki` source-of-truth                       |
+| Agent orchestration & sub-agent delegation | `wiki-bench` (OpenHands SDK)    | bench's per-source pipelines                               |
+| Vector retrieval (claim/concept dedup)   | `wiki-bench` (`embed_helpers.py`) | bench's source-author + (planned) curator                  |
 | ML training tracking                     | `rl-2048/mlflow/` (MLflow)                 | rl-2048 only                                               |
 | Notebook sandbox                         | `rl-2048/jupyter/`                         | rl-2048 only                                               |
 | LoRA / RFT fine-tuning                   | `rl-2048` (unsloth, planned)               | rl-2048 only (currently)                                   |
@@ -424,7 +436,7 @@ Per-lab gap analyses live in their lab’s `STATE-OF-THE-LAB.md`
 (capability trajectories Level 1 → Level 2). The combined gap set
 across forge is the union of those.
 
-- `phase-b-business-architecture/org-units/kurpatov-wiki-bench/docs/STATE-OF-THE-LAB.md` — current
+- `phase-b-business-architecture/org-units/wiki-bench/docs/STATE-OF-THE-LAB.md` — current
   capability trajectories for the wiki bench.
 - `phase-b-business-architecture/org-units/rl-2048/docs/STATE-OF-THE-LAB.md` — TBD (when rl-2048
   grows beyond the Jupyter sandbox).
@@ -441,7 +453,7 @@ Per lab, the active trajectory toward Level 2 (TOGAF would call this
 the Transition Architecture). Updated when an experiment opens or
 closes:
 
-- `phase-b-business-architecture/org-units/kurpatov-wiki-bench/docs/STATE-OF-THE-LAB.md` — current
+- `phase-b-business-architecture/org-units/wiki-bench/docs/STATE-OF-THE-LAB.md` — current
   capability trajectories for the wiki bench.
 - `phase-b-business-architecture/org-units/rl-2048/docs/STATE-OF-THE-LAB.md` — TBD (when rl-2048 grows
   beyond the Jupyter sandbox).

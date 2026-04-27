@@ -104,7 +104,7 @@ Also application-architecture aspects of the lab if relevant
 - L2 (next): <target state, with metric delta>
 
 <For services this lab CONSUMES (e.g. LLM inference for
-kurpatov-wiki-bench), cross-link to the providing lab's AGENTS.md
+wiki-bench), cross-link to the providing lab's AGENTS.md
 or to forge-level Phase D — do not duplicate the spec here.>
 
 ## Phase E — Opportunities and Solutions

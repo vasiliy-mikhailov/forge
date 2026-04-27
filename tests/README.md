@@ -55,10 +55,10 @@ dispatcher at the root, plus a per-lab smoke under each lab.
 | Model file                                       | Covers                                              | Derived script                            |
 | ------------------------------------------------ | --------------------------------------------------- | ----------------------------------------- |
 | `tests/smoke.md`                                 | The dispatcher contract (find active lab, delegate) | `scripts/smoke.sh`                        |
-| `phase-b-business-architecture/org-units/kurpatov-wiki-compiler/tests/smoke.md`     | Compiler lab health (vLLM + caddy + endpoint)       | `phase-b-business-architecture/org-units/kurpatov-wiki-compiler/tests/smoke.sh` |
-| `phase-b-business-architecture/org-units/kurpatov-wiki-ingest/tests/smoke.md`       | Ingest lab health (whisper, watchers, pusher)       | `phase-b-business-architecture/org-units/kurpatov-wiki-ingest/tests/smoke.sh`   |
+| `phase-b-business-architecture/org-units/wiki-compiler/tests/smoke.md`     | Compiler lab health (vLLM + caddy + endpoint)       | `phase-b-business-architecture/org-units/wiki-compiler/tests/smoke.sh` |
+| `phase-b-business-architecture/org-units/wiki-ingest/tests/smoke.md`       | Ingest lab health (whisper, watchers, pusher)       | `phase-b-business-architecture/org-units/wiki-ingest/tests/smoke.sh`   |
 | `phase-b-business-architecture/org-units/rl-2048/tests/smoke.md`                    | rl-2048 lab health (jupyter, mlflow, GPU)           | `phase-b-business-architecture/org-units/rl-2048/tests/smoke.sh`             |
-| `phase-b-business-architecture/org-units/kurpatov-wiki-bench/tests/smoke.md`        | Bench preflight (binary, image, gh auth)            | `phase-b-business-architecture/org-units/kurpatov-wiki-bench/tests/smoke.sh` |
+| `phase-b-business-architecture/org-units/wiki-bench/tests/smoke.md`        | Bench preflight (binary, image, gh auth)            | `phase-b-business-architecture/org-units/wiki-bench/tests/smoke.sh` |
 
 Shared assertion helpers: [`scripts/smoke-lib.sh`](../scripts/smoke-lib.sh).
 Each per-lab `smoke.sh` `source`s it.

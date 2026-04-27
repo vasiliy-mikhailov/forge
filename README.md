@@ -13,9 +13,9 @@ make targets — and rebuild the whole environment.
 
 | Lab                                | What it does                                              | SPEC                                                                              |
 | ---------------------------------- | --------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| `phase-b-business-architecture/org-units/kurpatov-wiki-compiler/`     | vLLM serving the LLM that compiles raw → wiki              | [SPEC](phase-b-business-architecture/org-units/kurpatov-wiki-compiler/SPEC.md)                                       |
-| `phase-b-business-architecture/org-units/kurpatov-wiki-ingest/`       | Media → raw transcript pipeline (Whisper, etc.)            | [SPEC](phase-b-business-architecture/org-units/kurpatov-wiki-ingest/SPEC.md)                                         |
-| `phase-b-business-architecture/org-units/kurpatov-wiki-bench/`        | Agent harness: benchmark LLMs on the compiler task         | [SPEC](phase-b-business-architecture/org-units/kurpatov-wiki-bench/SPEC.md)                                          |
+| `phase-b-business-architecture/org-units/wiki-compiler/`     | vLLM serving the LLM that compiles raw → wiki              | [SPEC](phase-b-business-architecture/org-units/wiki-compiler/SPEC.md)                                       |
+| `phase-b-business-architecture/org-units/wiki-ingest/`       | Media → raw transcript pipeline (Whisper, etc.)            | [SPEC](phase-b-business-architecture/org-units/wiki-ingest/SPEC.md)                                         |
+| `phase-b-business-architecture/org-units/wiki-bench/`        | Agent harness: benchmark LLMs on the compiler task         | [SPEC](phase-b-business-architecture/org-units/wiki-bench/SPEC.md)                                          |
 | `phase-b-business-architecture/org-units/rl-2048/`                    | Jupyter sandbox: vLLM + unsloth + transformers + MLflow    | [SPEC](phase-b-business-architecture/org-units/rl-2048/SPEC.md)                                                      |
 
 Each lab is fully self-contained: own caddy, own docker-compose,
@@ -39,13 +39,13 @@ $EDITOR .env
 make setup
 
 # 3. Bring up one lab. Labs are mutex on ports 80/443 + GPU.
-make kurpatov-wiki-compiler   # vLLM for wiki authoring
+make wiki-compiler   # vLLM for wiki authoring
 # or:
-make kurpatov-wiki-ingest     # transcription pipeline
+make wiki-ingest     # transcription pipeline
 # or:
 make rl-2048                  # GRPO + jupyter + MLflow
 # Bench co-runs with compiler:
-# make kurpatov-wiki-compiler && make kurpatov-wiki-bench
+# make wiki-compiler && make wiki-bench
 ```
 
 Diagnostics and control:
@@ -102,7 +102,7 @@ See `phase-g-implementation-governance/operations.md`. In short:
    80/443 are free.
 4. Do the GPU host setup (driver, UVM, container toolkit, reboot).
 5. `make setup && make base`
-6. Drop source media back into `${STORAGE_ROOT}/labs/kurpatov-wiki-ingest/sources/...`,
+6. Drop source media back into `${STORAGE_ROOT}/labs/wiki-ingest/sources/...`,
    adjust `.env`, start the services you need.
 
 Code and configs are in git. Data (models, sources, vault, mlflow) lives

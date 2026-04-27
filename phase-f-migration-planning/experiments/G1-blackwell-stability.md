@@ -132,10 +132,10 @@ on the Motivation layer (forge/CLAUDE.md):
 ## Close-out criterion
 
 After v5 + v6 + (optionally) v7 we'll know which intervention is
-binding. Update `forge/labs/kurpatov-wiki-bench/AGENTS.md` with the
+binding. Update `forge/labs/wiki-bench/AGENTS.md` with the
 canonical settings, and the systemd unit
 `/etc/systemd/system/nvidia-power-limit.service` to match. Codify
-`--gpu-memory-utilization 0.85` in the kurpatov-wiki-compiler service
+`--gpu-memory-utilization 0.85` in the wiki-compiler service
 config if H2 confirms.
 
 ## References

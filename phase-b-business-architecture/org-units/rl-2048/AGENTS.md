@@ -111,7 +111,7 @@ git history per Phase H.
 ## Phase G — Implementation Governance
 
 - **GPU choice:** the Blackwell hosts rl-2048 *or*
-  `kurpatov-wiki-compiler`, not both. The two labs are mutex on the
+  `wiki-compiler`, not both. The two labs are mutex on the
   Blackwell GPU UUID (`KURPATOV_WIKI_GPU_UUID` /
   `RL_2048_GPU_UUID` in `.env`). Bring one down before bringing the
   other up.

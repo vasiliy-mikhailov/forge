@@ -49,7 +49,7 @@ D7-rev2 ran inside a wrapped Docker image
 openhands binary).
 
 D7-rev3 onwards we shifted to running orchestrators directly from the
-Python venv at `forge/labs/kurpatov-wiki-bench/tests/synthetic-orchestrator/.venv/`.
+Python venv at `forge/labs/wiki-bench/tests/synthetic-orchestrator/.venv/`.
 Reasoning at the time: openhands-sdk Python imports were faster to
 iterate than rebuilding the docker image on each change, and the
 DelegateTool/TaskToolSet workflows were still being prototyped.
@@ -61,11 +61,11 @@ strict reproducibility audit.
 
 ## Concrete remediation plan
 
-For `kurpatov-wiki-bench` (the lab where drift is most pronounced):
+For `wiki-bench` (the lab where drift is most pronounced):
 
 ### Step 1 — bake current dependencies into the bench Dockerfile
 
-Add to `forge/labs/kurpatov-wiki-bench/Dockerfile`:
+Add to `forge/labs/wiki-bench/Dockerfile`:
 
 ```dockerfile
 # OpenHands SDK (replaces standalone CLI binary)
@@ -106,7 +106,7 @@ publishable result" annotation in the post-mortem.
 
 ### Step 3 — `make bench` is the only entrypoint
 
-`forge/labs/kurpatov-wiki-bench/Makefile` should expose a single target:
+`forge/labs/wiki-bench/Makefile` should expose a single target:
 
 ```makefile
 bench:
@@ -183,6 +183,6 @@ post-mortem-tagged spike artifact is explicitly out of scope.
   for openhands-sdk binary
 - `forge:ADR/0008-bench-as-battery` — `run-battery.sh` + per-model
   Docker compose
-- `kurpatov-wiki-bench/AGENTS.md` "Forge-wide invariant" section —
+- `wiki-bench/AGENTS.md` "Forge-wide invariant" section —
   lab-level mirror of this policy
 - `outputs/D8-pilot-results.md` — first run that prompted this audit

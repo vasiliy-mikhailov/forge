@@ -69,7 +69,7 @@ docker network. Only one caddy at a time can hold host :80/:443.
           to GitHub)
 ```
 
-Bench (`phase-b-business-architecture/org-units/kurpatov-wiki-bench/`) launches one short-lived sandboxed
+Bench (`phase-b-business-architecture/org-units/wiki-bench/`) launches one short-lived sandboxed
 container per `make bench` invocation. It has no caddy, attaches to
 docker `bridge`, and reaches the compiler over the public TLS endpoint.
 
@@ -77,9 +77,9 @@ docker `bridge`, and reaches the compiler over the public TLS endpoint.
 
 | Lab                                | Containers (per-lab caddy + workers)                                                                                                                  | GPU                                  | Caddy hosts                          |
 | ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ | ------------------------------------ |
-| `phase-b-business-architecture/org-units/kurpatov-wiki-compiler/`     | `kurpatov-wiki-compiler-caddy`, `vllm-inference`                                                                                                      | `INFERENCE_GPU_UUID` (Blackwell)     | `${INFERENCE_DOMAIN}`                 |
-| `phase-b-business-architecture/org-units/kurpatov-wiki-ingest/`       | `kurpatov-wiki-ingest-caddy`, `jupyter-kurpatov-wiki`, `kurpatov-ingest`, `kurpatov-wiki-raw-pusher`                                                   | `KURPATOV_WIKI_GPU_UUID` (5090)      | `${JUPYTER_KURPATOV_WIKI_DOMAIN}`     |
-| `phase-b-business-architecture/org-units/kurpatov-wiki-bench/`        | one-shot `bench-<run_id>`                                                                                                                             | none (CPU only)                      | none                                 |
+| `phase-b-business-architecture/org-units/wiki-compiler/`     | `kurpatov-wiki-compiler-caddy`, `vllm-inference`                                                                                                      | `INFERENCE_GPU_UUID` (Blackwell)     | `${INFERENCE_DOMAIN}`                 |
+| `phase-b-business-architecture/org-units/wiki-ingest/`       | `kurpatov-wiki-ingest-caddy`, `jupyter-kurpatov-wiki`, `kurpatov-ingest`, `kurpatov-wiki-raw-pusher`                                                   | `KURPATOV_WIKI_GPU_UUID` (5090)      | `${JUPYTER_KURPATOV_WIKI_DOMAIN}`     |
+| `phase-b-business-architecture/org-units/wiki-bench/`        | one-shot `bench-<run_id>`                                                                                                                             | none (CPU only)                      | none                                 |
 | `phase-b-business-architecture/org-units/rl-2048/`                    | `rl-2048-caddy`, `jupyter-rl-2048`, `mlflow`                                                                                                          | `RL_2048_GPU_UUID` (Blackwell)       | `${MLFLOW_DOMAIN}`, `${JUPYTER_RL_2048_DOMAIN}` |
 
 ## GPU ↔ lab mapping
@@ -89,14 +89,14 @@ Set via `.env`:
 - `RL_2048_GPU_UUID` → `jupyter-rl-2048`. Default: Blackwell.
 - `KURPATOV_WIKI_GPU_UUID` → both `jupyter-kurpatov-wiki` and
   `kurpatov-ingest` (they share one GPU per
-  [phase-b-business-architecture/org-units/kurpatov-wiki-ingest/docs/adr/0003-watcher-reactive-not-cron.md](../labs/kurpatov-wiki-ingest/docs/adr/0003-watcher-reactive-not-cron.md)).
+  [phase-b-business-architecture/org-units/wiki-ingest/docs/adr/0003-watcher-reactive-not-cron.md](../labs/wiki-ingest/docs/adr/0003-watcher-reactive-not-cron.md)).
   Default: RTX 5090. `kurpatov-wiki-raw-pusher` is CPU-only (per
-  [phase-b-business-architecture/org-units/kurpatov-wiki-ingest/docs/adr/0006-lean-pusher-image.md](../labs/kurpatov-wiki-ingest/docs/adr/0006-lean-pusher-image.md)).
+  [phase-b-business-architecture/org-units/wiki-ingest/docs/adr/0006-lean-pusher-image.md](../labs/wiki-ingest/docs/adr/0006-lean-pusher-image.md)).
 - `INFERENCE_GPU_UUID` → `vllm-inference`. Default: Blackwell.
 
 **Mutex consequences:** Blackwell hosts compiler OR rl-2048 (not both
 simultaneously). Going to dual-GPU TP on the compiler will eventually
-take both cards, locking out kurpatov-wiki-ingest as well.
+take both cards, locking out wiki-ingest as well.
 
 ## STORAGE_ROOT layout
 
@@ -107,10 +107,10 @@ ${STORAGE_ROOT:-/mnt/steam/forge}/
 │                                       # mounted into vLLM, jupyter-*,
 │                                       # bench (read-only public weights)
 └── labs/
-    ├── kurpatov-wiki-compiler/
+    ├── wiki-compiler/
     │   ├── caddy-data/                # per-lab caddy TLS state
     │   └── caddy-config/
-    ├── kurpatov-wiki-ingest/
+    ├── wiki-ingest/
     │   ├── sources/                   # input media (audio, video, HTML, PDF)
     │   │   └── <course>/<module>/*.<ext>
     │   ├── vault/
@@ -126,7 +126,7 @@ ${STORAGE_ROOT:-/mnt/steam/forge}/
     │   ├── checkpoints/
     │   ├── caddy-data/
     │   └── caddy-config/
-    ├── kurpatov-wiki-bench/
+    ├── wiki-bench/
     │   └── experiments/<run_id>/      # per-experiment artifacts
     │       ├── events.jsonl           #   (one experiment = one agent run)
     │       ├── summary.json
@@ -155,8 +155,8 @@ Every public-facing surface goes through a per-lab caddy attached to
 
 | Public hostname                     | Active when lab is up                  | Backend                      |
 | ----------------------------------- | -------------------------------------- | ---------------------------- |
-| `${INFERENCE_DOMAIN}`               | `kurpatov-wiki-compiler`               | `vllm-inference:8000`        |
-| `${JUPYTER_KURPATOV_WIKI_DOMAIN}`   | `kurpatov-wiki-ingest`                 | `jupyter-kurpatov-wiki:8888` |
+| `${INFERENCE_DOMAIN}`               | `wiki-compiler`               | `vllm-inference:8000`        |
+| `${JUPYTER_KURPATOV_WIKI_DOMAIN}`   | `wiki-ingest`                 | `jupyter-kurpatov-wiki:8888` |
 | `${JUPYTER_RL_2048_DOMAIN}`         | `rl-2048`                              | `jupyter-rl-2048:8888`       |
 | `${MLFLOW_DOMAIN}`                  | `rl-2048` (mlflow lives inside rl-2048 per ADR 0007) | `mlflow:5000`                |
 
@@ -183,7 +183,7 @@ in every case.
   (mitigated by staging or waiting out the window).
 - Corrupting `${STORAGE_ROOT}/labs/rl-2048/mlflow/data/mlflow.db` →
   experiment metadata is gone (mlruns/ artifacts survive).
-- Losing `${STORAGE_ROOT}/labs/kurpatov-wiki-ingest/vault/raw/` →
+- Losing `${STORAGE_ROOT}/labs/wiki-ingest/vault/raw/` →
   re-run every transcription (hours of audio × RTF 0.05). Mitigated
   by the `kurpatov-wiki-raw` GitHub repo (continuous mirror via the
   pusher).
