@@ -1,7 +1,18 @@
 # ADR 0009 — Per-source agent isolation via Python SDK orchestrator + DelegateTool
 
-Status: **Accepted** (revised 2026-04-26 after spike)
-Supersedes: none. Revises the original Proposed draft of this ADR (2026-04-26 morning) which had `task` CLI tool as the chosen mechanism — that path is rejected here.
+Status: **Superseded by [ADR 0010](0010-retrieval-augmented-dedup.md)** (2026-04-27)
+Originally Accepted: 2026-04-26.
+
+> Per-source agent isolation via Python SDK + DelegateTool was the right
+> direction but DelegateTool is deprecated upstream (since openhands-tools
+> 1.16.0; will be removed in 1.23.0). The orchestration shape adopted
+> in production is Python-loop top-orchestrator with TaskToolSet — see
+> ADR 0010 for the design that supersedes this one. The findings about
+> single-agent attention ceilings and per-source isolation rationale
+> below remain canonical reference; the implementation choices for
+> tools/CLI are stale.
+
+Supersedes: none.
 Related: [ADR 0007](0007-labs-restructure.md), [ADR 0008](0008-model-registry.md), experiments [`D7.md`](../experiments/D7.md), [`D7-rev2.md`](../experiments/D7-rev2.md), [`D7-rev3.md`](../experiments/D7-rev3.md), skill [`openhands-sdk-orchestration`](../../.agents/skills/openhands-sdk-orchestration.md).
 
 ## Context

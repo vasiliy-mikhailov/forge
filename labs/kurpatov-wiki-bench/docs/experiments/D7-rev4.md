@@ -1,5 +1,7 @@
 # D7-rev4 — closing the depth gap to Opus via enriched per-sub-agent context
 
+**Status:** Closed — superseded by [D8](D8.md). D7-rev4 introduced enriched per-sub-agent input (full lecture transcript) and selective fact-check; both folded into D8. The DelegateTool spawn-once-reuse + full-transcript combination caused production-scale context bloat (D7-rev4-v2 5/7 ceiling), motivating D8 Python-loop top-orchestrator.
+
 Active spec. Predecessors: [`D7.md`](D7.md), [`D7-rev2.md`](D7-rev2.md), [`D7-rev3.md`](D7-rev3.md). Architectural decision: [`../adr/0009-per-source-agent-isolation.md`](../adr/0009-per-source-agent-isolation.md). How-to skills: [`../../.agents/skills/openhands-sdk-orchestration.md`](../../.agents/skills/openhands-sdk-orchestration.md), [`../../.agents/skills/tdd-on-synthetic-fixtures.md`](../../.agents/skills/tdd-on-synthetic-fixtures.md).
 
 ## Hypothesis (IF–THEN–BECAUSE)

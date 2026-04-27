@@ -1,5 +1,9 @@
 # D7-rev3 — orchestrator + per-source sub-agent isolation
 
+**Status:** Closed — superseded by [D7-rev4](D7-rev4.md) and [D8](D8.md).
+
+The orchestration architecture (per-source sub-agent isolation) is canonical; the DelegateTool mechanism and bash-loop orchestrator alternatives are stale. See [STATE-OF-THE-LAB.md](../STATE-OF-THE-LAB.md) for current state.
+
 Active spec (revised 2026-04-26 after spike + Steps 0–5a synthetic). Methodology: [`../spec.md`](../spec.md). Backlog: [`../backlog.md`](../backlog.md). Predecessors: [`D7.md`](D7.md), [`D7-rev2.md`](D7-rev2.md). Architectural decision: [`../adr/0009-per-source-agent-isolation.md`](../adr/0009-per-source-agent-isolation.md). How-to skill: [`../../.agents/skills/openhands-sdk-orchestration.md`](../../.agents/skills/openhands-sdk-orchestration.md).
 
 ## Hypothesis (IF–THEN–BECAUSE)
@@ -238,13 +242,13 @@ Top orchestrator → source-author → fan-out per claim to idea-classifier (pur
 
 Adds concept-curator (terminal + file_editor): creates `data/concepts/<slug>.md`, updates `concept-index.json`. Idempotent (Mount Everest from src2 not duplicated when src4 references it). Hit DelegateTool's `max_children=5` cap; resolved via spawn-once-reuse pattern (per upstream example 41). 4/4 verified=ok, REPEATED_sum=5, CF=1, URLs=30, concepts=6, top orchestrator 22 events / 37 KB. Wall ~13 min. Forge commit `177f6ac`. Step file `step5d_orchestrator.py`.
 
-### Step 6 — fail-fast end-to-end (PENDING)
+### Step 6 — fail-fast end-to-end ✓ DONE (forge:main 16a763b)
 
-Synth fixture with deliberately broken transcript (JSON missing `segments` or unreadable). Source-author should return `failed: <reason>`. Orchestrator wrapper should stop without delegating subsequent sources. Verify partial bench-report shows where it stopped.
+Deliberately broken transcript JSON returns `failed:` from source-author. Orchestrator wrapper stops without delegating subsequent sources. Synth fixture validated.
 
-### Step 7 — production module 005 (PENDING)
+### Step 7 — production module 005 ✓ DONE
 
-Once Step 6 is GREEN, port to production: real raw transcripts (~30 KB each), real factcheck.py against Wikipedia (over real network), branch push to `experiment/D7-rev3-<date>-<served>`. Run end-to-end. Re-grade against Opus baseline. Fill Results below.
+4/7 sources clean before Wikipedia 429 rate-limit hit; CONTRADICTS_FACTS=0 due to bench_grade regex bug (later fixed). Branch `experiment/D7-rev3-2026-04-26-qwen3.6-27b-fp8`. Superseded by D7-rev4-v2 (TaskToolSet) → D8 pilot v1/v2.
 
 ## Execution log
 
@@ -252,10 +256,10 @@ Once Step 6 is GREEN, port to production: real raw transcripts (~30 KB each), re
 | ------- | ---------- | ---- | ------------------------------------------------------------------ | --------- | -------------------------------------------------- |
 | (pending) | 2026-04-26 | T4 | qwen3.6-27b-fp8 + skill v2 + per-source SDK isolation, module 005, 7 sources | _pending_ | branch `experiment/D7-rev3-2026-04-26-qwen3.6-27b-fp8` |
 
-## Results (filled after run)
+## Results
 
-_Pending — will record bench-grade table + diff against base / D7 #1 / D7-rev2 / opus columns above._
+See [D7-rev4.md](D7-rev4.md) and [D8-pilot-results.md](D8-pilot-results.md) — D7-rev3 served as the architectural validation step; quantitative comparison vs Opus baseline lives in successor experiments.
 
 ## Post-Mortem & Insights
 
-_Pending._
+Key findings folded into [`../../.agents/skills/openhands-sdk-orchestration.md`](../../.agents/skills/openhands-sdk-orchestration.md): DelegateTool deprecation, max_children=5 spawn cap, spawn-once-reuse pattern, 3-level orchestration empirically validated on Qwen-27B-FP8.
