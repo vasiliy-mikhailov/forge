@@ -208,21 +208,126 @@ gets written. Out of scope for the wiki product's flow.)
 
 Per-product detailed shapes live in their lab's STATE-OF-THE-LAB.md.
 
-### Phase D — Technology architecture (the stack)
+### Phase D — Technology architecture (services + components)
 
-Forge-wide:
-- GPU host (Blackwell + RTX 5090); single-server deployment
-- Docker (containers-only invariant — see `docs/policies/containers.md`)
-- GitHub for source-of-truth + bench branches
-- vLLM (in `kurpatov-wiki-compiler` lab) for LLM serving
+The Forge platform realises Phase B capabilities through a small set
+of **technology services**, each provided by one or more **technology
+components / system software**. Capabilities live upstairs (Phase A/B);
+this section is about *how* they are realised, not *what* they are.
 
-Per-lab key tech choices:
-- `kurpatov-wiki-bench`: OpenHands SDK 1.17.0, sentence-transformers, e5-base
-- `kurpatov-wiki-ingest`: faster-whisper
-- `kurpatov-wiki-compiler`: vLLM with Qwen3.6-27B-FP8, YaRN factor 4.0 → 128K context
+Trajectories (Level 1 / Level 2) attach to **service quality
+dimensions**, not to components. Replacing a component (e.g. vLLM
+0.19.1 → 0.20) is just the next step on the same trajectory; we don't
+keep "Was vLLM 0.19.1" annotations — git remembers.
+
+Cross-cutting tech-quality dimensions (analogous to TTS/PTS/EB at the
+Motivation layer): **throughput**, **latency**, **stability**
+(mean-time-to-crash), **cost-per-output-token**. These feed
+architect-velocity and EB; they do not directly move TTS.
+
+**Service: LLM inference**
+- Component: vLLM 0.19.1 (cu130) serving Qwen3.6-27B-FP8 on the
+  Blackwell, 128 K context via YaRN factor 4.0, single-card.
+- Lab: `kurpatov-wiki-compiler/`.
+- L1 throughput: ~47 tok/s decode batch=1, ~6.3 K tok/s prefill.
+- L1 stability: ~50 % UVM-crash rate within 2.5 h at default settings;
+  failure mode is `gdn_linear_attn._forward_core` →
+  `cudaErrorLaunchFailure` followed by kernel-side
+  `BUG uvm_gpu_chunk_5`.
+- L2 stability: ≤ 5 % crash rate over 7-source pilots
+  (G1 experiment: 400 W power cap + persistence on +
+  `--gpu-memory-utilization 0.85`).
+
+**Service: Agent orchestration & sub-agent delegation**
+- Component: OpenHands SDK 1.17.0 + TaskToolSet, file-based
+  sub-agent definitions.
+- Lab: `kurpatov-wiki-bench/orchestrator/`.
+- L1: top-orch context bounded per source (Invariant A — Python-loop
+  driver creates fresh `Conversation` per source); but 0 % KV-cache
+  reuse across sub-agent delegations within a Conversation, so each
+  call re-prefills its system prompt.
+- L2: KV-cache reuse across same-Conversation sub-agent calls (vLLM
+  prefix-cache + openhands integration). Estimated impact:
+  ~5-10× fewer prefill tokens per source, ~3-4 min saved per source
+  on a 7-source run.
+
+**Service: Vector retrieval (claim and concept dedup)**
+- Component: `orchestrator/embed_helpers.py` +
+  `intfloat/multilingual-e5-base` + numpy + sqlite. Index lives in
+  the wiki repo at `wiki/data/embeddings/{claims,concepts}.{sqlite,npz}`.
+- Lab: `kurpatov-wiki-bench/`.
+- L1 claim retrieval: wired into source-author per-claim via
+  `find-claims --k 5`; threshold 0.78 for REPEATED (calibrated against
+  e5-base paraphrase distribution — see step9 synth gate).
+- L1 concept retrieval: NOT wired into curator (curator does naive
+  exact-slug `ls` check); `find-concepts` CLI exists but unused.
+- L1 cost: per-CLI fork of `embed_helpers.py` re-loads e5-base
+  (~280 MB) — ~5 s per invocation. At 100 claims × 200 sources scale
+  this is ~28 hours of pure model-load.
+- L2: `find-concepts` wired into curator with 0.85 dedup threshold;
+  embed_helpers daemonized so the model loads once.
+
+**Service: Container runtime + GPU isolation**
+- Component: Docker + CUDA 13 + nvidia-container-toolkit. Image
+  `kurpatov-wiki-bench:1.17.0-d8-cal` bakes openhands-sdk +
+  sentence-transformers + e5-base + bench scripts under `/opt/forge/`.
+- L1 stability: works for steady-state, but `docker rm -f` on a
+  CUDA-active container leaves an orphan kernel-side context (G1-H3:
+  observed 2026-04-27 when killing a side-experiment container left
+  the *other* GPU at 100 % util / 110 W draw with no userspace owner;
+  per-GPU reset failed; orphan only cleared by full driver reload).
+- L2 stability: convention codified — always `docker stop` (SIGTERM
+  + grace) before `docker rm -f` for CUDA containers.
+
+**Service: Audio → text transcription**
+- Component: faster-whisper.
+- Lab: `kurpatov-wiki-ingest/`.
+- L1: ~200 Курпатов lectures transcribed end-to-end. Output is the
+  `raw.json` whisper-segment shape consumed downstream.
+- L2: stable; not on the active trajectory.
+
+**Service: Source-of-truth + per-experiment branch storage**
+- Component: GitHub remotes — `kurpatov-wiki-raw` (transcripts,
+  pushed by raw-pusher), `kurpatov-wiki-wiki` (compiled wiki,
+  experiment branches `experiment/D*-...-<served>`).
+- L1: 50 GB-class repos within free quota; bench branches for every
+  pilot.
+- L2: stable.
+
+**Forge-wide invariants (apply to every service):**
+- Single-server deployment on `mikhailov.tech`.
+- Containers-only execution (`docs/policies/containers.md`).
+- Persistence-aware GPU power management
+  (`/etc/systemd/system/nvidia-power-limit.service` — 400 W cap with
+  `-pm 1`).
+
+#### Service tenancy — forge-wide vs lab-local
+
+Some services are provided centrally and consumed by every lab; some
+live inside one lab. The split helps decide where a change lands.
+
+| Service                                  | Provided by                                | Consumed by                                                |
+|------------------------------------------|--------------------------------------------|------------------------------------------------------------|
+| Container runtime + GPU isolation        | host (Docker + nvidia-container-toolkit)   | every lab                                                  |
+| Persistence-aware GPU power mgmt         | host (`nvidia-power-limit.service`)        | every GPU-using lab                                        |
+| Reverse proxy + TLS termination          | per-lab caddy (mutex on host :80/:443)     | the lab's own public services                              |
+| Source-of-truth + per-experiment branch storage | GitHub remotes                       | every lab                                                  |
+| LLM inference                            | `kurpatov-wiki-compiler` (vLLM)            | `kurpatov-wiki-bench`, future RL trainers                  |
+| Audio → text transcription               | `kurpatov-wiki-ingest` (faster-whisper)    | `kurpatov-wiki-wiki` source-of-truth                       |
+| Agent orchestration & sub-agent delegation | `kurpatov-wiki-bench` (OpenHands SDK)    | bench's per-source pipelines                               |
+| Vector retrieval (claim/concept dedup)   | `kurpatov-wiki-bench` (`embed_helpers.py`) | bench's source-author + (planned) curator                  |
+| ML training tracking                     | `rl-2048/mlflow/` (MLflow)                 | rl-2048 only                                               |
+| Notebook sandbox                         | `rl-2048/jupyter/`                         | rl-2048 only                                               |
+| LoRA / RFT fine-tuning                   | `rl-2048` (unsloth, planned)               | rl-2048 only (currently)                                   |
+
+**Rule:** if a component is in column 2 of more than one row, it is
+forge-wide (caddy is the obvious case — every lab runs its own, but
+they share the same host-port-mutex constraint, so caddy itself is a
+forge-wide concern even though instances are lab-local).
 
 Specific version pins live in `Dockerfile`s and `.env`. Specific
-*decisions* about why those versions were picked live in lab ADRs.
+*decisions* about why those versions/components were picked live in
+lab ADRs.
 
 ### Phase E/F — Opportunities, solutions, migration (active experiments)
 
@@ -247,6 +352,41 @@ go to git history per Phase H).
 - **AGENTS.md per lab** carries operational rules for that lab; the
   forge-level CLAUDE.md (this file) carries cross-cutting rules.
 - **No PR review automation** beyond the AGENTS.md convention.
+
+#### Per-lab AGENTS.md must follow the same Phase A-H structure
+
+The TOGAF-style framework is meant to *permeate*, not just live at the
+top. Every lab's `labs/<lab>/AGENTS.md` must use the same Phase A-H
+sections, scoped to that lab. This is what tells an agent reading the
+lab "what is the lab's mission, capabilities, services, etc." in a
+consistent vocabulary.
+
+Required sections per lab AGENTS.md:
+
+- **Phase A — Vision (lab-scoped):** what this lab contributes to the
+  forge-level mission ("Forge saves human time with AI agents"). One
+  paragraph.
+- **Phase B — Lab capabilities + quality dimensions:** the table from
+  forge-level Phase B, but only the rows owned by this lab.
+- **Phase C — Lab data shapes:** schemas, paths, file formats produced
+  or consumed by this lab.
+- **Phase D — Tech services this lab provides + components:** the
+  technology services from the Phase D forge table for which this lab
+  is the provider, plus the components this lab uses internally
+  (caddy, docker-compose, etc.). Cross-link to forge-level Phase D for
+  cross-cutting forge-wide services.
+- **Phase E/F:** lab's `STATE-OF-THE-LAB.md` if it has one; or active
+  `docs/experiments/<id>.md` files.
+- **Phase G — Lab-local operational rules:** what to do / not do
+  inside this lab specifically (e.g. for `kurpatov-wiki-bench`: branch
+  naming, image tag conventions, fail-fast triggers).
+- **Phase H — Trajectories:** Level 1 / Level 2 of each lab capability
+  with metric deltas.
+
+Labs that don't yet have AGENTS.md (currently: `kurpatov-wiki-compiler`,
+`kurpatov-wiki-ingest`, `rl-2048`) must add one when their next
+substantive change lands. Until then, the forge-level CLAUDE.md is the
+authoritative reference for those labs.
 
 ### Phase H — Change management (capability trajectories)
 

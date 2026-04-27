@@ -190,3 +190,43 @@ Per-source TOP-orchestrator isolation. Captured in ADR 0010 + D8 spec Step 0.
 - Upstream SDK examples (especially 25 / 41 / 42): <https://github.com/OpenHands/software-agent-sdk/tree/main/examples/01_standalone_sdk>
 - Skill v2 source of truth: `kurpatov-wiki-wiki:skill-v2/skills/benchmark/SKILL.md`
 - Inference endpoint config: `forge/labs/kurpatov-wiki-compiler/configs/models.yml` (per ADR 0008 — single source of truth)
+
+## Operational rules (entry points, versioning, secrets)
+
+These were the unique rules from the older `CLAUDE.md` (now merged
+here so this file is the single source of truth, with `CLAUDE.md`
+as a symlink alias):
+
+- **Entry points are load-bearing surfaces.** For most bench-as-battery
+  work that means `run.sh` and `run-battery.sh`. For D8 pilot work,
+  it means `orchestrator/run-d8-pilot.py` and the
+  `tests/synthetic-orchestrator/step*.py` synth gates. Avoid
+  splitting these into many smaller scripts unless there is a
+  specific reuse driver.
+- **Pin OpenHands SDK version.** Don't use `:latest` in image tags or
+  `pip install` lines. Bumping the SDK is a deliberate edit, recorded
+  in git history and (if behaviour changes) an ADR.
+- **Don't edit vLLM compose from here.** The compiler lab owns vLLM.
+  To swap the model, edit `forge/.env` (`INFERENCE_MODEL` /
+  `INFERENCE_SERVED_NAME`) and `make kurpatov-wiki-compiler-down &&
+  make kurpatov-wiki-compiler` — not from this lab.
+- **Don't modify `kurpatov-wiki-wiki/skills/benchmark/SKILL.md` from
+  here.** That's the task contract; if it needs updates, do them
+  deliberately in the wiki repo.
+- **Per-run artifacts are append-only.** No run modifies another
+  run's output. Old experiment branches are not rewritten; new
+  experiments get new branch names.
+- **Don't bake `VLLM_API_KEY` (or any secret) into git-tracked files.**
+  `.env.example` exists for shape; `.env` is gitignored and lives
+  on disk only.
+
+Useful commands:
+
+- `make preflight` — confirm vLLM is healthy + serving the right
+  model (smoke for `bench-as-battery`).
+- `make bench` — one bench-battery run end-to-end.
+- `INFERENCE_SERVED_NAME=qwen3-32b make bench` — override per-run.
+- For D8 pilots: `docker run -d --name d8-pilot-vN ... /opt/forge/run-d8-pilot.py`
+  (see latest pilot launch in `docs/experiments/D8.md`).
+- `ls -lt runs/ | head` — most recent runs first.
+- `jq .exit_code runs/*/summary.json` — quick exit-code overview.

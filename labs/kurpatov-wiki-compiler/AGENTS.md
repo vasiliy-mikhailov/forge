@@ -1,0 +1,113 @@
+# kurpatov-wiki-compiler — agent context
+
+This file follows the same Phase A-H structure as forge-level
+`AGENTS.md`. Read forge-level first for cross-cutting rules; this
+file is scoped to the compiler lab.
+
+## Phase A — Vision (lab-scoped)
+
+This lab provides the **LLM inference service** that every other lab
+in forge consumes. It hosts vLLM serving the open-weight model that
+realises the wiki product's "Compile lecture into source.md"
+capability. Without it, no compilation, no benchmarking, no RL with
+verifiable rewards.
+
+## Phase B — Capabilities + quality dimensions
+
+This lab does not own a wiki product capability directly. It owns the
+**production-framework** capability that realises every wiki
+capability:
+
+| Capability                 | Quality dimension                                    |
+|----------------------------|------------------------------------------------------|
+| Serve a 27B-class FP8 LLM at 128 K context | Throughput (tok/s decode + prefill); stability (mean-time-to-crash); cost-per-output-token |
+
+Specifically: enable other labs (bench, future RL trainers) to point
+an OpenAI-compatible client at `${INFERENCE_BASE_URL}` and get
+useful output without reasoning about the underlying serving stack.
+
+## Phase C — Data shapes
+
+The compiler lab is mostly stateless from a data perspective:
+
+- **Input:** prompt JSON over OpenAI-compatible HTTP API.
+- **Output:** completion / chat-completion JSON (also OpenAI shape).
+- **On disk:** model weights pulled from HF Hub, cached in
+  `${STORAGE_ROOT}/labs/kurpatov-wiki-compiler/hf-cache/`. No
+  per-experiment state.
+
+## Phase D — Tech services this lab provides + components
+
+**Service: LLM inference** (forge-wide, consumed by bench + future
+trainers).
+
+- Component: vLLM 0.19.1 (cu130-ubuntu2404 image) serving
+  Qwen3.6-27B-FP8 with YaRN factor 4.0 → 128 K context, single-card
+  on the Blackwell.
+- Component: caddy 2 (reverse proxy + TLS termination at
+  `inference.mikhailov.tech`).
+- Component: docker-compose (orchestrates vllm + caddy together).
+
+L1 throughput: ~47 tok/s decode batch=1; ~6.3 K tok/s honest prefill;
+prefix cache helps repeated system prompts ~30 %.
+
+L1 stability: 50 % UVM-crash rate within 2.5 h sustained inference at
+default vLLM settings. Failure mode is `gdn_linear_attn._forward_core`
+→ `cudaErrorLaunchFailure` followed by kernel-side
+`BUG uvm_gpu_chunk_5`. Recovery requires `modprobe -r/+ nvidia` or
+reboot. Cross-reference: `outputs/G1-blackwell-stability.md`.
+
+L2 stability target: ≤ 5 % crash rate over 7-source pilots. G1
+hypotheses tested in pilot v5+ (400 W power cap + persistence,
+optionally `--gpu-memory-utilization 0.85`).
+
+## Phase E/F — Active trajectories
+
+- **G1 (in flight):** Blackwell stability under sustained 27B-FP8
+  inference. Test matrix in `outputs/G1-blackwell-stability.md`.
+  Pilot v5 launched 2026-04-27 19:07 MSK as the H1 sole-test.
+- (None other active.)
+
+## Phase G — Lab-local operational rules
+
+- **Single-card vLLM only** on the Blackwell. Going to dual-GPU TP
+  would take both cards, conflicting with the ingest lab on RTX 5090
+  and (when active) rl-2048 — see forge-level "What NOT to do".
+- **Power cap is mandatory.** `nvidia-power-limit.service` (400 W
+  with `-pm 1`) must be active before vLLM starts. If the unit fails
+  to fire, restart it before bringing vLLM up.
+- **Don't edit vLLM compose from other labs.** Bench, ingest etc.
+  are clients. If the model needs to change: edit `forge/.env`
+  (`INFERENCE_MODEL` / `INFERENCE_SERVED_NAME`) and
+  `make kurpatov-wiki-compiler-down && make kurpatov-wiki-compiler`.
+- **Pin vLLM image tag.** Don't use `:latest`. Bumping is a
+  deliberate edit, recorded in git history (and likely an ADR).
+- **Hot-swap model swap procedure** lives in the lab's
+  `docs/adr/0002-...`-style ADR (model registry).
+- **GPU recovery from UVM crash:**
+  ```
+  sudo modprobe -r nvidia_uvm nvidia_drm nvidia_modeset nvidia
+  sudo modprobe nvidia nvidia_uvm
+  sudo systemctl restart nvidia-power-limit.service
+  docker start vllm-inference
+  ```
+  After recovery, check that the systemd unit re-applied `400 W`
+  with `-pm 1`. If the unit didn't re-fire, run it manually before
+  starting vLLM.
+- **CUDA-active container clean shutdown:** prefer
+  `docker stop --time 10 <name>` over `docker rm -f <name>` to avoid
+  leaving orphan kernel-side CUDA contexts (G1-H3).
+
+## Phase H — Trajectories
+
+| Capability | Level 1 (today) | Level 2 (next) | Metric delta |
+|------------|-----------------|----------------|--------------|
+| Serve 27B-class FP8 LLM at 128 K context | works at default settings, ~50 % crash rate within 2.5 h | ≤ 5 % crash rate, same throughput | Architect-velocity: from ~50 % pilot retry rate to ≤ 5 % |
+
+## Cross-references
+
+- Forge-level: `forge/CLAUDE.md` Phase D (service tenancy table) +
+  Phase G (per-lab AGENTS.md template, GPU recovery convention).
+- G1 experiment: `outputs/G1-blackwell-stability.md` (until promoted
+  to `docs/experiments/G1.md` in this lab).
+- Power-limit unit: `/etc/systemd/system/nvidia-power-limit.service`.
