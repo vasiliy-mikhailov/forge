@@ -1,10 +1,9 @@
 # lab AGENTS.md — canonical template
 
-Every lab under `labs/<lab>/` keeps its agent-context in `AGENTS.md`,
-with `CLAUDE.md` as a symlink → `AGENTS.md` (so every popular agent
-tool finds it). Forge root's convention is the inverse — `AGENTS.md →
-CLAUDE.md` — but the *content* on both sides follows the same canonical
-TOGAF ADM phase structure.
+Every directory in forge (lab or forge root) keeps its agent-context in
+`AGENTS.md`, with `CLAUDE.md` as a symlink → `AGENTS.md` so every popular
+agent tool finds it. The convention was unified on 2026-04-27 (forge root
+used to invert it).
 
 This file is the canonical template. New labs copy it; existing labs
 must match the section ordering and wording below. If you change the

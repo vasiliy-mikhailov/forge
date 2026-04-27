@@ -135,7 +135,7 @@ git history per Phase H.
 
 ## Cross-references
 
-- Forge-level: `forge/CLAUDE.md` Phase A (Motivation: rl-2048 is
+- Forge-level: `forge/AGENTS.md` Phase A (Motivation: rl-2048 is
   the program-optimization sibling of Kurpatov Wiki under the same
   "save human time on cognitive work" goal).
 - Forge-level Phase D: ML training tracking + Notebook sandbox +

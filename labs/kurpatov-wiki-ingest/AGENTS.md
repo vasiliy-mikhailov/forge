@@ -148,7 +148,7 @@ git history per Phase H.
 
 ## Cross-references
 
-- Forge-level: `forge/CLAUDE.md` Phase D (service tenancy: ingest
+- Forge-level: `forge/AGENTS.md` Phase D (service tenancy: ingest
   produces what bench consumes via the wiki repo).
 - ADR for vault split: `docs/adr/0005-split-transcribe-and-push.md`.
 - Schema is documented in `SPEC.md` of this lab.

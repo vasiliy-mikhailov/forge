@@ -146,7 +146,7 @@ git history per Phase H.
 
 ## Cross-references
 
-- Forge-level: `forge/CLAUDE.md` Phase D (service tenancy table) +
+- Forge-level: `forge/AGENTS.md` Phase D (service tenancy table) +
   Phase G (per-lab AGENTS.md template, GPU recovery convention).
 - G1 experiment: `outputs/G1-blackwell-stability.md` (until promoted
   to `docs/experiments/G1.md` in this lab).
