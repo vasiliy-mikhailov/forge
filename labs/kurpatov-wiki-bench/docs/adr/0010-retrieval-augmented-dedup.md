@@ -2,8 +2,6 @@
 
 **Status:** Proposed
 **Date:** 2026-04-26
-**Supersedes:** linear-scan portion of skill v2 ritual (`get_known_claims.py` returning full prior_claims_json)
-**Related:** ADR 0009 (per-source agent isolation), D7-rev4 spec, D7-rev4-v2 production findings
 
 ---
 
@@ -340,7 +338,7 @@ those returning `task()` results. After 5 source-author calls, top-orch
 input grew to 8.93 M cumulative tokens (~1.5 M per round-trip). The
 top-orch then "forgot" to process sources 5-6 and exited with
 `Source 4 processed successfully` — the linear-scan attention failure
-manifesting one layer up from where ADR 0009 placed sub-agent isolation.
+manifesting one layer up from sub-agent isolation.
 
 **Architectural fix (in scope for D8):**
 
@@ -361,7 +359,7 @@ for n, (raw_path, target_path) in enumerate(sources):
     update_index(n)  # the new D8 retrieval index
 ```
 
-This is functionally `Option B` from ADR 0009 (bash-loop orchestrator)
+This is the bash-loop orchestrator option
 that we deferred in favor of LLM-driven orchestration. D7-rev4-v2 shows
 LLM-driven won't survive scale; we adopt the Python loop now.
 

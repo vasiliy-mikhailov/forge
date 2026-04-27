@@ -24,28 +24,21 @@ forge/labs/kurpatov-wiki-bench/
 │   ├── backlog.md                      # ranked hypothesis backlog
 │   ├── STATE-OF-THE-LAB.md             # as-is/to-be/gaps audit (entry point for new contributors)
 │   ├── adr/
-│   │   ├── 0001-…0008-…                # infra ADRs (server, sandbox, restructure, model registry)
-│   │   ├── 0009-…                      # per-source agent isolation (Superseded by 0010)
-│   │   └── 0010-retrieval-augmented-dedup.md   # current architecture decision
+│   │   ├── 0001-… / 0002-… / 0010-…   # current architecture decisions
 │   ├── experiments/
-│   │   ├── A8.md / F1.md               # closed (KV-budget / microbench)
-│   │   ├── D7.md / D7-rev2.md / D7-rev3.md / D7-rev4.md   # closed (each superseded by next)
-│   │   ├── D8.md                       # current spec (Steps 0-7)
-│   │   └── D8-pilot-results.md         # pilot v1 post-mortem
-│   └── post-mortems/                   # withdrawn proposals + design notes
-├── prompts/legacy/                     # CLI-era launch prompts (container entrypoint replaces)
+│   │   ├── A8.md / F1.md               # closed research records (KV-budget / L* microbench)
+│   │   ├── D8.md                       # current experiment spec
+│   │   └── D8-pilot-results.md         # most recent pilot post-mortem
 ├── orchestrator/
 │   ├── run-d8-pilot.py                 # canonical production driver
-│   ├── embed_helpers.py                # D8 retrieval (encode/index/find-claims/find-concepts)
-│   └── legacy/                         # superseded run-d7-rev*.py drivers
+│   └── embed_helpers.py                # D8 retrieval (encode/index/find-claims/find-concepts)
 ├── evals/grade/bench_grade.py          # L0-L2 quality grader (+ L1.5 concept template)
 ├── tests/synthetic/                    # H-Q2/H-Q5 single-agent regression test
 ├── tests/synthetic-orchestrator/
 │   ├── .venv/                          # gitignored — openhands-sdk + openhands-tools
-│   ├── step7_orchestrator.py           # current synth GREEN gate (Python-loop + concept v3)
-│   ├── step8_smoke.py                  # retrieval helpers smoke (D8 Step 1-3)
-│   ├── embed_helpers.py
-│   └── legacy/                         # progressive TDD ladder D7-rev3 → D7-rev4-v2
+│   ├── step7_orchestrator.py           # synth GREEN gate (Python-loop + concept canonical shape)
+│   ├── step8_smoke.py                  # retrieval helpers smoke
+│   └── embed_helpers.py
 ├── configs/models.yml                  # active model registry (ADR 0008)
 ├── Dockerfile                          # bench image kurpatov-wiki-bench:1.17.0-d8-cal
 ├── Makefile / common.mk                # per-lab `make build/bench/preflight`
@@ -64,7 +57,7 @@ These layer on top of the upstream OpenHands AGENTS.md (collaborative software e
 
 ## Active experimental track
 
-D8: Python-loop top-orchestrator + canonical skill v2 concept shape (`## Contributions by source` per `wiki/prompts/concept-article.md`) + retrieval-augmented dedup (Steps 1-7 of D8 spec). See `docs/experiments/D8.md` for the spec, `docs/adr/0010-retrieval-augmented-dedup.md` for the ADR (which supersedes 0009), and `docs/STATE-OF-THE-LAB.md` for the as-is/to-be audit. Concrete patterns in skill `openhands-sdk-orchestration`.
+D8: Python-loop top-orchestrator + canonical skill v2 concept shape (`## Contributions by source` per `wiki/prompts/concept-article.md`) + retrieval-augmented dedup. See `docs/experiments/D8.md` for the spec, `docs/adr/0010-retrieval-augmented-dedup.md` for the ADR, and `docs/STATE-OF-THE-LAB.md` for the as-is/to-be audit. Concrete patterns in skill `openhands-sdk-orchestration`.
 
 ## Known issues with metric history
 
@@ -176,7 +169,7 @@ bloat but *not* the top-orchestrator's own context. After 5 source-author
 task() returns, top-orch input grew to 8.93 M cumulative tokens; the
 agent then "forgot" to process sources 5-6 and exited with
 `Source 4 processed successfully` — a fresh manifestation of the same
-linear-scan attention failure we documented one layer down in ADR 0009.
+linear-scan attention failure we observed in single-Conversation orchestration.
 
 **Concrete enforcement:**
 - Smoke / synth orchestrator MUST assert `top_orch_input_tokens_per_source
@@ -189,9 +182,7 @@ linear-scan attention failure we documented one layer down in ADR 0009.
 - Code review for any new run-*.py: confirm Python loop topology
   before merge.
 
-This generalizes ADR 0009 (per-source sub-agent isolation) one layer up:
-also per-source TOP-orchestrator isolation. Captured in ADR 0010 +
-D8 spec Step 0.
+Per-source TOP-orchestrator isolation. Captured in ADR 0010 + D8 spec Step 0.
 
 ## Cross-references
 

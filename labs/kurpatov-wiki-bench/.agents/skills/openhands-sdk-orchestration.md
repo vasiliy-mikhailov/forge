@@ -318,7 +318,7 @@ Empirically observed in D7-rev4-v2 production
 | top-orch's final action                 | `Source 4 processed successfully.` (declared done — never called task() for sources 5, 6) |
 
 This is the same "linear-scan attention failure" we documented one layer
-down (single-agent ceiling at 1/7 sources in D7, fixed by ADR 0009 +
+down (single-agent ceiling, fixed by
 sub-agent isolation). It now reappears at the orchestrator layer, because
 TaskToolSet's fresh-per-call semantics fix the *sub-agent's* context but
 not the *parent's*.
@@ -437,7 +437,5 @@ litellm doesn't know the price for our self-hosted qwen, so the SDK can't comput
 - [SDK Design Principles](https://docs.openhands.dev/sdk/arch/design) — upstream conventions about immutability, statelessness, declarative configuration. Read once, reference when reviewing PRs that change agent/tool boundaries.
 - [Sub-Agent Delegation guide](https://docs.openhands.dev/sdk/guides/agent-delegation) — full conceptual treatment.
 - [File-based agents guide](https://docs.openhands.dev/sdk/guides/agent-file-based) — frontmatter fields and directory conventions.
-- Local: `forge/labs/kurpatov-wiki-bench/docs/adr/0009-per-source-agent-isolation.md` — the architectural decision.
-- Local: `forge/labs/kurpatov-wiki-bench/docs/experiments/D7-rev3.md` — the experiment using these patterns.
 - Local: `forge/labs/kurpatov-wiki-bench/tests/synthetic-orchestrator/step{1..5,5a..5d}_orchestrator.py` — TDD progression demonstrating the patterns. Step 5b adds REPEATED detection; 5c introduces 3-level orchestration on 1 source; 5d extends to 4 sources + concept-curator.
 - Local: `.agents/skills/tdd-on-synthetic-fixtures.md` — methodology for the progressive TDD that produced this skill's findings.

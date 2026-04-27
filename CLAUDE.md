@@ -144,51 +144,54 @@ make du    # on-disk sizes under STORAGE_ROOT
 - Enter a container: `docker exec -it <container> bash`.
 
 
-## Architecture management — TOGAF-style (lite)
+## Architecture management — capability trajectories (TOGAF-style)
 
-We follow **TOGAF-style** discipline for experiments and architecture
-decisions. This is a *style*, not strict compliance — we adopt
-TOGAF's vocabulary (Baseline / Target / Transition Architecture,
-Architecture Repository, supersession, Compliance Review) and a small
-set of operating routines, without formal deliverables (no Architecture
-Vision Statement, no Architecture Definition Document, no Capability
-Maturity assessments).
+We follow **TOGAF-style** discipline — vocabulary, not certification.
+Architecture is organized around **capabilities**, each with a
+trajectory:
 
-Concrete artefacts (the Architecture Repository):
+- **Level 1** = as-is (how the capability works today)
+- **Level 2** = to-be (the next planned state of that capability)
 
-- **Baseline state** — `labs/<lab>/docs/STATE-OF-THE-LAB.md` (where it
-  exists) is the as-is / to-be / gaps audit; updated when a major
-  experiment closes.
-- **ADRs** — `labs/<lab>/docs/adr/NNNN-<slug>.md`. Status header is
-  authoritative: `Proposed | Accepted | Superseded by NNNN | Withdrawn`.
-  When an ADR is superseded, the originating ADR's Status header is
-  updated *in the same commit* that lands the successor.
-- **Experiments** — `labs/<lab>/docs/experiments/<id>.md`. Status
-  header: `Active | Closed | Superseded by <id>`. Closed experiments
-  remain as research records; superseded experiments stay verbatim
-  with a one-line pointer.
-- **Legacy code/docs** — superseded artefacts move to a sibling
-  `legacy/` directory with a one-line README pointing at the
-  canonical successor. Never delete; never edit in place.
-- **Post-mortems** — withdrawn proposals and design notes that didn't
-  ship live in `labs/<lab>/docs/post-mortems/`.
+When Level 2 is reached, it **becomes** the new Level 1, and the prior
+Level 1 description is deleted from the docs. Git history keeps every
+prior level — that is the archive. We do not maintain `legacy/` tiers,
+`Superseded by NNNN` cross-links, or `archive/` directories: if it is
+not Level 1 or Level 2 of a current capability, it has no place in the
+working tree.
 
-Routines:
+### Capabilities (current)
 
-| Routine                 | Trigger                                  | Output                                                                       |
-|-------------------------|------------------------------------------|------------------------------------------------------------------------------|
-| **Supersession review** | ADR or experiment closes                 | Status flip on the superseded ADR/experiment + one-line pointer to successor |
-| **Baggage pruning**     | (cadence — see open question below)      | Stale historical content removed from active docs; legacy content moved to `legacy/` |
-| **Compliance review**   | PR adding/changing an ADR-level artefact | Reviewer checks against the lab's AGENTS.md invariants                       |
-| **Baseline refresh**    | Major experiment closes                  | STATE-OF-THE-LAB.md updated                                                  |
+| Capability                | Level 1 (as-is)                                   | Level 2 (to-be)                                                        |
+|---------------------------|---------------------------------------------------|------------------------------------------------------------------------|
+| **Brainstorm experiments**| Triggered by metric gaps. Single architect drives. Pruning baggage and proposing experiments are the same activity, both targeting time-to-market and token efficiency. | (TBD as needed) |
+| (others)                  | Each lab's `STATE-OF-THE-LAB.md` defines its current capabilities and their trajectories. | |
 
-Open governance questions (intentionally unspecified — codify when
-answered, see commit history for the most recent decision):
+### Operating rules
 
-- Cadence and scope of baggage pruning sweeps
-- Whether peer review is required for ADR/experiment supersession, or
-  whether a single architect approves
-- Whether to introduce a formal `archive/` tier for content >1 year old
+1. **Architect of record** — one person (the repo owner). All
+   trajectory changes — moving Level 2 → Level 1, defining a new
+   Level 2, deleting prior content — pass through this person.
+2. **Baggage = anything that does not contribute to a current
+   capability's Level 1 or Level 2.** Test: ask "if I delete this,
+   does any current architecture conversation lose information?"
+   If no, delete it. Git keeps the trace.
+3. **No supersession metadata in docs.** No `Superseded by`,
+   `Withdrawn`, `Deprecated`, `Closed`, `Active`. The presence of
+   text in the working tree means it is current; absence means git
+   history.
+4. **Brainstorm-and-prune is one activity.** When proposing
+   experiments to lift a metric, the same session removes content
+   that no longer contributes. The two are bundled because they
+   share the same input (current state of the capability) and the
+   same metric goal (time-to-market, token efficiency).
 
-Reference: <https://www.opengroup.org/togaf>. We do not claim
-certification or full compliance — only the discipline.
+### What this *replaces*
+
+This section is the highest-level statement; lab-level
+`AGENTS.md` files inherit these rules. We do **not** add: Architecture
+Vision Statements, Architecture Definition Documents, Architecture
+Roadmaps, Capability Maturity Models beyond Level 1/2, formal
+stakeholder maps, PR compliance scripts, or `archive/` tiers.
+
+Reference: <https://www.opengroup.org/togaf>. Style only.
