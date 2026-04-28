@@ -269,3 +269,30 @@ models:
       to leave headroom for KV cache at 128K context (extra MoE
       router weights also use VRAM).
 
+  # ============================================================
+  # Tier A — dense 31B Gemma 4 (BF16 source; vLLM runtime-FP8)
+  # ============================================================
+
+  - id: gemma-4-31b-fp8
+    hf: google/gemma-4-31B-it
+    served_name: gemma-4-31b-fp8
+    quantization: fp8
+    kv_cache_dtype: fp8
+    max_model_len: 131072
+    rope_scaling:
+      rope_type: yarn
+      factor: 1.0
+      original_max_position_embeddings: 131072
+    tool_call_parser: gemma4
+    reasoning_parser: null
+    chat_template_kwargs: {}
+    tensor_parallel_size: 1
+    gpu_memory_utilization: 0.85
+    bench_tier: A
+    bench_skip: false
+    notes: |
+      Google Gemma 4 31B instruction-tuned. BF16 source weights;
+      vLLM applies fp8 quantization at load time. Tool-call parser
+      is gemma4 (vLLM has gemma4_tool_parser). YaRN factor 1.0
+      since Gemma 4 31B already supports 128K natively (no extension).
+

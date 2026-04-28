@@ -66,7 +66,10 @@ lines = [
     f"MODEL_ROPE_FACTOR={rope.get('factor', 1.0)}",
     f"MODEL_ROPE_ORIG_MAX={rope.get('original_max_position_embeddings', m['max_model_len'])}",
     f"MODEL_TOOL_CALL_PARSER={m.get('tool_call_parser', 'hermes')}",
-    f"MODEL_REASONING_PARSER={safe(m.get('reasoning_parser'), '')}",
+    # Emit a complete flag string so compose can pass it verbatim;
+    # vLLM rejects --reasoning-parser with no value, so we omit the
+    # whole flag when reasoning_parser is null.
+    f"MODEL_REASONING_PARSER_FLAG={('--reasoning-parser ' + m['reasoning_parser']) if m.get('reasoning_parser') else ''}",
     f"MODEL_ENABLE_THINKING={'true' if chat.get('enable_thinking', False) else 'false'}",
     f"MODEL_TENSOR_PARALLEL_SIZE={m.get('tensor_parallel_size', 1)}",
     f"MODEL_GPU_MEMORY_UTILIZATION={m.get('gpu_memory_utilization', 0.92)}",
