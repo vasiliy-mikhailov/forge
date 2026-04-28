@@ -616,9 +616,26 @@ def verify_source(n, original_n=None, module_subdir="", stem=""):
         cmd += ["--single-source", str(src_n_for_grade)]
     if module_subdir:
         cmd += ["--module-subdir", module_subdir]
-    r = subprocess.run(cmd, capture_output=True, text=True)
-    try: return json.loads(r.stdout)
-    except Exception: return {"verified": "fail", "violations": [f"non-JSON: {r.stdout[:200]}"]}
+
+    # Retry loop: agent's file_editor sometimes returns "done" before
+    # source.md is fully synced. A "no source file matching" verdict on
+    # the first attempt is often a timing race; retry once after 2s.
+    last_v = None
+    for attempt in range(2):
+        if attempt > 0:
+            time.sleep(2)
+        r = subprocess.run(cmd, capture_output=True, text=True)
+        try:
+            v = json.loads(r.stdout)
+        except Exception:
+            v = {"verified": "fail", "violations": [f"non-JSON: {r.stdout[:200]}"]}
+        last_v = v
+        violations = v.get("violations") or []
+        is_missing_file = any("no source file matching" in str(x) for x in violations)
+        if v.get("verified") == "ok" or not is_missing_file:
+            return v
+        # Otherwise it was a missing-file verdict; loop will retry.
+    return last_v
 
 
 def commit_and_push_per_source(n, slug, branch):
