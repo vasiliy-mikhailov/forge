@@ -559,10 +559,11 @@ def build_inputs(sources):
             raise RuntimeError(f"unexpected raw_json_path: {abs_raw}")
         raw_path = abs_raw[len(prefix):]
         target_path = f"wiki/data/sources/{s['slug']}.md"
-        # Module subdir derived from slug = Course/Module/<stem>.
+        # Module subdir + stem derived from slug = Course/Module/<stem>.
         slug_parts = s["slug"].split("/")
         module_subdir = "/".join(slug_parts[:2]) if len(slug_parts) >= 2 else ""
-        inputs.append((n, original_n, module_subdir, raw_path, target_path, s["slug"]))
+        stem = slug_parts[-1] if slug_parts else s["slug"]
+        inputs.append((n, original_n, module_subdir, stem, raw_path, target_path, s["slug"]))
     return inputs
 
 
@@ -583,10 +584,13 @@ def setup_agents():
         register_agent(ad.name, agent_definition_to_factory(ad), ad)
 
 
-def verify_source(n, original_n=None, module_subdir=""):
-    src_n_for_grade = original_n if original_n is not None else n
-    cmd = ["python3", BENCH_GRADE, str(WORKDIR / "wiki"),
-           "--single-source", str(src_n_for_grade), "--single-source-json"]
+def verify_source(n, original_n=None, module_subdir="", stem=""):
+    cmd = ["python3", BENCH_GRADE, str(WORKDIR / "wiki"), "--single-source-json"]
+    if stem:
+        cmd += ["--single-source-stem", stem]
+    else:
+        src_n_for_grade = original_n if original_n is not None else n
+        cmd += ["--single-source", str(src_n_for_grade)]
     if module_subdir:
         cmd += ["--module-subdir", module_subdir]
     r = subprocess.run(cmd, capture_output=True, text=True)
@@ -766,7 +770,7 @@ def main():
         else "/home/vmihaylov/forge/labs/wiki-bench/orchestrator/embed_helpers.py"
     )
 
-    for (n, original_n, module_subdir, raw_path, target_path, slug) in inputs:
+    for (n, original_n, module_subdir, stem, raw_path, target_path, slug) in inputs:
         print(f"\n{'=' * 70}", file=sys.stderr)
         print(f"=== SRC {n}: {slug}", file=sys.stderr)
         print(f"{'=' * 70}", file=sys.stderr)
@@ -825,7 +829,7 @@ def main():
             break
 
         # Functional verify
-        v = verify_source(n, original_n=original_n, module_subdir=module_subdir)
+        v = verify_source(n, original_n=original_n, module_subdir=module_subdir, stem=stem)
         if v.get("verified") == "ok":
             try:
                 commit = commit_and_push_per_source(n, slug, branch)

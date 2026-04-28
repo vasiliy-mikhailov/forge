@@ -403,6 +403,49 @@ def fmt_compare(cand, gold):
 
 
 
+def grade_single_source_stem_json(repo: Path, stem: str, module_subdir: str = ""):
+    """Grade a single source identified by its directory stem (e.g.
+    `000 № 1. Вводная лекция о дисциплине`). Preferred entry point
+    for multi-module pilots — no numeric-prefix coupling.
+    """
+    sources_root = repo / "data" / "sources"
+    if module_subdir:
+        sources_root = sources_root / module_subdir
+    if not sources_root.exists():
+        out = {"verified": "fail", "violations": [f"no sources root at {sources_root}"]}
+        print(json.dumps(out, ensure_ascii=False))
+        return
+    target = f"{stem}.md"
+    matches = [m for m in sources_root.rglob(target) if m.name == target]
+    matches = [m for m in matches if not m.name.startswith("_template")]
+    if not matches:
+        out = {"verified": "fail", "violations": [f"no source file matching stem {stem!r}"]}
+        print(json.dumps(out, ensure_ascii=False))
+        return
+    if len(matches) > 1:
+        out = {"verified": "fail", "violations": [f"multiple source files matching stem {stem!r}: {[str(m) for m in matches]}"]}
+        print(json.dumps(out, ensure_ascii=False))
+        return
+    src_path = matches[0]
+    g = grade_source(src_path)
+    commit_sha = None
+    try:
+        import subprocess
+        r = subprocess.run(["git", "-C", str(repo), "rev-parse", "--short", "HEAD"],
+                           capture_output=True, text=True)
+        if r.returncode == 0:
+            commit_sha = r.stdout.strip()
+    except Exception:
+        pass
+    g["commit_sha"] = commit_sha
+    g["source_file"] = str(src_path.relative_to(repo))
+    if "violations" in g and g["violations"]:
+        g["verified"] = "fail"
+    else:
+        g["verified"] = "ok"
+    print(json.dumps(g, ensure_ascii=False))
+
+
 def grade_single_source_json(repo: Path, source_n: int, module_subdir: str = ""):
     """
     Find the source-N file in the repo (matches files starting with `<NNN> `
@@ -495,9 +538,13 @@ def main():
     p.add_argument("--json", help="write per-source/aggregate JSON to this path")
     p.add_argument("--single-source", type=int, metavar="N", help="grade a single source by index (e.g. 5 for `005 ...`)")
     p.add_argument("--module-subdir", type=str, default="", help="scope --single-source search to data/sources/<module-subdir>/ (Course/Module path), to disambiguate same-index sources across modules")
+    p.add_argument("--single-source-stem", type=str, default="", metavar="STEM", help="grade a single source by its directory stem (e.g. `000 № 1. Вводная лекция о дисциплине`). Preferred over --single-source for multi-module pilots; identifies the source unambiguously without relying on numeric-prefix conventions.")
     p.add_argument("--single-source-json", action="store_true", help="emit D7-rev3 verify-script contract JSON to stdout for the --single-source target")
     args = p.parse_args()
 
+    if args.single_source_stem and args.single_source_json:
+        grade_single_source_stem_json(Path(args.repo), args.single_source_stem, args.module_subdir)
+        return
     if args.single_source is not None and args.single_source_json:
         grade_single_source_json(Path(args.repo), args.single_source, args.module_subdir)
         return
