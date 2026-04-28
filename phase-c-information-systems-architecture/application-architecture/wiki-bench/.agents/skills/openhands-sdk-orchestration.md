@@ -222,7 +222,7 @@ In TaskToolSet (the current API) this concern goes away — there is no per-conv
 
 **Lab-wide invariant**: concept articles follow
 `kurpatov-wiki-wiki:skill-v2/prompts/concept-article.md`. See
-`forge/labs/wiki-bench/AGENTS.md` for the full spec.
+`forge/phase-c-information-systems-architecture/application-architecture/wiki-bench/AGENTS.md` for the full spec.
 
 > Every concept article has `## Definition`, `## Contributions by
 > source` with `### <source-slug>` sub-sections (append-only log of
@@ -247,7 +247,7 @@ layer added to enforce it. D8 pilot v2 is the first canonical run.
 Both prompts must follow the canonical skill v2 spec from
 `kurpatov-wiki-wiki:skill-v2/prompts/concept-article.md` and
 `prompts/per-source-summarize.md`. See
-`forge/labs/wiki-bench/orchestrator/run-d8-pilot.py` for the
+`forge/phase-c-information-systems-architecture/application-architecture/wiki-bench/orchestrator/run-d8-pilot.py` for the
 reference implementation (post-2026-04-27 calibrated prompts).
 
 Key requirements:
@@ -437,5 +437,5 @@ litellm doesn't know the price for our self-hosted qwen, so the SDK can't comput
 - [SDK Design Principles](https://docs.openhands.dev/sdk/arch/design) — upstream conventions about immutability, statelessness, declarative configuration. Read once, reference when reviewing PRs that change agent/tool boundaries.
 - [Sub-Agent Delegation guide](https://docs.openhands.dev/sdk/guides/agent-delegation) — full conceptual treatment.
 - [File-based agents guide](https://docs.openhands.dev/sdk/guides/agent-file-based) — frontmatter fields and directory conventions.
-- Local: `forge/labs/wiki-bench/tests/synthetic-orchestrator/step{1..5,5a..5d}_orchestrator.py` — TDD progression demonstrating the patterns. Step 5b adds REPEATED detection; 5c introduces 3-level orchestration on 1 source; 5d extends to 4 sources + concept-curator.
+- Local: `forge/phase-c-information-systems-architecture/application-architecture/wiki-bench/tests/synthetic-orchestrator/step{1..5,5a..5d}_orchestrator.py` — TDD progression demonstrating the patterns. Step 5b adds REPEATED detection; 5c introduces 3-level orchestration on 1 source; 5d extends to 4 sources + concept-curator.
 - Local: `.agents/skills/tdd-on-synthetic-fixtures.md` — methodology for the progressive TDD that produced this skill's findings.

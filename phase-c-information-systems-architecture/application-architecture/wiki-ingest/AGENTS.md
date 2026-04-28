@@ -84,6 +84,12 @@ collect/filter/adapt mechanism.
   + pushes from there. See ADR
   `phase-c-information-systems-architecture/application-architecture/wiki-ingest/docs/adr/0005-split-transcribe-and-push.md`.
 
+**ADRs (Phase C scope).**
+- [`docs/adr/0001-two-layer-vault.md`](docs/adr/0001-two-layer-vault.md) — two-layer vault (input media vs raw transcript).
+- [`docs/adr/0002-raw-format-single-json.md`](docs/adr/0002-raw-format-single-json.md) — raw.json single-file whisper-segment shape.
+- [`docs/adr/0004-mirror-sources-hierarchy.md`](docs/adr/0004-mirror-sources-hierarchy.md) — mirror sources hierarchy in vault/raw.
+- [`docs/adr/0007-wiki-layer-mac-side.md`](docs/adr/0007-wiki-layer-mac-side.md) — wiki authoring layer on mac side.
+
 ## Phase D — Technology Architecture
 
 **Service: Audio → text transcription** (consumer:
@@ -104,6 +110,12 @@ L1: ~200 lectures (Курпатов "Психолог-консультант" co
 `raw.json` shape consumed downstream.
 
 L2: stable; not currently on the active trajectory.
+
+**ADRs (Phase D scope).**
+- [`docs/adr/0003-watcher-reactive-not-cron.md`](docs/adr/0003-watcher-reactive-not-cron.md) — reactive fanotify watcher, not cron.
+- [`docs/adr/0005-split-transcribe-and-push.md`](docs/adr/0005-split-transcribe-and-push.md) — split transcribe and push containers.
+- [`docs/adr/0006-lean-pusher-image.md`](docs/adr/0006-lean-pusher-image.md) — lean pusher image (separate from transcriber).
+- [`docs/adr/0009-pdf-extractor.md`](docs/adr/0009-pdf-extractor.md) — pdf-extractor component.
 
 ## Phase E — Opportunities and Solutions
 
@@ -140,6 +152,9 @@ git history per Phase H.
 - **Watcher idempotency.** If the watcher restarts mid-job, it must
   resume cleanly. Re-transcribing already-`raw.json`'d sources is
   forbidden (append-only invariant).
+
+**ADRs (Phase G scope).**
+- [`docs/adr/0008-ingest-dispatch.md`](docs/adr/0008-ingest-dispatch.md) — Make dispatcher for per-source ingest.
 
 ## Phase H — Architecture Change Management
 

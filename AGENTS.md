@@ -30,7 +30,8 @@ The repo is structured by **TOGAF ADM phase** at the top level
 
 Each lab carries its own `caddy/` (binds host :80/:443 — labs are
 mutex on these ports), its own `docker-compose.yml`, its own
-`SPEC.md`, its own `docs/adr/`, and its own AGENTS.md scoped Phase
+`SPEC.md`, its own ADRs (referenced per phase from the lab's AGENTS.md),
+  and its own AGENTS.md scoped Phase
 A-H.
 
 The "experiment" word is reserved for individual run-instances
@@ -46,8 +47,8 @@ inside a lab. A lab is a room; an experiment is a run.
 3. Open the SPEC.md of the service being edited
    (`phase-c-information-systems-architecture/application-architecture/<lab>/SPEC.md`).
 4. Skim the relevant Phase folder's `adr/` and the lab's
-   `docs/adr/` — architectural decisions there must not be silently
-   undone.
+   own ADRs (each per-lab `AGENTS.md` lists its ADRs by phase) —
+   architectural decisions there must not be silently undone.
 5. If you are about to change observable behavior, also open
    `tests/` — that directory is the source of truth for what the
    smoke test (and future test scripts) must verify. Update the
@@ -72,7 +73,7 @@ inside a lab. A lab is a room; an experiment is a run.
 - **ADR for irreversible decisions.** If on-disk data format
   changes, the framework choice changes, or the network topology
   changes — add `phase-<x>/adr/NNNN-*.md` (or
-  `phase-c-…/application-architecture/<lab>/docs/adr/NNNN-*.md`
+  `phase-c-…/application-architecture/<lab>/docs/adr/NNNN-*.md` (or the flatter `<lab>/adr/NNNN-*.md`)
   for lab-scoped) where NNNN is the next free number.
 - **SPEC.md is source of truth.** If code diverges from SPEC, don't
   silently change code — either update SPEC or reconcile code to
@@ -184,7 +185,7 @@ Application Architecture (four lab components: wiki-compiler,
 wiki-bench, wiki-ingest, rl-2048; the wiki-* are content-agnostic)
 + Data Architecture (raw.json + skill-v2 wiki shape + retrieval
 index). Each lab has its own AGENTS.md / SPEC.md / Dockerfile /
-docs/adr. Drill in:
+ADRs (cited per-phase from each lab's AGENTS.md). Drill in:
 [`application-architecture/components.md`](phase-c-information-systems-architecture/application-architecture/components.md),
 [`data-architecture/data-sets.md`](phase-c-information-systems-architecture/data-architecture/data-sets.md).
 

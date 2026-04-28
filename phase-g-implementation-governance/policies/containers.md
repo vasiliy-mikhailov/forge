@@ -2,7 +2,7 @@
 
 **Status:** Forge-wide invariant
 **Date:** 2026-04-26 (codified after D8-pilot audit revealed drift)
-**Scope:** every lab under `forge/labs/`, every executable artifact
+**Scope:** every lab under `forge/phase-c-information-systems-architecture/application-architecture/`, every executable artifact
 
 This policy belongs at forge-level: promote into `forge/AGENTS.md` (or
 `forge/phase-g-implementation-governance/policies/containers.md` if a dedicated policies dir exists).
@@ -49,7 +49,7 @@ D7-rev2 ran inside a wrapped Docker image
 openhands binary).
 
 D7-rev3 onwards we shifted to running orchestrators directly from the
-Python venv at `forge/labs/wiki-bench/tests/synthetic-orchestrator/.venv/`.
+Python venv at `forge/phase-c-information-systems-architecture/application-architecture/wiki-bench/tests/synthetic-orchestrator/.venv/`.
 Reasoning at the time: openhands-sdk Python imports were faster to
 iterate than rebuilding the docker image on each change, and the
 DelegateTool/TaskToolSet workflows were still being prototyped.
@@ -65,7 +65,7 @@ For `wiki-bench` (the lab where drift is most pronounced):
 
 ### Step 1 — bake current dependencies into the bench Dockerfile
 
-Add to `forge/labs/wiki-bench/Dockerfile`:
+Add to `forge/phase-c-information-systems-architecture/application-architecture/wiki-bench/Dockerfile`:
 
 ```dockerfile
 # OpenHands SDK (replaces standalone CLI binary)
@@ -106,7 +106,7 @@ publishable result" annotation in the post-mortem.
 
 ### Step 3 — `make bench` is the only entrypoint
 
-`forge/labs/wiki-bench/Makefile` should expose a single target:
+`forge/phase-c-information-systems-architecture/application-architecture/wiki-bench/Makefile` should expose a single target:
 
 ```makefile
 bench:

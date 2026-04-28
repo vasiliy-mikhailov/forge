@@ -72,7 +72,7 @@ make stop-all              # stop every lab
   live on a separate disk at `STORAGE_ROOT` (on my box it's a ZFS pool at
   `/mnt/steam/forge`); layout: `${STORAGE_ROOT}/{shared/models,labs/<lab>/...}`.
   Never enters git.
-- Each lab is a standalone docker-compose project under `labs/<lab>/`.
+- Each lab is a standalone docker-compose project under `phase-c-information-systems-architecture/application-architecture/<lab>/`.
   The root `Makefile` delegates targets into them via `%-down`/`%-logs`/
   `%-build` pattern rules.
 

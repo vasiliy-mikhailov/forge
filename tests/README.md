@@ -34,7 +34,7 @@ When you change forge's observable behavior, the order is:
    model now disagrees with reality.
 2. **Red — update the script.** Change the matching assertion in the
    script (`scripts/smoke.sh` if dispatcher behavior, or
-   `labs/<lab>/tests/smoke.sh` if a lab check). Run it. It should
+   `phase-c-information-systems-architecture/application-architecture/<lab>/tests/smoke.sh` if a lab check). Run it. It should
    fail — that failure is the "red" in red-green-refactor.
 3. **Green — change the code.** Edit the service, compose file,
    Makefile, container, whatever is responsible. Re-run until green.

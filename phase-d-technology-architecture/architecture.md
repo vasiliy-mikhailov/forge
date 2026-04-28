@@ -5,7 +5,7 @@ to each other, how GPUs and disk are used. For "why" — see each lab's
 `SPEC.md` and the relevant ADR.
 
 After [ADR 0007](../adr/0007-labs-restructure-self-contained-caddy.md)
-forge is organized as **labs** under `labs/<lab>/`, each lab fully
+forge is organized by TOGAF ADM phase; the labs (application components) live at `phase-c-information-systems-architecture/application-architecture/<lab>/`, each lab fully
 self-contained (own caddy, compose, SPEC, ADRs). Labs are **mutex on
 host ports :80/:443** because each lab's caddy binds them. Bench is
 the one exception: it has no caddy and is co-runnable with the
@@ -89,9 +89,9 @@ Set via `.env`:
 - `RL_2048_GPU_UUID` → `jupyter-rl-2048`. Default: Blackwell.
 - `KURPATOV_WIKI_GPU_UUID` → both `jupyter-kurpatov-wiki` and
   `kurpatov-ingest` (they share one GPU per
-  [phase-c-information-systems-architecture/application-architecture/wiki-ingest/docs/adr/0003-watcher-reactive-not-cron.md](../labs/wiki-ingest/docs/adr/0003-watcher-reactive-not-cron.md)).
+  [phase-c-information-systems-architecture/application-architecture/wiki-ingest/docs/adr/0003-watcher-reactive-not-cron.md](../phase-c-information-systems-architecture/application-architecture/wiki-ingest/docs/adr/0003-watcher-reactive-not-cron.md)).
   Default: RTX 5090. `kurpatov-wiki-raw-pusher` is CPU-only (per
-  [phase-c-information-systems-architecture/application-architecture/wiki-ingest/docs/adr/0006-lean-pusher-image.md](../labs/wiki-ingest/docs/adr/0006-lean-pusher-image.md)).
+  [phase-c-information-systems-architecture/application-architecture/wiki-ingest/docs/adr/0006-lean-pusher-image.md](../phase-c-information-systems-architecture/application-architecture/wiki-ingest/docs/adr/0006-lean-pusher-image.md)).
 - `INFERENCE_GPU_UUID` → `vllm-inference`. Default: Blackwell.
 
 **Mutex consequences:** Blackwell hosts compiler OR rl-2048 (not both

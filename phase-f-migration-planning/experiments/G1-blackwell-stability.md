@@ -1,7 +1,7 @@
 # G1 — Blackwell stability: power cap + memory headroom
 
 Active spec. Methodology track for **production-framework reliability**
-(per the capability split in `forge/CLAUDE.md`: production framework is
+(per the capability split in `forge/AGENTS.md`: production framework is
 how the wiki gets made; failures here cost architect-hours but do not
 change product output quality). G-prefix because this is a
 governance/infrastructure experiment, not a wiki-methodology one.
@@ -121,7 +121,7 @@ again.
 ## Architect-velocity metric
 
 This experiment lives in the cross-cutting "architect-velocity" goal
-on the Motivation layer (forge/CLAUDE.md):
+on the Motivation layer (forge/AGENTS.md):
 
 - Pre-G1 baseline: ~50 % of pilot runs require GPU recovery
   (3/3 crashed in the v3-v4 era). That cost ~2 h of recovery wall and
@@ -132,7 +132,7 @@ on the Motivation layer (forge/CLAUDE.md):
 ## Close-out criterion
 
 After v5 + v6 + (optionally) v7 we'll know which intervention is
-binding. Update `forge/labs/wiki-bench/AGENTS.md` with the
+binding. Update `forge/phase-c-information-systems-architecture/application-architecture/wiki-bench/AGENTS.md` with the
 canonical settings, and the systemd unit
 `/etc/systemd/system/nvidia-power-limit.service` to match. Codify
 `--gpu-memory-utilization 0.85` in the wiki-compiler service
@@ -145,7 +145,7 @@ config if H2 confirms.
 - vLLM stack trace: pilot v4 docker logs (`mamba/gdn_linear_attn.py:830`)
 - Power-limit unit: `/etc/systemd/system/nvidia-power-limit.service`
   (now 400 W + persistence after 2026-04-27 reboot)
-- Capability framework: `forge/CLAUDE.md` § Implementation & Migration
+- Capability framework: `forge/AGENTS.md` § Implementation & Migration
   (capability trajectories) and § Motivation (architect-velocity goal)
 
 

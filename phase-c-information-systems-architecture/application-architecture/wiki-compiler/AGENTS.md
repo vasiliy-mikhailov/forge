@@ -91,6 +91,10 @@ L2 stability target: ≤ 5 % crash rate over 7-source pilots. G1
 hypotheses tested in pilot v5+ (400 W power cap + persistence,
 optionally `--gpu-memory-utilization 0.85`).
 
+**ADRs (Phase D scope).**
+- [`docs/adr/0001-vllm-public-openai-compatible-endpoint.md`](docs/adr/0001-vllm-public-openai-compatible-endpoint.md) — vLLM as the public OpenAI-compatible endpoint.
+- [`docs/adr/0002-per-model-parsers.md`](docs/adr/0002-per-model-parsers.md) — per-model tool-call / reasoning parsers.
+
 ## Phase E — Opportunities and Solutions
 
 Gap analysis for this lab — what capabilities are not yet at Level 2.

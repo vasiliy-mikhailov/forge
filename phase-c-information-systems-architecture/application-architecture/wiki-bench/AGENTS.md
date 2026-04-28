@@ -173,6 +173,10 @@ Phase D + provider lab):
   bench scripts at `/opt/forge/`. Build-time smoke runs
   `step8_smoke.py` inside the image.
 
+**ADRs (Phase D scope).**
+- [`docs/adr/0001-openhands-on-server.md`](docs/adr/0001-openhands-on-server.md) — OpenHands SDK on the bench server.
+- [`docs/adr/0010-retrieval-augmented-dedup.md`](docs/adr/0010-retrieval-augmented-dedup.md) — retrieval-augmented dedup for claims + concepts.
+
 ## Phase E — Opportunities and Solutions
 
 Gap analysis for this lab — which capabilities are not yet at
@@ -285,6 +289,9 @@ production. See `forge/AGENTS.md` and
 - `ls -lt runs/ | head` — most recent runs first.
 - `jq .exit_code runs/*/summary.json` — quick exit-code overview.
 
+**ADRs (Phase G scope).**
+- [`docs/adr/0002-docker-sandbox-and-storage-root.md`](docs/adr/0002-docker-sandbox-and-storage-root.md) — docker sandbox + STORAGE_ROOT bench-artefact layout.
+
 ## Phase H — Architecture Change Management
 
 | Capability | Level 1 (today) | Level 2 (next) | Metric delta |
@@ -302,7 +309,7 @@ every prior level.
 ## Layout (where things live in this lab)
 
 ```
-forge/labs/wiki-bench/
+forge/phase-c-information-systems-architecture/application-architecture/wiki-bench/
 ├── AGENTS.md                           # this file (CLAUDE.md → AGENTS.md symlink)
 ├── .agents/skills/                     # project-scoped skills (auto-loaded by OpenHands SDK)
 │   └── openhands-sdk-orchestration.md  # canonical orchestration patterns; SDK gotchas
@@ -343,5 +350,5 @@ forge/labs/wiki-bench/
 - Skill v2 source of truth:
   `kurpatov-wiki-wiki:skill-v2/skills/benchmark/SKILL.md`.
 - Inference endpoint config:
-  `forge/labs/wiki-compiler/configs/models.yml` (per
+  `forge/phase-c-information-systems-architecture/application-architecture/wiki-compiler/configs/models.yml` (per
   ADR 0008 — single source of truth).

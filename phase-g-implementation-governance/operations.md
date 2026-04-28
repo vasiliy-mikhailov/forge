@@ -118,9 +118,9 @@ watchdog, ~200 MB). `make kurpatov-wiki-ingest-build` runs
 `docker compose build` which walks every service with a `build:`
 block, so both images rebuild together — no per-image target is
 needed. See
-[phase-c-information-systems-architecture/application-architecture/wiki-ingest/docs/adr/0005-split-transcribe-and-push.md](../labs/wiki-ingest/docs/adr/0005-split-transcribe-and-push.md)
+[phase-c-information-systems-architecture/application-architecture/wiki-ingest/docs/adr/0005-split-transcribe-and-push.md](../phase-c-information-systems-architecture/application-architecture/wiki-ingest/docs/adr/0005-split-transcribe-and-push.md)
 and
-[phase-c-information-systems-architecture/application-architecture/wiki-ingest/docs/adr/0006-lean-pusher-image.md](../labs/wiki-ingest/docs/adr/0006-lean-pusher-image.md).
+[phase-c-information-systems-architecture/application-architecture/wiki-ingest/docs/adr/0006-lean-pusher-image.md](../phase-c-information-systems-architecture/application-architecture/wiki-ingest/docs/adr/0006-lean-pusher-image.md).
 
 ### Pinned-core build (keeps ssh responsive)
 
@@ -173,7 +173,7 @@ What to back up, in order of priority:
    `kurpatov-wiki-raw` private GitHub repo by the
    `kurpatov-wiki-raw-pusher` container, so in practice a fresh
    `git clone` recovers this layer without re-running whisper (see
-   [phase-c-information-systems-architecture/application-architecture/wiki-ingest/docs/adr/0005-split-transcribe-and-push.md](../labs/wiki-ingest/docs/adr/0005-split-transcribe-and-push.md)).
+   [phase-c-information-systems-architecture/application-architecture/wiki-ingest/docs/adr/0005-split-transcribe-and-push.md](../phase-c-information-systems-architecture/application-architecture/wiki-ingest/docs/adr/0005-split-transcribe-and-push.md)).
 4. `${STORAGE_ROOT}/labs/rl-2048/mlflow/data/mlflow.db` + `${STORAGE_ROOT}/labs/rl-2048/mlruns/` — experiment
    history.
 5. `${STORAGE_ROOT}/labs/wiki-ingest/checkpoints/`,
@@ -221,7 +221,7 @@ lab's `tests/smoke.sh`; multiple caddies up = exit 1 (broken mutex);
 no lab up = exit 2.
 
 Full dispatcher contract: [`tests/smoke.md`](../tests/smoke.md).
-Per-lab smoke models: [`labs/<lab>/tests/smoke.md`](../labs/).
+Per-lab smoke models: [`<lab>/tests/smoke.md`](phase-c-information-systems-architecture/application-architecture/).
 Shared assertion helpers: [`scripts/smoke-lib.sh`](../scripts/smoke-lib.sh).
 Coverage map and TDD loop: [`tests/README.md`](../tests/README.md).
 
@@ -307,7 +307,7 @@ ffmpeg, so `.mp3` and friends go through the same path as `.mp4`.
 HTML files (`.html`, `.htm` — typically getcourse.ru lesson exports)
 take the HTML-extractor path instead, producing the same segments[]
 shape minus timing — see
-[phase-c-information-systems-architecture/application-architecture/wiki-ingest/docs/adr/0008-ingest-dispatch.md](../labs/wiki-ingest/docs/adr/0008-ingest-dispatch.md).
+[phase-c-information-systems-architecture/application-architecture/wiki-ingest/docs/adr/0008-ingest-dispatch.md](../phase-c-information-systems-architecture/application-architecture/wiki-ingest/docs/adr/0008-ingest-dispatch.md).
 
 Defaults live in `scripts/push-sources.sh` and are currently:
 
