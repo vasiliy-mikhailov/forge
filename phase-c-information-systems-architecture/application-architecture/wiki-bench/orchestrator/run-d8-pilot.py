@@ -61,8 +61,8 @@ RAW_REPO = "kurpatov-wiki-raw"
 WIKI_REPO = "kurpatov-wiki-wiki"
 GH_USER = "vasiliy-mikhailov"
 SKILL_BRANCH = "skill-v2"
-COURSE = "Психолог-консультант"
-MODULE = "005 Природа внутренних конфликтов. Базовые психологические потребности"
+COURSE = os.environ.get("D8_PILOT_COURSE", "Психолог-консультант")
+MODULE = os.environ.get("D8_PILOT_MODULE", "005 Природа внутренних конфликтов. Базовые психологические потребности")
 
 # bench_grade.py path: container has it baked at /opt/forge/, host venv runs use the repo path.
 BENCH_GRADE = (
@@ -458,6 +458,23 @@ def setup_workspace():
     # Clean *contents* of WORKDIR rather than the directory itself —
     # avoids EBUSY on mount points (containers).
     WORKDIR.mkdir(parents=True, exist_ok=True)
+    skip_clone = os.environ.get("D8_PILOT_SKIP_CLONE", "").lower() in ("1", "true", "yes")
+    if skip_clone:
+        # Synth mode — caller pre-populated WORKDIR/raw and WORKDIR/wiki.
+        if not (WORKDIR / "raw").exists() or not (WORKDIR / "wiki").exists():
+            raise RuntimeError(f"D8_PILOT_SKIP_CLONE set but {WORKDIR}/raw or /wiki missing")
+        served = os.environ.get("LLM_MODEL", "openai/qwen3.6-27b-fp8").replace("openai/", "")
+        user_email = os.environ.get("GIT_AUTHOR_EMAIL", "bench@wiki-bench.local")
+        user_name = os.environ.get("GIT_AUTHOR_NAME", "wiki-bench")
+        subprocess.run(["git", "config", "--global", "user.email", user_email], check=True)
+        subprocess.run(["git", "config", "--global", "user.name", user_name], check=True)
+        # Mark workspace as a safe directory in case docker uid != git tree owner.
+        subprocess.run(["git", "config", "--global", "--add", "safe.directory", "*"], check=False)
+        branch = os.environ.get("D8_PILOT_BRANCH", f"synth-test-{date.today().isoformat()}-{served}")
+        run_cmd(f"cd wiki && git checkout -B {branch} 2>&1 || true", cwd=str(WORKDIR), check=False)
+        print(f"[setup] SKIP_CLONE mode — using pre-populated {WORKDIR}; branch={branch}", file=sys.stderr)
+        return branch, served
+
     if any(WORKDIR.iterdir()):
         print(f"[setup] cleaning existing contents of {WORKDIR}", file=sys.stderr)
         for child in WORKDIR.iterdir():
@@ -492,7 +509,10 @@ def setup_workspace():
 
 
 def list_sources():
-    r = run_cmd("python3 wiki/skills/benchmark/list_sources.py", cwd=str(WORKDIR))
+    r = run_cmd(
+        f"python3 wiki/skills/benchmark/list_sources.py {repr(COURSE)} {repr(MODULE)}",
+        cwd=str(WORKDIR),
+    )
     data = json.loads(r.stdout)
     if isinstance(data, dict) and "error" in data:
         raise RuntimeError(f"list_sources.py: {data['error']}")
