@@ -500,7 +500,7 @@ def setup_workspace():
     run_cmd(f"cd wiki && git checkout {SKILL_BRANCH} && git pull --ff-only", cwd=str(WORKDIR))
 
     served = os.environ.get("LLM_MODEL", "openai/qwen3.6-27b-fp8").replace("openai/", "")
-    branch = f"experiment/D8-pilot-{date.today().isoformat()}-{served}"
+    branch = os.environ.get("D8_PILOT_BRANCH", f"experiment/D8-pilot-{date.today().isoformat()}-{served}")
     print(f"[setup] experiment branch: {branch}", file=sys.stderr)
 
     run_cmd(f"cd wiki && git push origin --delete {branch} 2>&1 || true", cwd=str(WORKDIR), check=False)
@@ -509,21 +509,42 @@ def setup_workspace():
 
 
 def list_sources():
-    r = run_cmd(
-        f"python3 wiki/skills/benchmark/list_sources.py {repr(COURSE)} {repr(MODULE)}",
-        cwd=str(WORKDIR),
-    )
-    data = json.loads(r.stdout)
-    if isinstance(data, dict) and "error" in data:
-        raise RuntimeError(f"list_sources.py: {data['error']}")
-    in_module = [s for s in data if MODULE in s.get("slug", "")]
-    sources = [s for s in in_module if 0 <= s.get("index", -1) <= 6]
+    # Multi-module support: D8_PILOT_MODULES is a pipe-separated list of
+    # module names. Falls back to single MODULE if unset.
+    modules_env = os.environ.get('D8_PILOT_MODULES', '').strip()
+    if modules_env:
+        modules = [m.strip() for m in modules_env.split('|') if m.strip()]
+    else:
+        modules = [MODULE]
+
+    sources = []
+    for m in modules:
+        r = run_cmd(
+            f"python3 wiki/skills/benchmark/list_sources.py {repr(COURSE)} {repr(m)}",
+            cwd=str(WORKDIR),
+        )
+        data = json.loads(r.stdout)
+        if isinstance(data, dict) and 'error' in data:
+            raise RuntimeError(f"list_sources.py: {data['error']}")
+        # All sources of this module, sorted by index.
+        in_module = [s for s in data if m in s.get('slug', '')]
+        in_module.sort(key=lambda s: s.get('index', 10**9))
+        sources.extend(in_module)
+
+    # Renumber index globally so per-source state keys are unique across
+    # modules. The orchestrator's SRC N tag becomes the global position.
+    for new_idx, s in enumerate(sources):
+        s['original_index'] = s.get('index', -1)
+        s['index'] = new_idx
+
     # Optional source-count cap for small-N pilots (e.g. G3 quality probe).
     limit_str = os.environ.get('D8_PILOT_SOURCES_LIMIT')
     if limit_str:
         n = int(limit_str)
+        original_n = len(sources)
         sources = sources[:n]
-        print(f'[list_sources] D8_PILOT_SOURCES_LIMIT={n} → returning {len(sources)} of 7 sources', flush=True)
+        print(f'[list_sources] D8_PILOT_SOURCES_LIMIT={n} → returning {len(sources)} of {original_n} sources', flush=True)
+    print(f'[list_sources] modules={modules} → {len(sources)} sources', flush=True)
     return sources
 
 
