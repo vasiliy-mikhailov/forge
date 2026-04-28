@@ -145,14 +145,35 @@ make du    # on-disk sizes under STORAGE_ROOT
 
 ## Architecture — TOGAF-style layered structure (navigation index)
 
-The repo is organized by TOGAF ADM phase. Each phase folder carries
-its own README + topical files; each lab inside Phase C carries its
-own AGENTS.md scoped Phase A-H. This file keeps a one-paragraph
+The repo is organized by TOGAF ADM phase, with a Preliminary phase
+above the eight ADM phases. Each phase folder carries its own
+README + topical files; each lab inside Phase C carries its own
+AGENTS.md scoped Phase A-H. This file keeps a one-paragraph
 synthesis per phase so an agent can decide where to drill in.
 
 We adopt TOGAF *vocabulary and layering*, not certification. We do
 not produce Architecture Vision Statements or Architecture
-Definition Documents as formal deliverables.
+Definition Documents as formal deliverables. The full tailoring
+decision lives in
+[`phase-preliminary/framework-tailoring.md`](phase-preliminary/framework-tailoring.md).
+
+### [Phase 0 — Preliminary](phase-preliminary/)
+
+The architecture *capability itself* — how forge does architecture
+at all, before any specific Architecture Vision is set. Holds the
+framework tailoring (what TOGAF/ArchiMate we adopt, what we skip),
+the architecture team (one architect of record, no committees),
+the four meta-principles (single architect, capability
+trajectories, containers-only, single-server), the architecture
+method (Level 1 / Level 2 trajectory with delete-on-promotion),
+and the architecture repository convention (Phase A-H folder
+layout, AGENTS.md / CLAUDE.md symlink, per-lab template). Drill
+in:
+[`framework-tailoring.md`](phase-preliminary/framework-tailoring.md),
+[`architecture-team.md`](phase-preliminary/architecture-team.md),
+[`architecture-principles.md`](phase-preliminary/architecture-principles.md),
+[`architecture-method.md`](phase-preliminary/architecture-method.md),
+[`architecture-repository.md`](phase-preliminary/architecture-repository.md).
 
 ### [Phase A — Architecture Vision](phase-a-architecture-vision/)
 
