@@ -5,7 +5,46 @@ R&D output of forge. Smart-reading wiki distilled from
 ("Системно-поведенческая психотерапия", "Психолог-консультант",
 etc.). The wiki compresses ~60-90 min lectures into ~5-15 min
 markdown articles with deduped claims, fact-checked attributions,
-and concept cross-links.
+concept cross-links **— and preserves Курпатов's distinctive voice**.
+
+## Why this product (vs. a generic encyclopedia summary)
+
+Курпатов's value to the reader is not only the content of his
+psychology — it is also *how he frames it*. His charisma, sceptical
+asides, characteristic metaphors, and aphoristic turns are part of
+what makes someone reach for his lectures rather than for a
+neutral textbook. A wiki that strips out the speaker's voice
+loses the differential value of having compiled THIS author's
+work.
+
+The product therefore has a hard requirement: **narrative sections
+of every source.md preserve the speaker's tone of voice and
+performer's style**. Where Курпатов is sceptical, the prose is
+sceptical. Where he uses a vivid metaphor, the metaphor is kept
+(quoted or near-quoted, not paraphrased into neutrality). Where
+he addresses the listener directly ("посмотрите", "представьте"),
+the address survives.
+
+This is balanced against the equally hard "save reader time" goal
+by splitting the sections of source.md into two registers:
+
+- **Narrative sections** (`## TL;DR`, `## Лекция (пересказ: только NEW и проверенное)`)
+  — preserve voice. These are what a fast reader skims.
+- **Structural sections** (`## Claims — provenance and fact-check`,
+  `## New ideas (verified)`, `## All ideas`, concept articles)
+  — neutral and structural. These are what a careful reader
+  cross-references.
+
+The split lets a reader who wants the gist skim the narrative
+sections in 1-2 minutes and still hear Курпатов; while a reader
+who wants verifiability drops into the Claims block and gets
+neutral fact-checked statements.
+
+The skill-v2 contract enforcement is in
+`kurpatov-wiki-wiki:prompts/per-source-summarize.md` § Style; the
+runtime injection is in
+[`../../phase-c-information-systems-architecture/application-architecture/wiki-bench/orchestrator/run-d8-pilot.py`](../../phase-c-information-systems-architecture/application-architecture/wiki-bench/orchestrator/run-d8-pilot.py)
+SOURCE_AUTHOR_PROMPT § "Tone of voice".
 
 ## Value stream
 
@@ -14,24 +53,25 @@ Kurpatov audio/video lectures
     │ (collect)
     ▼  wiki-ingest lab — faster-whisper → raw.json
 kurpatov-wiki-raw repo (per-lecture whisper segments)
-    │ (filter + adapt)
+    │ (filter + adapt; preserve voice in narrative sections)
     ▼  wiki-bench lab — agent harness compiles + dedupes + factchecks
 kurpatov-wiki-wiki repo (per-source.md + per-concept.md, skill v2 shape)
     │
     ▼ (consume)
-human reader — saves ~60 min per lecture per use
+human reader — saves ~60 min per lecture per use,
+              still hears Курпатов
 ```
 
 ## Capabilities (from forge AGENTS.md Phase B)
 
-| Capability                           | Lab          | Quality dimension                                          |
-|--------------------------------------|--------------|------------------------------------------------------------|
-| Audio → text transcription           | wiki-ingest  | Russian-WER on a held-out audit set                        |
-| Compile lecture into source.md       | wiki-bench   | Fast for reading — bullets, TL;DR, no narrative bloat      |
-| Cross-source dedup of claims         | wiki-bench   | No repetitions — REPEATED markers, retrieval-augmented     |
-| Fact-check empirical claims          | wiki-bench   | No fake statements — Wikipedia URLs, CONTRADICTS_FACTS     |
-| Concept extraction + linking         | wiki-bench   | Canonical skill v2 shape                                   |
-| Benchmark open-weight LLMs vs Opus   | wiki-bench   | Reproducible from `(Dockerfile + transcripts)` only        |
+| Capability                           | Lab          | Quality dimension                                                                                |
+|--------------------------------------|--------------|--------------------------------------------------------------------------------------------------|
+| Audio → text transcription           | wiki-ingest  | Russian-WER on a held-out audit set                                                              |
+| Compile lecture into source.md       | wiki-bench   | **Fast for reading + preserves speaker voice** — bullets, TL;DR, no narrative bloat AND Курпатов's tone of voice intact in narrative sections |
+| Cross-source dedup of claims         | wiki-bench   | No repetitions — REPEATED markers, retrieval-augmented                                           |
+| Fact-check empirical claims          | wiki-bench   | No fake statements — Wikipedia URLs, CONTRADICTS_FACTS                                           |
+| Concept extraction + linking         | wiki-bench   | Canonical skill v2 shape                                                                         |
+| Benchmark open-weight LLMs vs Opus   | wiki-bench   | Reproducible from `(Dockerfile + transcripts)` only                                              |
 
 ## Source repos
 
@@ -51,11 +91,14 @@ human reader — saves ~60 min per lecture per use
   Qwen3.6-27B-FP8 compilation, tagged
   `canonical/qwen3.6-27b-fp8/module-005/2026-04-27` on `skill-v2`
   (merge commit 3fd8b18).
+- K1 experiment in flight: modules 000 + 001 from scratch
+  (44 sources). See
+  [`../../phase-f-migration-planning/experiments/K1-modules-000-001.md`](../../phase-f-migration-planning/experiments/K1-modules-000-001.md).
 - 199 lectures remain to be compiled.
 
 ## Trajectories (Phase H)
 
 Per-capability trajectories live in
-`phase-c-information-systems-architecture/application-architecture/wiki-bench/docs/STATE-OF-THE-LAB.md`.
+[`../../phase-c-information-systems-architecture/application-architecture/wiki-bench/docs/STATE-OF-THE-LAB.md`](../../phase-c-information-systems-architecture/application-architecture/wiki-bench/docs/STATE-OF-THE-LAB.md).
 Headline next step: scale the same pilot driver to 200+ sources
-without quality regression.
+without quality regression — including without voice regression.

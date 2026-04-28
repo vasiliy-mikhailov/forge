@@ -12,10 +12,11 @@ ID convention: `R-<phase>-<short-slug>`. Numbering is per phase.
 
 ### Phase B — capability trajectories
 
-| ID                  | Source             | Quality dim                          | Level 1 (today)                                     | Level 2 (next)                                  | Closure attempt        | Status |
-|---------------------|--------------------|---------------------------------------|------------------------------------------------------|-------------------------------------------------|------------------------|--------|
-| R-B-svcop-thruput   | A: Architect-velocity | Service Operation / throughput     | ~47 tok/s decode batch=1 (Qwen3.6-27B-FP8)          | ≥ 100 tok/s decode                              | (deferred — see below) | OPEN   |
-| R-B-svcop-stable24h | A: Architect-velocity | Service Operation / stability      | ≥ 169 min sustained (one full module-005 pilot v5)   | ≥ 24 h continuous over 200-source runs          | not yet planned        | OPEN   |
+| ID                       | Source                    | Quality dim                                                  | Level 1 (today)                                                                            | Level 2 (next)                                                                          | Closure attempt        | Status |
+|--------------------------|---------------------------|---------------------------------------------------------------|---------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------|------------------------|--------|
+| R-B-svcop-thruput        | A: Architect-velocity     | Service Operation / throughput                               | ~47 tok/s decode batch=1 (Qwen3.6-27B-FP8)                                                 | ≥ 100 tok/s decode                                                                       | (deferred — see below) | OPEN   |
+| R-B-svcop-stable24h      | A: Architect-velocity     | Service Operation / stability                                | ≥ 169 min sustained (one full module-005 pilot v5)                                         | ≥ 24 h continuous over 200-source runs                                                   | not yet planned        | OPEN   |
+| R-B-voice-preservation   | A: TTS (product value)    | Compile lecture into source.md / preserves speaker voice     | Prior style guide asked for "voice of good lecture notes" — neutral encyclopedic register, voice stripped. K1 first run produced 7 verified sources reading like a generic summary | Narrative sections (TL;DR + Лекция) preserve author tone, sceptical asides, characteristic metaphors; structural sections (Claims, concepts) stay neutral. Validated on K1 modules 000+001 + future Tarasov pilot | K1 (in flight, restarted with revised Style)  | OPEN   |
 
 R-B-svcop-thruput is **deferred** at the model-swap level. G2
 (MoE) and G3 (dense Gemma) both closed-falsified at the contract-
