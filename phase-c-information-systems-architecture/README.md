@@ -1,11 +1,27 @@
-# Information Systems Architecture (Phase C)
+# Phase C — Information Systems Architecture
 
-This folder is the supplementary depth for **Phase C — Information Systems Architecture**. The canonical synthesis lives in [`forge/AGENTS.md`](../AGENTS.md) under the matching section heading. Detailed material — per-capability descriptions, service specs, ADRs scoped to this phase — lives here.
+## Application Architecture (the labs)
 
-## Layout
+- [`application-architecture/components.md`](application-architecture/components.md)
+  — table of forge's four application components and which Phase B
+  capabilities each realises.
+- [`application-architecture/<component>/`](application-architecture/)
+  — one folder per component (lab), each with its own
+  AGENTS.md / SPEC / Dockerfile / docker-compose / docs / tests.
 
-- `adr/` — Architecture Decision Records scoped to this phase.
-- `data-architecture/` — data-shape descriptions.
-- `application-architecture/` — application components (labs):
-  `wiki-compiler/`, `wiki-bench/`, `wiki-ingest/`, `rl-2048/`.
+The four components today: `wiki-compiler`, `wiki-bench`,
+`wiki-ingest`, `rl-2048`.
 
+## Data Architecture
+
+- [`data-architecture/data-sets.md`](data-architecture/data-sets.md)
+  — the per-product `raw.json` + skill-v2 wiki shape + bench
+  artefact + retrieval-index data sets.
+- [`data-architecture/`](data-architecture/) — schemas / additional
+  per-set detail (when populated).
+
+## ADRs
+
+- [`adr/`](adr/) — Phase C scoped ADRs (cross-component data
+  decisions; per-component ADRs live inside that component's
+  folder).

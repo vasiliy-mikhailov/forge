@@ -1,86 +1,82 @@
 # CLAUDE.md / AGENTS.md — instructions for LLM agents in this repo
 
-This file is read by agents (Claude Code, Codex CLI, Cowork, etc.) before
-they change anything. Keep it short and practical — tools don't digest
-verbose prose well.
+This file is read by agents (Claude Code, Codex CLI, Cowork, etc.)
+before they change anything. Keep it short and practical — tools
+don't digest verbose prose well. The depth lives in the per-phase
+folders below; this file is the navigation index.
 
 ## What this repo is
 
-**forge** is my home-lab monorepo for experiments with ML / RL / LLM on a
-single machine `mikhailov.tech` with two GPUs (Blackwell + RTX 5090). Not
-production, but all the key services run production-style behind caddy +
-basic auth and must survive a host reboot.
+**forge** is my home-lab monorepo for experiments with ML / RL /
+LLM on a single machine `mikhailov.tech` with two GPUs (Blackwell +
+RTX 5090). Not production, but all the key services run
+production-style behind caddy + basic auth and must survive a host
+reboot.
 
-forge is now organized as a **lab metaphor**: each major workload
-lives under `labs/<slug>/` as a fully self-contained "room" with
-its own caddy, docker-compose, SPEC, ADRs. Top-level holds only
-docs, scripts, and the root Makefile that dispatches into labs.
+The repo is structured by **TOGAF ADM phase** at the top level
+(folders `phase-a-…` through `phase-h-…`). Inside Phase C lives the
+**application architecture** — four labs (application components):
 
-Labs:
+- `phase-c-information-systems-architecture/application-architecture/wiki-compiler/`
+  — vLLM serving the LLM that compiles raw transcripts into wiki articles.
+- `phase-c-information-systems-architecture/application-architecture/wiki-bench/`
+  — agent harness that benchmarks LLMs on the compiler task and runs
+  pilot productions.
+- `phase-c-information-systems-architecture/application-architecture/wiki-ingest/`
+  — the "media → raw transcript" pipeline (whisper, etc.).
+- `phase-c-information-systems-architecture/application-architecture/rl-2048/`
+  — Jupyter sandbox for RL/GRPO experiments. Includes its own
+  `mlflow/` sublab.
 
-- `phase-c-information-systems-architecture/application-architecture/wiki-compiler/` — vLLM serving the LLM that
-  *compiles* raw transcripts into wiki articles.
-- `phase-c-information-systems-architecture/application-architecture/wiki-ingest/` — the "media → raw transcript"
-  pipeline (Whisper, etc.).
-- `phase-c-information-systems-architecture/application-architecture/wiki-bench/` — agent harness that benchmarks
-  different LLMs on the compiler task.
-- `phase-c-information-systems-architecture/application-architecture/rl-2048/` — Jupyter sandbox for RL/GRPO experiments.
-  Includes its own `mlflow/` sublab (mlflow used to live at
-  forge top-level; only rl-2048 uses it, so it moved in).
-
-Each lab carries:
-
-- Its own `caddy/` (binds host :80/:443 — labs are mutex on
-  these ports).
-- Own `docker-compose.yml` for its core services.
-- Own `SPEC.md` + `docs/adr/`.
-
-Top-level:
-
-- `docs/` — cross-lab docs + ADRs (this restructure is ADR 0007).
-- `scripts/` — cross-lab tooling (smoke, push-sources).
-- `Makefile` — dispatcher: `make <lab>`, `make <lab>-down`,
-  `make stop-all`.
-- `common.mk` — shared Make machinery (finds forge root via
-  `git rev-parse --show-toplevel` so it works at any nesting depth).
+Each lab carries its own `caddy/` (binds host :80/:443 — labs are
+mutex on these ports), its own `docker-compose.yml`, its own
+`SPEC.md`, its own `docs/adr/`, and its own AGENTS.md scoped Phase
+A-H.
 
 The "experiment" word is reserved for individual run-instances
-inside a lab (e.g. "experiment 148 = qwen3.6-27b-fp8 on
-2026-04-25" inside the bench lab). A lab is a room; an
-experiment is a run.
+inside a lab. A lab is a room; an experiment is a run.
 
 ## First thing an agent should do
 
 1. Read this file.
-2. Read `README.md` and `phase-d-technology-architecture/architecture.md` to understand the physical
-   layout (where `STORAGE_ROOT` lives, what docker network, which images).
-3. Open the SPEC.md of the service being edited (`labs/<lab>/SPEC.md`).
-4. Skim `docs/adr/` and `labs/<lab>/docs/adr/` — architectural decisions
-   there must not be silently undone.
-5. If you are about to change observable behavior, also open `tests/` —
-   that directory is the source of truth for what the smoke test (and
-   future test scripts) must verify. Update the model there **before**
-   editing `scripts/smoke.sh`. See `tests/README.md` for the TDD loop.
+2. Read `README.md` and
+   [`phase-d-technology-architecture/architecture.md`](phase-d-technology-architecture/architecture.md)
+   to understand the physical layout (where `STORAGE_ROOT` lives,
+   what docker network, which images).
+3. Open the SPEC.md of the service being edited
+   (`phase-c-information-systems-architecture/application-architecture/<lab>/SPEC.md`).
+4. Skim the relevant Phase folder's `adr/` and the lab's
+   `docs/adr/` — architectural decisions there must not be silently
+   undone.
+5. If you are about to change observable behavior, also open
+   `tests/` — that directory is the source of truth for what the
+   smoke test (and future test scripts) must verify. Update the
+   model there **before** editing `scripts/smoke.sh`. See
+   `tests/README.md` for the TDD loop.
 
 ## Rules for edits
 
-- **Idempotency.** Any change to a Dockerfile, compose file, or Makefile
-  must survive a rebuild and restart. No manual "ssh in and do X" steps.
+- **Idempotency.** Any change to a Dockerfile, compose file, or
+  Makefile must survive a rebuild and restart. No manual "ssh in
+  and do X" steps.
 - **One change per edit.** Don't mix refactors with new features.
-- **Secrets only in `.env`.** No tokens, passwords, certificates in git.
-  If you see something that looks like a secret — stop and ask.
+- **Secrets only in `.env`.** No tokens, passwords, certificates in
+  git. If you see something that looks like a secret — stop and ask.
 - **Data lives under `${STORAGE_ROOT}`**, not in the forge repo.
-  `vault/`, `sources/`, `models/`, `checkpoints/`, `mlruns/` are never
-  committed to forge. Note: `vault/raw/` (under `${STORAGE_ROOT}/labs/wiki-ingest/vault/raw/`) **is** a git working tree —
-  but for a *separate* repo (`kurpatov-wiki-raw`), pushed by the
-  `kurpatov-wiki-raw-pusher` container. See
-  `phase-c-information-systems-architecture/application-architecture/wiki-ingest/docs/adr/0005-split-transcribe-and-push.md`.
-- **ADR for irreversible decisions.** If on-disk data format changes, the
-  framework choice changes, or the network topology changes — add
-  `docs/adr/NNNN-*.md` or `labs/<lab>/docs/adr/NNNN-*.md` where NNNN is the
-  next free number.
+  `vault/`, `sources/`, `models/`, `checkpoints/`, `mlruns/` are
+  never committed to forge. Note: `vault/raw/` (under
+  `${STORAGE_ROOT}/labs/wiki-ingest/vault/raw/`) **is** a git
+  working tree — but for a *separate* repo (`kurpatov-wiki-raw`),
+  pushed by the `kurpatov-wiki-raw-pusher` container. See
+  [`phase-c-information-systems-architecture/application-architecture/wiki-ingest/docs/adr/0005-split-transcribe-and-push.md`](phase-c-information-systems-architecture/application-architecture/wiki-ingest/docs/adr/0005-split-transcribe-and-push.md).
+- **ADR for irreversible decisions.** If on-disk data format
+  changes, the framework choice changes, or the network topology
+  changes — add `phase-<x>/adr/NNNN-*.md` (or
+  `phase-c-…/application-architecture/<lab>/docs/adr/NNNN-*.md`
+  for lab-scoped) where NNNN is the next free number.
 - **SPEC.md is source of truth.** If code diverges from SPEC, don't
-  silently change code — either update SPEC or reconcile code to spec.
+  silently change code — either update SPEC or reconcile code to
+  spec.
 
 ## How to run
 
@@ -98,13 +94,13 @@ Create on-disk layout (creates `${STORAGE_ROOT}` and subdirs):
 make setup
 ```
 
-Bring up one lab (labs are mutex on host :80/:443; only one at a time):
+Bring up one lab (labs are mutex on host :80/:443; only one at a
+time, except wiki-bench co-running with wiki-compiler):
 
 ```bash
 make wiki-compiler   # vLLM endpoint
 make wiki-ingest     # whisper + ingest
-make rl-2048                  # GRPO sandbox
-# ↑ labs are mutex on host :80/:443 — bring up only one (bench co-runs with compiler).
+make rl-2048         # GRPO sandbox
 ```
 
 Diagnostics:
@@ -117,418 +113,125 @@ make du    # on-disk sizes under STORAGE_ROOT
 
 ## What NOT to do
 
-- Do not run multiple writers against the mlflow SQLite at the same time.
-- Labs are mutex on host ports 80/443 (each lab's caddy binds them).
-  `wiki-compiler` + `wiki-bench` is the one
-  permitted co-running combination (bench is a client without a
-  caddy). All other lab combinations: stop one, start another via
+- Do not run multiple writers against the mlflow SQLite at the same
+  time.
+- Labs are mutex on host ports 80/443 (each lab's caddy binds
+  them). `wiki-compiler` + `wiki-bench` is the one permitted
+  co-running combination (bench is a client without a caddy). All
+  other lab combinations: stop one, start another via
   `make <a>-down && make <b>`.
 - Do not give two labs overlapping GPU UUIDs in `.env`. The
   Blackwell hosts compiler OR rl-2048 (not both); the RTX 5090
-  hosts wiki-ingest. Going to dual-GPU TP for compiler
-  takes both cards — wiki-ingest must be down then.
+  hosts wiki-ingest. Going to dual-GPU TP for compiler takes both
+  cards — wiki-ingest must be down then.
 - Do not commit `.ipynb` files or large `.pt`/`.bin` blobs.
-- Do not change the `${STORAGE_ROOT}/labs/wiki-ingest/vault/raw/data/<path>/raw.json` format without an ADR —
-  the watcher and every downstream layer depend on it.
-- Do not reinstall the proprietary nvidia driver (without `-open`) and
-  do not delete `/etc/modprobe.d/nvidia-uvm.conf`. Multi-GPU on Blackwell
-  does not forgive this. Details and symptoms →
-  `phase-d-technology-architecture/adr/0004-nvidia-driver-open-plus-hmm-off.md`, diagnostics →
-  `phase-g-implementation-governance/operations.md` → "GPU suddenly unavailable".
+- Do not change the
+  `${STORAGE_ROOT}/labs/wiki-ingest/vault/raw/data/<path>/raw.json`
+  format without an ADR — the watcher and every downstream layer
+  depend on it.
+- Do not reinstall the proprietary nvidia driver (without `-open`)
+  and do not delete `/etc/modprobe.d/nvidia-uvm.conf`. Multi-GPU
+  on Blackwell does not forgive this. Details and symptoms →
+  [`phase-d-technology-architecture/adr/0004-nvidia-driver-open-plus-hmm-off.md`](phase-d-technology-architecture/adr/0004-nvidia-driver-open-plus-hmm-off.md);
+  diagnostics →
+  [`phase-g-implementation-governance/operations.md`](phase-g-implementation-governance/operations.md)
+  → "GPU suddenly unavailable".
 
 ## Useful commands for the agent
 
-- There is no task tracker in the repo. Active work lives in git history
-  and in `docs/` (ADRs + SPECs).
 - Service logs: `make <lab>-logs` (tail -f of `docker logs <container>`).
 - Enter a container: `docker exec -it <container> bash`.
 
+## Architecture — TOGAF-style layered structure (navigation index)
 
-## Architecture — TOGAF-style layered structure
-
-This section organises every architecture decision in Forge by the
-TOGAF ADM phase it belongs to. The point is **layering**: a decision
-about wiki concept structure (Phase B) lives one layer below "Forge
-saves human time" (Phase A), and a decision about which embedding
-model (Phase D) lives two layers below that. When you read this
-file you do not have to wade through libblas3 to reach the mission;
-when you debug embed_helpers.py you do not have to re-derive why
-the wiki exists.
+The repo is organized by TOGAF ADM phase. Each phase folder carries
+its own README + topical files; each lab inside Phase C carries its
+own AGENTS.md scoped Phase A-H. This file keeps a one-paragraph
+synthesis per phase so an agent can decide where to drill in.
 
 We adopt TOGAF *vocabulary and layering*, not certification. We do
-not produce Architecture Vision Statements, Architecture Definition
-Documents, or Architecture Roadmaps as formal deliverables. Each lab
-keeps its own concrete artefacts in `labs/<lab>/docs/` (ADRs,
-experiments, STATE-OF-THE-LAB.md).
-
-### Phase A — Architecture Vision
-
-This phase answers *who* cares about Forge as an architecture, *why*
-they care, and *what target state* the architecture exists to reach.
-The product portfolio (which products and their value streams) is not
-here — that lives in Phase B.
-
-**Vision statement.** Forge builds AI tools that save human time on
-cognitive work — both consuming information and writing/optimizing
-programs.
-
-**Stakeholders.**
-
-- **Architect of record** — one person (the repo owner). Sole driver
-  of trajectory changes, sole reviewer, today the only consumer of
-  every output.
-- **Future operator** — the architect's future self, who will inherit
-  these docs, debug failures, and extend the platform. Most of what
-  is written here is for them.
-- **End users** — TBD. Currently identical with the architect; the
-  Practical-Time-Saved goal becomes meaningful only once there are
-  non-architect users.
-
-**Drivers.**
-
-- Time spent consuming information from Russian psychology lectures
-  (Kurpatov: ~60-90 min each, ~200 in catalog).
-- Time spent writing/optimizing programs in domains where RL with
-  verifiable rewards (RLVR) can do the slog automatically.
-- Architect-velocity: every minute the architect spends recovering
-  GPUs or rerunning failed pilots is a minute not spent on the real
-  work.
-
-**Goals (Motivation-layer; quantified in Phase H trajectories).**
-
-- **TTS — Theoretical Time Saved.** Minutes saved per use,
-  conditional on the product's quality dimensions holding.
-- **PTS — Practical Time Saved.** Cumulative minutes saved across
-  all users (= TTS × users × engagement).
-- **EB — Economic Balance.** Revenue minus operational cost
-  (GPU-hours + storage + architect-hours at shadow rate).
-- **Architect-velocity.** Capability advances per architect-hour.
-  Cross-cuts every other goal — speed of forge's own improvement.
-
-**Principles.**
-
-- **Single architect of record.** No committee, no formal review
-  process beyond AGENTS.md conventions.
-- **Capability trajectories.** Every capability has Level 1 (today)
-  and Level 2 (next planned state). When L2 is reached, it becomes
-  the new L1 and the prior L1 is deleted from docs; git is the
-  archive. No `Withdrawn` / `Deprecated` / `Closed` status flags in
-  the working tree.
-- **Containers-only execution** (`phase-g-implementation-governance/policies/containers.md`).
-- **Single-server deployment** on `mikhailov.tech` — all services
-  share one host, one network, two GPUs.
-
-### Phase B — Business Architecture
-
-In TOGAF terms, *capability* (what forge can do) and *organization
-unit* (who does it) are independent. Forge has several business
-capabilities; it is structured into org units (labs) that each
-realize a subset of those capabilities for a specific domain.
-
-#### Forge-level capabilities
-
-| Capability                           | Quality dimension                                                      |
-|--------------------------------------|------------------------------------------------------------------------|
-| **Research & Development**           | Architect-velocity (capability advances per architect-hour); falsifiability (every change has IF-THEN-BECAUSE); reproducibility (replay from `Dockerfile + raw` only) |
-| **Service operation (production framework)** | Stability (mean-time-to-crash); throughput; cost-per-output-token |
-| **Product delivery to consumers**    | Branch hygiene; verify-by-artifact (not by agent); canonical-branch promotion |
-| **Architecture knowledge management** | TOGAF-style doc threading; single source of truth (AGENTS.md per location); "git is the archive" — no `Withdrawn`/`Deprecated`/`Closed` flags |
-
-These capabilities are not products. They are forge's repeatable
-abilities. Each is realised partially by every lab; some labs lean
-heavily on one.
-
-#### Organization units
-
-Today there is one organization unit: the architect of record
-(see Phase A stakeholders). When a future operator or external
-consumer joins, they will be added here. The labs are *not* org
-units — they are application components and live in Phase C.
-
-Detail on which application components (labs) realise which
-capabilities lives in Phase C — see
-[`phase-c-information-systems-architecture/application-architecture/`](phase-c-information-systems-architecture/application-architecture/).
-
-Each lab's own AGENTS.md Phase B holds the *lab-scoped* capability
-subset (with quality dimensions appropriate to that lab's domain).
-
-#### R&D outputs: the products
-
-R&D capability produces shippable products. Per-product detail
-(value stream, capabilities, status, trajectories) lives in
-`phase-b-business-architecture/products/<product>.md`. Three products today:
-
-| Product | Realised across | Status | Per-product detail |
-|---------|-----------------|--------|--------------------|
-| **Kurpatov Wiki** | wiki-ingest + wiki-bench + wiki-compiler | Active — module 005 published as canonical Qwen3.6-27B-FP8 result | [`products/kurpatov-wiki.md`](phase-b-business-architecture/products/kurpatov-wiki.md) |
-| **Tarasov Wiki**  | wiki-ingest + wiki-bench + wiki-compiler | Pre-pilot — content acquisition phase | [`products/tarasov-wiki.md`](phase-b-business-architecture/products/tarasov-wiki.md) |
-| **rl-2048** | rl-2048 lab | Pre-methodology phase | [`products/rl-2048.md`](phase-b-business-architecture/products/rl-2048.md) |
-
-Per-product capability stacks (each row lives in the lab marked):
-
-**Wiki product line (applies to Kurpatov Wiki + Tarasov Wiki + future authors)**
-
-The same capability stack applies to every wiki product; differences
-between products live in the input corpus + fact-check domain, not in
-the lab structure.
-
-| Capability                           | Lab           | Quality dimension                                          |
-|--------------------------------------|---------------|------------------------------------------------------------|
-| Audio → text transcription           | wiki-ingest   | Russian-WER on a held-out audit set                        |
-| Compile lecture into source.md       | wiki-bench    | **Fast for reading** — bullets, TL;DR, no narrative bloat  |
-| Cross-source dedup of claims         | wiki-bench    | **No repetitions** — REPEATED markers, retrieval-augmented |
-| Fact-check empirical claims          | wiki-bench    | **No fake statements** — Wikipedia URLs, CONTRADICTS_FACTS |
-| Concept extraction + linking         | wiki-bench    | Canonical skill v2 shape                                   |
-| Benchmark open-weight LLMs vs Opus   | wiki-bench    | Reproducible from `(Dockerfile + transcripts)` only        |
-
-**rl-2048**
-
-| Capability                           | Lab          | Quality dimension                          |
-|--------------------------------------|--------------|--------------------------------------------|
-| Solve 2048 faster                    | rl-2048      | (TBD — falsifiable metric to be locked)    |
-| RLVR training loop                   | rl-2048      | (TBD)                                      |
-
-(The rl-2048 rows are stubs — populate when its STATE-OF-THE-LAB.md
-gets written.)
-
-### Phase C — Information Systems Architecture
-
-#### Application Architecture: components (labs)
-
-Forge has four application components, each a cohesive group of
-software functionality. Implementation lives at
-`phase-c-information-systems-architecture/application-architecture/<lab>/`;
-each component carries its own AGENTS.md (Phase A-H scoped) plus
-Dockerfile / docker-compose / SPEC.
-
-| Component       | Forge capabilities it realises                                                                                       | Serves products   |
-|-----------------|----------------------------------------------------------------------------------------------------------------------|-------------------|
-| `wiki-compiler` | Service operation (LLM inference); R&D (Blackwell stability — G1)                                                   | All wiki products |
-| `wiki-bench`    | R&D (benchmarking + experimentation); Product delivery (canonical wiki); Architecture knowledge mgmt (skill v2)     | All wiki products |
-| `wiki-ingest`   | Service operation (transcription pipeline); Product delivery (raw.json publication)                                 | All wiki products |
-| `rl-2048`       | R&D (RLVR methodology); Service operation (Jupyter / MLflow)                                                        | rl-2048           |
-
-The `wiki-*` components are content-agnostic — the same
-infrastructure serves every wiki product. Adding a new wiki
-product (e.g. for a new author/corpus) requires only a new pair
-of `<author>-wiki-{raw,wiki}` GitHub repos plus per-pilot env
-config; no component change needed.
-
-#### Data Architecture
-| Data set                                  | Shape                                    |
-|-------------------------------------------|------------------------------------------|
-| `kurpatov-wiki-raw`                       | per-source `raw.json` (whisper segments) |
-| `kurpatov-wiki-wiki:skill-v2`             | `data/sources/<slug>.md`, `data/concepts/<slug>.md`, `data/concept-index.json` |
-| Bench artefacts                           | `${STORAGE_ROOT}/labs/wiki-bench/experiments/<run_id>/` |
-| Retrieval index (D8)                      | `wiki/data/embeddings/{claims,concepts}.{sqlite,npz}` (numpy + sqlite hybrid) |
-
-Per-product detailed shapes live in their lab's STATE-OF-THE-LAB.md.
-
-### Phase D — Technology Architecture
-
-The Forge platform realises Phase B capabilities through a small set
-of **technology services**, each provided by one or more **technology
-components / system software**. Capabilities live upstairs (Phase A/B);
-this section is about *how* they are realised, not *what* they are.
-
-Trajectories (Level 1 / Level 2) attach to **service quality
-dimensions**, not to components. Replacing a component (e.g. vLLM
-0.19.1 → 0.20) is just the next step on the same trajectory; we don't
-keep "Was vLLM 0.19.1" annotations — git remembers.
-
-Cross-cutting tech-quality dimensions (analogous to TTS/PTS/EB at the
-Motivation layer): **throughput**, **latency**, **stability**
-(mean-time-to-crash), **cost-per-output-token**. These feed
-architect-velocity and EB; they do not directly move TTS.
-
-**Service: LLM inference**
-- Component: vLLM 0.19.1 (cu130) serving Qwen3.6-27B-FP8 on the
-  Blackwell, 128 K context via YaRN factor 4.0, single-card.
-- Lab: `wiki-compiler/`.
-- L1 throughput: ~47 tok/s decode batch=1, ~6.3 K tok/s prefill.
-- L1 stability: ~50 % UVM-crash rate within 2.5 h at default settings;
-  failure mode is `gdn_linear_attn._forward_core` →
-  `cudaErrorLaunchFailure` followed by kernel-side
-  `BUG uvm_gpu_chunk_5`.
-- L2 stability: ≤ 5 % crash rate over 7-source pilots
-  (G1 experiment: 400 W power cap + persistence on +
-  `--gpu-memory-utilization 0.85`).
-
-**Service: Agent orchestration & sub-agent delegation**
-- Component: OpenHands SDK 1.17.0 + TaskToolSet, file-based
-  sub-agent definitions.
-- Lab: `wiki-bench/orchestrator/`.
-- L1: top-orch context bounded per source (Invariant A — Python-loop
-  driver creates fresh `Conversation` per source); but 0 % KV-cache
-  reuse across sub-agent delegations within a Conversation, so each
-  call re-prefills its system prompt.
-- L2: KV-cache reuse across same-Conversation sub-agent calls (vLLM
-  prefix-cache + openhands integration). Estimated impact:
-  ~5-10× fewer prefill tokens per source, ~3-4 min saved per source
-  on a 7-source run.
-
-**Service: Vector retrieval (claim and concept dedup)**
-- Component: `orchestrator/embed_helpers.py` +
-  `intfloat/multilingual-e5-base` + numpy + sqlite. Index lives in
-  the wiki repo at `wiki/data/embeddings/{claims,concepts}.{sqlite,npz}`.
-- Lab: `wiki-bench/`.
-- L1 claim retrieval: wired into source-author per-claim via
-  `find-claims --k 5`; threshold 0.78 for REPEATED (calibrated against
-  e5-base paraphrase distribution — see step9 synth gate).
-- L1 concept retrieval: NOT wired into curator (curator does naive
-  exact-slug `ls` check); `find-concepts` CLI exists but unused.
-- L1 cost: per-CLI fork of `embed_helpers.py` re-loads e5-base
-  (~280 MB) — ~5 s per invocation. At 100 claims × 200 sources scale
-  this is ~28 hours of pure model-load.
-- L2: `find-concepts` wired into curator with 0.85 dedup threshold;
-  embed_helpers daemonized so the model loads once.
-
-**Service: Container runtime + GPU isolation**
-- Component: Docker + CUDA 13 + nvidia-container-toolkit. Image
-  `kurpatov-wiki-bench:1.17.0-d8-cal` bakes openhands-sdk +
-  sentence-transformers + e5-base + bench scripts under `/opt/forge/`.
-- L1 stability: works for steady-state, but `docker rm -f` on a
-  CUDA-active container leaves an orphan kernel-side context (G1-H3:
-  observed 2026-04-27 when killing a side-experiment container left
-  the *other* GPU at 100 % util / 110 W draw with no userspace owner;
-  per-GPU reset failed; orphan only cleared by full driver reload).
-- L2 stability: convention codified — always `docker stop` (SIGTERM
-  + grace) before `docker rm -f` for CUDA containers.
-
-**Service: Audio → text transcription**
-- Component: faster-whisper.
-- Lab: `wiki-ingest/`.
-- L1: ~200 Курпатов lectures transcribed end-to-end. Output is the
-  `raw.json` whisper-segment shape consumed downstream.
-- L2: stable; not on the active trajectory.
-
-**Service: Source-of-truth + per-experiment branch storage**
-- Component: GitHub remotes — `kurpatov-wiki-raw` (transcripts,
-  pushed by raw-pusher), `kurpatov-wiki-wiki` (compiled wiki,
-  experiment branches `experiment/D*-...-<served>`).
-- L1: 50 GB-class repos within free quota; bench branches for every
-  pilot.
-- L2: stable.
-
-**Forge-wide invariants (apply to every service):**
-- Single-server deployment on `mikhailov.tech`.
-- Containers-only execution (`phase-g-implementation-governance/policies/containers.md`).
-- Persistence-aware GPU power management
-  (`/etc/systemd/system/nvidia-power-limit.service` — 400 W cap with
-  `-pm 1`).
-
-#### Service tenancy — forge-wide vs lab-local
-
-Some services are provided centrally and consumed by every lab; some
-live inside one lab. The split helps decide where a change lands.
-
-| Service                                  | Provided by                                | Consumed by                                                |
-|------------------------------------------|--------------------------------------------|------------------------------------------------------------|
-| Container runtime + GPU isolation        | host (Docker + nvidia-container-toolkit)   | every lab                                                  |
-| Persistence-aware GPU power mgmt         | host (`nvidia-power-limit.service`)        | every GPU-using lab                                        |
-| Reverse proxy + TLS termination          | per-lab caddy (mutex on host :80/:443)     | the lab's own public services                              |
-| Source-of-truth + per-experiment branch storage | GitHub remotes                       | every lab                                                  |
-| LLM inference                            | `wiki-compiler` (vLLM)            | `wiki-bench`, future RL trainers                  |
-| Audio → text transcription               | `wiki-ingest` (faster-whisper)    | `kurpatov-wiki-wiki` source-of-truth                       |
-| Agent orchestration & sub-agent delegation | `wiki-bench` (OpenHands SDK)    | bench's per-source pipelines                               |
-| Vector retrieval (claim/concept dedup)   | `wiki-bench` (`embed_helpers.py`) | bench's source-author + (planned) curator                  |
-| ML training tracking                     | `rl-2048/mlflow/` (MLflow)                 | rl-2048 only                                               |
-| Notebook sandbox                         | `rl-2048/jupyter/`                         | rl-2048 only                                               |
-| LoRA / RFT fine-tuning                   | `rl-2048` (unsloth, planned)               | rl-2048 only (currently)                                   |
-
-**Rule:** if a component is in column 2 of more than one row, it is
-forge-wide (caddy is the obvious case — every lab runs its own, but
-they share the same host-port-mutex constraint, so caddy itself is a
-forge-wide concern even though instances are lab-local).
-
-Specific version pins live in `Dockerfile`s and `.env`. Specific
-*decisions* about why those versions/components were picked live in
-lab ADRs.
-
-### Phase E — Opportunities and Solutions
-
-Per-lab gap analyses live in their lab’s `STATE-OF-THE-LAB.md`
-(capability trajectories Level 1 → Level 2). The combined gap set
-across forge is the union of those.
-
-- `phase-c-information-systems-architecture/application-architecture/wiki-bench/docs/STATE-OF-THE-LAB.md` — current
-  capability trajectories for the wiki bench.
-- `phase-c-information-systems-architecture/application-architecture/rl-2048/docs/STATE-OF-THE-LAB.md` — TBD (when rl-2048
-  grows beyond the Jupyter sandbox).
-
-### Phase F — Migration Planning
-
-Active experiment specs at `labs/<lab>/docs/experiments/<id>.md` are
-the sequenced work packages that close those gaps. Only Active and
-Closed-but-still-cited experiments are kept in the working tree;
-superseded ones go to git history per Phase H.
-
-
-Per lab, the active trajectory toward Level 2 (TOGAF would call this
-the Transition Architecture). Updated when an experiment opens or
-closes:
-
-- `phase-c-information-systems-architecture/application-architecture/wiki-bench/docs/STATE-OF-THE-LAB.md` — current
-  capability trajectories for the wiki bench.
-- `phase-c-information-systems-architecture/application-architecture/rl-2048/docs/STATE-OF-THE-LAB.md` — TBD (when rl-2048 grows
-  beyond the Jupyter sandbox).
-
-Concrete experiment specs sit at `labs/<lab>/docs/experiments/<id>.md`
-(only Active and Closed-but-still-cited experiments — superseded ones
-go to git history per Phase H).
-
-### Phase G — Implementation Governance
-
-- **Architect of record**: one person (the repo owner). All trajectory
-  changes pass through them.
-- **All work runs in containers** (`phase-g-implementation-governance/policies/containers.md`).
-- **AGENTS.md per lab** carries operational rules for that lab; the
-  forge-level CLAUDE.md (this file) carries cross-cutting rules.
-- **No PR review automation** beyond the AGENTS.md convention.
-
-#### Per-lab AGENTS.md must follow the canonical template
-
-The TOGAF ADM phase structure is meant to *permeate*, not just live at
-the top. Every lab’s `labs/<lab>/AGENTS.md` must use the canonical
-phase headers (Phase A through Phase H, classic TOGAF names — see
-`phase-g-implementation-governance/lab-AGENTS-template.md`), scoped to that lab. The template is
-the source of truth for section ordering and wording; copy from it
-when adding or editing a lab AGENTS.md.
-
-Symlink convention: each lab keeps `AGENTS.md` as the regular file and
-`CLAUDE.md` as a symlink → `AGENTS.md`. Forge root inverts the direction
-(`AGENTS.md` → `CLAUDE.md`) for historical reasons — leave that
-as is.
-
-Labs that don’t yet have AGENTS.md must add one when their next
-substantive change lands. Until then, the forge-level CLAUDE.md is the
-authoritative reference for those labs.
-
-### Phase H — Architecture Change Management
-
-Architecture is organised around capabilities, each with two states:
-
-- **Level 1** = as-is (how the capability works today)
-- **Level 2** = to-be (the next planned state)
-
-When Level 2 is reached it **becomes** the new Level 1; the prior
-Level 1 description is **deleted from docs**. Git history keeps every
-prior level — that is the archive. We do not maintain `legacy/` tiers,
-`Superseded by NNNN` cross-links, `archive/` directories, or
-`Withdrawn`/`Deprecated`/`Closed` status flags. Presence of text in
-the working tree means current; absence means git history.
-
-**Brainstorm experiments** is itself a capability:
-
-> Triggered by metric gaps. Single architect drives. Pruning baggage
-> and proposing experiments are the same activity, both targeting
-> time-to-market and token efficiency. Output: a new
-> `docs/experiments/<id>.md` (Level 2 proposal) + deletions in any
-> docs that contain stale historical content.
-
-**Baggage** = anything that does not contribute to a current
-capability's Level 1 or Level 2. Test: ask "if I delete this, does
-any current architecture conversation lose information?" If no,
-delete it.
+not produce Architecture Vision Statements or Architecture
+Definition Documents as formal deliverables.
+
+### [Phase A — Architecture Vision](phase-a-architecture-vision/)
+
+Who cares about Forge, why, what target state. Vision: AI tools
+that save human time on cognitive work. Goals: TTS / PTS / EB /
+Architect-velocity. Single-architect-of-record + capability-
+trajectories + containers-only + single-server are the principles
+every other phase obeys. Drill in:
+[`vision.md`](phase-a-architecture-vision/vision.md),
+[`stakeholders.md`](phase-a-architecture-vision/stakeholders.md),
+[`drivers.md`](phase-a-architecture-vision/drivers.md),
+[`goals.md`](phase-a-architecture-vision/goals.md),
+[`principles.md`](phase-a-architecture-vision/principles.md).
+
+### [Phase B — Business Architecture](phase-b-business-architecture/)
+
+What forge can do (capabilities), who does it (org units), what
+those capabilities ship (products). Four forge-level capabilities:
+R&D, Service operation, Product delivery, Architecture knowledge
+management. One org unit today (the architect). Three products:
+Kurpatov Wiki (active, canonical), Tarasov Wiki (pre-pilot),
+rl-2048 (pre-methodology). Drill in:
+[`capabilities/`](phase-b-business-architecture/capabilities/),
+[`products/`](phase-b-business-architecture/products/),
+[`org-units.md`](phase-b-business-architecture/org-units.md).
+
+### [Phase C — Information Systems Architecture](phase-c-information-systems-architecture/)
+
+Application Architecture (four lab components: wiki-compiler,
+wiki-bench, wiki-ingest, rl-2048; the wiki-* are content-agnostic)
++ Data Architecture (raw.json + skill-v2 wiki shape + retrieval
+index). Each lab has its own AGENTS.md / SPEC.md / Dockerfile /
+docs/adr. Drill in:
+[`application-architecture/components.md`](phase-c-information-systems-architecture/application-architecture/components.md),
+[`data-architecture/data-sets.md`](phase-c-information-systems-architecture/data-architecture/data-sets.md).
+
+### [Phase D — Technology Architecture](phase-d-technology-architecture/)
+
+How Phase B capabilities are realised — six technology services
+(LLM inference, agent orchestration, vector retrieval, container
+runtime, transcription, source-of-truth) each provided by some
+component (vLLM 0.19.1, OpenHands SDK 1.17.0, embed_helpers + e5,
+Docker, faster-whisper, GitHub). Trajectories attach to service
+quality dimensions, not to components. Drill in:
+[`services/`](phase-d-technology-architecture/services/),
+[`invariants.md`](phase-d-technology-architecture/invariants.md),
+[`service-tenancy.md`](phase-d-technology-architecture/service-tenancy.md),
+[`architecture.md`](phase-d-technology-architecture/architecture.md).
+
+### [Phase E — Opportunities and Solutions](phase-e-opportunities-and-solutions/)
+
+Per-lab gap analyses (Level 1 → Level 2). Combined gap set across
+forge is the union of each lab's `STATE-OF-THE-LAB.md`. Active
+state-of-the-lab today: wiki-bench. Drill in:
+[`README.md`](phase-e-opportunities-and-solutions/README.md).
+
+### [Phase F — Migration Planning](phase-f-migration-planning/)
+
+The sequenced work that closes Phase E gaps — one experiment doc
+per swing. Active / closed: G1 (Blackwell stability — closed by 400
+W cap + persistence), G2 (MoE swap — falsified, decode is not the
+binding lever), G3 (Gemma-4-31B dense — in flight). Drill in:
+[`experiments/`](phase-f-migration-planning/experiments/).
+
+### [Phase G — Implementation Governance](phase-g-implementation-governance/)
+
+Roles + repo-wide rules + the per-lab AGENTS.md template every
+component follows. One architect of record; containers-only;
+AGENTS.md is canonical at every location; symlink convention. Drill
+in: [`governance.md`](phase-g-implementation-governance/governance.md),
+[`policies/`](phase-g-implementation-governance/policies/),
+[`lab-AGENTS-template.md`](phase-g-implementation-governance/lab-AGENTS-template.md).
+
+### [Phase H — Architecture Change Management](phase-h-architecture-change-management/)
+
+How forge evolves: trajectory model (Level 1 / Level 2; delete on
+promotion — git is the archive); the "brainstorm experiments"
+meta-capability; periodic working-tree audits. Drill in:
+[`trajectory-model.md`](phase-h-architecture-change-management/trajectory-model.md),
+[`brainstorm-experiments.md`](phase-h-architecture-change-management/brainstorm-experiments.md),
+[`audit-2026-04-25.md`](phase-h-architecture-change-management/audit-2026-04-25.md).
 
 Reference: <https://www.opengroup.org/togaf>. Style only.

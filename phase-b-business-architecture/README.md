@@ -1,10 +1,34 @@
-# Business Architecture (Phase B)
+# Phase B — Business Architecture
 
-This folder is the supplementary depth for **Phase B — Business Architecture**. The canonical synthesis lives in [`forge/AGENTS.md`](../AGENTS.md) under the matching section heading. Detailed material — per-capability descriptions, service specs, ADRs scoped to this phase — lives here.
+The capability layer: what forge can do, who does it, what products
+those capabilities ship.
 
-## Layout
+## Capabilities (what forge can do)
 
-- `adr/` — Architecture Decision Records scoped to this phase.
-- `capabilities/` — one file per business capability.
-- `products/` — one file per product (R&D output).
+- [`capabilities/forge-level.md`](capabilities/forge-level.md) —
+  the four forge-level capabilities (R&D; Service operation;
+  Product delivery; Architecture knowledge management) and the
+  quality dimension each is judged on.
+- [`capabilities/wiki-product-line.md`](capabilities/wiki-product-line.md)
+  — the capability stack shared by every wiki product (Kurpatov,
+  Tarasov, future authors).
+- [`capabilities/rl-2048.md`](capabilities/rl-2048.md) — rl-2048
+  capability stub.
+- [`capabilities/service-operation.md`](capabilities/service-operation.md)
+  — the active capability with its quality-dimension trajectory
+  (throughput / stability / cost-per-token; G1 / G2 history).
 
+## Organization units (who does it)
+
+- [`org-units.md`](org-units.md) — today: one architect of record.
+  Labs are not org units (they are application components in
+  Phase C).
+
+## Products (what those capabilities ship)
+
+- [`products/`](products/) — one file per product. Index in
+  [`products/README.md`](products/README.md).
+
+## ADRs
+
+- [`adr/`](adr/) — Phase B scoped ADRs.

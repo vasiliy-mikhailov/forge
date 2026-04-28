@@ -497,7 +497,14 @@ def list_sources():
     if isinstance(data, dict) and "error" in data:
         raise RuntimeError(f"list_sources.py: {data['error']}")
     in_module = [s for s in data if MODULE in s.get("slug", "")]
-    return [s for s in in_module if 0 <= s.get("index", -1) <= 6]
+    sources = [s for s in in_module if 0 <= s.get("index", -1) <= 6]
+    # Optional source-count cap for small-N pilots (e.g. G3 quality probe).
+    limit_str = os.environ.get('D8_PILOT_SOURCES_LIMIT')
+    if limit_str:
+        n = int(limit_str)
+        sources = sources[:n]
+        print(f'[list_sources] D8_PILOT_SOURCES_LIMIT={n} → returning {len(sources)} of 7 sources', flush=True)
+    return sources
 
 
 def build_inputs(sources):

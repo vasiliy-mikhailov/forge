@@ -1,8 +1,18 @@
-# Architecture Change Management (Phase H)
+# Phase H — Architecture Change Management
 
-This folder is the supplementary depth for **Phase H — Architecture Change Management**. The canonical synthesis lives in [`forge/AGENTS.md`](../AGENTS.md) under the matching section heading. Detailed material — per-capability descriptions, service specs, ADRs scoped to this phase — lives here.
+How forge evolves: trajectory model (Level 1 / Level 2), the
+"brainstorm experiments" meta-capability, periodic audits of the
+working tree.
 
 ## Layout
 
-- `adr/` — Architecture Decision Records scoped to this phase.
-
+- [`trajectory-model.md`](trajectory-model.md) — the Level 1 /
+  Level 2 model. Why we delete on promotion; anti-patterns
+  rejected (`legacy/`, `archive/`, `Withdrawn` / `Deprecated`
+  flags).
+- [`brainstorm-experiments.md`](brainstorm-experiments.md) — the
+  meta-capability that generates Level-2 proposals. Definition of
+  "baggage" + the deletion test.
+- [`audit-2026-04-25.md`](audit-2026-04-25.md) — the most recent
+  working-tree audit. Future audits land alongside it.
+- [`adr/`](adr/) — Phase H scoped ADRs.

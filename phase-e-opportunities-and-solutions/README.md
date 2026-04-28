@@ -1,8 +1,22 @@
-# Opportunities and Solutions (Phase E)
+# Phase E — Opportunities and Solutions
 
-This folder is the supplementary depth for **Phase E — Opportunities and Solutions**. The canonical synthesis lives in [`forge/AGENTS.md`](../AGENTS.md) under the matching section heading. Detailed material — per-capability descriptions, service specs, ADRs scoped to this phase — lives here.
+Per-lab gap analyses (capability trajectories Level 1 → Level 2)
+live in each lab's `STATE-OF-THE-LAB.md`. The combined gap set
+across forge is the union of those.
 
-## Layout
+## Active state-of-the-lab files
 
-- `adr/` — Architecture Decision Records scoped to this phase.
+- [`../phase-c-information-systems-architecture/application-architecture/wiki-bench/docs/STATE-OF-THE-LAB.md`](../phase-c-information-systems-architecture/application-architecture/wiki-bench/docs/STATE-OF-THE-LAB.md)
+  — current capability trajectories for the wiki bench.
+- `../phase-c-information-systems-architecture/application-architecture/rl-2048/docs/STATE-OF-THE-LAB.md`
+  — TBD (when rl-2048 grows beyond the Jupyter sandbox).
 
+## ADRs
+
+- [`adr/`](adr/) — Phase E scoped ADRs (cross-lab gap analyses).
+
+## Forward to Phase F
+
+The transition from gap → sequenced work happens in
+[`../phase-f-migration-planning/`](../phase-f-migration-planning/).
+Each opportunity gets one experiment doc per closure.

@@ -1,9 +1,16 @@
-# Implementation Governance (Phase G)
+# Phase G — Implementation Governance
 
-This folder is the supplementary depth for **Phase G — Implementation Governance**. The canonical synthesis lives in [`forge/AGENTS.md`](../AGENTS.md) under the matching section heading. Detailed material — per-capability descriptions, service specs, ADRs scoped to this phase — lives here.
+How forge governs itself: roles, repo-wide rules, the per-lab
+AGENTS.md template every component follows.
 
 ## Layout
 
-- `adr/` — Architecture Decision Records scoped to this phase.
-- `policies/` — operational policies.
-
+- [`governance.md`](governance.md) — roles, forge-wide rules,
+  per-lab AGENTS.md requirement, symlink convention.
+- [`policies/`](policies/) — forge-wide policies. Today:
+  [`containers.md`](policies/containers.md) — the containers-only
+  execution rule.
+- [`operations.md`](operations.md) — runbook material.
+- [`lab-AGENTS-template.md`](lab-AGENTS-template.md) — the
+  canonical Phase A-H template every lab AGENTS.md must follow.
+- [`adr/`](adr/) — Phase G scoped ADRs.
