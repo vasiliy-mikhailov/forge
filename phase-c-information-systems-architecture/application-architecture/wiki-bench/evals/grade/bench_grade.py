@@ -412,6 +412,9 @@ def grade_single_source_json(repo: Path, source_n: int, module_subdir: str = "")
     module_subdir scopes the rglob to a single module path so that
     multi-module pilots don't match same-numbered files across modules.
     """
+    sources_root = repo / "data" / "sources"
+    if module_subdir:
+        sources_root = sources_root / module_subdir
     if not sources_root.exists():
         out = {"verified": "fail", "violations": [f"no sources root at {sources_root}"]}
         print(json.dumps(out, ensure_ascii=False))
