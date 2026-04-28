@@ -180,7 +180,15 @@ Step 0. `pwd` to know the workspace absolute path. file_editor
 Step 1. Check file-system existence with the slug you were given.
    The source-author has already canonicalised the slug via
    `embed_helpers.py find-concepts` before calling you, so the
-   slug here is the canonical name to use directly:
+   slug here is the canonical name to use directly.
+
+   ⚠️ **HARD path rule.** Concept files live at
+   `wiki/data/concepts/<slug>.md`, NEVER at `wiki/concepts/<slug>.md`.
+   Always use `data/concepts/` in every `ls`, `cat`, and
+   `file_editor` call. The cross-link `../../../concepts/<slug>.md`
+   inside a source.md is RELATIVE to the source's location and
+   resolves correctly — but it is NOT a path you can pass to
+   `file_editor` directly:
 
         `ls wiki/data/concepts/<concept_slug>.md 2>/dev/null && \\
          echo EXISTS || echo NEW`
@@ -243,6 +251,17 @@ Course: `{COURSE}`
 Module: `{MODULE}`
 
 Cyrillic paths: course / module are LITERAL — do NOT romanize.
+
+## File location rule (HARD)
+
+All wiki content lives under `wiki/data/`. Specifically:
+
+- Source articles: `wiki/data/sources/<Course>/<Module>/<stem>.md`
+- Concept articles: `wiki/data/concepts/<slug>.md`
+- Concept index:    `wiki/data/concept-index.json`
+- Embedding index:  `wiki/data/embeddings/`
+
+NEVER create files at `wiki/concepts/<slug>.md` or `wiki/sources/...` (no `data/` prefix). Those paths do not exist. The cross-link `[label](../../../concepts/<slug>.md)` you write inside a source.md resolves correctly to `wiki/data/concepts/<slug>.md` because the source.md lives at `wiki/data/sources/<Course>/<Module>/<stem>.md` (three `../` from there land at `wiki/data/`, then `concepts/` → `wiki/data/concepts/`). Do NOT use the cross-link path as a literal file-create path — when creating concept files, always use the absolute form `wiki/data/concepts/<slug>.md`.
 
 ## Workflow
 
@@ -406,6 +425,9 @@ CRITICAL: concepts_introduced ⊂ concepts_touched (strict subset).
 Body — EXACTLY 5 `## ` sections in order. Use `# <Russian title>` for H1.
 
   `## TL;DR` — one paragraph
+
+  ⚠️ **Tone of voice (TL;DR + Лекция sections only).** Try to keep the lecturer's original tone and phrasing wherever it adds signal: Курпатов's emotional emphases, sceptical asides, characteristic metaphors and dramatic punctuation are part of the content, not noise. Do NOT sanitize them into neutral encyclopedic prose. Faithfulness to the speaker's voice is part of the time-saving goal — a reader who skipped the audio should still recognise the speaker. The Claims and concept-link sections, by contrast, stay neutral and structural.
+
   `## Лекция (пересказ: только NEW и проверенное)` — 3-5 paragraphs
     with inline `[<concept-slug>](../../../concepts/<slug>.md)` links
   `## Claims — provenance and fact-check` — numbered list. EVERY entry:
