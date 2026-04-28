@@ -175,6 +175,22 @@ in:
 [`architecture-method.md`](phase-preliminary/architecture-method.md),
 [`architecture-repository.md`](phase-preliminary/architecture-repository.md).
 
+### [Requirements Management](phase-requirements-management/) — continuous, center of the ADM
+
+In the TOGAF ADM diagram this sits at the **center** of the
+circle, not as a phase you do once. It runs across every phase:
+Strategy & Motivation phases (Preliminary, A, B, H) emit
+requirements; Implementation & Migration phases (E, F, G) absorb
+them; the Core Layers (B, C, D) are where they take physical
+shape. Forge realises Requirements Management as the union of
+open quality-dimension trajectories (Level 1 / Level 2) across
+Phase B (capabilities) and Phase D (technology services), plus
+the Phase A goals not yet decomposed. Phase F experiments are the
+closure attempts. Drill in:
+[`catalog.md`](phase-requirements-management/catalog.md),
+[`process.md`](phase-requirements-management/process.md),
+[`traceability.md`](phase-requirements-management/traceability.md).
+
 ### [Phase A — Architecture Vision](phase-a-architecture-vision/)
 
 Who cares about Forge, why, what target state. Vision: AI tools
