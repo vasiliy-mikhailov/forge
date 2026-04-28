@@ -552,13 +552,17 @@ def build_inputs(sources):
     inputs = []
     for s in sources:
         n = s["index"]
+        original_n = s.get("original_index", n)
         abs_raw = s["raw_json_path"]
         prefix = str(WORKDIR) + "/"
         if not abs_raw.startswith(prefix):
             raise RuntimeError(f"unexpected raw_json_path: {abs_raw}")
         raw_path = abs_raw[len(prefix):]
         target_path = f"wiki/data/sources/{s['slug']}.md"
-        inputs.append((n, raw_path, target_path, s["slug"]))
+        # Module subdir derived from slug = Course/Module/<stem>.
+        slug_parts = s["slug"].split("/")
+        module_subdir = "/".join(slug_parts[:2]) if len(slug_parts) >= 2 else ""
+        inputs.append((n, original_n, module_subdir, raw_path, target_path, s["slug"]))
     return inputs
 
 
@@ -579,12 +583,13 @@ def setup_agents():
         register_agent(ad.name, agent_definition_to_factory(ad), ad)
 
 
-def verify_source(n):
-    r = subprocess.run(
-        ["python3", BENCH_GRADE, str(WORKDIR / "wiki"),
-         "--single-source", str(n), "--single-source-json"],
-        capture_output=True, text=True
-    )
+def verify_source(n, original_n=None, module_subdir=""):
+    src_n_for_grade = original_n if original_n is not None else n
+    cmd = ["python3", BENCH_GRADE, str(WORKDIR / "wiki"),
+           "--single-source", str(src_n_for_grade), "--single-source-json"]
+    if module_subdir:
+        cmd += ["--module-subdir", module_subdir]
+    r = subprocess.run(cmd, capture_output=True, text=True)
     try: return json.loads(r.stdout)
     except Exception: return {"verified": "fail", "violations": [f"non-JSON: {r.stdout[:200]}"]}
 
@@ -734,6 +739,12 @@ def main():
         print("FATAL: no sources found", file=sys.stderr); sys.exit(2)
 
     inputs = build_inputs(sources)
+
+    resume_from = int(os.environ.get('D8_PILOT_RESUME_FROM', '0'))
+    if resume_from > 0:
+        original_count = len(inputs)
+        inputs = [t for t in inputs if t[0] >= resume_from]
+        print(f'[main] D8_PILOT_RESUME_FROM={resume_from} \u2192 {len(inputs)}/{original_count} sources to process', file=sys.stderr)
     setup_agents()
 
     llm = LLM(
@@ -755,7 +766,7 @@ def main():
         else "/home/vmihaylov/forge/labs/wiki-bench/orchestrator/embed_helpers.py"
     )
 
-    for (n, raw_path, target_path, slug) in inputs:
+    for (n, original_n, module_subdir, raw_path, target_path, slug) in inputs:
         print(f"\n{'=' * 70}", file=sys.stderr)
         print(f"=== SRC {n}: {slug}", file=sys.stderr)
         print(f"{'=' * 70}", file=sys.stderr)
@@ -814,7 +825,7 @@ def main():
             break
 
         # Functional verify
-        v = verify_source(n)
+        v = verify_source(n, original_n=original_n, module_subdir=module_subdir)
         if v.get("verified") == "ok":
             try:
                 commit = commit_and_push_per_source(n, slug, branch)
