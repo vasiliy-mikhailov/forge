@@ -3,23 +3,53 @@
 How forge's architecture artefacts are organized on disk, and the
 conventions that keep them findable.
 
+This file does double duty:
+
+- It captures the **forge-specific layout** (Phase A-H folder
+  convention, AGENTS.md / CLAUDE.md symlink, lab template, where
+  ADRs live, on-disk vs git-tree split).
+- It maps that layout to **canonical TOGAF Architecture
+  Repository components** so a reader who knows TOGAF can find
+  the corresponding artefacts in forge.
+
 ## Top-level: TOGAF Phase folders
 
-The forge repo's top level is structured by TOGAF ADM phase:
+The forge repo's top level is structured by TOGAF ADM phase plus
+two cross-cutting folders:
 
-- [`../phase-preliminary/`](../) (this folder) — meta-capability.
-- [`../phase-a-architecture-vision/`](../phase-a-architecture-vision/)
-- [`../phase-b-business-architecture/`](../phase-b-business-architecture/)
-- [`../phase-c-information-systems-architecture/`](../phase-c-information-systems-architecture/)
-- [`../phase-d-technology-architecture/`](../phase-d-technology-architecture/)
-- [`../phase-e-opportunities-and-solutions/`](../phase-e-opportunities-and-solutions/)
-- [`../phase-f-migration-planning/`](../phase-f-migration-planning/)
-- [`../phase-g-implementation-governance/`](../phase-g-implementation-governance/)
-- [`../phase-h-architecture-change-management/`](../phase-h-architecture-change-management/)
+- [`../`](../) — Phase Preliminary (this folder).
+- [`../../phase-requirements-management/`](../../phase-requirements-management/)
+  — continuous Requirements Management (center of the ADM).
+- [`../../phase-a-architecture-vision/`](../../phase-a-architecture-vision/)
+  through
+  [`../../phase-h-architecture-change-management/`](../../phase-h-architecture-change-management/)
+  — the eight ADM phases.
 
 Each phase folder carries its own README + topical files (one file
 per TOGAF entity — capability, service, principle, etc.) plus an
 optional `adr/` subfolder for that phase's ADRs.
+
+## Mapping to canonical TOGAF Architecture Repository
+
+TOGAF's Architecture Repository has **six components**. Each
+maps to a location in forge:
+
+| TOGAF component               | Where it lives in forge                                                                                                            |
+|-------------------------------|-------------------------------------------------------------------------------------------------------------------------------------|
+| **Architecture Metamodel**    | This folder (`phase-preliminary/`) — the framework tailoring + repository conventions + method are the metamodel.                  |
+| **Architecture Capability**   | [`architecture-team.md`](architecture-team.md) — who does architecture work (one architect of record).                            |
+| **Architecture Landscape**    | The per-phase folders themselves describe the as-is landscape: Phase B capabilities, Phase C application components (labs), Phase D services with current Level 1. Per-lab `STATE-OF-THE-LAB.md` is the per-component view. |
+| **Standards Information Base** (SIB) | Dockerfile pins (per lab), `forge/.env.example`, `phase-c-…/wiki-compiler/configs/models.yml` (vLLM model registry), `forge/common.mk`. No single file today; cross-link as needed. |
+| **Reference Library**         | [`../phase-g-implementation-governance/lab-AGENTS-template.md`](../phase-g-implementation-governance/lab-AGENTS-template.md), `forge/common.mk`, `phase-c-…/wiki-bench/.agents/skills/openhands-sdk-orchestration.md`. The reusable patterns labs copy from. |
+| **Governance Log**            | The per-phase `adr/` folders, taken together, are the governance log. We do not consolidate them into a single file — per-phase scope is more useful at this size. |
+
+Forge does not adopt the rest of TOGAF's repository ceremony
+(Foundation Architectures, Continuum hierarchy with Industry /
+Common Systems / Organization-Specific tiers, formal SIB
+classification scheme). These are headcount-scaling concerns that
+do not earn their keep at single-architect scale — see
+[`framework-tailoring.md`](framework-tailoring.md) for the full
+list of skipped TOGAF concepts.
 
 ## Application Architecture: labs
 
@@ -94,11 +124,13 @@ containers, while moving git paths only requires a doc update.
 
 ## Cross-references
 
-- [`framework-tailoring.md`](framework-tailoring.md) — what we
-  adopt, what we skip.
-- [`architecture-team.md`](architecture-team.md) — who edits this
-  repository.
+- [`framework-tailoring.md`](framework-tailoring.md) — what
+  TOGAF concepts forge adopts, what it skips (the full list,
+  including the headcount-scaling ones).
+- [`architecture-team.md`](architecture-team.md) — who edits
+  this repository (the Architecture Capability).
 - [`../phase-g-implementation-governance/governance.md`](../phase-g-implementation-governance/governance.md)
   — operational rules that live at Phase G (do/don't lists).
 - [`../phase-g-implementation-governance/lab-AGENTS-template.md`](../phase-g-implementation-governance/lab-AGENTS-template.md)
-  — the canonical per-lab Phase A-H template.
+  — the canonical per-lab Phase A-H template (Reference Library
+  artefact).

@@ -157,6 +157,18 @@ Definition Documents as formal deliverables. The full tailoring
 decision lives in
 [`phase-preliminary/framework-tailoring.md`](phase-preliminary/framework-tailoring.md).
 
+**TOGAF reference for agents:** before suggesting a new TOGAF
+ceremony (Architecture Contract, IRB / ARB, Capability Maturity
+Model, Foundation Architecture inheritance, Stakeholder Map,
+TRM / III-RM, etc.), read the short TOGAF guide at
+<https://guides.visual-paradigm.com/the-all-in-one-togaf-guide/>
+and check it against
+[`phase-preliminary/framework-tailoring.md`](phase-preliminary/framework-tailoring.md).
+forge has deliberately skipped the headcount-scaling parts of
+TOGAF; the tailoring file lists what is in scope and what is
+out. Adding ceremony that the tailoring already rejects is a
+review-rejected change.
+
 ### [Phase 0 — Preliminary](phase-preliminary/)
 
 The architecture *capability itself* — how forge does architecture
@@ -242,8 +254,10 @@ quality dimensions, not to components. Drill in:
 ### [Phase E — Opportunities and Solutions](phase-e-opportunities-and-solutions/)
 
 Per-lab gap analyses (Level 1 → Level 2). Combined gap set across
-forge is the union of each lab's `STATE-OF-THE-LAB.md`. Active
-state-of-the-lab today: wiki-bench. Drill in:
+forge is the union of each lab's `STATE-OF-THE-LAB.md` plus a
+cross-lab prioritised roadmap. Drill in:
+[`roadmap.md`](phase-e-opportunities-and-solutions/roadmap.md)
+(prioritised cross-lab backlog),
 [`README.md`](phase-e-opportunities-and-solutions/README.md).
 
 ### [Phase F — Migration Planning](phase-f-migration-planning/)
@@ -251,7 +265,11 @@ state-of-the-lab today: wiki-bench. Drill in:
 The sequenced work that closes Phase E gaps — one experiment doc
 per swing. Active / closed: G1 (Blackwell stability — closed by 400
 W cap + persistence), G2 (MoE swap — falsified, decode is not the
-binding lever), G3 (Gemma-4-31B dense — in flight). Drill in:
+binding lever), G3 (Gemma-4-31B dense — falsified at contract-
+enforcement gate). Next three planned: H1-contract-prewrite,
+H2-xref-linter, J1-daemonize-embed. Drill in:
+[`migration-plan.md`](phase-f-migration-planning/migration-plan.md)
+(sequenced execution),
 [`experiments/`](phase-f-migration-planning/experiments/).
 
 ### [Phase G — Implementation Governance](phase-g-implementation-governance/)
