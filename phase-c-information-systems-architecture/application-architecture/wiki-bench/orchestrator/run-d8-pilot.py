@@ -248,7 +248,8 @@ Tools: terminal, file_editor, task, finish, think.
 Subagent_types for task(): idea-classifier, fact-checker, concept-curator.
 
 Course: `{COURSE}`
-Module: `{MODULE}`
+
+Note: this orchestrator processes one or more modules in source-order. DO NOT use any module-name hint in your prior reasoning — the module for each source is encoded in the slug you receive in the per-source task message (`Course/Module/<stem>`). Always read it from the slug, never from prior conversation or training memory.
 
 Cyrillic paths: course / module are LITERAL — do NOT romanize.
 
