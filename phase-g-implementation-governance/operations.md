@@ -3,6 +3,48 @@
 Collection of practical procedures: how to fix, how to back up, how to
 migrate.
 
+## Quick start
+
+For an architect who already has the host set up. First-time setup is
+in "GPU host setup" below.
+
+Fill `.env` from the template:
+
+```bash
+cp .env.example .env
+# Fill in ACME_EMAIL, BASIC_AUTH_HASH (see comment in .env.example),
+# domains, and GPU UUIDs (nvidia-smi -L).
+```
+
+Create on-disk layout (creates `` and subdirs):
+
+```bash
+make setup
+```
+
+Bring up one lab. Labs are mutex on host :80/:443; only one at a
+time, except `wiki-bench` may co-run with `wiki-compiler` (bench
+is a client without a caddy):
+
+```bash
+make wiki-compiler   # vLLM endpoint
+make wiki-ingest     # whisper + ingest
+make rl-2048         # GRPO sandbox
+```
+
+Diagnostics:
+
+```bash
+make ps    # containers
+make gpu   # GPU load
+make du    # on-disk sizes under STORAGE_ROOT
+```
+
+## Useful commands for the agent
+
+- Service logs: `make <lab>-logs` (tail -f of `docker logs <container>`).
+- Enter a container: `docker exec -it <container> bash`.
+
 ## GPU host setup (read first — this is part of disaster recovery!)
 
 On a fresh machine with two NVIDIA Blackwell cards (RTX PRO 6000 Workstation
