@@ -73,7 +73,7 @@ inside a lab. A lab is a room; an experiment is a run.
 - **ADR for irreversible decisions.** If on-disk data format
   changes, the framework choice changes, or the network topology
   changes — add `phase-<x>/adr/NNNN-*.md` (or
-  `phase-c-…/application-architecture/<lab>/docs/adr/NNNN-*.md` (or the flatter `<lab>/adr/NNNN-*.md`)
+  `phase-c-…/application-architecture/<lab>/{docs/adr,adr}/NNNN-*.md`
   for lab-scoped) where NNNN is the next free number.
 - **SPEC.md is source of truth.** If code diverges from SPEC, don't
   silently change code — either update SPEC or reconcile code to
@@ -157,17 +157,12 @@ Definition Documents as formal deliverables. The full tailoring
 decision lives in
 [`phase-preliminary/framework-tailoring.md`](phase-preliminary/framework-tailoring.md).
 
-**TOGAF reference for agents:** before suggesting a new TOGAF
-ceremony (Architecture Contract, IRB / ARB, Capability Maturity
-Model, Foundation Architecture inheritance, Stakeholder Map,
-TRM / III-RM, etc.), read the short TOGAF guide at
-<https://guides.visual-paradigm.com/the-all-in-one-togaf-guide/>
-and check it against
-[`phase-preliminary/framework-tailoring.md`](phase-preliminary/framework-tailoring.md).
-forge has deliberately skipped the headcount-scaling parts of
-TOGAF; the tailoring file lists what is in scope and what is
-out. Adding ceremony that the tailoring already rejects is a
-review-rejected change.
+**TOGAF reference for agents:** before introducing any TOGAF
+ceremony not already declared in scope by
+[`phase-preliminary/framework-tailoring.md`](phase-preliminary/framework-tailoring.md),
+verify it isn't explicitly skipped there. The short reference
+guide we work against is
+<https://guides.visual-paradigm.com/the-all-in-one-togaf-guide/>.
 
 ### [Phase 0 — Preliminary](phase-preliminary/)
 

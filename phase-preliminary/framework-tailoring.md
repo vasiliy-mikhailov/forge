@@ -23,7 +23,7 @@ does not.
 - **Per-phase ADRs.** Architectural decisions live in the phase
   whose layer the decision changes. Forge-level ADRs in
   `forge/phase-<x>/adr/`; lab-scoped ADRs in
-  `<lab>/docs/adr/` (legacy) or `<lab>/adr/` (newer). Every
+  `<lab>/docs/adr/` or `<lab>/adr/`. Every
   per-lab AGENTS.md cites its ADRs by phase.
 
 ## Deliberately skipped

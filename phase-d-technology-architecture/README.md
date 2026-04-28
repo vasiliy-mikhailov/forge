@@ -24,7 +24,4 @@ One file per service in [`services/`](services/):
   forge-wide vs lab-local; where a change lands.
 - [`architecture.md`](architecture.md) — physical topology
   (network, ports, storage layout).
-- [`components/`](components/) — physical components and their
-  on-host realisation (when a service is provided by more than one
-  artifact).
 - [`adr/`](adr/) — Phase D scoped ADRs.

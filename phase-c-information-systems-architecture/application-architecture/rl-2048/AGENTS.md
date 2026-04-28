@@ -75,9 +75,8 @@ quality-dimension slates:
 
 **Service: ML training tracking** (consumer: rl-2048 only).
 
-- Component: MLflow (in `phase-c-information-systems-architecture/application-architecture/rl-2048/mlflow/` — the mlflow service
-  used to live at forge top-level; it moved here when rl-2048 was
-  identified as the only consumer).
+- Component: MLflow at
+  `phase-c-information-systems-architecture/application-architecture/rl-2048/mlflow/`.
 - Component: caddy 2 at `mlflow.mikhailov.tech`.
 
 **Service: LoRA / RFT fine-tuning** (consumer: rl-2048 only;

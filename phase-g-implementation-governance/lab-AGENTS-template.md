@@ -36,11 +36,9 @@ ADRs are scoped to the phase whose decision they capture. Each phase
 section in a lab AGENTS.md lists the ADRs whose decision belongs to
 that phase, with a relative link.
 
-- Lab-scoped ADRs live in the lab folder. Today they are at
-  `<lab>/docs/adr/NNNN-*.md`; we accept that path because it is the
-  legacy pattern. New ADRs may also land in
-  `<lab>/adr/NNNN-*.md` (no `docs/` indirection); either path is
-  legal as long as the AGENTS.md links to the actual file.
+- Lab-scoped ADRs live in the lab folder under either
+  `<lab>/docs/adr/NNNN-*.md` or `<lab>/adr/NNNN-*.md`. Either path
+  is legal as long as the AGENTS.md links to the actual file.
 - Forge-level ADRs live in `forge/phase-<x>-…/adr/NNNN-*.md`.
   Cross-link from a lab Phase section when the forge-level ADR is
   relevant to that lab.

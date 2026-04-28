@@ -2,9 +2,9 @@
 
 ## Purpose
 A Jupyter environment with a "heavy" ML stack (vLLM + unsloth +
-transformers + bitsandbytes) for experiments with RL and fine-tuning
-LLMs. The historical name is from the original task of tuning a model to
-play 2048; today it's a general sandbox for any GRPO/SFT experiments.
+transformers + bitsandbytes) for RL and fine-tuning experiments.
+Despite the name, the lab is a general sandbox for any GRPO/SFT
+experiments today.
 
 ## Non-goals
 - Not a production service. No serving endpoint, no batch inference

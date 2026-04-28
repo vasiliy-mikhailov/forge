@@ -85,11 +85,12 @@ L1 stability: 50 % UVM-crash rate within 2.5 h sustained inference at
 default vLLM settings. Failure mode is `gdn_linear_attn._forward_core`
 → `cudaErrorLaunchFailure` followed by kernel-side
 `BUG uvm_gpu_chunk_5`. Recovery requires `modprobe -r/+ nvidia` or
-reboot. Cross-reference: `outputs/G1-blackwell-stability.md`.
+reboot. Cross-reference: [`forge/phase-f-migration-planning/experiments/G1-blackwell-stability.md`](../../../../phase-f-migration-planning/experiments/G1-blackwell-stability.md) (closed 2026-04-27).
 
-L2 stability target: ≤ 5 % crash rate over 7-source pilots. G1
-hypotheses tested in pilot v5+ (400 W power cap + persistence,
-optionally `--gpu-memory-utilization 0.85`).
+L2 stability target: ≤ 5 % crash rate over 7-source pilots —
+closed by G1 (400 W power cap + persistence, gpu-memory-utilization
+0.85). The next stability target (24 h continuous over 200-source
+runs) is currently parked.
 
 **ADRs (Phase D scope).**
 - [`docs/adr/0001-vllm-public-openai-compatible-endpoint.md`](docs/adr/0001-vllm-public-openai-compatible-endpoint.md) — vLLM as the public OpenAI-compatible endpoint.
@@ -109,10 +110,11 @@ Closed-but-still-cited experiments are kept; superseded ones go to
 git history per Phase H.
 
 
-- **G1 (in flight):** Blackwell stability under sustained 27B-FP8
-  inference. Test matrix in `outputs/G1-blackwell-stability.md`.
-  Pilot v5 launched 2026-04-27 19:07 MSK as the H1 sole-test.
-- (None other active.)
+- **G1 (closed 2026-04-27):** Blackwell stability fix —
+  400 W power cap + persistence-mode + gpu-memory-utilization 0.85.
+  Service Operation stability dim L1 set at ≥ 169 min sustained.
+  Spec at
+  [`forge/phase-f-migration-planning/experiments/G1-blackwell-stability.md`](../../../../phase-f-migration-planning/experiments/G1-blackwell-stability.md).
 
 ## Phase G — Implementation Governance
 
@@ -128,8 +130,11 @@ git history per Phase H.
   `make kurpatov-wiki-compiler-down && make wiki-compiler`.
 - **Pin vLLM image tag.** Don't use `:latest`. Bumping is a
   deliberate edit, recorded in git history (and likely an ADR).
-- **Hot-swap model swap procedure** lives in the lab's
-  `docs/adr/0002-...`-style ADR (model registry).
+- **Hot-swap model swap procedure**: the model registry contract
+  is forge-level —
+  [`forge/phase-d-technology-architecture/adr/0008-model-registry-single-source-of-truth.md`](../../../../phase-d-technology-architecture/adr/0008-model-registry-single-source-of-truth.md).
+  Swap by editing `forge/.env: INFERENCE_ACTIVE_MODEL_ID`, then
+  `make wiki-compiler-down && make wiki-compiler`.
 - **GPU recovery from UVM crash:**
   ```
   sudo modprobe -r nvidia_uvm nvidia_drm nvidia_modeset nvidia
@@ -154,6 +159,6 @@ git history per Phase H.
 
 - Forge-level: `forge/AGENTS.md` Phase D (service tenancy table) +
   Phase G (per-lab AGENTS.md template, GPU recovery convention).
-- G1 experiment: `outputs/G1-blackwell-stability.md` (until promoted
-  to `docs/experiments/G1.md` in this lab).
+- G1 experiment (closed):
+  [`forge/phase-f-migration-planning/experiments/G1-blackwell-stability.md`](../../../../phase-f-migration-planning/experiments/G1-blackwell-stability.md).
 - Power-limit unit: `/etc/systemd/system/nvidia-power-limit.service`.

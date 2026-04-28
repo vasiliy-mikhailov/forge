@@ -175,6 +175,7 @@ Phase D + provider lab):
 
 **ADRs (Phase D scope).**
 - [`docs/adr/0001-openhands-on-server.md`](docs/adr/0001-openhands-on-server.md) — OpenHands SDK on the bench server.
+- [`docs/adr/0002-docker-sandbox-and-storage-root.md`](docs/adr/0002-docker-sandbox-and-storage-root.md) — docker sandbox image (bench-side technology choice; STORAGE_ROOT bench-artefact layout cross-linked from Phase C).
 - [`docs/adr/0010-retrieval-augmented-dedup.md`](docs/adr/0010-retrieval-augmented-dedup.md) — retrieval-augmented dedup for claims + concepts.
 
 ## Phase E — Opportunities and Solutions
@@ -198,14 +199,10 @@ concept shape (`## Contributions by source` per
 `docs/experiments/D8.md` for the spec, `docs/adr/0010-retrieval-augmented-dedup.md`
 for the ADR. Concrete patterns in skill `openhands-sdk-orchestration`.
 
-**Pilot history (most recent first):**
-
-- `experiment/D8-pilot-2026-04-27-qwen3.6-27b-fp8` — pilot v5 (in
-  flight), full retrieval wiring + threshold 0.78 + 400 W power cap.
-- v4 (same branch, overwritten): 6/7 sources cleanly before GPU
-  crash at SRC 6 — REPEATED=12 partial, beat v2's full 9.
-- v2: 7/7 sources, REPEATED=9, claims=246 (overshoots Opus 130),
-  all_violations=0. Pre-retrieval; reference for trajectory math.
+**Active pilot:** `experiment/D8-pilot-2026-04-27-qwen3.6-27b-fp8` —
+pilot v5 (canonical) — full retrieval wiring + threshold 0.78 + 400 W
+power cap. Tagged `canonical/qwen3.6-27b-fp8/module-005/2026-04-27`
+on `kurpatov-wiki-wiki`. Prior pilot iterations live in git history.
 
 ## Phase G — Implementation Governance
 
@@ -289,8 +286,6 @@ production. See `forge/AGENTS.md` and
 - `ls -lt runs/ | head` — most recent runs first.
 - `jq .exit_code runs/*/summary.json` — quick exit-code overview.
 
-**ADRs (Phase G scope).**
-- [`docs/adr/0002-docker-sandbox-and-storage-root.md`](docs/adr/0002-docker-sandbox-and-storage-root.md) — docker sandbox + STORAGE_ROOT bench-artefact layout.
 
 ## Phase H — Architecture Change Management
 

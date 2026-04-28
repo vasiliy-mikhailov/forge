@@ -1,10 +1,5 @@
 # ADR 0010 — Retrieval-augmented dedup for claims and concepts
 
-**Status:** Proposed
-**Date:** 2026-04-26
-
----
-
 ## Context
 
 The skill v2 ritual asks the source-author sub-agent to detect whether each

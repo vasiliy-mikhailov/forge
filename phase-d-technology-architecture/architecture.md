@@ -143,11 +143,6 @@ ${STORAGE_ROOT:-/mnt/steam/forge}/
 
 `make setup` creates this skeleton (root Makefile).
 
-The "vault" name is legacy; the git repo lives at `vault/raw/`, not at
-`vault/`. Kept to avoid rewriting `~/.ssh/kurpatov-wiki-vault` and
-`vault/raw/.git/config core.sshCommand` (see ADR 0005 → Follow-ups in
-the ingest lab).
-
 ## Network and public hostnames
 
 Every public-facing surface goes through a per-lab caddy attached to

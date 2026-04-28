@@ -15,14 +15,6 @@ sources/    → vault/raw/data/  → kurpatov-wiki-wiki/data/
  .mp3, …)
 ```
 
-Historical note: the input directory used to be `videos/` and the pipeline
-accepted only `.mp4`. The scope has since broadened twice — first to any
-Whisper-ingestible audio/video (via ffmpeg), then to HTML lesson-page
-exports from getcourse.ru, then to PDF scans and typed PDFs. The
-allow-list lives as `INGEST_EXTENSIONS`
-= `WHISPER_EXTENSIONS | HTML_EXTENSIONS | PDF_EXTENSIONS` in
-`notebooks/02_ingest_incremental.py` and
-`notebooks/03_watch_and_ingest.py`; keep them in sync. HTML is handled
 by a dedicated extractor (`notebooks/_extract_html.py`) and PDF by
 `notebooks/_extract_pdf.py` (text-layer fast path, Qwen2.5-VL-7B
 OCR fallback) — both reuse the same raw.json envelope. See ADR
@@ -109,9 +101,7 @@ Host paths:
   parallel `wiki/` layer is not created here — the wiki is authored
   and pushed from the operator's Mac (ADR 0007).
 - `${STORAGE_ROOT}/models/` — shared HF cache with rl-2048.
-- `~/.ssh/kurpatov-wiki-vault` — per-repo deploy key for the raw repo;
-  filename keeps the legacy "vault" name for now (see ADR 0005 →
-  Follow-ups).
+- `~/.ssh/kurpatov-wiki-vault` — per-repo deploy key for the raw repo.
 
 ## Data contracts
 

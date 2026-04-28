@@ -64,7 +64,7 @@ lab carries its own:
   artefacts.
 - `SPEC.md` — the lab's specification.
 - `tests/` — per-lab smoke + regression tests.
-- `docs/adr/` (legacy) or `adr/` (newer) — lab-scoped ADRs.
+- `docs/adr/` or `adr/` — lab-scoped ADRs (both layouts are legal).
 
 ## AGENTS.md / CLAUDE.md convention
 
@@ -94,9 +94,9 @@ ADRs are scoped to the phase whose layer the decision changes:
   Numbering is monotonic across all forge phases (the existing
   0001-0009 series). One file per decision; the file is the
   durable record.
-- **Lab-scoped ADRs** in `<lab>/docs/adr/NNNN-*.md` (legacy) or
-  `<lab>/adr/NNNN-*.md` (newer flatter layout). Numbering is per
-  lab.
+- **Lab-scoped ADRs** in `<lab>/docs/adr/NNNN-*.md` or
+  `<lab>/adr/NNNN-*.md` — both layouts are legal. Numbering is
+  per lab.
 - **Per-phase indexing in lab AGENTS.md.** Each lab's AGENTS.md
   has an `**ADRs (Phase X scope).**` block under each Phase
   section, listing the lab's ADRs that apply at that phase.

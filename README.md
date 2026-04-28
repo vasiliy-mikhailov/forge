@@ -80,17 +80,17 @@ More detail in `phase-d-technology-architecture/architecture.md` and the SPEC of
 
 ## Docs
 
-- [CLAUDE.md](CLAUDE.md) — instructions for LLM agents working on this repo.
-  `AGENTS.md` is a symlink to the same file for cross-tool compatibility.
+- [AGENTS.md](AGENTS.md) — instructions for LLM agents working on this repo.
+  `CLAUDE.md` is a symlink to `AGENTS.md` for cross-tool compatibility.
 - [phase-d-technology-architecture/architecture.md](phase-d-technology-architecture/architecture.md) — overall architecture.
 - [phase-g-implementation-governance/operations.md](phase-g-implementation-governance/operations.md) — runbook: host prerequisites,
   backups, disaster recovery, GPU rotation.
-- [docs/adr/](docs/adr/) — repo-level architecture decision records.
+- [phase-<x>/adr/](phase-preliminary/) — per-phase architecture decision records (one folder per TOGAF phase).
 - [tests/](tests/) — plain-English test model (goals + signals + edge
   cases) that `scripts/smoke.sh` and friends derive from. TDD source
   of truth.
-- `labs/<lab>/SPEC.md` — per-lab spec.
-- `labs/<lab>/docs/adr/` — per-lab ADRs.
+- `phase-c-information-systems-architecture/application-architecture/<lab>/SPEC.md` — per-lab spec.
+- `phase-c-information-systems-architecture/application-architecture/<lab>/docs/adr/` — per-lab ADRs.
 
 ## Disaster recovery
 

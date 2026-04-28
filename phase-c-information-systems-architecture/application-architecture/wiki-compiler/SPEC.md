@@ -34,11 +34,8 @@ operator, the operator manages mode transitions deliberately.
 
 ## Architecture
 A single container `vllm-inference`, built from
-`vllm/vllm-openai:v0.19.1-cu130-ubuntu2404` (Docker Hub, stable release
-from 2026-04-20). Earlier draft of this SPEC referenced an
-`nvcr.io/nvidia/vllm` NGC tag that did not exist at deploy time; the
-Docker Hub stable image carries Blackwell SM120 paths and is the
-working choice. CUDA 13 runtime, requires driver 580+ (we run 590-open
+`vllm/vllm-openai:v0.19.1-cu130-ubuntu2404` (Docker Hub stable release).
+CUDA 13 runtime, requires driver 580+ (we run 590-open
 per ADR 0004). GPU passthrough via `INFERENCE_GPU_UUID`, defaulting to
 `${GPU_BLACKWELL_UUID}`.
 

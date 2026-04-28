@@ -6,10 +6,10 @@ working tree.
 
 ## Layout
 
-- [`trajectory-model.md`](trajectory-model.md) — the Level 1 /
-  Level 2 model. Why we delete on promotion; anti-patterns
-  rejected (`legacy/`, `archive/`, `Withdrawn` / `Deprecated`
-  flags).
+- [`trajectory-model.md`](trajectory-model.md) — pointer to
+  the method declaration in Preliminary; Phase H operates the
+  method (records promotions, identifies baggage, runs
+  brainstorm-experiments).
 - [`brainstorm-experiments.md`](brainstorm-experiments.md) — the
   meta-capability that generates Level-2 proposals. Definition of
   "baggage" + the deletion test.

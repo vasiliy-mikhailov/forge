@@ -10,7 +10,7 @@ component in Phase C), and some labs lean heavily on one.
 | **Research & Development**                   | Architect-velocity (capability advances per architect-hour); falsifiability (every change has IF-THEN-BECAUSE); reproducibility (replay from `Dockerfile + raw` only) |
 | **Service operation (production framework)** | Stability (mean-time-to-crash); throughput; cost-per-output-token                                                    |
 | **Product delivery to consumers**            | Branch hygiene; verify-by-artifact (not by agent); canonical-branch promotion                                        |
-| **Architecture knowledge management**        | TOGAF-style doc threading; single source of truth (AGENTS.md per location); "git is the archive" — no `Withdrawn`/`Deprecated`/`Closed` flags |
+| **Architecture knowledge management**        | TOGAF-style doc threading; single source of truth (AGENTS.md per location); trajectory model with delete-on-promotion (see [`../../phase-preliminary/architecture-method.md`](../../phase-preliminary/architecture-method.md)) |
 
 These capabilities are not products. They are forge's repeatable
 abilities. Each is realised partially by every lab; some labs lean

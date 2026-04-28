@@ -38,17 +38,3 @@ were emitted into Phase D as a result — see below.
 | R-A-PTS    | PTS (Practical Time Saved) growing over time | Blocked on user count > 1. Cannot be addressed before that — currently a placeholder.                     |
 | R-A-EB     | EB ≥ 0 (Economic Balance)                  | Implicit; no explicit measurement today. To open as Phase B requirement when first paying user lands.    |
 
-## Recently closed (kept here only until next compaction sweep)
-
-| ID                          | Source       | Closed by                                                                  | Outcome                                                                                                                  |
-|-----------------------------|--------------|----------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------|
-| R-G1-stability              | Phase F G1   | `phase-f-migration-planning/experiments/G1-blackwell-stability.md`         | 400 W cap + persistence-mode + `--gpu-memory-utilization 0.85`. Service-Operation stability dim L1 set at "≥ 169 min".   |
-| R-G2-moe-throughput         | Phase F G2   | `phase-f-migration-planning/experiments/G2-MoE-faster-inference.md`        | FALSIFIED. Decode +4.1× but pilot wall and quality regressed. Surfaced R-D-retrieval-cost as the binding lever.          |
-| R-G3-gemma-throughput       | Phase F G3   | `phase-f-migration-planning/experiments/G3-gemma-4-31b.md`                 | FALSIFIED at gate-4 (cross-ref integrity). Surfaced R-D-contract-prewrite + R-D-contract-xreflint as new sub-requirements.|
-| R-D8-find-concepts          | Phase D / Phase F | Pilot v5 (`canonical/qwen3.6-27b-fp8/module-005/2026-04-27`)         | Wired find-concepts into curator with 0.85 dedup threshold. Concept-count gap closed against Opus.                       |
-| R-DOC-architect-edit-loop   | Architect-velocity | ADR 0009 (Phase D)                                                  | ssh ControlMaster: ~3 s → ~0.4 s per edit (4-9× speedup). Saves 15-25 min per session.                                   |
-
-(Recently-closed rows live here briefly — useful while their
-follow-up requirements are being scheduled. Once the follow-ups
-are in flight or completed, the closed row is deleted; git
-history is the archive.)
