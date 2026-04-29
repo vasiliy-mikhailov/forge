@@ -1094,19 +1094,67 @@ def main():
     print(f"\n[main] branch pushed: {branch}", file=sys.stderr)
 
     # ─── Final summary ─────────────────────────────────────────────
-    sources_ok = sum(1 for s in state if s.get("verify", {}).get("verified") == "ok")
-    total_claims = sum(s.get("verify", {}).get("claims_total", 0) for s in state)
-    total_repeated = sum(s.get("verify", {}).get("claims_REPEATED", 0) for s in state)
-    total_cf = sum(s.get("verify", {}).get("claims_CF", 0) for s in state)
+    # Three distinct counts per ADR 0012 (no silent skip): ok, skipped (verify-fail
+    # under continue policy), errored (loop-terminating problems like retrieval
+    # rebuild fail or invariant A breakage). Aggregate metrics ONLY over ok.
+    sources_ok = [s for s in state if s.get("verify", {}).get("verified") == "ok"]
+    sources_skipped = [s for s in state if s.get("stopped") == "verify_fail"]
+    sources_errored = [s for s in state
+                       if s.get("stopped") and s.get("stopped") != "verify_fail"]
 
-    print(f"\nFINAL: {sources_ok}/{len(inputs)} sources verified=ok", file=sys.stderr)
-    print(f"agg: claims={total_claims}, REPEATED={total_repeated}, CF={total_cf}", file=sys.stderr)
+    total_claims = sum(s.get("verify", {}).get("claims_total", 0) for s in sources_ok)
+    total_repeated = sum(s.get("verify", {}).get("claims_REPEATED", 0) for s in sources_ok)
+    total_cf = sum(s.get("verify", {}).get("claims_CF", 0) for s in sources_ok)
+
+    print(f"\nFINAL counts (per ADR 0012):", file=sys.stderr)
+    print(f"  verified_ok           = {len(sources_ok)} / {len(inputs)}", file=sys.stderr)
+    print(f"  verified_fail_skipped = {len(sources_skipped)}  (correctness debt)", file=sys.stderr)
+    print(f"  errored               = {len(sources_errored)}", file=sys.stderr)
+    print(f"agg (over verified_ok only): claims={total_claims}, "
+          f"REPEATED={total_repeated}, CF={total_cf}", file=sys.stderr)
     print(f"concepts: {len(concepts)} (template v3 violations: {len(template_violations)})",
           file=sys.stderr)
     print(f"per-source orch events: "
           f"{[s.get('orch_metrics', {}).get('events', '?') for s in state]}", file=sys.stderr)
 
+    # ─── ADR 0012 enforcement: skipped-sources manifest + WIKI INCOMPLETE banner ──
+    # P6 (completeness over availability) forbids silent skips. Continue-on-fail
+    # is allowed as an opt-in for partial overnight progress, but it MUST surface
+    # every skip via a manifest and a non-zero exit code so downstream tooling
+    # cannot treat skipped == ok.
+    if sources_skipped:
+        manifest_path = WORKDIR / "skipped_sources.json"
+        manifest = [
+            {
+                "n": s.get("n"),
+                "slug": s.get("slug"),
+                "violations": (s.get("verify") or {}).get("violations", []),
+                "wall_min": (s.get("orch_metrics") or {}).get("wall_min"),
+                "events": (s.get("orch_metrics") or {}).get("events"),
+            }
+            for s in sources_skipped
+        ]
+        manifest_path.write_text(
+            json.dumps(manifest, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+        bar = "=" * 60
+        print(file=sys.stderr)
+        print(bar, file=sys.stderr)
+        print(f"WIKI INCOMPLETE — {len(sources_skipped)} sources skipped",
+              file=sys.stderr)
+        print(f"  manifest: {manifest_path}", file=sys.stderr)
+        print(f"  reconcile every entry before publishing this wiki "
+              f"(per ADR 0012)", file=sys.stderr)
+        print(bar, file=sys.stderr)
+        # Exit code carries the skip count so CI cannot confuse "completed"
+        # with "completed with skips". Cap at 125 (Posix-friendly upper bound).
+        skip_exit = min(125, len(sources_skipped))
+        print(f"\n=== EXIT INCOMPLETE ({skip_exit}) ===", file=sys.stderr)
+        sys.exit(skip_exit)
+
     if partial:
+        # errored (not the same as skipped). Loop-terminating fault.
         print("\n=== EXIT FAILED ===", file=sys.stderr); sys.exit(1)
     print("\n=== EXIT OK ===", file=sys.stderr); sys.exit(0)
 

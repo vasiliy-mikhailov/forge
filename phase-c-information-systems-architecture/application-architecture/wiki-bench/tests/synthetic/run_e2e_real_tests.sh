@@ -24,6 +24,14 @@ set -a; source "$FORGE_ROOT/.env"; set +a
 
 WORKSPACE=/tmp/e2e-real-workspace
 
+echo "=== cleaning prior workspace (via docker — survives root-owned files) ==="
+# A prior bench-container run may have created files owned by the container's
+# user (often root or a UID the host doesn't recognise). Use a throwaway
+# container with the bind-mount to wipe the workspace before the host-side
+# fixture builder touches it.
+docker run --rm -v /tmp:/host_tmp ubuntu:24.04 \
+  rm -rf /host_tmp/e2e-real-workspace 2>/dev/null || true
+
 echo "=== building fixture on host ==="
 python3 "$HERE/build_e2e_real_fixture.py" --fixture-root "$WORKSPACE"
 
