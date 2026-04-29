@@ -32,6 +32,14 @@ echo "=== cleaning prior workspace (via docker — survives root-owned files) ==
 docker run --rm -v /tmp:/host_tmp ubuntu:24.04 \
   rm -rf /host_tmp/e2e-real-workspace 2>/dev/null || true
 
+echo "=== rebuilding bench image (Docker layer cache makes this seconds) ==="
+# Single source of truth: the image. We rebuild before every test/pilot launch
+# so a stale-image skew (the bake hazard caught 2026-04-29) is impossible.
+# Layer caching means only the COPY layers for changed scripts rebuild.
+( cd "$FORGE_ROOT/phase-c-information-systems-architecture/application-architecture/wiki-bench" \
+  && docker build -t kurpatov-wiki-bench:1.17.0-d8-cal . > /tmp/bench-build.log 2>&1 \
+  && tail -3 /tmp/bench-build.log )
+
 echo "=== building fixture on host ==="
 python3 "$HERE/build_e2e_real_fixture.py" --fixture-root "$WORKSPACE"
 
@@ -64,8 +72,6 @@ docker run --rm \
   -e LLM_MODEL="openai/qwen3.6-27b-fp8" \
   -e GITHUB_TOKEN="${GITHUB_TOKEN:-}" \
   -v "$WORKSPACE:/workspace" \
-  -v "$ORCHESTRATOR_DIR/run-d8-pilot.py:/opt/forge/run-d8-pilot.py" \
-  -v "$ORCHESTRATOR_DIR/embed_helpers.py:/opt/forge/embed_helpers.py" \
   kurpatov-wiki-bench:1.17.0-d8-cal \
   /opt/forge/run-d8-pilot.py
 

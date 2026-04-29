@@ -547,6 +547,38 @@ def run_cmd(cmd, cwd=None, check=True):
     return r
 
 
+def _renormalise_to_nfc(root: Path) -> int:
+    """Walk `root` bottom-up; rename any directory entry whose name is not in
+    Unicode NFC to its NFC equivalent. Returns the rename count.
+
+    Implements ADR 0011 M1 (cross-platform path normalisation): forge canonical
+    form is NFC. macOS-origin data ships NFD; the LLM tokenizer cannot preserve
+    NFD bytes through tokens, so the agent's file_editor and bash commands
+    always emit NFC. If the on-disk filesystem is NFD, every agent action
+    fails with "No such file or directory". We solve this once at clone time
+    by renaming NFD entries to NFC; the agent and verify_source then operate
+    in a single canonical form (NFC) for the rest of the run.
+    """
+    import unicodedata
+    renamed = 0
+    for d, dirs, files in os.walk(root, topdown=False):
+        for n in files + dirs:
+            target = unicodedata.normalize("NFC", n)
+            if target != n:
+                src = os.path.join(d, n)
+                dst = os.path.join(d, target)
+                if os.path.exists(dst):
+                    # Two entries with same NFC form. Surface, do not silently
+                    # collide — that's a data integrity hazard.
+                    raise RuntimeError(
+                        f"NFC rename collision under {root}: "
+                        f"{src!r} would clobber existing {dst!r}"
+                    )
+                os.rename(src, dst)
+                renamed += 1
+    return renamed
+
+
 def setup_workspace():
     # Clean *contents* of WORKDIR rather than the directory itself —
     # avoids EBUSY on mount points (containers).
@@ -556,6 +588,15 @@ def setup_workspace():
         # Synth mode — caller pre-populated WORKDIR/raw and WORKDIR/wiki.
         if not (WORKDIR / "raw").exists() or not (WORKDIR / "wiki").exists():
             raise RuntimeError(f"D8_PILOT_SKIP_CLONE set but {WORKDIR}/raw or /wiki missing")
+        # ADR 0011 M1 — renormalise to NFC even in SKIP_CLONE mode. Synth
+        # fixtures preserve NFD on purpose (per fidelity rules) but the
+        # orchestrator's contract is NFC, so we normalise in-place at the
+        # boundary. The fixture stays NFD-faithful pre-orchestrator.
+        renamed_raw = _renormalise_to_nfc(WORKDIR / "raw")
+        renamed_wiki = _renormalise_to_nfc(WORKDIR / "wiki")
+        if renamed_raw or renamed_wiki:
+            print(f"[setup] NFC normalised {renamed_raw} entries in raw, "
+                  f"{renamed_wiki} in wiki", file=sys.stderr)
         served = os.environ.get("LLM_MODEL", "openai/qwen3.6-27b-fp8").replace("openai/", "")
         user_email = os.environ.get("GIT_AUTHOR_EMAIL", "bench@wiki-bench.local")
         user_name = os.environ.get("GIT_AUTHOR_NAME", "wiki-bench")
@@ -591,6 +632,18 @@ def setup_workspace():
     run_cmd(f"git clone -q https://x-access-token:{token}@github.com/{GH_USER}/{RAW_REPO}.git raw", cwd=str(WORKDIR))
     run_cmd(f"git clone -q https://x-access-token:{token}@github.com/{GH_USER}/{WIKI_REPO}.git wiki", cwd=str(WORKDIR))
     run_cmd(f"cd wiki && git checkout {SKILL_BRANCH} && git pull --ff-only", cwd=str(WORKDIR))
+
+    # ADR 0011 M1 — renormalise filenames in raw and wiki to forge canonical
+    # NFC. macOS-origin scrapes (kurpatov-wiki-raw) ship NFD entries; we MUST
+    # rewrite them to NFC before any agent or list_sources.py touches them.
+    # Without this, the LLM's NFC-only token output collides with NFD on disk.
+    # Renames are scoped to the freshly-cloned WORKDIR, so they do not affect
+    # the upstream git repos.
+    renamed_raw = _renormalise_to_nfc(WORKDIR / "raw")
+    renamed_wiki = _renormalise_to_nfc(WORKDIR / "wiki")
+    if renamed_raw or renamed_wiki:
+        print(f"[setup] ADR 0011 M1 — NFC renamed: raw={renamed_raw}, wiki={renamed_wiki}",
+              file=sys.stderr)
 
     served = os.environ.get("LLM_MODEL", "openai/qwen3.6-27b-fp8").replace("openai/", "")
     branch = os.environ.get("D8_PILOT_BRANCH", f"experiment/D8-pilot-{date.today().isoformat()}-{served}")
@@ -697,7 +750,27 @@ def verify_source(n, original_n=None, module_subdir="", stem="", deadline_secs=9
     else:
         target = None  # legacy path — no existence pre-check
 
+    def _resolve_nfc_tolerant(p: Path) -> Path:
+        """Belt-and-suspenders for ADR 0011: if the literal path doesn't exist
+        but a sibling whose name NFC-normalises to the same string does, return
+        that sibling. With M1 in place this should never fire — but if any
+        future code path leaks an NFD entry into the wiki, this keeps the
+        verifier from reporting a phantom verify-fail."""
+        import unicodedata
+        if p.exists() or not p.parent.exists():
+            return p
+        target_nfc = unicodedata.normalize("NFC", p.name)
+        for entry in p.parent.iterdir():
+            if unicodedata.normalize("NFC", entry.name) == target_nfc:
+                if entry.name != p.name:
+                    print(f"[verify_source] NFC-tolerant match: {p.name!r} → "
+                          f"{entry.name!r} (ADR 0011 belt-and-suspenders)",
+                          file=sys.stderr)
+                return p.parent / entry.name
+        return p
+
     if target is not None:
+        target = _resolve_nfc_tolerant(target)
         # Two-stage poll:
         #   stage 1 (existence) — wait until target.exists() AND size > 0;
         #   stage 2 (stability)  — wait until (size, mtime) unchanged
@@ -712,6 +785,9 @@ def verify_source(n, original_n=None, module_subdir="", stem="", deadline_secs=9
         last_status = None
         while time.monotonic() < deadline:
             iter_count += 1
+            # Re-resolve each iteration so a file that lands at the NFC
+            # variant after the first miss is found on the next poll.
+            target = _resolve_nfc_tolerant(target)
             try:
                 st = target.stat()
                 last_status = f"size={st.st_size} mtime={st.st_mtime}"
@@ -771,7 +847,17 @@ def verify_source(n, original_n=None, module_subdir="", stem="", deadline_secs=9
     try:
         return json.loads(r.stdout)
     except Exception:
-        return {"verified": "fail", "violations": [f"non-JSON: {r.stdout[:200]}"]}
+        # Empty/non-JSON stdout almost always means bench_grade.py crashed or
+        # rejected its argv (argparse errors → empty stdout, error to stderr).
+        # Surface stderr + the cmd so the operator can act on it instead of
+        # debugging a phantom verify-fail.
+        return {"verified": "fail",
+                "violations": [
+                    f"non-JSON: stdout={r.stdout[:200]!r}",
+                    f"stderr={r.stderr[:400]!r}",
+                    f"exit={r.returncode}",
+                    f"cmd={cmd}",
+                ]}
 
 
 def commit_and_push_per_source(n, slug, branch):
