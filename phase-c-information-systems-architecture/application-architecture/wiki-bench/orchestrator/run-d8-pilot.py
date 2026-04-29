@@ -608,6 +608,66 @@ def setup_agents():
 
 
 def verify_source(n, original_n=None, module_subdir="", stem=""):
+    """Verify a per-source artifact. Two phases:
+
+    1. **Existence poll** — wait for the target source.md to appear
+       on disk (up to 30 s, 500 ms cadence). Required because the
+       agent's file_editor signals completion to the agent loop
+       before close() durably propagates; without this we got
+       intermittent "no source file matching" verdicts on files
+       that landed seconds later. We poll the exact path rather
+       than re-running the whole bench_grade rglob each time.
+    2. **Structural grade** — run bench_grade.py ONCE for
+       per-source contract checks (frontmatter, sections, claims).
+       No retry here; if the file is on disk and grade fails,
+       that's a real structural problem, not a timing one.
+    """
+    if stem and module_subdir:
+        target = WORKDIR / "wiki" / "data" / "sources" / module_subdir / f"{stem}.md"
+    else:
+        target = None  # legacy path — no existence pre-check
+
+    if target is not None:
+        # Two-stage poll:
+        #   stage 1 (existence) — wait until target.exists() AND size > 0;
+        #   stage 2 (stability)  — wait until (size, mtime) unchanged
+        #     across two consecutive 500ms-spaced samples. This catches
+        #     partial writes (size growing) and rewrites (mtime changing).
+        # Total deadline 30s for both stages.
+        deadline = time.monotonic() + 30.0
+        # stage 1
+        appeared = False
+        while time.monotonic() < deadline:
+            try:
+                st = target.stat()
+                if st.st_size > 0:
+                    appeared = True
+                    break
+            except FileNotFoundError:
+                pass
+            time.sleep(0.5)
+        if not appeared:
+            return {"verified": "fail",
+                    "violations": [f"source.md did not appear at {target} within 30s — agent likely did not write the file"]}
+
+        # stage 2 — wait for stability (same size+mtime across two samples)
+        prev = (-1, -1.0)
+        stable = False
+        while time.monotonic() < deadline:
+            try:
+                st = target.stat()
+                cur = (st.st_size, st.st_mtime)
+            except FileNotFoundError:
+                cur = (-1, -1.0)
+            if cur == prev and cur[0] > 0:
+                stable = True
+                break
+            prev = cur
+            time.sleep(0.5)
+        if not stable:
+            return {"verified": "fail",
+                    "violations": [f"source.md at {target} never stabilised within 30s (size or mtime kept changing) — agent may still be writing or repeatedly rewriting"]}
+
     cmd = ["python3", BENCH_GRADE, str(WORKDIR / "wiki"), "--single-source-json"]
     if stem:
         cmd += ["--single-source-stem", stem]
@@ -617,25 +677,11 @@ def verify_source(n, original_n=None, module_subdir="", stem=""):
     if module_subdir:
         cmd += ["--module-subdir", module_subdir]
 
-    # Retry loop: agent's file_editor sometimes returns "done" before
-    # source.md is fully synced. A "no source file matching" verdict on
-    # the first attempt is often a timing race; retry once after 2s.
-    last_v = None
-    for attempt in range(2):
-        if attempt > 0:
-            time.sleep(2)
-        r = subprocess.run(cmd, capture_output=True, text=True)
-        try:
-            v = json.loads(r.stdout)
-        except Exception:
-            v = {"verified": "fail", "violations": [f"non-JSON: {r.stdout[:200]}"]}
-        last_v = v
-        violations = v.get("violations") or []
-        is_missing_file = any("no source file matching" in str(x) for x in violations)
-        if v.get("verified") == "ok" or not is_missing_file:
-            return v
-        # Otherwise it was a missing-file verdict; loop will retry.
-    return last_v
+    r = subprocess.run(cmd, capture_output=True, text=True)
+    try:
+        return json.loads(r.stdout)
+    except Exception:
+        return {"verified": "fail", "violations": [f"non-JSON: {r.stdout[:200]}"]}
 
 
 def commit_and_push_per_source(n, slug, branch):
