@@ -31,6 +31,7 @@ were emitted into Phase D as a result — see below.
 | R-D-orchestration-kvcache| Phase D analysis      | Agent orchestration / KV-cache reuse              | 0 % reuse across same-Conversation sub-agent calls                    | reuse → ~5-10× fewer prefill tokens per source                       | not yet opened (Phase F)                       | OPEN   |
 | R-D-contract-prewrite    | G3 close-out (gate-4) | Agent orchestration / contract enforcement       | curator can write `concepts_touched` for slugs that have no concept file | pre-write existence check inside source-author / curator loop       | not yet opened (Phase F); blocks any next model-swap | OPEN   |
 | R-D-contract-xreflint    | G3 close-out (gate-4) | Quality grading / cross-ref linting              | violations surface only after the source is committed                  | run-level lint after each commit, fail-fast on broken cross-refs    | not yet opened (Phase F)                       | OPEN   |
+| R-D-test-fidelity        | K1 verify-fail (false-green synth) 2026-04-29 | Synth tests / production parity         | unit synth uses `Path.write_text()` while production uses agent's `file_editor`; passing tests gave false confidence | integration tests inside bench container that drive the agent end-to-end against a small synth fixture | not yet opened (Phase F); blocks the next large pilot | OPEN   |
 
 ### Phase A — top-level goals not yet decomposed
 
