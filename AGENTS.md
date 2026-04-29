@@ -7,35 +7,25 @@ folders below; this file is the navigation index.
 
 ## What this repo is
 
-**forge** is my home-lab monorepo for experiments with ML / RL /
-LLM on a single machine `mikhailov.tech` with two GPUs (Blackwell +
-RTX 5090). Not production, but all the key services run
-production-style behind caddy + basic auth and must survive a host
-reboot.
+**forge** is a home-lab R&D monorepo for ML / RL / LLM experiments,
+structured by **TOGAF ADM phase** at the top level (folders
+`phase-preliminary/`, `phase-a-…` through `phase-h-…`,
+`phase-requirements-management/`).
 
-The repo is structured by **TOGAF ADM phase** at the top level
-(folders `phase-a-…` through `phase-h-…`). Inside Phase C lives the
-**application architecture** — four labs (application components):
+The application architecture (Phase C) holds four labs:
+`wiki-compiler`, `wiki-bench`, `wiki-ingest`, `rl-2048`. Each lab is
+a TOGAF-Phase-A-H-scoped sub-component with its own AGENTS.md.
+The lab table with capabilities-realised lives at
+[`phase-c-information-systems-architecture/application-architecture/components.md`](phase-c-information-systems-architecture/application-architecture/components.md).
 
-- `phase-c-information-systems-architecture/application-architecture/wiki-compiler/`
-  — vLLM serving the LLM that compiles raw transcripts into wiki articles.
-- `phase-c-information-systems-architecture/application-architecture/wiki-bench/`
-  — agent harness that benchmarks LLMs on the compiler task and runs
-  pilot productions.
-- `phase-c-information-systems-architecture/application-architecture/wiki-ingest/`
-  — the "media → raw transcript" pipeline (whisper, etc.).
-- `phase-c-information-systems-architecture/application-architecture/rl-2048/`
-  — Jupyter sandbox for RL/GRPO experiments. Includes its own
-  `mlflow/` sublab.
-
-Each lab carries its own `caddy/` (binds host :80/:443 — labs are
-mutex on these ports), its own `docker-compose.yml`, its own
-`SPEC.md`, its own ADRs (referenced per phase from the lab's AGENTS.md),
-  and its own AGENTS.md scoped Phase
-A-H.
+Deployment topology (single-server, GPU pair, caddy + ports,
+docker compose) is Phase D — see
+[`phase-d-technology-architecture/architecture.md`](phase-d-technology-architecture/architecture.md)
+and [`phase-d-technology-architecture/services/`](phase-d-technology-architecture/services/).
 
 The "experiment" word is reserved for individual run-instances
 inside a lab. A lab is a room; an experiment is a run.
+
 
 ## Where to start
 
