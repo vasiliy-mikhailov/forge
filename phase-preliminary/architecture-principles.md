@@ -127,6 +127,13 @@ The fix lives in
 matching
 [`docs/adr/0012-no-silent-skip-for-wiki-sources.md`](../phase-c-information-systems-architecture/application-architecture/wiki-bench/docs/adr/0012-no-silent-skip-for-wiki-sources.md).
 
+The P6 sub-rule that surfaced first in production is captured in
+[forge ADR 0011 — NFC/NFD cross-platform paths](../phase-g-implementation-governance/adr/0011-nfc-nfd-cross-platform-paths.md):
+the K1 silent skip was a function of macOS-NFD filenames meeting an
+LLM tokenizer that emits NFC, with no normalisation in between. P6
+forbids the silent skip; ADR 0011 fixes the cross-platform hazard
+that produced it.
+
 ## How principles are applied
 
 - A new technology service (Phase D) that requires host-Python

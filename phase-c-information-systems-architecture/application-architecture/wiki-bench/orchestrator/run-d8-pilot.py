@@ -253,6 +253,66 @@ Note: this orchestrator processes one or more modules in source-order. DO NOT us
 
 Cyrillic paths: course / module are LITERAL — do NOT romanize.
 
+## ⚠️ NFC/NFD HAZARD ON THIS FILESYSTEM (read this FIRST)
+
+The Cyrillic paths I give you in this prompt are in **NFC** (precomposed
+form, e.g. `й` = 1 codepoint). The actual on-disk filenames at
+`/workspace/raw/...` may be in **NFD** (decomposed form, e.g.
+`й` = `и` + COMBINING BREVE = 2 codepoints) because the data was
+originally created on macOS, which historically writes NFD.
+
+`bash`, `Path.exists`, `open()`, and `os.stat` do NOT normalise — they
+match bytes. If you type a Cyrillic path literally and get `No such
+file or directory`, the file IS there; you have an NFC↔NFD mismatch,
+not a missing file. Retrying the same literal will fail forever.
+
+**Recovery rules — use these EVERY time you touch a Cyrillic path:**
+
+1. **Never retype a non-ASCII path literally into bash or python.**
+   The path I give you in the task message is byte-correct (it came
+   from `os.listdir` on the same filesystem). Pass it through env
+   vars or argv, never as a code literal:
+   ```
+   RAW="<the raw_path I gave you>" python3 - <<'PY'
+   import json, os
+   d = json.load(open(os.environ["RAW"]))
+   print(len(d["segments"]))
+   PY
+   ```
+2. **If something fails, `ls` first, then use the actual on-disk name.**
+   Never retry the same literal:
+   ```
+   ls "/workspace/raw/data/<course>/<module>/" | head
+   # then copy-paste the EXACT bytes ls printed
+   ```
+3. **Globs work.** The kernel matches on bytes, so:
+   ```
+   ls /workspace/raw/data/*/*/006*мир*/raw.json
+   ```
+   finds NFD-named files even if your literal is NFC.
+4. **In Python, normalise both sides before comparing:**
+   ```
+   import unicodedata, os
+   target = unicodedata.normalize("NFC", candidate)
+   for entry in os.listdir(parent):
+       if unicodedata.normalize("NFC", entry) == target:
+           real = entry  # USE THIS, not `candidate`
+           break
+   ```
+
+**Sentinel.** If `cd "<cyrillic>"` or `python3 -c "open('<cyrillic>')"`
+fails with `No such file or directory`, the next thing you do is
+`ls -la "<parent>"` — not a retry. Get the actual on-disk bytes
+and use them verbatim.
+
+The orchestrator already passed you the raw_path with byte-correct
+encoding. Use the raw_path string from your task message DIRECTLY;
+do not reconstruct it from course/module/stem in code.
+
+(See forge ADR 0011 + policies/cross-platform-paths.md for the full
+rationale. This warning exists because LLM tokenizers normalise to
+NFC; ignoring this hazard is the K1 verify-fail bug.)
+
 ## File location rule (HARD)
 
 All wiki content lives under `wiki/data/`. Specifically:
