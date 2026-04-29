@@ -48,7 +48,7 @@ smoke.sh" without touching `tests/` is a code smell.
 
 ## Coverage map
 
-After [ADR 0007](../phase-b-business-architecture/adr/0007-labs-restructure-self-contained-caddy.md),
+After [ADR 0007](../phase-g-implementation-governance/adr/0007-labs-restructure-self-contained-caddy.md),
 labs are mutex on host :80/:443. Smoke is therefore split: a thin
 dispatcher at the root, plus a per-lab smoke under each lab.
 
@@ -98,5 +98,5 @@ about this."
 
 - [`phase-g-implementation-governance/operations.md`](../phase-g-implementation-governance/operations.md) → End-to-end smoke.
 - [`CLAUDE.md`](../CLAUDE.md) — agent rules.
-- [ADR 0007](../phase-b-business-architecture/adr/0007-labs-restructure-self-contained-caddy.md)
+- [ADR 0007](../phase-g-implementation-governance/adr/0007-labs-restructure-self-contained-caddy.md)
   — why smoke is per-lab now.

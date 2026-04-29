@@ -20,7 +20,7 @@ make targets — and rebuild the whole environment.
 
 Each lab is fully self-contained: own caddy, own docker-compose,
 own SPEC. Labs are mutex on host ports 80/443 (each lab's caddy
-binds them). See [docs/adr/0007](phase-b-business-architecture/adr/0007-labs-restructure-self-contained-caddy.md).
+binds them). See [docs/adr/0007](phase-g-implementation-governance/adr/0007-labs-restructure-self-contained-caddy.md).
 
 ## Quick start
 
@@ -64,7 +64,7 @@ make stop-all              # stop every lab
 - One docker network `proxy-net`, every service attached to it.
 - Public services are fronted by **per-lab caddy**: each lab carries its
   own `caddy/` and binds host :80/:443 — labs are mutex on these ports
-  (see [ADR 0007](phase-b-business-architecture/adr/0007-labs-restructure-self-contained-caddy.md)).
+  (see [ADR 0007](phase-g-implementation-governance/adr/0007-labs-restructure-self-contained-caddy.md)).
   Auth is basic, on top of TLS from Let's Encrypt; the inference
   endpoint is the documented exception (vLLM Bearer auth, see
   [ADR 0005](phase-d-technology-architecture/adr/0005-inference-subsystem.md)).
