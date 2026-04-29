@@ -110,7 +110,8 @@ class VerifySourceTests(unittest.TestCase):
         self.assertEqual(v.get("verified"), "ok", v)
         self.assertLess(elapsed, 5.0, f"detected after {elapsed:.1f}s, want <5s")
 
-    # 4. File appears 25s after polling starts (within 90s deadline).
+    # 4. File appears 25s after polling starts (within 30s deadline,
+    #    well below the 90s production default).
     def test_4_file_appears_after_25s(self):
         module_subdir = "course/module"
         stem = "003 slow"
@@ -119,14 +120,17 @@ class VerifySourceTests(unittest.TestCase):
             daemon=True,
         ).start()
         v = self.verify_source(n=3, original_n=3,
-                                module_subdir=module_subdir, stem=stem)
+                                module_subdir=module_subdir, stem=stem,
+                                deadline_secs=30.0)
         self.assertEqual(v.get("verified"), "ok", v)
 
-    # 5. File never appears — must fail with diagnostic.
+    # 5. File never appears — must fail with diagnostic. Use a short
+    #    deadline (3s) so the test runs fast.
     def test_5_file_never_appears(self):
         v = self.verify_source(n=4, original_n=4,
                                 module_subdir="course/module",
-                                stem="004 missing")
+                                stem="004 missing",
+                                deadline_secs=3.0)
         self.assertEqual(v.get("verified"), "fail")
         joined = " ".join(str(x) for x in (v.get("violations") or []))
         self.assertIn("did not appear", joined, joined)

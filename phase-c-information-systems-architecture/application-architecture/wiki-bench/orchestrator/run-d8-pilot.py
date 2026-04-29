@@ -607,7 +607,7 @@ def setup_agents():
         register_agent(ad.name, agent_definition_to_factory(ad), ad)
 
 
-def verify_source(n, original_n=None, module_subdir="", stem=""):
+def verify_source(n, original_n=None, module_subdir="", stem="", deadline_secs=90.0):
     """Verify a per-source artifact. Two phases:
 
     1. **Existence poll** — wait for the target source.md to appear
@@ -634,7 +634,7 @@ def verify_source(n, original_n=None, module_subdir="", stem=""):
         #     across two consecutive 500ms-spaced samples. This catches
         #     partial writes (size growing) and rewrites (mtime changing).
         # Total deadline 30s for both stages.
-        deadline = time.monotonic() + 90.0
+        deadline = time.monotonic() + deadline_secs
         # stage 1
         appeared = False
         while time.monotonic() < deadline:
@@ -648,7 +648,7 @@ def verify_source(n, original_n=None, module_subdir="", stem=""):
             time.sleep(0.5)
         if not appeared:
             return {"verified": "fail",
-                    "violations": [f"source.md did not appear at {target} within 90s — agent likely did not write the file"]}
+                    "violations": [f"source.md did not appear at {target} within {deadline_secs:.0f}s — agent likely did not write the file"]}
 
         # stage 2 — wait for stability (same size+mtime across two samples)
         prev = (-1, -1.0)
@@ -666,7 +666,7 @@ def verify_source(n, original_n=None, module_subdir="", stem=""):
             time.sleep(0.5)
         if not stable:
             return {"verified": "fail",
-                    "violations": [f"source.md at {target} never stabilised within 90s (size or mtime kept changing) — agent may still be writing or repeatedly rewriting"]}
+                    "violations": [f"source.md at {target} never stabilised within {deadline_secs:.0f}s (size or mtime kept changing) — agent may still be writing or repeatedly rewriting"]}
 
     cmd = ["python3", BENCH_GRADE, str(WORKDIR / "wiki"), "--single-source-json"]
     if stem:
@@ -696,6 +696,35 @@ def commit_and_push_per_source(n, slug, branch):
     sha = subprocess.run("git rev-parse --short HEAD", shell=True, cwd=str(WORKDIR / "wiki"),
                          capture_output=True, text=True).stdout.strip()
     return sha
+
+
+def record_per_source_outcome(state, n, slug, verify_result, policy="fail_fast"):
+    """Append a per-source state entry and decide whether the
+    orchestrator's main loop should stop or continue.
+
+    state            — list to append the entry to (mutated).
+    n, slug          — source identification.
+    verify_result    — dict from verify_source.
+    policy           — "fail_fast" (default; legacy v5 behavior:
+                       stop on first verify-fail) or "continue"
+                       (K1 behavior: log fail, keep processing).
+
+    Returns "stop" if the loop should break, "continue" otherwise.
+
+    Either policy records the failure to state with stopped="verify_fail"
+    so post-pilot grading can see what went wrong; the difference is only
+    in whether the loop terminates.
+    """
+    entry = {"n": n, "slug": slug, "verify": verify_result}
+    if verify_result.get("verified") == "ok":
+        state.append(entry)
+        return "continue"
+    # verify=fail — record stopped reason regardless of policy
+    entry["stopped"] = "verify_fail"
+    state.append(entry)
+    if policy == "continue":
+        return "continue"
+    return "stop"
 
 
 def measure_top_orch(conv: Conversation):
@@ -849,6 +878,11 @@ def main():
     stopped_at = None
     t0_total = time.time()
 
+    fail_policy = os.environ.get("D8_PILOT_FAIL_POLICY", "fail_fast")
+    if fail_policy not in ("fail_fast", "continue"):
+        raise RuntimeError(f"D8_PILOT_FAIL_POLICY must be \"fail_fast\" or \"continue\"; got {fail_policy!r}")
+    print(f"[main] fail_policy={fail_policy}", file=sys.stderr)
+
     # Resolve embed_helpers.py path (container-baked vs host).
     embed_helpers_path = (
         "/opt/forge/embed_helpers.py"
@@ -925,18 +959,23 @@ def main():
                 commit = f"commit-failed: {type(e).__name__}: {e}"
                 print(f"=== SRC {n}: commit_and_push failed but verify=ok, continuing: {e}",
                       file=sys.stderr)
-            state.append({"n": n, "slug": slug, "verify": v,
-                          "orch_metrics": orch_metrics, "commit": commit})
+            decision = record_per_source_outcome(state, n, slug, v, policy=fail_policy)
+            # decoration on the appended entry — orch metrics + commit
+            state[-1]["orch_metrics"] = orch_metrics
+            state[-1]["commit"] = commit
             print(f"=== SRC {n}: verified=ok, claims={v.get('claims_total')}, "
                   f"REPEATED={v.get('claims_REPEATED')}, CF={v.get('claims_CF')}, "
                   f"commit={commit} ===", file=sys.stderr)
+            assert decision == "continue", "verify=ok but policy said stop"
         else:
-            stopped_at = n
-            state.append({"n": n, "slug": slug, "verify": v,
-                          "orch_metrics": orch_metrics, "stopped": "verify_fail"})
+            decision = record_per_source_outcome(state, n, slug, v, policy=fail_policy)
+            state[-1]["orch_metrics"] = orch_metrics
             print(f"!!! SRC {n}: verify=fail, violations={v.get('violations')[:3]}",
                   file=sys.stderr)
-            break
+            if decision == "stop":
+                stopped_at = n
+                break
+            # else policy=continue — keep going to next source.
 
     wall_total_min = (time.time() - t0_total) / 60
     print(f"\n[main] total wall: {wall_total_min:.1f} min", file=sys.stderr)
