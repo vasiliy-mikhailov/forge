@@ -23,9 +23,19 @@ from collections import Counter, defaultdict
 import yaml
 
 
+# The lecture section was renamed (2026-04-29) from
+#   "## Лекция (пересказ: только NEW и проверенное)"
+# to
+#   "## Лекция сжато (только новое и проверенное)"
+# Accept either spelling so old bench results stay graded. The new spelling
+# also reframes the section as first-person condensed lecture, not retelling.
+LECTURE_SECTION_HEADERS = [
+    "## Лекция сжато (только новое и проверенное)",
+    "## Лекция (пересказ: только NEW и проверенное)",
+]
 REQUIRED_SOURCE_SECTIONS = [
     "## TL;DR",
-    "## Лекция (пересказ: только NEW и проверенное)",
+    LECTURE_SECTION_HEADERS,  # any-of
     "## Claims — provenance and fact-check",
     "## New ideas (verified)",
     "## All ideas",
@@ -121,13 +131,23 @@ def grade_source(path: Path):
             violations.append(f"frontmatter missing field: {f}")
 
     for sec in REQUIRED_SOURCE_SECTIONS:
-        if not re.search(r"(?m)^" + re.escape(sec), body):
-            violations.append(f"missing section: {sec}")
+        if isinstance(sec, list):
+            # any-of: pass if at least one alternative header is present
+            if not any(re.search(r"(?m)^" + re.escape(alt), body) for alt in sec):
+                violations.append(f"missing section: any of {sec}")
+        else:
+            if not re.search(r"(?m)^" + re.escape(sec), body):
+                violations.append(f"missing section: {sec}")
 
     claims_block = extract_section(body, "## Claims — provenance and fact-check")
     new_ideas_block = extract_section(body, "## New ideas (verified)")
     all_ideas_block = extract_section(body, "## All ideas")
-    lecture_block = extract_section(body, "## Лекция (пересказ: только NEW и проверенное)")
+    # Try new header first, fall back to old.
+    lecture_block = None
+    for h in LECTURE_SECTION_HEADERS:
+        lecture_block = extract_section(body, h)
+        if lecture_block:
+            break
 
     marker_counts = Counter()
     notes_count = 0

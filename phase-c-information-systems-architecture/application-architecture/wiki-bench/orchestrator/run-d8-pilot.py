@@ -427,16 +427,26 @@ Body — EXACTLY 5 `## ` sections in order. Use `# <Russian title>` for H1.
 
   `## TL;DR` — one paragraph
 
-  ⚠️ **Tone of voice (TL;DR + Лекция sections only).** Try to keep the lecturer's original tone and phrasing wherever it adds signal: Курпатов's emotional emphases, sceptical asides, characteristic metaphors and dramatic punctuation are part of the content, not noise. Do NOT sanitize them into neutral encyclopedic prose. Faithfulness to the speaker's voice is part of the time-saving goal — a reader who skipped the audio should still recognise the speaker. The Claims and concept-link sections, by contrast, stay neutral and structural.
+  ⚠️ **Tone of voice (TL;DR + Лекция сжато sections only — FIRST PERSON, lecturer's voice).** Both TL;DR and "Лекция сжато" are written from the lecturer's first-person point of view ("я", "мы с вами"), exactly as Курпатов would speak — same speaker, same voice across both sections. NOT a third-person retelling ("автор утверждает", "лектор говорит") — that's wrong. Keep the lecturer's original tone and phrasing wherever it adds signal: Курпатов's emotional emphases, sceptical asides, characteristic metaphors and dramatic punctuation are part of the content, not noise. Do NOT sanitize them into neutral encyclopedic prose. Faithfulness to the speaker's voice is part of the time-saving goal — a reader who skipped the audio should still recognise the speaker. The Claims and concept-link sections, by contrast, stay neutral and structural.
 
-  `## Лекция (пересказ: только NEW и проверенное)` — 3-5 paragraphs
-    with inline `[<concept-slug>](../../../concepts/<slug>.md)` links
+  `## Лекция сжато (только новое и проверенное)` — 3-5 paragraphs
+    written FIRST PERSON in the lecturer's voice (same speaker as TL;DR),
+    condensing the lecture but keeping ONLY material that is either NEW
+    or REPEATED-yet-verified. Drop everything that contradicts facts or
+    duplicates already-summarised material from prior sources.
+    Inline `[<concept-slug>](../../../concepts/<slug>.md)` links.
   `## Claims — provenance and fact-check` — numbered list. EVERY entry:
-       `<n>. <claim_text> <final_marker[n]>`
+       `<n>. <final_marker[n]> <claim_text>`
        <notes paragraph if fact-checked>
        — <url> (if factchecker provided)
-    🔴 EVERY claim MUST end with one of `[NEW]`, `[REPEATED (from: ...)]`,
-       or `[CONTRADICTS_FACTS]`. NO bare claims allowed.
+    🔴 EVERY claim MUST START with one of `[NEW]`, `[REPEATED (from: ...)]`,
+       or `[CONTRADICTS_FACTS]` — placed at the BEGINNING of the line,
+       BEFORE the claim text. NO bare claims allowed.
+       💡 Why first, not last: the reader scans the marker and decides
+       in one glance whether to read the claim — `[REPEATED]` claims can
+       be skipped without reading their text. Marker-at-end forces the
+       reader to finish the sentence before knowing if it was worth
+       reading. Marker-first saves the reader's time.
   `## New ideas (verified)` — bullets grouped by thematic_category:
        `**<Theme>**`
        `- <bullet> ([<concept-link>](...))`
