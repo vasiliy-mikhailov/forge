@@ -101,7 +101,7 @@ See `phase-g-implementation-governance/operations.md`. In short:
 3. Make sure DNS A records for the domains point at this host and ports
    80/443 are free.
 4. Do the GPU host setup (driver, UVM, container toolkit, reboot).
-5. `make setup && make base`
+5. `make setup` then bring up the lab(s) you need: `make wiki-compiler`, `make wiki-ingest`, `make rl-2048`
 6. Drop source media back into `${STORAGE_ROOT}/labs/wiki-ingest/sources/...`,
    adjust `.env`, start the services you need.
 

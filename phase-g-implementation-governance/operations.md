@@ -341,7 +341,7 @@ This moves every media file (any suffix in the INGEST_EXTENSIONS allow-list
 — video: `mp4/mkv/webm/mov/m4v/avi`, audio: `mp3/m4a/wav/ogg/flac/opus/aac`,
 html: `html/htm`)
 from the source folder to the current default module under
-`kurpatov-wiki/sources/` on the server, deleting each file locally only
+`${STORAGE_ROOT}/labs/wiki-ingest/sources/` on the server, deleting each file locally only
 after the transfer is verified. The `kurpatov-ingest` daemon picks
 them up via inotify and ingests within ~10s of each file landing —
 no server-side action required. faster-whisper handles audio natively via

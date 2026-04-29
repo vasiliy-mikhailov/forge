@@ -16,7 +16,7 @@ Single tracking server for all ML experiments on this machine.
 Container `ghcr.io/mlflow/mlflow:v2.14.3`, listening on `:5000`, only
 exposed externally via caddy (`MLFLOW_DOMAIN`). Backing store is SQLite on
 SSD (`./data/mlflow.db`), artifacts on the big disk
-(`${STORAGE_ROOT}/mlflow/mlruns`).
+(`${STORAGE_ROOT}/labs/rl-2048/mlflow/mlruns`).
 
 Clients (jupyter-rl-2048, jupyter-kurpatov-wiki) reach tracking over HTTPS
 with basic auth:
@@ -29,7 +29,7 @@ with basic auth:
 - `./data/mlflow.db` — SQLite database with tracking metadata. Not in git
   (excluded via `.gitignore`). Survives container restart; losing it means
   losing experiment history.
-- `${STORAGE_ROOT}/mlflow/mlruns` — binary artifacts (params, metrics as
+- `${STORAGE_ROOT}/labs/rl-2048/mlflow/mlruns` — binary artifacts (params, metrics as
   files, logged models). The path must exist before start (`make setup`).
 
 ## Invariants

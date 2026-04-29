@@ -86,7 +86,7 @@ are not vLLM-loadable, so 32B-AWQ is the apples-to-apples comparison
 class for our open-weight benchmark runs.
 
 ## Context extension (YaRN)
-Default `INFERENCE_MAX_MODEL_LEN=65536` is above Qwen3-32B's native 32K
+The default `INFERENCE_MAX_MODEL_LEN=131072` (set in `forge/.env`) is above Qwen3-32B's native 32K
 context window; it's enabled via YaRN rope-scaling, baked into the
 compose `command:` as:
 

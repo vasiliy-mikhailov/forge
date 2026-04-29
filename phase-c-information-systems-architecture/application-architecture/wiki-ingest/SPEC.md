@@ -80,7 +80,7 @@ state only through the vault filesystem — no code, no network RPC.
    source media. Runs a dedicated lean image
    `forge-kurpatov-wiki-pusher:latest` (`python:3.12-slim` + git +
    openssh-client + watchdog, ~200 MB) — see ADR 0006. Built from
-   `kurpatov-wiki/Dockerfile.pusher`.
+   `Dockerfile.pusher` (in this lab).
 
 Volume access by service:
 

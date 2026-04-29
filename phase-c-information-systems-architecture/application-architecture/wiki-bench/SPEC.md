@@ -50,7 +50,7 @@ The agent reaches vLLM over the public TLS path (`bridge` network).
 
 ### Mode mutex
 None at the GPU level. The bench harness is CPU-only.
-`phase-c-information-systems-architecture/application-architecture/wiki-compiler/` must be up; `forge/rl-2048/` is irrelevant.
+`phase-c-information-systems-architecture/application-architecture/wiki-compiler/` must be up; `forge/phase-c-information-systems-architecture/application-architecture/rl-2048/` is irrelevant.
 
 ## Storage layout
 Per-run artifacts: `${STORAGE_ROOT}/labs/wiki-bench/experiments/<run_id>/`.
