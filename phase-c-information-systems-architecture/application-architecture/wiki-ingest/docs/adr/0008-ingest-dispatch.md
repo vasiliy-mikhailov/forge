@@ -2,6 +2,15 @@
 
 Status: Accepted (2026-04-20)
 
+## Path map for current readers
+
+This ADR was written before the labs/-restructure
+(`forge:phase-g/adr/0007-labs-restructure-self-contained-caddy.md`)
+and predates the TOGAF-phase repo layout. The body below uses the
+path names that were correct at the time. Map to current paths:
+
+- kurpatov-wiki/notebooks/02_ingest_incremental.py → wiki-ingest/notebooks/02_ingest_incremental.py (in this lab).
+
 ## Context
 
 [ADR 0003](0003-watcher-reactive-not-cron.md) established a single

@@ -1,5 +1,12 @@
 # ADR 0005 — split transcription and git-push into two containers
 
+## Path map for current readers
+
+This ADR was written before the labs/-restructure (`forge:phase-g/adr/0007-labs-restructure-self-contained-caddy.md`) and predates the TOGAF-phase repo layout. The body below uses the path names that were correct at the time. Map to current paths:
+
+- kurpatov-wiki/Dockerfile.pusher → wiki-ingest/Dockerfile.pusher (in this lab)
+- forge/inference/ → forge/phase-c-…/application-architecture/wiki-compiler/
+
 ## Status
 Accepted (2026-04-19). Partially amends ADR 0001 ("two-layer vault"): the
 two layers `raw/` and `wiki/` are now two *separate git repos* rather than

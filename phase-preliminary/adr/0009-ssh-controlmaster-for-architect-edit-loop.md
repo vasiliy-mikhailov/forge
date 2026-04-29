@@ -109,7 +109,7 @@ restart loop completed in ~5 s wall instead of ~12–15 s pre-fix.
 
 ## Touched files
 
-- New: `phase-d-technology-architecture/adr/0009-ssh-controlmaster-for-architect-edit-loop.md` (this).
+- New: `phase-preliminary/adr/0009-ssh-controlmaster-for-architect-edit-loop.md` (this).
 - Architect workstation only: `~/.ssh/config` (Host forge stanza adds
   ControlMaster / ControlPath / ControlPersist). Not in repo —
   workstation-local config, mirrored in this ADR for reproducibility.

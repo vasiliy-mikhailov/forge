@@ -1,5 +1,14 @@
 # ADR 0007 — wiki layer: Mac-side authoring, two-tier structure
 
+## Path map for current readers
+
+This ADR was written before the labs/-restructure (`forge:phase-g/adr/0007-labs-restructure-self-contained-caddy.md`) and predates the TOGAF-phase repo layout. The body below uses the path names that were correct at the time. Map to current paths:
+
+- forge/kurpatov-wiki/prompts/ → forge/phase-c-…/application-architecture/wiki-ingest/prompts/
+- forge/kurpatov-wiki/docs/mac-side-wiki-authoring.md → forge/phase-c-…/application-architecture/wiki-ingest/docs/mac-side-wiki-authoring.md
+- kurpatov-wiki/SPEC.md → wiki-ingest/SPEC.md (in this lab)
+- kurpatov-wiki/vault/wiki/ → ${STORAGE_ROOT}/labs/wiki-ingest/vault/wiki/
+
 ## Status
 Accepted (2026-04-19). Amends ADR 0005 ("split transcription and git-push
 into two containers"): ADR 0005 anticipated a symmetrical server-side

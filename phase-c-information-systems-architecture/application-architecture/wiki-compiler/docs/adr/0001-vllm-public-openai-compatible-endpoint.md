@@ -1,5 +1,11 @@
 # ADR 0001 — vLLM as a public OpenAI-compatible endpoint
 
+## Path map for current readers
+
+This ADR was written before the labs/-restructure (`forge:phase-g/adr/0007-labs-restructure-self-contained-caddy.md`) and predates the TOGAF-phase repo layout. The body below uses the path names that were correct at the time. Map to current paths:
+
+- inference/SPEC.md and CLAUDE.md → wiki-compiler/SPEC.md and AGENTS.md (in this lab); the subsystem was renamed labs-restructured per forge:phase-g/adr/0007
+
 ## Status
 Accepted (2026-04-25).
 

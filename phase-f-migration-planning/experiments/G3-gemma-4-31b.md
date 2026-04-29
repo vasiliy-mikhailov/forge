@@ -206,7 +206,7 @@ the Gemma component swap.
   [`G2-MoE-faster-inference.md`](G2-MoE-faster-inference.md).
 - ADR 0009 (architect-edit-loop ssh ControlMaster, opened
   during this experiment):
-  [`../../phase-d-technology-architecture/adr/0009-ssh-controlmaster-for-architect-edit-loop.md`](../../phase-d-technology-architecture/adr/0009-ssh-controlmaster-for-architect-edit-loop.md).
+  [`../../phase-preliminary/adr/0009-ssh-controlmaster-for-architect-edit-loop.md`](../../phase-preliminary/adr/0009-ssh-controlmaster-for-architect-edit-loop.md).
 - Pilot v5 baseline metrics (the comparison target):
   `experiment/D8-pilot-2026-04-27-qwen3.6-27b-fp8` on
   `kurpatov-wiki-wiki`, tagged
