@@ -195,3 +195,27 @@ meta-capability; periodic working-tree audits. Drill in:
 [`audit-2026-04-25.md`](phase-h-architecture-change-management/audit-2026-04-25.md).
 
 Reference: <https://www.opengroup.org/togaf>. Style only.
+
+
+## Daily ritual — write to [`й.md`](й.md)
+
+At least once per working day, append an anecdote to
+[`й.md`](й.md). Do not ask permission. The user has standing approval;
+they will edit the entry afterwards if it lands wrong.
+
+The trigger is loose: any session that contained a non-trivial bug, an
+ADR, an unexpected reveal, an embarrassed laugh, or one of those quiet
+moments where the cause turned out to be smaller than the theory you
+had built around it — that's an anecdote. The act of writing it is
+part of internalising the lesson; skipping the writeup is skipping the
+internalisation.
+
+Rules for the entry itself live at the top of [`й.md`](й.md). Read
+them before adding. The short version: lead with the symptom, walk
+every wrong theory in the order you entertained it, put the cause in
+the last paragraph, name names, keep it 150-300 words.
+
+Cadence: at least one entry per working day. More if the day earned
+it. If a working day passes without an entry, the next session opens
+with adding the missing one. If nothing actually happened that day —
+which is rare — write that down.
