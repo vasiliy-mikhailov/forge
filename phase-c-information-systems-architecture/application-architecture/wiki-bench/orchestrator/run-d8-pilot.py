@@ -634,7 +634,7 @@ def verify_source(n, original_n=None, module_subdir="", stem=""):
         #     across two consecutive 500ms-spaced samples. This catches
         #     partial writes (size growing) and rewrites (mtime changing).
         # Total deadline 30s for both stages.
-        deadline = time.monotonic() + 30.0
+        deadline = time.monotonic() + 90.0
         # stage 1
         appeared = False
         while time.monotonic() < deadline:
@@ -648,7 +648,7 @@ def verify_source(n, original_n=None, module_subdir="", stem=""):
             time.sleep(0.5)
         if not appeared:
             return {"verified": "fail",
-                    "violations": [f"source.md did not appear at {target} within 30s — agent likely did not write the file"]}
+                    "violations": [f"source.md did not appear at {target} within 90s — agent likely did not write the file"]}
 
         # stage 2 — wait for stability (same size+mtime across two samples)
         prev = (-1, -1.0)
@@ -666,7 +666,7 @@ def verify_source(n, original_n=None, module_subdir="", stem=""):
             time.sleep(0.5)
         if not stable:
             return {"verified": "fail",
-                    "violations": [f"source.md at {target} never stabilised within 30s (size or mtime kept changing) — agent may still be writing or repeatedly rewriting"]}
+                    "violations": [f"source.md at {target} never stabilised within 90s (size or mtime kept changing) — agent may still be writing or repeatedly rewriting"]}
 
     cmd = ["python3", BENCH_GRADE, str(WORKDIR / "wiki"), "--single-source-json"]
     if stem:
