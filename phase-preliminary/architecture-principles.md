@@ -80,6 +80,53 @@ and the matching
 — but the principle that should have prevented the four hours of
 loss is here.
 
+## P6 — Completeness over availability for compiled artifacts
+
+For pipelines that produce a compiled artifact users will read or query
+as if it were authoritative — the wiki, a concept index, an evaluation
+report — **silent data loss is worse than failure**. A pipeline that
+crashes on source 9 of 44 is recoverable: the operator sees the failure,
+fixes the bug, reruns. A pipeline that silently skips source 9 and ships
+a 43-source wiki labelled "44 sources processed" is unrecoverable in
+practice — every downstream reader treats the result as complete, and
+the gap becomes invisible.
+
+Concrete sub-rules:
+
+- **No silent skipping.** If a source fails verification, the pipeline
+  either (a) crashes with a clear error and exits non-zero, or (b) under
+  an explicit `continue-on-fail` policy, writes a skipped-sources
+  manifest, exits non-zero, and emits a "WIKI INCOMPLETE — N sources
+  skipped" banner in the run report. Continue-on-fail is for *partial
+  progress on long pilots*, not for *covering up bugs*.
+- **The default is fail-fast.** `continue-on-fail` is opt-in via env
+  var, never the default. The operator must consciously accept the
+  trade-off ("I want partial progress; I will reconcile skips by hand").
+- **Skip ≠ success.** Pilot summaries report `verified=ok`,
+  `verified=fail`, and `skipped` as three distinct counts. Aggregate
+  quality metrics are computed only over `verified=ok`; the `skipped`
+  count is the correctness debt.
+- **Test fidelity matters here too.** A green synth test that doesn't
+  reproduce a production verify-fail is itself silent data loss at the
+  test layer — it claims the system is correct when it isn't. ADR 0010
+  exists for this reason.
+
+This principle was learned the hard way during K1 (2026-04-29): the
+continue-on-fail policy turned a real wiki-correctness bug (verify_source
+falsely reporting "fail" on healthy files) into a 6-source silent gap in
+the wiki for module 001. The bug was not the verify-fail itself — that
+is a recoverable state. The bug was the *policy that hid the failures
+behind a "pilot completed" banner*. Skipping a lecture is worse than
+crashing on it: a crashed pilot gets fixed; a skipped lecture quietly
+poisons every search, every cross-reference, every "completeness" claim
+the wiki makes.
+
+The fix lives in
+[`phase-c-…/wiki-bench/orchestrator/run-d8-pilot.py`](../phase-c-information-systems-architecture/application-architecture/wiki-bench/orchestrator/run-d8-pilot.py)
+(skipped-sources manifest, non-zero exit, INCOMPLETE banner) and the
+matching
+[`docs/adr/0012-no-silent-skip-for-wiki-sources.md`](../phase-c-information-systems-architecture/application-architecture/wiki-bench/docs/adr/0012-no-silent-skip-for-wiki-sources.md).
+
 ## How principles are applied
 
 - A new technology service (Phase D) that requires host-Python
@@ -96,13 +143,16 @@ loss is here.
   pilot violates P5 — the cheap path is a synth test that
   reproduces the bug on the architect's host in seconds. The
   loop is rejected at proposal time; the test is built first.
+- A pipeline whose default behaviour is "skip the failing item and
+  keep going" violates P6 — the default must be fail-fast, with
+  continue-on-fail an explicit, manifest-producing opt-in.
 
-## Why these five
+## Why these six
 
 P1 and P4 reflect the lived constraints of a home-lab single-
-architect setup; P2, P3, and P5 are *deliberate* choices that could in
-principle be relaxed but have proven to be the load-bearing rules
-that keep the working tree honest and the architect's hours
+architect setup; P2, P3, P5, and P6 are *deliberate* choices that
+could in principle be relaxed but have proven to be the load-bearing
+rules that keep the working tree honest and the architect's hours
 spent on capability advances rather than on rework.
 
 The principles are the answer to the question "what would I be
