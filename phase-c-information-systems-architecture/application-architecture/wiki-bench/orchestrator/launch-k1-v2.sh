@@ -27,6 +27,22 @@ FORGE_ROOT="$(cd "$HERE/../../../.." && pwd)"
 # Source forge .env for LLM credentials + GH_TOKEN.
 set -a; source "$FORGE_ROOT/.env"; set +a
 
+# Resolve a GitHub token on the host. The bench image has no `gh` CLI baked
+# in, so the orchestrator's setup_workspace() fallback (`gh auth token`) does
+# not work inside the container. We resolve the token here and pass it via
+# env. Order: GITHUB_TOKEN env, GH_TOKEN env, host's `gh auth token`.
+if [ -z "${GITHUB_TOKEN:-}" ] && [ -n "${GH_TOKEN:-}" ]; then
+    GITHUB_TOKEN="$GH_TOKEN"
+fi
+if [ -z "${GITHUB_TOKEN:-}" ] && command -v gh >/dev/null 2>&1; then
+    GITHUB_TOKEN=$(gh auth token 2>/dev/null || true)
+fi
+if [ -z "${GITHUB_TOKEN:-}" ]; then
+    echo "ABORT: no GITHUB_TOKEN; set it in .env or run 'gh auth login' on the host"
+    exit 2
+fi
+export GITHUB_TOKEN
+
 WORKSPACE=/tmp/k1-v2-pilot
 BRANCH="experiment/K1-v2-$(date +%Y-%m-%d)-modules-000-001-qwen3.6-27b-fp8-nfc"
 FAIL_POLICY="${FAIL_POLICY:-fail_fast}"
