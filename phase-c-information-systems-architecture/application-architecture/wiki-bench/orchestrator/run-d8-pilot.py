@@ -637,18 +637,38 @@ def verify_source(n, original_n=None, module_subdir="", stem="", deadline_secs=9
         deadline = time.monotonic() + deadline_secs
         # stage 1
         appeared = False
+        iter_count = 0
+        first_status = None
+        last_status = None
         while time.monotonic() < deadline:
+            iter_count += 1
             try:
                 st = target.stat()
+                last_status = f"size={st.st_size} mtime={st.st_mtime}"
+                if first_status is None:
+                    first_status = last_status
                 if st.st_size > 0:
                     appeared = True
                     break
-            except FileNotFoundError:
-                pass
+            except FileNotFoundError as e:
+                last_status = f"FileNotFoundError: {e}"
+                if first_status is None:
+                    first_status = last_status
             time.sleep(0.5)
         if not appeared:
+            # Diagnostic — what was the file like during the poll?
+            try:
+                parent = target.parent
+                parent_listing = list(parent.iterdir()) if parent.exists() else []
+                parent_listing_str = [p.name for p in parent_listing]
+            except Exception as e:
+                parent_listing_str = f"ERR: {e}"
             return {"verified": "fail",
-                    "violations": [f"source.md did not appear at {target} within {deadline_secs:.0f}s — agent likely did not write the file"]}
+                    "violations": [
+                        f"source.md did not appear at {target} within {deadline_secs:.0f}s — agent likely did not write the file",
+                        f"diag: iter_count={iter_count} first={first_status} last={last_status}",
+                        f"diag: parent_exists={target.parent.exists()} parent_listing={parent_listing_str!r}",
+                    ]}
 
         # stage 2 — wait for stability (same size+mtime across two samples)
         prev = (-1, -1.0)
