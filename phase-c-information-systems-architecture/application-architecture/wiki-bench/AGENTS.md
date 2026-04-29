@@ -177,6 +177,7 @@ Phase D + provider lab):
 - [`docs/adr/0001-openhands-on-server.md`](docs/adr/0001-openhands-on-server.md) — OpenHands SDK on the bench server.
 - [`docs/adr/0002-docker-sandbox-and-storage-root.md`](docs/adr/0002-docker-sandbox-and-storage-root.md) — docker sandbox image (bench-side technology choice; STORAGE_ROOT bench-artefact layout cross-linked from Phase C).
 - [`docs/adr/0010-retrieval-augmented-dedup.md`](docs/adr/0010-retrieval-augmented-dedup.md) — retrieval-augmented dedup for claims + concepts.
+- [`docs/adr/0011-verify-source-existence-and-stability-poll.md`](docs/adr/0011-verify-source-existence-and-stability-poll.md) — orchestrator verify_source uses two-stage poll (existence + stability) before single-shot grade; replaces the prior sleep-and-retry band-aid.
 
 ## Phase E — Opportunities and Solutions
 
