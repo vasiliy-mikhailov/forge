@@ -53,6 +53,13 @@ from openhands.sdk.tool import register_tool
 from openhands.tools.task import TaskToolSet
 from openhands.tools.delegate import DelegationVisualizer
 
+# Per ADR 0013 — Python coordinator replaces source-author agent monolith.
+sys.path.insert(0, str(Path(__file__).parent))
+from source_coordinator import (
+    SourceCoordinator, CoordinatorError, MalformedResponseError,
+)
+import litellm  # the coordinator's LLM uses this directly
+
 
 # ─── Configuration ───────────────────────────────────────────────────────
 
@@ -915,6 +922,112 @@ def measure_top_orch(conv: Conversation):
 
 # ─── Concept template v3 validator (L1.5) ──────────────────────────────
 
+# ─── Coordinator wiring (ADR 0013) ─────────────────────────────────────
+
+
+def _make_coordinator_llm():
+    """Return a callable for SourceCoordinator that wraps litellm.completion
+    with response_format=json_schema. Reads LLM config from the same env
+    vars the OpenHands LLM uses."""
+    base_url = os.environ.get("LLM_BASE_URL", "https://inference.mikhailov.tech/v1")
+    api_key = os.environ.get("LLM_API_KEY", "")
+    model = os.environ.get("LLM_MODEL", "openai/qwen3.6-27b-fp8")
+
+    def llm(*, prompt, response_format, max_tokens):
+        rf = {
+            "type": "json_schema",
+            "json_schema": {
+                "name": response_format["title"],
+                "schema": response_format["schema"],
+                "strict": True,
+            },
+        }
+        try:
+            resp = litellm.completion(
+                model=model,
+                messages=[{"role": "user", "content": prompt}],
+                response_format=rf,
+                max_tokens=max_tokens,
+                api_base=base_url,
+                api_key=api_key,
+                timeout=120.0,
+            )
+        except Exception as e:
+            # Pass-through to coordinator's retry logic — return string,
+            # which fails schema validation and triggers the retry path.
+            return f"litellm error: {type(e).__name__}: {e}"
+        content = resp.choices[0].message.content
+        try:
+            return json.loads(content)
+        except Exception:
+            return content
+    return llm
+
+
+def _make_retriever(embed_helpers_path: str, workdir_wiki: Path):
+    """Return a retriever callable that subprocesses to embed_helpers
+    find-claims and parses the result. Returns [] on any error so the
+    coordinator can still classify (without prior-art context)."""
+    def retrieve(claim_text: str) -> list[dict]:
+        try:
+            r = subprocess.run(
+                ["python3", embed_helpers_path, "find-claims",
+                 str(workdir_wiki), "--claim", claim_text,
+                 "--k", "5", "--threshold", "0.65"],
+                capture_output=True, text=True, timeout=20.0,
+            )
+            if r.returncode != 0:
+                return []
+            data = json.loads(r.stdout)
+            cands = data.get("candidates", [])
+            # Normalise field names so the coordinator's prompt formatter
+            # gets `score`, `source_slug`, `claim_text`.
+            for c in cands:
+                if "score" not in c and "similarity" in c:
+                    c["score"] = c["similarity"]
+            return cands
+        except Exception:
+            return []
+    return retrieve
+
+
+def _make_stub_curator(workdir: Path):
+    """Coordinator-side curator that writes a minimal skill-v2 concept.md
+    per concept slug. This is the FIRST CUT after ADR 0013 — replacing
+    the OpenHands concept-curator sub-agent with a deterministic stub
+    so K1 v2 can run end-to-end. Concept template-v3 richness is a
+    deliberate follow-up; the stub at least keeps cross-references
+    resolvable so per-source bench_grade passes."""
+    concepts_dir = workdir / "wiki" / "data" / "concepts"
+    concepts_dir.mkdir(parents=True, exist_ok=True)
+
+    def curator(concept_slug: str, source_slug: str):
+        path = concepts_dir / f"{concept_slug}.md"
+        if path.exists():
+            # Append source_slug to existing touched_by if not present.
+            body = path.read_text(encoding="utf-8")
+            if source_slug not in body:
+                body = body.rstrip() + f"\n  - {source_slug}\n"
+                path.write_text(body, encoding="utf-8")
+            return
+        body = (
+            "---\n"
+            f"slug: {concept_slug}\n"
+            f"first_introduced_in: {source_slug}\n"
+            f"touched_by:\n  - {source_slug}\n"
+            "---\n"
+            f"# {concept_slug}\n\n"
+            "## Definition\n\n"
+            "_(coordinator-stub — concept-curator agent integration "
+            "is a Phase F follow-up per ADR 0013)_\n\n"
+            "## Contributions by source\n\n"
+            f"### {source_slug}\n\n"
+            "_stub contribution_\n"
+        )
+        path.write_text(body, encoding="utf-8")
+    return curator
+
+
 _FRONTMATTER_RE = re.compile(r"^---\n(.+?)\n---\n", re.DOTALL)
 _TOUCHED_BY_RE = re.compile(r"^touched_by:\s*\n((?:\s+-\s+.+\n)+)", re.MULTILINE)
 _BULLET_RE = re.compile(
@@ -1004,7 +1117,7 @@ def write_bench_report(state, branch, partial=False):
              "## Per-source", ""]
     for entry in state:
         v = entry.get("verify", {})
-        m = entry.get("orch_metrics", {})
+        m = entry.get("coord_metrics", {})
         lines.append(
             f"- source {entry['n']}: verified={v.get('verified','?')}, "
             f"claims={v.get('claims_total','?')} "
@@ -1013,7 +1126,7 @@ def write_bench_report(state, branch, partial=False):
             f"CF={v.get('claims_CF','?')}, "
             f"unmarked={v.get('claims_unmarked','?')}), "
             f"urls={v.get('wiki_url_count','?')}, "
-            f"orch_events={m.get('events','?')}, "
+            f"coord_wall={m.get('wall_min','?')}min, "
             f"commit={entry.get('commit','?')}"
         )
     lines.append("")
@@ -1048,6 +1161,11 @@ def main():
         base_url=os.getenv("LLM_BASE_URL"),
         usage_id="d8-pilot",
     )
+
+    # Coordinator's LLM is a thin litellm wrapper, separate from the
+    # OpenHands SDK LLM (which we keep available for any sub-agent
+    # invocation that lands in a follow-up).
+    coordinator_llm = _make_coordinator_llm()
 
     # ─── PYTHON-LOOP TOP-ORCHESTRATOR (INVARIANT A) ──────────────────
     state = []
@@ -1090,41 +1208,64 @@ def main():
         else:
             print(f"[retrieval] {rebuild_r.stdout.strip()}", file=sys.stderr)
 
-        # FRESH Conversation per source
-        main_agent = Agent(llm=llm, tools=[Tool(name="task_tool_set")])
-        conv = Conversation(
-            agent=main_agent, workspace=str(WORKDIR),
-            visualizer=DelegationVisualizer(name=f"OrchD8.src{n}"),
-        )
-        msg = (
-            f"Process source N={n}. raw_path={raw_path}. "
-            f"target_path={target_path}. "
-            "Use the `task` tool with subagent_type='source-author' and "
-            f"prompt='Process source N={n}. raw_path={raw_path}. "
-            f"target_path={target_path}. Follow your system_prompt.'\n"
-            "Wait for `done` ack from source-author, then finish."
-        )
+        # ─── Per-source via Python coordinator (ADR 0013) ────────────
+        # Replaces the source-author agent monolith with deterministic
+        # Python workflow + per-step structured LLM calls. The class of
+        # "agent claimed done but didn't write the file" is structurally
+        # impossible: the coordinator either calls write_text or raises
+        # CoordinatorError. No SDK-side silent acceptance can happen
+        # because there is no SDK in the per-source loop.
+        coord = SourceCoordinator(llm=coordinator_llm, workdir=WORKDIR)
+        coord_curator = _make_stub_curator(WORKDIR)
+        coord_retriever = _make_retriever(embed_helpers_path, WORKDIR / "wiki")
 
         t0 = time.time()
-        conv.send_message(msg)
-        conv.run()
+        coord_failed_msg = None
+        try:
+            coord_result = coord.process_source(
+                n=n,
+                raw_path=str(WORKDIR / raw_path),
+                target_path=str(WORKDIR / target_path),
+                slug=slug,
+                curator=coord_curator,
+                retriever=coord_retriever,
+            )
+        except CoordinatorError as e:
+            coord_failed_msg = str(e)
+            coord_result = None
         wall_min = (time.time() - t0) / 60
 
-        n_events, input_tokens = measure_top_orch(conv)
-        orch_metrics = {"events": n_events, "input_tokens": input_tokens, "wall_min": wall_min}
-        print(f"=== SRC {n}: top-orch events={n_events}, input_tokens={input_tokens:,}, "
-              f"wall {wall_min:.1f}min ===", file=sys.stderr)
-
-        # Hard architectural assert (Invariant A)
-        if n_events > TOP_ORCH_EVENTS_PER_SOURCE_LIMIT:
-            print(f"!!! INVARIANT A BROKEN: top-orch events={n_events} > {TOP_ORCH_EVENTS_PER_SOURCE_LIMIT}",
+        if coord_failed_msg is not None:
+            # Coordinator hard-failed (e.g. malformed responses ×2). No
+            # file was written. Treat as verify-fail and let the policy
+            # decide stop vs continue.
+            print(f"!!! SRC {n}: coordinator failed: {coord_failed_msg}",
                   file=sys.stderr)
-            stopped_at = n
-            state.append({"n": n, "slug": slug, "orch_metrics": orch_metrics,
-                          "stopped": "invariant_A"})
-            break
+            v = {"verified": "fail",
+                 "violations": [f"coordinator_error: {coord_failed_msg}"]}
+            decision = record_per_source_outcome(state, n, slug, v, policy=fail_policy)
+            state[-1]["coord_metrics"] = {"wall_min": wall_min, "failed": True}
+            if decision == "stop":
+                stopped_at = n
+                break
+            continue
 
-        # Functional verify
+        coord_metrics = {
+            "wall_min": wall_min,
+            "claims": coord_result.claims_total,
+            "claims_NEW": coord_result.claims_NEW,
+            "claims_REPEATED": coord_result.claims_REPEATED,
+            "concepts": coord_result.concepts_curated,
+        }
+        print(f"=== SRC {n}: coordinator wall {wall_min:.1f}min, "
+              f"claims={coord_result.claims_total} "
+              f"(NEW={coord_result.claims_NEW}, "
+              f"REPEATED={coord_result.claims_REPEATED}, "
+              f"CF={coord_result.claims_CF}), "
+              f"concepts={coord_result.concepts_curated} ===",
+              file=sys.stderr)
+
+        # Functional verify (still runs — confirms file on disk + grades).
         v = verify_source(n, original_n=original_n, module_subdir=module_subdir, stem=stem)
         if v.get("verified") == "ok":
             try:
@@ -1136,8 +1277,8 @@ def main():
                 print(f"=== SRC {n}: commit_and_push failed but verify=ok, continuing: {e}",
                       file=sys.stderr)
             decision = record_per_source_outcome(state, n, slug, v, policy=fail_policy)
-            # decoration on the appended entry — orch metrics + commit
-            state[-1]["orch_metrics"] = orch_metrics
+            # decoration on the appended entry — coordinator metrics + commit
+            state[-1]["coord_metrics"] = coord_metrics
             state[-1]["commit"] = commit
             print(f"=== SRC {n}: verified=ok, claims={v.get('claims_total')}, "
                   f"REPEATED={v.get('claims_REPEATED')}, CF={v.get('claims_CF')}, "
@@ -1145,7 +1286,7 @@ def main():
             assert decision == "continue", "verify=ok but policy said stop"
         else:
             decision = record_per_source_outcome(state, n, slug, v, policy=fail_policy)
-            state[-1]["orch_metrics"] = orch_metrics
+            state[-1]["coord_metrics"] = coord_metrics
             print(f"!!! SRC {n}: verify=fail, violations={v.get('violations')[:3]}",
                   file=sys.stderr)
             if decision == "stop":
@@ -1200,8 +1341,9 @@ def main():
           f"REPEATED={total_repeated}, CF={total_cf}", file=sys.stderr)
     print(f"concepts: {len(concepts)} (template v3 violations: {len(template_violations)})",
           file=sys.stderr)
-    print(f"per-source orch events: "
-          f"{[s.get('orch_metrics', {}).get('events', '?') for s in state]}", file=sys.stderr)
+    print(f"per-source coord wall (min): "
+          f"{[s.get('coord_metrics', {}).get('wall_min', '?') for s in state]}",
+          file=sys.stderr)
 
     # ─── ADR 0012 enforcement: skipped-sources manifest + WIKI INCOMPLETE banner ──
     # P6 (completeness over availability) forbids silent skips. Continue-on-fail
@@ -1215,8 +1357,8 @@ def main():
                 "n": s.get("n"),
                 "slug": s.get("slug"),
                 "violations": (s.get("verify") or {}).get("violations", []),
-                "wall_min": (s.get("orch_metrics") or {}).get("wall_min"),
-                "events": (s.get("orch_metrics") or {}).get("events"),
+                "wall_min": (s.get("coord_metrics") or {}).get("wall_min"),
+                "claims": (s.get("coord_metrics") or {}).get("claims"),
             }
             for s in sources_skipped
         ]

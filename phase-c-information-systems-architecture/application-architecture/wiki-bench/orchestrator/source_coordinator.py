@@ -143,9 +143,17 @@ class SourceCoordinator:
         target_path: str,
         slug: str,
         curator: Callable[..., Any],
+        retriever: Callable[[str], list[dict]] | None = None,
     ) -> SourceResult:
         """Process a single source end-to-end. Returns a SourceResult or
-        raises CoordinatorError."""
+        raises CoordinatorError.
+
+        retriever, if provided, is called per-claim with the claim text
+        and must return a list of candidate prior claims like
+        [{'source_slug': str, 'claim_text': str, 'score': float, ...}, ...].
+        These are passed into the classify prompt so the LLM can decide
+        NEW vs REPEATED. If retriever is None, every claim is classified
+        without prior-art context (everything tends NEW)."""
         result = SourceResult(n=n, slug=slug, target_path=target_path)
 
         # Step 1 — read raw.json (deterministic).
@@ -165,8 +173,9 @@ class SourceCoordinator:
         # Step 3 — classify each claim (LLM per claim, schema-bound).
         classified: list[dict] = []
         for claim in claims:
+            candidates = retriever(claim["text"]) if retriever else []
             cls = self._llm_with_retry(
-                prompt=self._prompt_classify_claim(claim),
+                prompt=self._prompt_classify_claim(claim, candidates),
                 schema=SCHEMA_CLAIM_CLASSIFICATION,
                 max_tokens=200,
             )
@@ -291,8 +300,9 @@ class SourceCoordinator:
             f"TRANSCRIPT:\n{transcript}\n"
         )
 
-    def _prompt_classify_claim(self, claim: dict) -> str:
-        return (
+    def _prompt_classify_claim(self, claim: dict,
+                                candidates: list[dict] | None = None) -> str:
+        prompt = (
             "Classify this claim. Set verdict to either NEW (this idea "
             "has not appeared in the prior wiki) or REPEATED (this idea "
             "has appeared before; if so, set from_slug to the prior "
@@ -300,6 +310,20 @@ class SourceCoordinator:
             "(short kebab-case slug).\n\n"
             f"CLAIM: {claim['text']!r}\n"
         )
+        if candidates:
+            prompt += "\nCANDIDATE PRIOR CLAIMS (with cosine score):\n"
+            for c in candidates[:5]:
+                score = c.get("score", c.get("similarity", "?"))
+                src = c.get("source_slug", "?")
+                txt = c.get("claim_text", c.get("text", ""))
+                prompt += f"  ({score:.2f}) [{src}] {txt!r}\n"
+            prompt += (
+                "\nDecision rule:\n"
+                "  score ≥ 0.85 → REPEATED (set from_slug)\n"
+                "  0.78 ≤ score < 0.85 → REPEATED if same proposition\n"
+                "  score < 0.78 → NEW\n"
+            )
+        return prompt
 
     def _prompt_fact_check(self, claim: dict) -> str:
         return (
