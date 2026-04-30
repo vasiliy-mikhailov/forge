@@ -367,11 +367,21 @@ class SourceCoordinator:
         result.steps.append(StepResult("write_file", True, data=str(target)))
 
         # Step 7 — invoke concept-curator per concept (delegated to caller).
-        # Concepts are derived from classified claims' categories. The curator
-        # callable is supplied by the orchestrator; tests pass a no-op.
+        # Concepts are derived from classified claims' categories. The
+        # coordinator builds concept_data with the actual claims under each
+        # concept slug so the curator can write meaningful content (not a
+        # stub). Curator signature is backward compatible: callers that
+        # ignore the third arg still work.
         concepts = self._collect_concepts(classified)
         for slug_c in concepts:
-            curator(slug_c, slug)  # let the caller decide what curator means
+            concept_data = {
+                "claims": [c for c in classified if c.get("category") == slug_c],
+            }
+            try:
+                curator(slug_c, slug, concept_data)
+            except TypeError:
+                # Old-style 2-arg curator (test stubs). Fall back gracefully.
+                curator(slug_c, slug)
             result.concepts_curated += 1
 
         # Tally counters

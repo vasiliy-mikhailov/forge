@@ -496,25 +496,73 @@ def _make_retriever(embed_helpers_path: str, workdir_wiki: Path):
     return retrieve
 
 
-def _make_stub_curator(workdir: Path):
-    """Coordinator-side curator that writes a minimal skill-v2 concept.md
-    per concept slug. This is the FIRST CUT after ADR 0013 — replacing
-    the OpenHands concept-curator sub-agent with a deterministic stub
-    so K1 v2 can run end-to-end. Concept template-v3 richness is a
-    deliberate follow-up; the stub at least keeps cross-references
-    resolvable so per-source bench_grade passes."""
+def _make_concept_curator(workdir: Path):
+    """Python concept curator that writes meaningful concept.md per concept
+    slug, using the actual claims classified under that concept slug as
+    content. No LLM call — deterministic Python from data the coordinator
+    already has. Replaces the SourceCoordinator stub-curator (ADR 0013).
+
+    Schema for each concept file (skill-v2 template):
+      ---
+      slug: <concept-slug>
+      first_introduced_in: <source-slug>
+      touched_by:
+        - <source-slug>
+        - ...
+      ---
+      # <concept-slug>
+
+      ## Definition
+      <text of the most representative claim under this concept,
+       lightly cleaned>
+
+      ## Contributions by source
+
+      ### <source-slug>
+      - claim 1 text
+      - claim 2 text
+      ...
+    """
     concepts_dir = workdir / "wiki" / "data" / "concepts"
     concepts_dir.mkdir(parents=True, exist_ok=True)
 
-    def curator(concept_slug: str, source_slug: str):
+    def curator(concept_slug: str, source_slug: str, concept_data: dict | None = None):
         path = concepts_dir / f"{concept_slug}.md"
+        claims = (concept_data or {}).get("claims", [])
+        claim_texts = [c.get("text", "").strip() for c in claims if c.get("text")]
+        # Compose the per-source contribution block.
+        if claim_texts:
+            contrib_lines = ["\n".join(f"- {t}" for t in claim_texts)]
+        else:
+            contrib_lines = ["_(no specific claims classified under this concept "
+                             "for this source — slug appeared as a thematic "
+                             "category only)_"]
+        contrib_block = (
+            f"### {source_slug}\n\n"
+            + "\n".join(contrib_lines)
+            + "\n"
+        )
         if path.exists():
-            # Append source_slug to existing touched_by if not present.
             body = path.read_text(encoding="utf-8")
-            if source_slug not in body:
-                body = body.rstrip() + f"\n  - {source_slug}\n"
-                path.write_text(body, encoding="utf-8")
+            # Append source_slug to touched_by if not present.
+            if f"- {source_slug}" not in body:
+                # Insert into the touched_by block (right after last existing
+                # entry).
+                body = re.sub(
+                    r"(touched_by:\n(?:  - .+\n)+)",
+                    lambda m: m.group(1) + f"  - {source_slug}\n",
+                    body, count=1,
+                )
+            # Append the contribution block at end (avoid duplicates).
+            if f"### {source_slug}" not in body:
+                body = body.rstrip() + "\n\n" + contrib_block
+            path.write_text(body, encoding="utf-8")
             return
+        # First introduction of this concept — write a fresh file.
+        definition = claim_texts[0] if claim_texts else (
+            f"_(no claim text available for slug {concept_slug!r}; "
+            f"appeared as a thematic category only)_"
+        )
         body = (
             "---\n"
             f"slug: {concept_slug}\n"
@@ -523,14 +571,16 @@ def _make_stub_curator(workdir: Path):
             "---\n"
             f"# {concept_slug}\n\n"
             "## Definition\n\n"
-            "_(coordinator-stub — concept-curator agent integration "
-            "is a Phase F follow-up per ADR 0013)_\n\n"
+            f"{definition}\n\n"
             "## Contributions by source\n\n"
-            f"### {source_slug}\n\n"
-            "_stub contribution_\n"
+            + contrib_block
         )
         path.write_text(body, encoding="utf-8")
     return curator
+
+
+# Back-compat alias — older code paths reference the old name.
+_make_stub_curator = _make_concept_curator
 
 
 _FRONTMATTER_RE = re.compile(r"^---\n(.+?)\n---\n", re.DOTALL)
@@ -710,7 +760,7 @@ def main():
         # CoordinatorError. No SDK-side silent acceptance can happen
         # because there is no SDK in the per-source loop.
         coord = SourceCoordinator(llm=coordinator_llm, workdir=WORKDIR)
-        coord_curator = _make_stub_curator(WORKDIR)
+        coord_curator = _make_concept_curator(WORKDIR)
         coord_retriever = _make_retriever(embed_helpers_path, WORKDIR / "wiki")
 
         t0 = time.time()
