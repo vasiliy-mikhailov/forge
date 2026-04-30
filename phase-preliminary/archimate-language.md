@@ -20,9 +20,11 @@ forge's own words.
 
 This file is a **digest**, not a translation of the spec. Where
 the spec exhaustively enumerates every constraint, this file
-records only what forge actually relies on. The
-[*Skip list*](#skip-list-elements-forge-does-not-use-today)
-section names what's deliberately omitted.
+records only what forge actually relies on. Elements forge does
+not use today are simply absent from the tables below; per the
+[architecture method's](architecture-method.md) delete-on-
+promotion rule, the working tree reads as current truth, not as
+a status log.
 
 ## What ArchiMate is
 
@@ -76,6 +78,8 @@ ArchiMate 3 forge contributors should be aware of.
 
 ## Domains and their elements
 
+**Tables list only the elements forge actually uses today.** Elements not listed are described in the spec; if forge starts using one, its row is added to the relevant table at that point. This matches the architecture-method.md rule that the working tree reads as current truth, not as a status log.
+
 Listed in the order forge phases use them (Motivation first
 because it drives Phase A; Strategy → Business → Application →
 Technology because that's the layering; Implementation &
@@ -91,14 +95,11 @@ Application / Technology domains.
 | Element       | One-line definition (forge phrasing)                                                                    | Spec ref |
 |---------------|----------------------------------------------------------------------------------------------------------|----------|
 | **Role**          | The position or purpose an active structure element (Business Actor, Application Component, Node, etc.) plays in performing behavior. *Forge example: Wiki PM.* | §4.1.1 |
-| **Collaboration** | A (possibly temporary) collection of internal active structure elements that perform collective behavior. *Not used in forge today.* | §4.1.2 |
-| **Path**          | A logical link through which active structure elements exchange information / data / energy / material. *Not used in forge today.* | §4.1.3 |
 | **Service**       | An explicitly defined behavior an active structure element provides to its environment, accessible through interfaces. *Forge example: LLM inference service exposed by wiki-compiler.* | §4.2.1 |
 | **Process**       | A sequence of behaviors that achieves a specific result; ordered "flow" of activities. *Forge example: per-source progression in K1 v2.* | §4.2.2 |
 | **Function**      | A collection of behavior grouped by required skills / resources / knowledge — *not* by sequence. Realizes Capabilities. *Forge example: Compile-lecture-into-source.md.* | §4.2.3 |
 | **Event**         | An instantaneous occurrence (state change) that triggers / is triggered by behavior. *Forge example: "Pilot completed" triggering "Publish step".* | §4.2.4 |
 | **Grouping**      | A composite element that aggregates concepts belonging together by some criterion. *Forge example: the Wiki product line aggregating Kurpatov + Tarasov Products.* | §4.3.1 |
-| **Location**      | A composite element representing a physical or logical place. *Not used in forge today.* | §4.3.2 |
 
 ### Motivation domain (spec §6)
 
@@ -110,11 +111,8 @@ The *why* layer. Reasons behind the architecture.
 | **Driver**      | An external or internal condition that motivates the organization to define its goals and implement changes. *Forge example: "AI tools should save human time on cognitive work".* | §6.3.2 |
 | **Assessment**  | The result of analysis of the state of the enterprise with respect to a driver — surfaces strengths, weaknesses, opportunities, threats. *Forge example: a Phase H audit row.* | §6.3.3 |
 | **Goal**        | A high-level statement of intent or direction for the enterprise. *Forge example: TTS, PTS, EB, Architect-velocity (Phase A).* | §6.4.1 |
-| **Outcome**     | An end-result that has been achieved. *Not used in forge — Goals already cover what we'd express as Outcomes.* | §6.4.2 |
 | **Principle**   | A normative property of all systems in a given context. *Forge example: the four architecture-principles (single architect, capability trajectories, containers-only, single server).* | §6.4.3 |
 | **Requirement** | A statement of need that must be realized by the architecture. *Forge example: each row in `phase-requirements-management/catalog.md`.* | §6.4.4 |
-| **Meaning**     | Knowledge / expertise present in the architecture about the value of an element. *Not used in forge.* | §6.5.1 |
-| **Value**       | The relative worth, utility, or importance of an element. *Not used in forge.* | §6.5.2 |
 
 ### Strategy domain (spec §7)
 
@@ -122,10 +120,7 @@ What the enterprise *can do*.
 
 | Element       | One-line definition (forge phrasing)                                                                    | Spec ref |
 |---------------|----------------------------------------------------------------------------------------------------------|----------|
-| **Resource**       | An asset (tangible or intangible) owned or controlled by the enterprise. *Not used in forge today; could model GPU budget.* | §7.2.1 |
 | **Capability**     | An ability the enterprise possesses; *what* the enterprise can do, independent of how it implements it. *Forge example: Develop wiki product line; Service operation.* | §7.3.1 |
-| **Value Stream**   | A sequence of value-creating stages from initiation to delivery. *Not used in forge today.* | §7.3.2 |
-| **Course of Action** | A plan or step the enterprise will take to achieve goals. *Not used; replaced by Phase F experiment specs.* | §7.3.3 |
 
 A Capability is *realized by* one or more Functions. A Function
 is *assigned to* a Role and / or an Application Component / Node.
@@ -142,7 +137,6 @@ Domain.
 | Element       | One-line definition (forge phrasing)                                                                    | Spec ref |
 |---------------|----------------------------------------------------------------------------------------------------------|----------|
 | **Business Actor**     | An organizational entity (person, org unit, organization) capable of performing behavior. *Forge example: architect of record (the human); a Cowork session (an LLM agent).* | §8.2.1 |
-| **Business Interface** | A point of access where a Service is made available to the environment. *Not used in forge.* | §8.2.2 |
 | **Business Object**    | A passive element of business significance — concept / information / fact relevant to the business domain. *Forge example: source.md / concept.md content; corpus-observations.md.* | §8.3.1 |
 | **Product**            | A coherent collection of Services and Business Objects, accompanied by a Contract / set of agreements offered to customers. *Forge example: Kurpatov Wiki, Tarasov Wiki.* | §8.4.1 |
 
@@ -153,7 +147,6 @@ The application / software layer.
 | Element       | One-line definition (forge phrasing)                                                                    | Spec ref |
 |---------------|----------------------------------------------------------------------------------------------------------|----------|
 | **Application Component** | An encapsulated software unit with well-defined functionality and interfaces. *Forge example: wiki-bench, wiki-compiler, wiki-ingest.* | §9.2.1 |
-| **Application Interface** | A point of access where an Application Service is made available. *Not used explicitly in forge.* | §9.2.2 |
 | **Data Object**           | Data structured for automated processing. *Forge example: raw.json, the source.md / concept.md files (as files, not as content), catalog.md.* | §9.3.1 |
 
 ### Technology domain (spec §10)
@@ -167,12 +160,8 @@ sub-domain (Equipment, Facility, Distribution Network, Material).
 | **Technology Interface** | A point of access where Technology Services are made available. *Forge example: HTTPS endpoint at inference.mikhailov.tech.* | §10.2.2 |
 | **Device**          | A physical IT resource. *Forge example: the Blackwell GPU; the RTX 5090.* | §10.2.3 |
 | **System Software** | Software environment supporting application and other software components. *Forge example: vLLM, faster-whisper, caddy, Docker.* | §10.2.4 |
-| **Equipment**       | One or more physical machines, tools, or instruments. *Not used (forge servers are Devices).* | §10.2.5 |
 | **Facility**        | A physical structure providing the environment for hosting equipment. *Forge example: the home-lab room.* | §10.2.6 |
 | **Communication Network** | A set of structures and behaviors that connect computer systems. *Forge example: the proxy-net Docker network.* | §10.2.7 |
-| **Distribution Network**  | A physical network used to transport material or energy. *Not used in forge.* | §10.2.8 |
-| **Artifact**        | A piece of data that is used or produced in software development or system operation. *Not used in forge today; would model deployed Docker images.* | §10.3.1 |
-| **Material**        | A tangible physical material. *Not used in forge.* | §10.3.2 |
 
 ### Implementation & Migration domain (spec §12)
 
@@ -249,30 +238,6 @@ all element types used are stock. If a future need arises (e.g.
 declared in the same archimate-vocabulary.md table by adding a
 row with a "specialization of" column.
 
-## Skip list — elements forge does NOT use today
-
-For navigation: the elements below are described in the spec but
-not currently mapped in
-[`archimate-vocabulary.md`](archimate-vocabulary.md). Listed so a
-contributor can pick them up later without re-deriving they
-exist.
-
-- **Common:** Collaboration, Path, Location.
-- **Motivation:** Outcome, Meaning, Value.
-- **Strategy:** Resource, Value Stream, Course of Action.
-- **Business:** Business Interface, Contract, Representation.
-- **Application:** Application Interface, Application
-  Collaboration, Application Process / Function / Service /
-  Interaction / Event (forge collapses these into "Application
-  Component realizes a Common-Domain Function/Service").
-- **Technology:** Equipment, Distribution Network, Path,
-  Material, Artifact.
-- **Implementation & Migration:** (none — all 3 elements used).
-- **Junctions:** And, Or — used informally in prose, not as
-  typed elements.
-
-When forge starts using one of these, the row moves into
-`archimate-vocabulary.md` with a forge-side example.
 
 ## What this file is NOT
 

@@ -133,29 +133,6 @@ Value Streams for the wiki product line), they'd land here too.
 ArchiMate 4 has no Gap element; the v3 Gap is implicit in the
 existence of two Plateaus + a Work Package connecting them.
 
-## Skip list (forge does not use)
-
-The following ArchiMate 4 elements are not used in forge today.
-They are listed so a contributor knows they exist and can add a
-mapping if/when they become useful:
-
-- **Strategy:** Resource, Value Stream, Course of Action.
-- **Business:** Business Interface, Contract, Representation.
-- **Application:** Application Interface, Application
-  Collaboration, Application Process / Function / Service /
-  Interaction / Event (forge collapses the Application × Common
-  cross-product into just "Application Component realizes a
-  Common-Domain Function/Service").
-- **Technology:** Equipment, Distribution Network, Path,
-  Material, Artifact (forge files map to Data Object in
-  Application; Artifact would model deployed binaries — not
-  needed yet).
-- **Common:** Collaboration, Path, Location.
-- **Motivation:** Outcome, Meaning, Value (Goals already cover
-  what we'd model as Outcomes; Meaning + Value would be useful
-  if forge ever needed a stakeholder-value model).
-- **Junctions:** And, Or — used informally; would become typed
-  if forge ever ships ArchiMate diagrams.
 
 ## Relationship verbs
 
