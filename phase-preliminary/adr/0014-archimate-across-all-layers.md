@@ -271,6 +271,10 @@ ArchiMate-tagged the next time they're meaningfully edited.
 
 ## References
 
+- [`../archimate-language.md`](../archimate-language.md) — the
+  forge-internal description of ArchiMate 4 itself (domains,
+  element types, relationship verbs). Read first if unfamiliar
+  with the language.
 - ArchiMate® 4 Specification (The Open Group, 2026) — local
   copy at a local PDF kept at `phase-preliminary/adr/archimate-4-spec.pdf` (gitignored — Open Group spec is "Evaluation Copy, not for redistribution"; download from https://publications.opengroup.org/standards/archimate), §§ 4
   (Common Domain), 5 (Relationships and Junctions), 6

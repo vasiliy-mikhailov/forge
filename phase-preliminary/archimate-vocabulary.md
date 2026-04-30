@@ -2,8 +2,13 @@
 
 The cross-reference table mapping forge concepts to ArchiMate 4
 element types and the relationship verbs forge uses. Decided in
-[ADR 0014](adr/0014-archimate-across-all-layers.md). Spec
-reference (offline copy):
+[ADR 0014](adr/0014-archimate-across-all-layers.md). New to ArchiMate? Read
+[`archimate-language.md`](archimate-language.md) first — that's the
+language description (domains, elements, relationship verbs). This
+file is the *forge → ArchiMate* mapping; that file is *what
+ArchiMate is*.
+
+Spec reference (offline copy):
 a local PDF kept at `adr/archimate-4-spec.pdf` (gitignored — Open Group spec is "Evaluation Copy, not for redistribution"; download from https://publications.opengroup.org/standards/archimate).
 
 ## How to read this doc

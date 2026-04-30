@@ -29,9 +29,15 @@ re-opened.
 ## Layout
 
 - [`framework-tailoring.md`](framework-tailoring.md) — what TOGAF
-  vocabulary forge adopts, what it deliberately skips (no formal
-  Architecture Definition Document; no certification; ArchiMate
-  vocabulary used only inside Phase D).
+  + ArchiMate 4 vocabulary forge adopts, what it deliberately skips
+  (no formal Architecture Definition Document; no certification;
+  no ArchiMate diagrams).
+- [`archimate-language.md`](archimate-language.md) — description of
+  ArchiMate 4 itself (domains, element types, relationship verbs).
+  The forge-internal reference for the modeling language.
+- [`archimate-vocabulary.md`](archimate-vocabulary.md) — mapping
+  every existing forge concept to one ArchiMate 4 element type;
+  the four canonical metamodel chains forge relies on.
 - [`architecture-team.md`](architecture-team.md) — single architect
   of record. No committee, no formal review process. Future-
   operator and end-users are stakeholders (Phase A), not part of

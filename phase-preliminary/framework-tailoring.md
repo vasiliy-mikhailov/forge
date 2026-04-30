@@ -9,7 +9,9 @@ does not.
   documentation by classic TOGAF ADM phases (Preliminary, A — H).
   This is the structural backbone every reader navigates by.
 - **ArchiMate 4 vocabulary across all phases** (extended in
-  [ADR 0014](adr/0014-archimate-across-all-layers.md)). Forge
+  [ADR 0014](adr/0014-archimate-across-all-layers.md); language
+  itself described in [`archimate-language.md`](archimate-language.md);
+  forge → ArchiMate mapping in [`archimate-vocabulary.md`](archimate-vocabulary.md)). Forge
   uses ArchiMate 4 as its modeling vocabulary throughout the
   TOGAF phases — every named element (Role, Capability,
   Application Component, Plateau, etc.) maps to one ArchiMate 4
