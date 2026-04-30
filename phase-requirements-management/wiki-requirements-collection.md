@@ -20,11 +20,11 @@ audience segment, a quality regression that no existing R-NN
 explains).
 
 This activity is performed by the
-[Wiki PM agent](../phase-b-business-architecture/agents/wiki-pm.md).
-The agent is a Claude session loaded with this file as its
-activation; it is a separate org-unit from the architect (who
-designs the structure) and from the labs (which run the
-operational pipeline). See
+[Wiki PM role](../phase-b-business-architecture/roles/wiki-pm.md).
+The role is filled today by a Claude session loaded with this
+file as its working method; it is a separate org-unit from the
+architect (who designs the structure) and from the labs (which
+run the operational pipeline). See
 [`../phase-b-business-architecture/org-units.md`](../phase-b-business-architecture/org-units.md)
 for the split.
 

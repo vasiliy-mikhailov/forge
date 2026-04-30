@@ -64,6 +64,29 @@ The cost is that historical context lives only in `git log` /
 the alternative — a working tree that documents its own history —
 makes the working tree itself unreadable at scale.
 
+## md is source code; TDD applies
+
+An extension landed in [ADR 0013](adr/0013-md-as-source-code-tdd.md):
+any md that drives runtime behaviour (prompts the bench hands
+to the model, role definitions LLM agents activate from,
+process specs that decompose into steps, lab AGENTS.md, per-
+capability quality specs) is source code, and the same TDD
+discipline forge uses for code applies. Tests live at
+`tests/<source-path>/test-<name>.md` mirroring the source
+tree (Python unit-test convention). Tests are authored
+*before* the md drives anything for the first time and stay
+`RED` until the md's output passes them. Coverage levels
+L0–L5 per md, defined inside each test file's preamble.
+
+Verifier preference: mechanical (regex / parse / numeric) →
+LLM-as-judge (a different role asked yes/no) → architect
+eye-read. Eye-read is allowed but is a smell flag — too many
+eye-read predicates means the test is not really a test.
+
+This extension applies to the md kinds enumerated in
+ADR 0013. README files, ADRs, and prose architecture docs
+are documentation under review, not source under tests.
+
 ## How the method consumes the principles
 
 The four [architecture principles](architecture-principles.md) are

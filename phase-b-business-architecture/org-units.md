@@ -6,14 +6,14 @@ collapse into each other:
 | Category | Plurality | What they do | Style |
 |----------|-----------|--------------|-------|
 | **Architect** | 1 | *Make the structure.* Design the TOGAF artefacts, decide trajectories, write requirements, author prompts, gate ADRs. Functional / declarative work. | architect of record |
-| **Agents** | many | *Make the structure alive.* Execute within the structure the architect designed: run the requirements process, edit lab code under spec, drive the bench coordinator, push commits, etc. Operational / imperative work. | one file per agent in [`agents/`](agents/) |
+| **Roles** | many | *Make the structure alive.* Execute within the structure the architect designed: run the requirements process, edit lab code under spec, drive the bench coordinator, push commits, etc. Operational / imperative work. | one file per role in [`roles/`](roles/), filled today by Claude / Cowork / Codex sessions (actors) |
 
 The split exists because the work has two distinct shapes. The
 architect produces durable artefacts the agents reference; agents
-produce running outputs the architect reviews. An agent does not
+produce running outputs the architect reviews. A role-filling actor does not
 edit the architecture (no committing into `phase-*/`); the
 architect does not run the per-source pipeline (no per-claim
-prompt orchestration). When a change blurs the line — an agent
+prompt orchestration). When a change blurs the line — an actor in a role
 changing an ADR, the architect manually editing a single
 source.md — that is a smell, not the convention.
 
@@ -29,31 +29,30 @@ for the full role definition and the conditions that would
 re-open Preliminary (a second architect, an external operator, a
 paying consumer).
 
-## Agents
+## Roles
 
-LLM agents that execute within the structure. Each is a Claude /
-OpenHands / Codex session activated against a specific persona
-file in [`agents/`](agents/). The persona file specifies the
-agent's purpose, what it consumes, what it produces, and what it
-may decide vs what it must escalate to the architect.
+Functional responsibilities that execute within the structure.
+In TOGAF metamodel terms, a **Role** is a function or set of
+responsibilities; an **Actor** is the person or system that
+fills it. Today most roles in [`roles/`](roles/) are filled by
+LLM agents (Claude / Cowork / Codex sessions); the role file
+describes the responsibility, not the actor.
 
-| Agent | Persona file | Activates from | Realises |
-|-------|--------------|----------------|----------|
-| Wiki PM | [`agents/wiki-pm.md`](agents/wiki-pm.md) | [`../phase-requirements-management/wiki-requirements-collection.md`](../phase-requirements-management/wiki-requirements-collection.md) | Requirement traceability dimension of the [`Develop wiki product line`](capabilities/develop-wiki-product-line.md) capability |
+| Role | Definition | Activates from | Realises |
+|------|------------|----------------|----------|
+| Wiki PM | [`roles/wiki-pm.md`](roles/wiki-pm.md) | [`../phase-requirements-management/wiki-requirements-collection.md`](../phase-requirements-management/wiki-requirements-collection.md) | Requirement traceability dimension of the [`Develop wiki product line`](capabilities/develop-wiki-product-line.md) capability |
 
-Other agents that operate today but aren't yet formalised as
-persona files (when one of them produces a regression that
-requires written decision rights, it gets a file):
+Other roles that operate today but aren't yet formalised as
+role files (when one of them produces a regression requiring
+written decision rights, it gets a file):
 
 - **Source-author / concept-curator** — internal Python
-  coordinator now (per
-  [`../phase-c-information-systems-architecture/application-architecture/wiki-bench/docs/adr/`](../phase-c-information-systems-architecture/application-architecture/wiki-bench/docs/adr/)
-  ADR 0013), no longer an external agent. Listed here for
-  history; not in `agents/`.
-- **Wiki-bench developer agent** — Cowork session that edits
-  `wiki-bench` source under spec. Activates from the
-  lab's `AGENTS.md`. Persona file pending — write one when an
-  edit conflict requires explicit decision rights.
+  coordinator now (per the wiki-bench `ADR 0013`,
+  [`../phase-c-information-systems-architecture/application-architecture/wiki-bench/docs/adr/`](../phase-c-information-systems-architecture/application-architecture/wiki-bench/docs/adr/)).
+  No longer a separate role; subsumed into the lab.
+- **Wiki-bench developer** — Cowork session that edits
+  `wiki-bench` source under spec. Role file pending — write one
+  when an edit conflict requires explicit decision rights.
 
 ## Why labs are not org-units
 

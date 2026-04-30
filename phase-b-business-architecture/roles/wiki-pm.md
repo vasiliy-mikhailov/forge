@@ -1,4 +1,4 @@
-# Agent: Wiki PM
+# Role: Wiki PM
 
 ## Purpose
 
@@ -14,7 +14,7 @@ dimension of the
 [`Develop wiki product line`](../capabilities/develop-wiki-product-line.md)
 capability.
 
-This agent does not author wiki content (that is the
+This role does not author wiki content (that is the
 source-author / concept-curator pipeline inside `wiki-bench`); it
 authors the *requirements that constrain* the content.
 
@@ -24,7 +24,7 @@ authors the *requirements that constrain* the content.
 — the 8-step process spec (S1 sample, S2 inventory observations,
 S3 identify reading modes, S4 decompose goals, S5 walk
 scenarios, S6 reconcile info-arch, S7 emit R-NN, S8 hand to
-implementation). Loading the persona = loading that file.
+implementation). Loading the role = loading that file.
 
 ## Inputs
 
@@ -65,7 +65,7 @@ edits.
 
 ## Decision rights
 
-The agent may decide, without architect approval:
+The role may decide, without architect approval:
 
 - Which raws to sample in S1 (≥ 5 representative).
 - Which observations to bucket as Substance / Form / Air in S2.
@@ -78,7 +78,7 @@ The agent may decide, without architect approval:
 
 ## Escalates to architect
 
-The agent must NOT decide:
+The role must NOT decide:
 
 - Phase A goals (TTS, PTS, EB, Architect-velocity). Adding a new
   top-level goal re-opens
@@ -98,41 +98,42 @@ The agent must NOT decide:
 When in doubt: emit the R-NN as `Status: PROPOSED`, do not
 implement, escalate.
 
-## Realised by (tooling)
+## Filled by (today)
 
-Today: Claude (Cowork desktop session) loaded with the activation
+Claude (Cowork desktop session) loaded with the activation
 file above. Tomorrow: any LLM agent harness that can read the
-process spec and edit markdown — the persona is harness-agnostic
+process spec and edit markdown — the role definition is harness-agnostic
 on purpose.
 
-The agent runs in the architect's local sandbox; it does not have
+The role today runs in the architect's local sandbox; it does not have
 write access to forge `main` directly — outputs land via the same
 review path the architect uses for manual edits (commit + push
 under the architect's identity).
 
 ## Tests
 
-[`wiki-pm-tests/`](wiki-pm-tests/) — md test suite codifying
-the persona as pass/fail predicates. Tests are authored
-*before* the agent runs for the first time (TDD); they stay
-`RED` until the agent's output passes them. Convention defined
-in [`README.md` § "MD tests for agents"](README.md). Coverage
-target: L3 (every quality dimension and every Decision-rights
-line has ≥ 1 test) before the agent's outputs are merged.
+[`/tests/phase-b-business-architecture/roles/test-wiki-pm.md`](../../tests/phase-b-business-architecture/roles/test-wiki-pm.md)
+— md test file codifying the role as pass/fail predicates.
+Tests are authored *before* whoever fills the role runs it
+for the first time (TDD); they stay `RED` until the role's
+output passes them. Convention defined inside the test file.
+Coverage target: L3 (every capability quality dimension and
+every Decision-rights line has ≥ 1 test) before the role's
+outputs are merged.
 
-Current suite: T-WP-01 (extract rules from raw), T-WP-02 (no
-orphan R-NN rows), T-WP-03 (escalates schema/prompt/source.md
-changes). All `RED` — agent has not yet been run.
+Current scenarios: T-WP-01 (extract rules from raw), T-WP-02
+(no orphan R-NN rows), T-WP-03 (escalates schema / prompt /
+source.md changes). All `RED` — role has not yet been run.
 
 ## References
 
-- Process spec:
+- Working method:
   [`../../phase-requirements-management/wiki-requirements-collection.md`](../../phase-requirements-management/wiki-requirements-collection.md).
-- Capability the agent realises:
+- Capability the role realises:
   [`../capabilities/develop-wiki-product-line.md`](../capabilities/develop-wiki-product-line.md).
 - Org-units context (architect vs agents):
   [`../org-units.md`](../org-units.md).
-- Currently active trajectory the agent must close:
+- Currently active trajectory the role must close:
   `R-B-wiki-req-collection` row in
   [`../../phase-requirements-management/catalog.md`](../../phase-requirements-management/catalog.md).
 - Architect role definition (escalation target):

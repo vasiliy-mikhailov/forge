@@ -46,6 +46,25 @@ Commit discipline: it's fine to land all four steps in one commit,
 but the message should make clear the model changed first. "just fix
 smoke.sh" without touching `tests/` is a code smell.
 
+## Two kinds of tests under this folder
+
+- **Smoke tests** (the original use of this directory) —
+  prose models in `*.md` paired with bash assertion scripts
+  under `scripts/` or per-lab `tests/`. The discipline below
+  was written for these.
+- **Role tests** — md tests for the [Phase B roles](../phase-b-business-architecture/roles/).
+  Each role's persona is codified as pass/fail predicates in
+  `tests/<role-source-path>/test-<role>.md`. Role tests have
+  no derived bash script — the md *is* the test, evaluated
+  by a verifier (mechanical predicates) → LLM-as-judge
+  (different role asked yes/no) → architect (eye-read), in
+  that priority. Convention is documented inside each role-
+  test file's preamble; the meta-discipline is
+  [ADR 0013](../phase-preliminary/adr/0013-md-as-source-code-tdd.md).
+
+  Currently:
+  - [`phase-b-business-architecture/roles/test-wiki-pm.md`](phase-b-business-architecture/roles/test-wiki-pm.md)
+
 ## Coverage map
 
 After [ADR 0007](../phase-g-implementation-governance/adr/0007-labs-restructure-self-contained-caddy.md),
