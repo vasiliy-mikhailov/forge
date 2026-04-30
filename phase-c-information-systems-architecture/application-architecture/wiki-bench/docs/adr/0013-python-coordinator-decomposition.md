@@ -219,3 +219,49 @@ Status as of 2026-04-30: 20 sources verified=ok via coordinator
 (parallel=10), 1 source skipped on the rambling-JSON failure mode
 now patched. Clean re-run with parallel=13 + tightened fact-check
 expected to clear all 44 sources in ~1 hour wall.
+
+## Output contract: language preservation
+
+The wiki content language must match the source content language.
+For a Russian raw.json, every wiki artifact derived from it — TL;DR,
+Лекция сжато, claim text, fact-check notes, concept slugs, concept
+file names, concept frontmatter, concept definitions, concept
+contributions — is in Russian. No English fall-through, no
+translation, no transliteration to ASCII.
+
+Why this needs to be a contract, not a prompt detail: bench_grade
+checks structural validity (sections present, markers present,
+frontmatter fields populated). It does NOT check what language the
+content is in. A wiki of English summaries of a Russian lecture
+passes bench_grade verified=ok and ships looking correct. The
+language regression is invisible to every automated check we have.
+The user catches it by reading.
+
+Enforcement points (all in `source_coordinator.py`):
+
+- `_prompt_extract_claims` — explicit "Output every claim in the SAME
+  LANGUAGE as the TRANSCRIPT below."
+- `_prompt_classify_batch` — explicit "category: kebab-case slug IN
+  THE SAME LANGUAGE as the claim. If the claim is Russian, the slug
+  is Russian (e.g. 'академическая-фрагментация')." Concept file
+  names derive from this slug, so Russian slug → Russian filename.
+- `_prompt_fact_check` — explicit "notes: ONE sentence in the SAME
+  LANGUAGE as the CLAIM." (Earlier "Plain ASCII" rule, added to
+  prevent rambling-JSON, was found to silently force English notes;
+  removed in favor of nested-escape constraint.)
+- `_prompt_tldr` — explicit "🇷🇺 LANGUAGE: same as the TRANSCRIPT."
+- `_prompt_lecture` — explicit "🇷🇺 LANGUAGE: same as the
+  TRANSCRIPT."
+- `_make_concept_curator` (in `run-d8-pilot.py`) — uses claim text
+  verbatim as Definition / Contribution; if claims are Russian,
+  concept content is Russian. No translation step.
+
+Future LLM steps (e.g. real concept-curator agent integration) MUST
+include the same language-preservation directive in their prompt.
+ADRs that introduce new content-generation paths MUST state the
+language contract explicitly.
+
+This contract was emergent in practice — the coordinator originally
+defaulted to English claim text and English fact-check notes, the
+user caught both by eye, the prompts were iterated. Codifying it
+here so a future change won't silently regress.

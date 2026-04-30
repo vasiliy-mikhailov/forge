@@ -145,10 +145,18 @@ events.jsonl, summary.json, per-source bench-report.md.
   source.md at its fixed step or raises `CoordinatorError` — there is
   no third path. Malformed LLM responses get one corrective retry
   then a hard error (no silent acceptance).
+- L1: **language-preservation guarantee**. Wiki content language matches
+  source content language. Russian raw → Russian TL;DR, Russian
+  Лекция, Russian claim text, Russian fact-check notes, Russian
+  concept slugs (kebab-case Cyrillic, e.g. `академическая-фрагментация`),
+  Russian concept file names. bench_grade does NOT check this — the
+  contract lives in coordinator prompts and the ADR 0013 "Output
+  contract: language preservation" section. Any future
+  content-generation path MUST carry the same directive.
 - L2: real concept-curator OpenHands sub-agent integration. Current
-  cut uses a deterministic stub that writes minimal skill-v2
-  `concept.md` per concept slug; the real agent invocation is a
-  follow-up.
+  cut uses a Python concept curator that writes definition +
+  per-source contributions from claim text directly (no LLM call,
+  no agent loop — content quality follows claim quality).
 
 **Service: Vector retrieval (claim and concept dedup)** (consumer:
 the coordinator's classify step + future concept-curator).
