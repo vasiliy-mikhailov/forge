@@ -19,6 +19,7 @@ finds the file iff the coordinator finished).
 from __future__ import annotations
 
 import json
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable
@@ -192,14 +193,23 @@ class SourceCoordinator:
         result.steps.append(StepResult("extract_claims", True, data=len(claims)))
 
         # Step 3 — classify each claim (LLM per claim, schema-bound).
+        n_claims = len(claims)
+        if n_claims:
+            print(f"  [coord] classify_claims: {n_claims} claims",
+                  flush=True)
         classified: list[dict] = []
-        for claim in claims:
+        t_classify = time.monotonic()
+        for i, claim in enumerate(claims):
             candidates = retriever(claim["text"]) if retriever else []
             cls = self._llm_with_retry(
                 prompt=self._prompt_classify_claim(claim, candidates),
                 schema=SCHEMA_CLAIM_CLASSIFICATION,
                 max_tokens=200,
             )
+            if (i + 1) % 5 == 0 or i + 1 == n_claims:
+                dt = time.monotonic() - t_classify
+                print(f"  [coord] classify_claims {i+1}/{n_claims} "
+                      f"({dt:.0f}s elapsed)", flush=True)
             classified.append({
                 "text": claim["text"],
                 "needs_factcheck": claim.get("needs_factcheck", False),
@@ -210,9 +220,12 @@ class SourceCoordinator:
         result.steps.append(StepResult("classify_claims", True, data=len(classified)))
 
         # Step 4 — selective fact-check (LLM per needs_factcheck claim).
-        for c in classified:
-            if not c.get("needs_factcheck"):
-                continue
+        to_check = [c for c in classified if c.get("needs_factcheck")]
+        if to_check:
+            print(f"  [coord] fact_check: {len(to_check)} claims",
+                  flush=True)
+        t_fc = time.monotonic()
+        for i, c in enumerate(to_check):
             fc = self._llm_with_retry(
                 prompt=self._prompt_fact_check(c),
                 schema=SCHEMA_FACT_CHECK,
@@ -221,6 +234,10 @@ class SourceCoordinator:
             c["fact_marker"] = fc.get("marker")
             c["fact_url"] = fc.get("url")
             c["fact_notes"] = fc.get("notes")
+            if (i + 1) % 3 == 0 or i + 1 == len(to_check):
+                dt = time.monotonic() - t_fc
+                print(f"  [coord] fact_check {i+1}/{len(to_check)} "
+                      f"({dt:.0f}s elapsed)", flush=True)
         result.steps.append(StepResult("fact_check", True))
 
         # Step 5 — compose source.md from collected results (deterministic).
