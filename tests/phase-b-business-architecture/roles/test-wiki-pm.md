@@ -63,7 +63,7 @@ Coverage levels:
 
 | ID       | Title                                                            | Status |
 |----------|------------------------------------------------------------------|--------|
-| T-WP-01  | Extract rules from raw transcript per capability dimensions      | RED    |
+| T-WP-01  | Extract rules from raw transcript per capability dimensions      | GREEN  |
 | T-WP-02  | No orphan R-NN rows — every row cites evidence and a quality dimension | RED |
 | T-WP-03  | Role escalates schema / prompt / source.md changes — does not edit them directly | RED |
 
@@ -180,7 +180,16 @@ to develop wiki product line capability."*
 
 ### Status
 
-`RED` — role has not yet been filled on the kurpatov-wiki corpus.
+`GREEN` — first run 2026-04-30 against the 5-raw kurpatov-wiki
+sample. Verifier (8 mechanical predicates) at
+`tests/phase-b-business-architecture/roles/T-WP-01-verifier.py`
+all pass: 16/16 quotes verified verbatim, 6/8 capability
+dimensions covered, 5+5+7 observations across Substance/Form/Air.
+First-cut output had one invented quote (OBS-D-010, "представьте
+себе на секунду…"); test caught it and the fix was a substring
+search in the raw that yielded a real Курпатов direct-address
+quote ("А теперь представьте, что у вас был какой-нибудь
+близкий друг…"). TDD working as designed.
 
 ### Coverage map
 
