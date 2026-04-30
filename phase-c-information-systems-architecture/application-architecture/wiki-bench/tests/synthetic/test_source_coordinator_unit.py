@@ -80,7 +80,7 @@ class CoordinatorContract(unittest.TestCase):
         """
         return [
             {"claims": [{"text": "claim 1", "needs_factcheck": False}]},
-            {"verdict": "NEW", "category": "test"},
+            {"classifications": [{"claim_index": 1, "verdict": "NEW", "category": "test"}]},
         ]
 
     def test_writes_file_at_target_path(self):
@@ -106,7 +106,7 @@ class CoordinatorContract(unittest.TestCase):
             slug="C/M/001 stem", curator=lambda *_: None,
         )
         kinds = [call["response_format"]["title"] for call in llm.calls]
-        self.assertEqual(kinds, ["claims_list", "claim_classification"])
+        self.assertEqual(kinds, ["claims_list", "claims_batch_classification"])
 
     def test_each_call_specifies_response_schema(self):
         """Every LLM call MUST pass a `response_format` JSON schema. This
@@ -149,7 +149,7 @@ class CoordinatorRetry(unittest.TestCase):
         llm = _FakeLLM([
             "this is not valid JSON for claims schema",  # first → MalformedResponseError
             {"claims": [{"text": "claim 1", "needs_factcheck": False}]},  # retry → ok
-            {"verdict": "NEW", "category": "test"},
+            {"classifications": [{"claim_index": 1, "verdict": "NEW", "category": "test"}]},
         ])
         c = SourceCoordinator(llm=llm, workdir=self.workdir)
         result = c.process_source(
@@ -201,7 +201,7 @@ class CoordinatorTemplate(unittest.TestCase):
     def test_composed_md_has_required_sections(self):
         llm = _FakeLLM([
             {"claims": [{"text": "claim 1", "needs_factcheck": False}]},
-            {"verdict": "NEW", "category": "test"},
+            {"classifications": [{"claim_index": 1, "verdict": "NEW", "category": "test"}]},
         ])
         c = SourceCoordinator(llm=llm, workdir=self.workdir)
         c.process_source(
@@ -219,7 +219,7 @@ class CoordinatorTemplate(unittest.TestCase):
         coordinator-side template responsibility now (no LLM agency)."""
         llm = _FakeLLM([
             {"claims": [{"text": "first claim", "needs_factcheck": False}]},
-            {"verdict": "NEW", "category": "test"},
+            {"classifications": [{"claim_index": 1, "verdict": "NEW", "category": "test"}]},
         ])
         c = SourceCoordinator(llm=llm, workdir=self.workdir)
         c.process_source(

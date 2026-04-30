@@ -166,7 +166,10 @@ class CoordinatorIntegration(unittest.TestCase):
         llm = _StagedLLM([
             {"claims": [{"text": "Тестовое утверждение один.",
                          "needs_factcheck": False}]},
-            {"verdict": "NEW", "category": "test-category-one"},
+            {"classifications": [
+                {"claim_index": 1, "verdict": "NEW",
+                 "category": "test-category-one"},
+            ]},
         ])
         curator = _stub_curator(self.fx.workdir)
         c = SourceCoordinator(llm=llm, workdir=self.fx.workdir)
@@ -193,10 +196,12 @@ class CoordinatorIntegration(unittest.TestCase):
                 {"text": "Утверждение Б.", "needs_factcheck": True},
                 {"text": "Утверждение В.", "needs_factcheck": False},
             ]},
-            {"verdict": "NEW", "category": "cat-a"},
-            {"verdict": "REPEATED", "category": "cat-b",
-             "from_slug": "Психолог-консультант/000/000 prior"},
-            {"verdict": "NEW", "category": "cat-c"},
+            {"classifications": [
+                {"claim_index": 1, "verdict": "NEW", "category": "cat-a"},
+                {"claim_index": 2, "verdict": "REPEATED", "category": "cat-b",
+                 "from_slug": "Психолог-консультант/000/000 prior"},
+                {"claim_index": 3, "verdict": "NEW", "category": "cat-c"},
+            ]},
             # Fact-check for claim B (needs_factcheck=True).
             {"marker": "NEW", "url": "https://example.com",
              "notes": "Verified against public source."},
@@ -226,7 +231,10 @@ class CoordinatorIntegration(unittest.TestCase):
             "garbage that won't validate",  # first attempt, malformed
             {"claims": [{"text": "Утверждение.",
                          "needs_factcheck": False}]},  # retry, valid
-            {"verdict": "NEW", "category": "retry-cat"},
+            {"classifications": [
+                {"claim_index": 1, "verdict": "NEW",
+                 "category": "retry-cat"},
+            ]},
         ])
         curator = _stub_curator(self.fx.workdir)
         c = SourceCoordinator(llm=llm, workdir=self.fx.workdir)
