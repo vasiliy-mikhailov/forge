@@ -110,6 +110,20 @@ write access to forge `main` directly — outputs land via the same
 review path the architect uses for manual edits (commit + push
 under the architect's identity).
 
+## Tests
+
+[`wiki-pm-tests/`](wiki-pm-tests/) — md test suite codifying
+the persona as pass/fail predicates. Tests are authored
+*before* the agent runs for the first time (TDD); they stay
+`RED` until the agent's output passes them. Convention defined
+in [`README.md` § "MD tests for agents"](README.md). Coverage
+target: L3 (every quality dimension and every Decision-rights
+line has ≥ 1 test) before the agent's outputs are merged.
+
+Current suite: T-WP-01 (extract rules from raw), T-WP-02 (no
+orphan R-NN rows), T-WP-03 (escalates schema/prompt/source.md
+changes). All `RED` — agent has not yet been run.
+
 ## References
 
 - Process spec:
