@@ -26,10 +26,13 @@ from pathlib import Path
 from typing import Any, Callable
 
 # Per-step parallelism. vLLM batches concurrent requests internally so
-# 5-way concurrency is safe and gives ~3-5× wall-time speedup on
-# embarrassingly-parallel phases (chunk extract, batch classify,
-# fact-check). Tuned conservatively; raise if vLLM headroom allows.
-_MAX_PARALLEL = 5
+# we can run extract chunks, classify batches, and fact-check calls
+# concurrently. Default 5 (conservative); override with the env var
+# D8_PILOT_MAX_PARALLEL for sweeps. Sweet spot found empirically per
+# bench_parallel.py — depends on vLLM concurrency limit and per-call
+# token budget.
+import os as _os
+_MAX_PARALLEL = int(_os.environ.get("D8_PILOT_MAX_PARALLEL", "5"))
 
 
 # ─── Public types ──────────────────────────────────────────────────────
