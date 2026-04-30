@@ -262,9 +262,16 @@ class SourceCoordinator:
         result.steps.append(StepResult("classify_claims", True, data=len(classified)))
 
         # Step 4 — selective fact-check (LLM per needs_factcheck claim).
-        to_check = [c for c in classified if c.get("needs_factcheck")]
-        if to_check:
-            print(f"  [coord] fact_check: {len(to_check)} claims",
+        # Empirically the LLM over-flags needs_factcheck (K1 v2 SRC 0:
+        # 89/107 flagged). The source-author historically did ~3-5 per
+        # source. Cap to keep wall time tractable; sample by score if
+        # the schema gives one (it doesn't yet — first N for now).
+        FACT_CHECK_CAP = 8
+        all_flagged = [c for c in classified if c.get("needs_factcheck")]
+        to_check = all_flagged[:FACT_CHECK_CAP]
+        if all_flagged:
+            print(f"  [coord] fact_check: {len(to_check)} of "
+                  f"{len(all_flagged)} flagged (cap={FACT_CHECK_CAP})",
                   flush=True)
         t_fc = time.monotonic()
         for i, c in enumerate(to_check):
@@ -398,10 +405,21 @@ class SourceCoordinator:
     def _prompt_extract_claims(self, transcript: str) -> str:
         return (
             "Extract distinct empirical claims from this lecture "
-            "transcript. For each claim, set needs_factcheck=true if "
-            "it's a specific biographical, historical, scientific, or "
-            "statistical claim that could be verified against external "
-            "sources; false otherwise.\n\n"
+            "transcript. Aim for ~1 claim per 60 seconds of audio "
+            "density.\n\n"
+            "Set needs_factcheck=true ONLY if the claim contains a "
+            "concrete external fact:\n"
+            "  - a specific person's name + biographical/historical "
+            "    detail (e.g. 'Adler had rickets')\n"
+            "  - a numeric statistic ('80% of patients...')\n"
+            "  - a named scientific finding ('the glymphatic system "
+            "    drains at 60 nm/s')\n"
+            "  - a specific claim about a published study or theory\n"
+            "Otherwise (general statements, conceptual framings, the "
+            "speaker's own opinions, methodological remarks, "
+            "definitional claims) → needs_factcheck=false.\n\n"
+            "Default to false. Only flag if a Wikipedia search could "
+            "plausibly confirm or refute.\n\n"
             f"TRANSCRIPT:\n{transcript}\n"
         )
 
