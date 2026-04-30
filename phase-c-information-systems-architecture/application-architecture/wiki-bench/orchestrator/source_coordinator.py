@@ -162,12 +162,33 @@ class SourceCoordinator:
         result.steps.append(StepResult("read_raw", True))
 
         # Step 2 — extract claims (LLM, schema-bound).
-        claims_data = self._llm_with_retry(
-            prompt=self._prompt_extract_claims(transcript),
-            schema=SCHEMA_CLAIMS_LIST,
-            max_tokens=4000,
-        )
-        claims = claims_data["claims"]
+        # For long transcripts (multi-hour lectures = 50K+ chars of Russian),
+        # a single extract_claims call is impractical: input token cost is
+        # huge AND structured-decoding throughput drops. We chunk the
+        # transcript and merge per-chunk claim lists. Threshold tuned to
+        # keep each chunk's prompt under ~10K input tokens.
+        CHUNK_CHAR_LIMIT = 8_000  # roughly 2-3 K russian tokens per chunk
+        chunks = self._chunk_transcript(transcript, CHUNK_CHAR_LIMIT)
+        claims: list[dict] = []
+        for i, chunk in enumerate(chunks):
+            print(f"  [coord] extract_claims chunk {i+1}/{len(chunks)} "
+                  f"({len(chunk):,} chars)", flush=True)
+            chunk_data = self._llm_with_retry(
+                prompt=self._prompt_extract_claims(chunk),
+                schema=SCHEMA_CLAIMS_LIST,
+                max_tokens=4000,
+            )
+            claims.extend(chunk_data.get("claims", []))
+        # Dedup near-identical claim texts (LLM may surface the same
+        # idea twice across chunk boundaries).
+        seen: set[str] = set()
+        deduped: list[dict] = []
+        for c in claims:
+            key = c.get("text", "").strip().lower()[:120]
+            if key and key not in seen:
+                seen.add(key)
+                deduped.append(c)
+        claims = deduped
         result.steps.append(StepResult("extract_claims", True, data=len(claims)))
 
         # Step 3 — classify each claim (LLM per claim, schema-bound).
@@ -277,6 +298,31 @@ class SourceCoordinator:
 
     def _compose_transcript(self, raw: dict) -> str:
         return " ".join(s.get("text", "") for s in raw.get("segments", []))
+
+    def _chunk_transcript(self, transcript: str, char_limit: int) -> list[str]:
+        """Split a long transcript into chunks of at most char_limit each,
+        breaking on whitespace to keep words intact. Returns at least one
+        chunk even for empty input."""
+        if not transcript:
+            return [""]
+        if len(transcript) <= char_limit:
+            return [transcript]
+        chunks: list[str] = []
+        i = 0
+        n = len(transcript)
+        while i < n:
+            end = min(i + char_limit, n)
+            if end < n:
+                # back up to nearest whitespace to avoid splitting a word
+                while end > i and not transcript[end].isspace():
+                    end -= 1
+                if end == i:
+                    end = min(i + char_limit, n)  # no whitespace; hard split
+            chunks.append(transcript[i:end])
+            i = end
+            while i < n and transcript[i].isspace():
+                i += 1
+        return chunks
 
     def _collect_concepts(self, classified: list[dict]) -> list[str]:
         """Concepts are derived from classified claim categories.
