@@ -84,6 +84,8 @@ class CoordinatorContract(unittest.TestCase):
             {"summary": "stub chunk summary for unit test."},
             {"tldr": "stub TL;DR for unit test."},
             {"lecture": "stub condensed lecture for unit test."},
+            {"concepts": [{"slug": "test", "definition": "stub def 30 words " * 3,
+                            "contribution": "stub contrib", "related_concepts": []}]},
         ]
 
     def test_writes_file_at_target_path(self):
@@ -110,7 +112,8 @@ class CoordinatorContract(unittest.TestCase):
         )
         kinds = [call["response_format"]["title"] for call in llm.calls]
         self.assertEqual(kinds, ["claims_list", "claims_batch_classification",
-                                  "chunk_summary", "tldr", "lecture_condensed"])
+                                  "chunk_summary", "tldr", "lecture_condensed",
+                                  "concept_batch"])
 
     def test_each_call_specifies_response_schema(self):
         """Every LLM call MUST pass a `response_format` JSON schema. This
@@ -157,6 +160,8 @@ class CoordinatorRetry(unittest.TestCase):
             {"summary": "stub chunk summary for unit test."},
             {"tldr": "stub TL;DR for unit test."},
             {"lecture": "stub condensed lecture for unit test."},
+            {"concepts": [{"slug": "test", "definition": "stub def 30 words " * 3,
+                            "contribution": "stub contrib", "related_concepts": []}]},
         ])
         c = SourceCoordinator(llm=llm, workdir=self.workdir)
         result = c.process_source(
@@ -164,8 +169,8 @@ class CoordinatorRetry(unittest.TestCase):
             slug="C/M/001 stem", curator=lambda *_: None,
         )
         self.assertTrue(self.target.exists())
-        # 1 extract attempt + 1 retry + 1 classify + 1 chunk_summary + 1 tldr + 1 lecture = 6 calls.
-        self.assertEqual(len(llm.calls), 6)
+        # 1 extract attempt + 1 retry + 1 classify + 1 chunk_summary + 1 tldr + 1 lecture + 1 concept_batch = 7 calls.
+        self.assertEqual(len(llm.calls), 7)
 
     def test_two_malformed_responses_raise_coordinator_error(self):
         """Second malformed response is a hard error. No silent
@@ -212,6 +217,8 @@ class CoordinatorTemplate(unittest.TestCase):
             {"summary": "stub chunk summary for unit test."},
             {"tldr": "stub TL;DR for unit test."},
             {"lecture": "stub condensed lecture for unit test."},
+            {"concepts": [{"slug": "test", "definition": "stub def 30 words " * 3,
+                            "contribution": "stub contrib", "related_concepts": []}]},
         ])
         c = SourceCoordinator(llm=llm, workdir=self.workdir)
         c.process_source(
@@ -233,6 +240,8 @@ class CoordinatorTemplate(unittest.TestCase):
             {"summary": "stub chunk summary for unit test."},
             {"tldr": "stub TL;DR for unit test."},
             {"lecture": "stub condensed lecture for unit test."},
+            {"concepts": [{"slug": "test", "definition": "stub def 30 words " * 3,
+                            "contribution": "stub contrib", "related_concepts": []}]},
         ])
         c = SourceCoordinator(llm=llm, workdir=self.workdir)
         c.process_source(

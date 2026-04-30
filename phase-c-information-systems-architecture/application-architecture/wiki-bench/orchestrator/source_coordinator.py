@@ -174,6 +174,32 @@ SCHEMA_CHUNK_SUMMARY = {
     },
 }
 
+SCHEMA_CONCEPT_BATCH = {
+    "title": "concept_batch",
+    "schema": {
+        "type": "object",
+        "required": ["concepts"],
+        "properties": {
+            "concepts": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "required": ["slug", "definition", "contribution"],
+                    "properties": {
+                        "slug": {"type": "string"},
+                        "definition": {"type": "string"},
+                        "contribution": {"type": "string"},
+                        "related_concepts": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                        },
+                    },
+                },
+            },
+        },
+    },
+}
+
 
 # ─── Coordinator ──────────────────────────────────────────────────────
 
@@ -383,16 +409,35 @@ class SourceCoordinator:
         target.write_text(body, encoding="utf-8")
         result.steps.append(StepResult("write_file", True, data=str(target)))
 
-        # Step 7 — invoke concept-curator per concept (delegated to caller).
-        # Concepts are derived from classified claims' categories. The
-        # coordinator builds concept_data with the actual claims under each
-        # concept slug so the curator can write meaningful content (not a
-        # stub). Curator signature is backward compatible: callers that
-        # ignore the third arg still work.
+        # Step 7 — generate concept content (LLM, batched + parallel) then
+        # invoke concept-curator per concept. Per ADR 0013 Quality
+        # contract: K1 v2's previous Python-only curator produced 100%
+        # thin Definitions (just claim-text repetition) and 0
+        # concept-to-concept cross-references. The LLM batch step
+        # synthesises a real Definition, a per-source Contribution, and
+        # related-concept slugs from the claim data.
         concepts = self._collect_concepts(classified)
+        if concepts:
+            # Build per-concept claim lists.
+            concept_claims = {
+                slug_c: [c for c in classified if c.get("category") == slug_c]
+                for slug_c in concepts
+            }
+            # Generate definitions + contributions via batched parallel LLM.
+            concept_content = self._llm_concepts_parallel(
+                concepts, concept_claims, all_slugs=concepts,
+            )
+        else:
+            concept_content = {}
         for slug_c in concepts:
             concept_data = {
-                "claims": [c for c in classified if c.get("category") == slug_c],
+                "claims": concept_claims[slug_c],
+                "definition": concept_content.get(slug_c, {}).get(
+                    "definition", ""),
+                "contribution": concept_content.get(slug_c, {}).get(
+                    "contribution", ""),
+                "related_concepts": concept_content.get(slug_c, {}).get(
+                    "related_concepts", []),
             }
             try:
                 curator(slug_c, slug, concept_data)
@@ -599,6 +644,88 @@ class SourceCoordinator:
             f"TRANSCRIPT (first 10K chars):\n{sample}\n\n"
             f"VERIFIED NEW CLAIMS (use as anchor):\n  - {ck}\n"
         )
+
+    def _llm_concepts_parallel(
+        self, concepts: list[str], concept_claims: dict,
+        all_slugs: list[str],
+    ) -> dict:
+        """Generate per-concept Definition + Contribution + related_concepts
+        via batched parallel LLM calls. Returns dict keyed by concept slug
+        with content fields. Per ADR 0013 Quality contract."""
+        BATCH_SIZE = 8
+        n = len(concepts)
+        if not n:
+            return {}
+        batches = [concepts[i:i + BATCH_SIZE] for i in range(0, n, BATCH_SIZE)]
+        print(f"  [coord] concept_content: {n} concepts in {len(batches)} "
+              f"batches, parallel ×{_MAX_PARALLEL}", flush=True)
+        t = time.monotonic()
+        out: dict = {}
+
+        def _one(batch_slugs):
+            data = self._llm_with_retry(
+                prompt=self._prompt_concept_batch(
+                    batch_slugs, concept_claims, all_slugs),
+                schema=SCHEMA_CONCEPT_BATCH,
+                max_tokens=3000,
+            )
+            r = {}
+            results_by_slug = {c["slug"]: c for c in data["concepts"]}
+            for slug_c in batch_slugs:
+                # Tolerant lookup: LLM may emit a slightly different slug
+                # spelling, fall back to position-based match.
+                hit = results_by_slug.get(slug_c)
+                if hit is None and len(results_by_slug) == len(batch_slugs):
+                    hit = list(data["concepts"])[batch_slugs.index(slug_c)]
+                r[slug_c] = hit or {}
+            return r
+
+        with ThreadPoolExecutor(max_workers=_MAX_PARALLEL) as pool:
+            for batch_result in pool.map(_one, batches):
+                out.update(batch_result)
+        print(f"  [coord] concept_content done ({time.monotonic()-t:.0f}s)",
+              flush=True)
+        return out
+
+    def _prompt_concept_batch(
+        self, batch_slugs: list[str], concept_claims: dict,
+        all_slugs: list[str],
+    ) -> str:
+        prompt = (
+            "For each concept slug in the BATCH, output a JSON object as "
+            "an entry of the `concepts` array:\n"
+            "  slug: the concept slug, exactly as in the BATCH\n"
+            "  definition: 30-100 word encyclopedic definition of the "
+            "concept (NOT a copy of any single claim — synthesise across "
+            "the claims supplied below).\n"
+            "  contribution: 1-3 sentence summary of what THIS source "
+            "contributes about this concept (synthesise across the source's "
+            "claims for this concept; avoid repeating claim text verbatim).\n"
+            "  related_concepts: array of 0-3 slugs from the ALL_SLUGS "
+            "list below that are conceptually related — semantic neighbours, "
+            "subtopics, or contrasts. Use exact-match strings from "
+            "ALL_SLUGS. Empty array if no clear neighbours.\n\n"
+            "🇷🇺 LANGUAGE: every text field in the SAME LANGUAGE as the "
+            "claims below. Russian claims → Russian definition + "
+            "contribution.\n\n"
+            "Hard rules:\n"
+            "  definition: 30-100 words, ONE paragraph, no nested quotes.\n"
+            "  contribution: 1-3 sentences, ≤ 80 words.\n"
+            "  related_concepts: 0-3 slugs, exact-match from ALL_SLUGS.\n\n"
+        )
+        # Show all slugs as the universe of related-concept candidates
+        # (cap at 60 to keep the prompt bounded).
+        slugs_show = all_slugs[:60]
+        prompt += f"ALL_SLUGS (use for related_concepts): {slugs_show}\n\n"
+        prompt += "BATCH:\n"
+        for slug_c in batch_slugs:
+            claims = concept_claims.get(slug_c, [])
+            claim_texts = [c.get("text", "")[:160] for c in claims]
+            prompt += f"\n--- slug: {slug_c}\n"
+            prompt += "    claims classified under this concept:\n"
+            for ct in claim_texts[:8]:
+                prompt += f"      - {ct}\n"
+        return prompt
 
     def _llm_chunk_summaries_parallel(self, chunks: list[str]) -> list[str]:
         """Map step of the Лекция synthesis: per-chunk 1-2 sentence summary

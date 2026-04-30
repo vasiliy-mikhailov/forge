@@ -543,85 +543,98 @@ def _make_retriever(embed_helpers_path: str, workdir_wiki: Path):
 
 
 def _make_concept_curator(workdir: Path):
-    """Python concept curator that writes meaningful concept.md per concept
-    slug, using the actual claims classified under that concept slug as
-    content. No LLM call — deterministic Python from data the coordinator
-    already has. Replaces the SourceCoordinator stub-curator (ADR 0013).
-
-    Schema for each concept file (skill-v2 template):
-      ---
-      slug: <concept-slug>
-      first_introduced_in: <source-slug>
-      touched_by:
-        - <source-slug>
-        - ...
-      ---
-      # <concept-slug>
-
-      ## Definition
-      <text of the most representative claim under this concept,
-       lightly cleaned>
-
-      ## Contributions by source
-
-      ### <source-slug>
-      - claim 1 text
-      - claim 2 text
-      ...
-    """
+    """Concept curator that writes a richly-content'd concept.md per
+    concept slug. The coordinator generates definition + per-source
+    contribution + related_concepts via batched LLM calls (per ADR 0013
+    Quality contract step #15) and passes them in concept_data; this
+    function just writes the file. Falls back to claim-text dump if the
+    LLM content is missing (test stubs)."""
     concepts_dir = workdir / "wiki" / "data" / "concepts"
     concepts_dir.mkdir(parents=True, exist_ok=True)
 
-    def curator(concept_slug: str, source_slug: str, concept_data: dict | None = None):
+    def _xref_lines(related: list[str]) -> list[str]:
+        if not related:
+            return []
+        return [
+            "## Related concepts",
+            "",
+            "\n".join(
+                f"- [{slug}](./{slug}.md)" for slug in related
+                if slug and isinstance(slug, str)
+            ),
+        ]
+
+    def curator(concept_slug: str, source_slug: str,
+                concept_data: dict | None = None):
         path = concepts_dir / f"{concept_slug}.md"
-        claims = (concept_data or {}).get("claims", [])
+        cd = concept_data or {}
+        claims = cd.get("claims", [])
         claim_texts = [c.get("text", "").strip() for c in claims if c.get("text")]
-        # Compose the per-source contribution block.
-        if claim_texts:
-            contrib_lines = ["\n".join(f"- {t}" for t in claim_texts)]
-        else:
-            contrib_lines = ["_(no specific claims classified under this concept "
-                             "for this source — slug appeared as a thematic "
-                             "category only)_"]
+        # Prefer LLM-generated definition + contribution; fall back to
+        # claim text only if absent (test stubs / coordinator bypass).
+        definition = (cd.get("definition") or "").strip()
+        contribution = (cd.get("contribution") or "").strip()
+        related = cd.get("related_concepts") or []
+        if not definition:
+            definition = claim_texts[0] if claim_texts else (
+                f"_(no claim text available for slug {concept_slug!r})_"
+            )
+        if not contribution:
+            if claim_texts:
+                contribution = (
+                    "В этом источнике обсуждаются следующие положения, "
+                    "относящиеся к этому концепту:\n\n"
+                    + "\n".join(f"- {t}" for t in claim_texts)
+                )
+            else:
+                contribution = ("_(no specific claims classified under this "
+                                "concept for this source)_")
         contrib_block = (
             f"### {source_slug}\n\n"
-            + "\n".join(contrib_lines)
-            + "\n"
+            f"{contribution}\n"
         )
         if path.exists():
             body = path.read_text(encoding="utf-8")
-            # Append source_slug to touched_by if not present.
             if f"- {source_slug}" not in body:
-                # Insert into the touched_by block (right after last existing
-                # entry).
                 body = re.sub(
                     r"(touched_by:\n(?:  - .+\n)+)",
                     lambda m: m.group(1) + f"  - {source_slug}\n",
                     body, count=1,
                 )
-            # Append the contribution block at end (avoid duplicates).
             if f"### {source_slug}" not in body:
-                body = body.rstrip() + "\n\n" + contrib_block
+                # Insert before "## Related concepts" if present, else append.
+                if "## Related concepts" in body:
+                    body = body.replace(
+                        "## Related concepts",
+                        contrib_block + "\n## Related concepts",
+                        1,
+                    )
+                else:
+                    body = body.rstrip() + "\n\n" + contrib_block
             path.write_text(body, encoding="utf-8")
             return
         # First introduction of this concept — write a fresh file.
-        definition = claim_texts[0] if claim_texts else (
-            f"_(no claim text available for slug {concept_slug!r}; "
-            f"appeared as a thematic category only)_"
-        )
-        body = (
-            "---\n"
-            f"slug: {concept_slug}\n"
-            f"first_introduced_in: {source_slug}\n"
-            f"touched_by:\n  - {source_slug}\n"
-            "---\n"
-            f"# {concept_slug}\n\n"
-            "## Definition\n\n"
-            f"{definition}\n\n"
-            "## Contributions by source\n\n"
-            + contrib_block
-        )
-        path.write_text(body, encoding="utf-8")
+        parts = [
+            "---",
+            f"slug: {concept_slug}",
+            f"first_introduced_in: {source_slug}",
+            f"touched_by:\n  - {source_slug}",
+            "---",
+            f"# {concept_slug}",
+            "",
+            "## Definition",
+            "",
+            definition,
+            "",
+            "## Contributions by source",
+            "",
+            contrib_block.rstrip(),
+        ]
+        xref = _xref_lines(related)
+        if xref:
+            parts.append("")
+            parts.extend(xref)
+        path.write_text("\n".join(parts) + "\n", encoding="utf-8")
     return curator
 
 

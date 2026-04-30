@@ -173,6 +173,10 @@ class CoordinatorIntegration(unittest.TestCase):
             {"summary": "Stub chunk summary for integration test."},
             {"tldr": "Stub TL;DR for integration test."},
             {"lecture": "Stub condensed lecture for integration test."},
+            {"concepts": [{"slug": "test-category-one",
+                            "definition": "Тестовое определение " * 10,
+                            "contribution": "Тестовый вклад источника.",
+                            "related_concepts": []}]},
         ])
         curator = _stub_curator(self.fx.workdir)
         c = SourceCoordinator(llm=llm, workdir=self.fx.workdir)
@@ -211,6 +215,14 @@ class CoordinatorIntegration(unittest.TestCase):
             {"summary": "Stub chunk summary."},
             {"tldr": "Stub TL;DR."},
             {"lecture": "Stub condensed lecture."},
+            {"concepts": [
+                {"slug": "cat-a", "definition": "Тестовое определение " * 10,
+                 "contribution": "Вклад", "related_concepts": ["cat-b"]},
+                {"slug": "cat-b", "definition": "Тестовое определение " * 10,
+                 "contribution": "Вклад", "related_concepts": []},
+                {"slug": "cat-c", "definition": "Тестовое определение " * 10,
+                 "contribution": "Вклад", "related_concepts": []},
+            ]},
         ])
         curator = _stub_curator(self.fx.workdir)
         c = SourceCoordinator(llm=llm, workdir=self.fx.workdir)
@@ -244,6 +256,9 @@ class CoordinatorIntegration(unittest.TestCase):
             {"summary": "Stub chunk summary."},
             {"tldr": "Stub TL;DR."},
             {"lecture": "Stub condensed lecture."},
+            {"concepts": [{"slug": "retry-cat",
+                            "definition": "Тестовое определение " * 10,
+                            "contribution": "Вклад", "related_concepts": []}]},
         ])
         curator = _stub_curator(self.fx.workdir)
         c = SourceCoordinator(llm=llm, workdir=self.fx.workdir)
@@ -258,8 +273,8 @@ class CoordinatorIntegration(unittest.TestCase):
         self.assertEqual(graded.get("verified"), "ok",
                          f"bench_grade rejected: {graded.get('violations')}")
         # 1 extract retry + 1 extract success + 1 classify = 3 calls.
-        # extract retry + extract success + classify + chunk_summary + tldr + lecture = 6
-        self.assertEqual(len(llm.calls), 6)
+        # extract retry + extract success + classify + chunk_summary + tldr + lecture + concept_batch = 7
+        self.assertEqual(len(llm.calls), 7)
 
     # 4. Two consecutive malformed responses → CoordinatorError, NO file
     # written. This is the property SRC 17 (the "shape of a closing tag"
