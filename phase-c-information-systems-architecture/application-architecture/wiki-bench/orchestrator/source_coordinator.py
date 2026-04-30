@@ -165,6 +165,15 @@ SCHEMA_LECTURE = {
     },
 }
 
+SCHEMA_CHUNK_SUMMARY = {
+    "title": "chunk_summary",
+    "schema": {
+        "type": "object",
+        "required": ["summary"],
+        "properties": {"summary": {"type": "string"}},
+    },
+}
+
 
 # ─── Coordinator ──────────────────────────────────────────────────────
 
@@ -335,10 +344,18 @@ class SourceCoordinator:
         result.steps.append(StepResult("fact_check", True))
 
         # Step 4.5 — generate TL;DR + condensed Лекция (LLM, schema-bound).
-        # Both run in parallel against the same transcript; both must be in
-        # the transcript's language (lecturer's first-person voice).
-        print(f"  [coord] tldr+lecture: parallel ×2", flush=True)
+        # Лекция is map-reduce: chunk-summaries in parallel (covers the
+        # whole transcript, not just the first 25K chars), then a single
+        # reduce call composes the final 3-5 paragraph Лекция. Per ADR
+        # 0013 Quality contract: 100% of K1 v2 sources had short Лекция
+        # because the model never saw past the first 25K chars; map-
+        # reduce closes that gap.
+        print(f"  [coord] tldr+lecture (lecture is map-reduce)", flush=True)
         t_summ = time.monotonic()
+        # Map: per-chunk summaries (parallel)
+        chunks = self._chunk_transcript(transcript, 8_000)
+        chunk_summaries = self._llm_chunk_summaries_parallel(chunks)
+        # Reduce: TL;DR + Лекция in parallel from chunk summaries
         with ThreadPoolExecutor(max_workers=2) as pool:
             fut_tldr = pool.submit(
                 self._llm_with_retry,
@@ -347,8 +364,8 @@ class SourceCoordinator:
             )
             fut_lect = pool.submit(
                 self._llm_with_retry,
-                prompt=self._prompt_lecture(transcript, classified),
-                schema=SCHEMA_LECTURE, max_tokens=2000,
+                prompt=self._prompt_lecture_reduce(chunk_summaries, classified),
+                schema=SCHEMA_LECTURE, max_tokens=2500,
             )
             tldr = fut_tldr.result()["tldr"]
             lecture = fut_lect.result()["lecture"]
@@ -583,33 +600,82 @@ class SourceCoordinator:
             f"VERIFIED NEW CLAIMS (use as anchor):\n  - {ck}\n"
         )
 
-    def _prompt_lecture(self, transcript: str, claims: list[dict]) -> str:
-        # Lecture sees more transcript than TL;DR — it produces the
-        # condensed retelling, so it needs the substance.
-        sample = transcript[:25_000]
+    def _llm_chunk_summaries_parallel(self, chunks: list[str]) -> list[str]:
+        """Map step of the Лекция synthesis: per-chunk 1-2 sentence summary
+        in the source language, lecturer's voice. Parallelised at
+        _MAX_PARALLEL across chunks."""
+        n = len(chunks)
+        if n == 1:
+            # Single chunk — degenerate map step, just one call.
+            r = self._llm_with_retry(
+                prompt=self._prompt_chunk_summary(chunks[0], 1, 1),
+                schema=SCHEMA_CHUNK_SUMMARY, max_tokens=300,
+            )
+            return [r["summary"]]
+        print(f"  [coord] lecture map: {n} chunks (parallel ×{_MAX_PARALLEL})",
+              flush=True)
+        t = time.monotonic()
+        summaries = [None] * n
+
+        def _one(i_chunk):
+            i, chunk = i_chunk
+            r = self._llm_with_retry(
+                prompt=self._prompt_chunk_summary(chunk, i + 1, n),
+                schema=SCHEMA_CHUNK_SUMMARY, max_tokens=300,
+            )
+            return i, r["summary"]
+
+        with ThreadPoolExecutor(max_workers=_MAX_PARALLEL) as pool:
+            for i, summary in pool.map(_one, list(enumerate(chunks))):
+                summaries[i] = summary
+        print(f"  [coord] lecture map done ({time.monotonic()-t:.0f}s)",
+              flush=True)
+        return summaries
+
+    def _prompt_chunk_summary(self, chunk: str, idx: int, total: int) -> str:
+        return (
+            f"This is chunk {idx} of {total} from a longer lecture transcript.\n\n"
+            "Output a 1-2 sentence summary of THIS CHUNK as the {summary} "
+            "field of the JSON response.\n\n"
+            "🇷🇺 LANGUAGE: same as the TRANSCRIPT below.\n"
+            "TONE: first person, lecturer's voice (e.g. \"Я объясняю...\","
+            " \"Мы рассматриваем...\"). Not a third-person summary.\n"
+            "CONTENT: the chunk's main move — what idea is the lecturer "
+            "advancing here. Skip filler (\"и так далее\", greetings, asides).\n"
+            "LENGTH: 1-2 sentences, ≤ 60 words.\n\n"
+            f"CHUNK {idx}/{total}:\n{chunk}\n"
+        )
+
+    def _prompt_lecture_reduce(self, chunk_summaries: list[str],
+                                claims: list[dict]) -> str:
+        """Reduce step: take the per-chunk summaries (which together cover
+        the whole transcript) and synthesise into 3-5 paragraph Лекция."""
         verified_claims = [c["text"] for c in claims
                            if c["verdict"] == "NEW"
                            and c.get("fact_marker") != "CONTRADICTS_FACTS"]
         ck = "\n  - ".join(verified_claims) if verified_claims else "(none)"
+        chunks_block = "\n".join(
+            f"  ({i+1}) {s.strip()}"
+            for i, s in enumerate(chunk_summaries)
+        )
         return (
-            "Write a condensed retelling of this lecture as the {lecture} "
-            "field of the JSON response.\n\n"
-            "🇷🇺 LANGUAGE: same as the TRANSCRIPT below. If transcript is "
-            "Russian, your retelling is Russian.\n\n"
-            "TONE: first person, lecturer's voice (same as the TL;DR). NOT "
-            "third-person retelling. Курпатов's emotional emphases, "
-            "characteristic metaphors, and dramatic punctuation are part of "
-            "the content — preserve them; do not sanitise into neutral "
-            "encyclopedic prose.\n\n"
-            "LENGTH: MINIMUM 3 full paragraphs, MAXIMUM 5. Each paragraph "
-            "100-200 words. Do not collapse into one paragraph — the "
-            "structure helps the reader. Separate paragraphs with blank lines.\n\n"
-            "CONTENT: condense the lecture but keep ONLY material that is "
-            "either NEW or REPEATED-yet-verified. Drop everything that "
-            "duplicates already-summarised material from prior sources or "
-            "that the fact-check marked CONTRADICTS_FACTS.\n\n"
-            f"TRANSCRIPT (first 25K chars):\n{sample}\n\n"
-            f"VERIFIED NEW CLAIMS (use as anchor):\n  - {ck}\n"
+            "Compose the {lecture} field of the JSON response: a condensed "
+            "retelling of THIS WHOLE LECTURE, working from the chunk "
+            "summaries below (which together cover the entire transcript).\n\n"
+            "🇷🇺 LANGUAGE: same as the chunk summaries (Russian if Russian).\n"
+            "TONE: first person, lecturer's voice. NOT third-person. "
+            "Курпатов's emotional emphases, characteristic metaphors, and "
+            "dramatic punctuation are part of the content — preserve them; "
+            "do not sanitise into neutral encyclopedic prose.\n"
+            "STRUCTURE: 3-5 paragraphs, each 100-200 words, separated by "
+            "blank lines. Each paragraph covers a distinct phase or theme "
+            "of the lecture (use the chunks as a temporal/thematic guide). "
+            "DO NOT collapse to one paragraph; DO NOT exceed 5 paragraphs.\n"
+            "CONTENT: synthesise across ALL chunks — early ones AND late "
+            "ones. Drop only material the fact-check marked "
+            "CONTRADICTS_FACTS. Keep NEW and REPEATED-yet-verified material.\n\n"
+            f"CHUNK SUMMARIES (covering the full transcript):\n{chunks_block}\n\n"
+            f"VERIFIED NEW CLAIMS (use as additional anchor):\n  - {ck}\n"
         )
 
     def _prompt_fact_check(self, claim: dict) -> str:
