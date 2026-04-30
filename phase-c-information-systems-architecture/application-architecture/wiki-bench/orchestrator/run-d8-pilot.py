@@ -186,6 +186,48 @@ def setup_workspace():
         print(f"[setup] ADR 0011 M1 — NFC renamed: raw={renamed_raw}, wiki={renamed_wiki}",
               file=sys.stderr)
 
+    # Optional: strip the legacy module 005 baseline so the wiki only
+    # contains content this run produces. The skill-v2 baseline shipped
+    # with English-named module 005 sources + concepts (predates ADR
+    # 0013's language contract). For a publishable single-language wiki,
+    # delete that baseline at setup time. Trade-off: lose cross-module
+    # REPEATED detection against module 005 content. Set
+    # D8_PILOT_STRIP_BASELINE=1 to enable.
+    if os.environ.get("D8_PILOT_STRIP_BASELINE", "").lower() in ("1", "true", "yes"):
+        wiki = WORKDIR / "wiki"
+        sources_root = wiki / "data" / "sources"
+        concepts_root = wiki / "data" / "concepts"
+        deleted_sources = 0
+        deleted_concepts = 0
+        # Delete pre-existing module 005 source dirs.
+        for course_dir in sources_root.iterdir() if sources_root.exists() else []:
+            for module_dir in course_dir.iterdir():
+                if module_dir.name.startswith("005 "):
+                    shutil.rmtree(module_dir)
+                    deleted_sources += 1
+        # Delete every pre-existing concept file (they'll be rebuilt by
+        # the coordinator from the run's claims).
+        if concepts_root.exists():
+            for f in concepts_root.glob("*.md"):
+                f.unlink()
+                deleted_concepts += 1
+        # Also drop the embeddings index — it would otherwise still
+        # match against the deleted content.
+        emb_dir = wiki / "data" / "embeddings"
+        if emb_dir.exists():
+            shutil.rmtree(emb_dir)
+        # Drop concept-index too — coordinator will rebuild.
+        ci = wiki / "data" / "concept-index.json"
+        if ci.exists():
+            ci.unlink()
+        print(f"[setup] D8_PILOT_STRIP_BASELINE — deleted {deleted_sources} "
+              f"module-005 source dirs + {deleted_concepts} concept files "
+              f"+ embeddings + concept-index", file=sys.stderr)
+        # Commit the strip so the experiment branch starts from a clean state.
+        run_cmd("cd wiki && git add -A && "
+                "git commit -m 'strip legacy module 005 baseline (D8_PILOT_STRIP_BASELINE)' "
+                "|| true", cwd=str(WORKDIR), check=False)
+
     served = os.environ.get("LLM_MODEL", "openai/qwen3.6-27b-fp8").replace("openai/", "")
     branch = os.environ.get("D8_PILOT_BRANCH", f"experiment/D8-pilot-{date.today().isoformat()}-{served}")
     print(f"[setup] experiment branch: {branch}", file=sys.stderr)
