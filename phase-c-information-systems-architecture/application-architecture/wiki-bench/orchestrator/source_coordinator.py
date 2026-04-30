@@ -20,9 +20,16 @@ from __future__ import annotations
 
 import json
 import time
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable
+
+# Per-step parallelism. vLLM batches concurrent requests internally so
+# 5-way concurrency is safe and gives ~3-5× wall-time speedup on
+# embarrassingly-parallel phases (chunk extract, batch classify,
+# fact-check). Tuned conservatively; raise if vLLM headroom allows.
+_MAX_PARALLEL = 5
 
 
 # ─── Public types ──────────────────────────────────────────────────────
@@ -193,16 +200,24 @@ class SourceCoordinator:
         # keep each chunk's prompt under ~10K input tokens.
         CHUNK_CHAR_LIMIT = 8_000  # roughly 2-3 K russian tokens per chunk
         chunks = self._chunk_transcript(transcript, CHUNK_CHAR_LIMIT)
-        claims: list[dict] = []
-        for i, chunk in enumerate(chunks):
-            print(f"  [coord] extract_claims chunk {i+1}/{len(chunks)} "
-                  f"({len(chunk):,} chars)", flush=True)
-            chunk_data = self._llm_with_retry(
+        print(f"  [coord] extract_claims: {len(chunks)} chunks "
+              f"(parallel ×{_MAX_PARALLEL})", flush=True)
+        t_extract = time.monotonic()
+
+        def _extract_one(chunk):
+            return self._llm_with_retry(
                 prompt=self._prompt_extract_claims(chunk),
                 schema=SCHEMA_CLAIMS_LIST,
                 max_tokens=4000,
             )
+
+        with ThreadPoolExecutor(max_workers=_MAX_PARALLEL) as pool:
+            chunk_results = list(pool.map(_extract_one, chunks))
+        claims: list[dict] = []
+        for chunk_data in chunk_results:
             claims.extend(chunk_data.get("claims", []))
+        print(f"  [coord] extract_claims done ({time.monotonic()-t_extract:.0f}s, "
+              f"{len(claims)} raw claims)", flush=True)
         # Dedup near-identical claim texts (LLM may surface the same
         # idea twice across chunk boundaries).
         seen: set[str] = set()
@@ -221,32 +236,39 @@ class SourceCoordinator:
         # across multiple outputs in one streaming response.
         BATCH_SIZE = 8
         n_claims = len(claims)
+        batches = [claims[i:i + BATCH_SIZE]
+                   for i in range(0, n_claims, BATCH_SIZE)]
         if n_claims:
             print(f"  [coord] classify_claims: {n_claims} claims, "
-                  f"batches of {BATCH_SIZE}", flush=True)
-        classified: list[dict] = []
+                  f"{len(batches)} batches, parallel ×{_MAX_PARALLEL}",
+                  flush=True)
         t_classify = time.monotonic()
-        for batch_start in range(0, n_claims, BATCH_SIZE):
-            batch = claims[batch_start:batch_start + BATCH_SIZE]
-            # Per-claim retrieval (fast if retriever wraps an in-memory
-            # index; slow if it forks a subprocess per claim).
-            batch_with_candidates = []
-            for c in batch:
-                cands = retriever(c["text"]) if retriever else []
-                batch_with_candidates.append((c, cands))
+
+        def _classify_one(batch):
+            # Retrieval per claim still serial within a batch (cheap if
+            # retriever caches; the parallel speedup comes across
+            # batches, not within them).
+            batch_with_candidates = [
+                (c, retriever(c["text"]) if retriever else [])
+                for c in batch
+            ]
             data = self._llm_with_retry(
                 prompt=self._prompt_classify_batch(batch_with_candidates),
                 schema=SCHEMA_CLAIMS_BATCH_CLASSIFICATION,
                 max_tokens=2000,
             )
-            # Map LLM's claim_index back to the batch position. Defensive
-            # against the LLM mis-numbering — fall back to positional
-            # if needed.
-            results_by_idx = {r["claim_index"]: r for r in data["classifications"]}
+            return batch_with_candidates, data
+
+        with ThreadPoolExecutor(max_workers=_MAX_PARALLEL) as pool:
+            batch_results = list(pool.map(_classify_one, batches))
+
+        classified: list[dict] = []
+        for batch_with_candidates, data in batch_results:
+            results_by_idx = {r["claim_index"]: r
+                              for r in data["classifications"]}
             for i, (claim, _) in enumerate(batch_with_candidates):
                 r = results_by_idx.get(i + 1) or results_by_idx.get(i)
                 if r is None:
-                    # LLM dropped this one — mark NEW with placeholder cat.
                     r = {"verdict": "NEW", "category": "uncategorised"}
                 classified.append({
                     "text": claim["text"],
@@ -255,10 +277,9 @@ class SourceCoordinator:
                     "category": r.get("category", "uncategorised"),
                     "from_slug": r.get("from_slug"),
                 })
-            done = min(batch_start + BATCH_SIZE, n_claims)
-            dt = time.monotonic() - t_classify
-            print(f"  [coord] classify_claims {done}/{n_claims} "
-                  f"({dt:.0f}s elapsed)", flush=True)
+        print(f"  [coord] classify_claims done "
+              f"({time.monotonic()-t_classify:.0f}s, {len(classified)} classified)",
+              flush=True)
         result.steps.append(StepResult("classify_claims", True, data=len(classified)))
 
         # Step 4 — selective fact-check (LLM per needs_factcheck claim).
@@ -271,22 +292,25 @@ class SourceCoordinator:
         to_check = all_flagged[:FACT_CHECK_CAP]
         if all_flagged:
             print(f"  [coord] fact_check: {len(to_check)} of "
-                  f"{len(all_flagged)} flagged (cap={FACT_CHECK_CAP})",
-                  flush=True)
+                  f"{len(all_flagged)} flagged (cap={FACT_CHECK_CAP}, "
+                  f"parallel ×{_MAX_PARALLEL})", flush=True)
         t_fc = time.monotonic()
-        for i, c in enumerate(to_check):
-            fc = self._llm_with_retry(
+
+        def _fact_check_one(c):
+            return c, self._llm_with_retry(
                 prompt=self._prompt_fact_check(c),
                 schema=SCHEMA_FACT_CHECK,
                 max_tokens=600,
             )
-            c["fact_marker"] = fc.get("marker")
-            c["fact_url"] = fc.get("url")
-            c["fact_notes"] = fc.get("notes")
-            if (i + 1) % 3 == 0 or i + 1 == len(to_check):
-                dt = time.monotonic() - t_fc
-                print(f"  [coord] fact_check {i+1}/{len(to_check)} "
-                      f"({dt:.0f}s elapsed)", flush=True)
+
+        with ThreadPoolExecutor(max_workers=_MAX_PARALLEL) as pool:
+            for c, fc in pool.map(_fact_check_one, to_check):
+                c["fact_marker"] = fc.get("marker")
+                c["fact_url"] = fc.get("url")
+                c["fact_notes"] = fc.get("notes")
+        if to_check:
+            print(f"  [coord] fact_check done ({time.monotonic()-t_fc:.0f}s)",
+                  flush=True)
         result.steps.append(StepResult("fact_check", True))
 
         # Step 5 — compose source.md from collected results (deterministic).
