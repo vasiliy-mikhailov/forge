@@ -1,6 +1,6 @@
 # ADR 0013 — Decompose source-author monolith into a Python coordinator
 
-Status: Proposed
+Status: Accepted (implemented 2026-04-30)
 Date: 2026-04-30
 Lab: wiki-bench
 Phase: C (information systems architecture / application architecture)
@@ -173,3 +173,49 @@ workflow control?" If the coordinator works at e2e fidelity, the
 agency-fragility class is closed. If something else fails, the
 coordinator's deterministic surface makes the next bug far easier
 to pin.
+
+## Implementation notes (2026-04-30)
+
+Things tuned during the first K1 v2 runs that warrant being on record:
+
+- **Transcript chunking** in `extract_claims`. A single LLM call over
+  a 50K-char Russian transcript hung well past timeout. Chunked at
+  8 K chars per call, broken on whitespace, deduped by lowercased
+  prefix on output. Per-chunk wall ~6–15 s.
+- **Batched classification.** Per-claim classify calls were ~9 s
+  each at vLLM serial throughput. Batched to 8 claims per LLM call
+  via the `claims_batch_classification` schema; LLM returns an array
+  indexed by `claim_index`. Net: 5–7× per-batch speedup before
+  parallelism.
+- **Parallelism.** `ThreadPoolExecutor(max_workers=_MAX_PARALLEL)`
+  wraps each phase (chunk extract, classify batches, fact-check).
+  `_MAX_PARALLEL` reads from `D8_PILOT_MAX_PARALLEL` env var
+  (default 13). Sweep on a real K1 source: per-claim throughput at
+  parallel=5/10/13/15/20/30 was 0.70 / 0.64 / **0.44** / 0.57 /
+  0.59 / 0.57 s/claim — vLLM saturates around 13 concurrent
+  requests.
+- **Fact-check cap.** The LLM over-flagged `needs_factcheck=true`
+  (89/107 in early SRC 0). Hard cap at 8 fact-checks per source;
+  excess claims keep their classification but skip fact-check.
+- **Fact-check output bound.** SRC 20 (K1 v2 first run) failed
+  because the LLM rambled inside the fact-check JSON's `notes`
+  field — recursive "wait, let me re-evaluate" with nested escapes
+  that broke `json.loads` AND the corrective retry. Tightened the
+  prompt with hard rules (one sentence, ≤240 chars, plain ASCII, no
+  nested escapes) and dropped `max_tokens` from 600 to 300.
+- **Concept curator.** First cut uses a deterministic stub that
+  writes minimal `concept.md` per concept slug. The real
+  concept-curator OpenHands sub-agent integration is a follow-up;
+  the stub keeps cross-references resolvable so per-source
+  `bench_grade` still passes.
+- **Vestigial code cleanup.** With the coordinator owning the per-
+  source loop, `setup_agents()`, `measure_top_orch()`, the four
+  agent prompts (`IDEA_CLASSIFIER_PROMPT`, `FACT_CHECKER_PROMPT`,
+  `CONCEPT_CURATOR_PROMPT`, `SOURCE_AUTHOR_PROMPT`), and the
+  OpenHands SDK Agent/Conversation/Tool imports were removed from
+  `run-d8-pilot.py` (1391 → 885 lines).
+
+Status as of 2026-04-30: 20 sources verified=ok via coordinator
+(parallel=10), 1 source skipped on the rambling-JSON failure mode
+now patched. Clean re-run with parallel=13 + tightened fact-check
+expected to clear all 44 sources in ~1 hour wall.

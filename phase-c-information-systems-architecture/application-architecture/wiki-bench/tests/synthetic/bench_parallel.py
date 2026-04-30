@@ -26,13 +26,13 @@ import litellm
 # 008 "Кто такой этот загадочный мистер Фрейд?" is biographical content
 # with ~50-100 claims; first 100 segments give us 9 chunks at 8K each.
 COURSE = "Психолог-консультант"
-MODULE = "001 Глубинная психология и психодиагностика в консультировании"
-STEM = "008 2.1 Кто такой этот загадочный мистер Фрейд?"
-N_SEGMENTS = 1361  # all of source 008 — exercises 9 chunks + ~50-100 claims
+MODULE = "000 Путеводитель по программе"
+STEM = "000 Знакомство с программой «Психолог-консультант»"
+N_SEGMENTS = 5000  # take all segments; this source has the richest content
 
-# Sweep settings.
-PARALLEL_VALUES = [5, 10, 15, 20]
-ITERATIONS_PER = 1  # raise for tighter measurement; cost = N×wall
+# Sweep settings — sweep wider, higher values let us find vLLM saturation.
+PARALLEL_VALUES = [13, 14, 15, 16, 17]
+ITERATIONS_PER = 2  # raise for tighter measurement; cost = N×wall
 
 
 def _make_real_llm(model, base_url, api_key):
@@ -179,16 +179,36 @@ def main():
             import shutil
             shutil.rmtree(workdir, ignore_errors=True)
 
-    print("\n=== summary ===")
-    print(f"{'parallel':>8}  {'wall (s)':>10}  {'claims':>6}  {'concepts':>8}")
+    print("\n=== summary (per-iteration) ===")
+    print(f"{'parallel':>8}  {'iter':>4}  {'wall (s)':>10}  {'claims':>6}  "
+          f"{'s/claim':>9}")
     for r in results:
-        print(f"{r['parallel']:>8}  {r['wall_s']:>10.1f}  "
-              f"{r['claims']:>6}  {r['concepts']:>8}")
+        spc = r["wall_s"] / r["claims"] if r["claims"] else float("inf")
+        print(f"{r['parallel']:>8}  {r['iter']:>4}  {r['wall_s']:>10.1f}  "
+              f"{r['claims']:>6}  {spc:>9.3f}")
 
-    if results:
-        best = min(results, key=lambda r: r["wall_s"])
-        print(f"\n→ sweet spot: parallel={best['parallel']}, "
-              f"wall={best['wall_s']:.1f}s")
+    print("\n=== summary (averaged across iterations) ===")
+    print(f"{'parallel':>8}  {'mean wall':>10}  {'mean claims':>11}  "
+          f"{'mean s/claim':>12}")
+    by_p = {}
+    for r in results:
+        by_p.setdefault(r["parallel"], []).append(r)
+    rows = []
+    for p in sorted(by_p):
+        rs = by_p[p]
+        wall_avg = sum(x["wall_s"] for x in rs) / len(rs)
+        claims_avg = sum(x["claims"] for x in rs) / len(rs)
+        spc_avg = sum(
+            x["wall_s"] / x["claims"] for x in rs if x["claims"]
+        ) / len(rs)
+        rows.append((p, wall_avg, claims_avg, spc_avg))
+        print(f"{p:>8}  {wall_avg:>10.1f}  {claims_avg:>11.1f}  "
+              f"{spc_avg:>12.3f}")
+
+    if rows:
+        best = min(rows, key=lambda r: r[3])
+        print(f"\n→ sweet spot: parallel={best[0]}, "
+              f"mean s/claim={best[3]:.3f}")
 
 
 if __name__ == "__main__":

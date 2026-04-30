@@ -117,29 +117,49 @@ events.jsonl, summary.json, per-source bench-report.md.
 
 ## Phase D — Technology Architecture
 
-**Service: Agent orchestration & sub-agent delegation** (consumer:
-the bench's per-source pipeline).
+**Service: Per-source orchestration via Python coordinator (ADR 0013)**
+(consumer: the bench's per-source pipeline).
 
-- Component: OpenHands SDK 1.17.0 + TaskToolSet, file-based sub-agent
-  definitions for source-author, idea-classifier, fact-checker,
-  concept-curator.
-- Component: `orchestrator/run-d8-pilot.py` (Python-loop top-orchestrator).
-- L1: bounded top-orch context per source (Invariant — Python-loop
-  driver creates fresh `Conversation` per source); 0 % KV-cache reuse
-  across sub-agent delegations within a Conversation.
-- L2: KV-cache reuse across same-Conversation sub-agent calls (vLLM
-  prefix-cache + openhands integration). Estimated impact: ~5-10×
-  fewer prefill tokens per source.
+- Component: `orchestrator/source_coordinator.py` — Python coordinator
+  that owns workflow control. Per-source steps are deterministic:
+  read raw.json → extract claims (LLM, chunked + parallel) →
+  classify each claim (LLM, batched + parallel) → selective
+  fact-check (LLM, capped + parallel) → compose source.md (Python
+  template) → write file → invoke curator per concept.
+- Component: `orchestrator/run-d8-pilot.py` — Python top-orchestrator.
+  Outer loop over sources rebuilds the retrieval index, calls
+  `coordinator.process_source(...)`, runs `verify_source` to grade,
+  commits + pushes per source, enforces P6 / ADR 0012 (manifest +
+  banner + non-zero exit on any skip).
+- LLM access: per-step structured calls via `litellm.completion` with
+  `response_format=json_schema`. No OpenHands Agent / Conversation
+  in the per-source loop — replacing that monolith was the whole
+  point of ADR 0013 and the answer to the agency-fragility class of
+  bugs (model emits wrong tool-call format → SDK silently accepts
+  empty turn → file never written; see folklore "The shape of a
+  closing tag").
+- Concurrency: `D8_PILOT_MAX_PARALLEL` env var (default 13) wraps each
+  parallel phase in a `ThreadPoolExecutor`. Sweet spot found via
+  `tests/synthetic/bench_parallel.py`; vLLM saturates around 13.
+- L1: structural-correctness guarantee. The coordinator either writes
+  source.md at its fixed step or raises `CoordinatorError` — there is
+  no third path. Malformed LLM responses get one corrective retry
+  then a hard error (no silent acceptance).
+- L2: real concept-curator OpenHands sub-agent integration. Current
+  cut uses a deterministic stub that writes minimal skill-v2
+  `concept.md` per concept slug; the real agent invocation is a
+  follow-up.
 
 **Service: Vector retrieval (claim and concept dedup)** (consumer:
-source-author + concept-curator sub-agents).
+the coordinator's classify step + future concept-curator).
 
 - Component: `orchestrator/embed_helpers.py` +
   `intfloat/multilingual-e5-base` + numpy + sqlite. Index lives in
   the wiki repo at `wiki/data/embeddings/{claims,concepts}.{sqlite,npz}`.
-- L1 claim retrieval: wired into source-author per-claim via
-  `find-claims --k 5`; threshold 0.78 for REPEATED (calibrated against
-  e5-base paraphrase distribution — see step9 synth gate).
+- L1 claim retrieval: wired into the coordinator's classify step per
+  claim via `find-claims --k 5`; threshold 0.78 for REPEATED
+  (calibrated against e5-base paraphrase distribution — see step9
+  synth gate).
 - L1 concept retrieval: NOT wired into curator (curator does naive
   exact-slug `ls` check); `find-concepts` CLI exists but unused.
 - L1 cost: per-CLI fork of `embed_helpers.py` re-loads e5-base

@@ -44,21 +44,15 @@ import time
 from datetime import date
 from pathlib import Path
 
-from openhands.sdk import (
-    LLM, Agent, Conversation, Tool,
-    register_agent, agent_definition_to_factory,
-)
-from openhands.sdk.subagent import AgentDefinition
-from openhands.sdk.tool import register_tool
-from openhands.tools.task import TaskToolSet
-from openhands.tools.delegate import DelegationVisualizer
-
-# Per ADR 0013 — Python coordinator replaces source-author agent monolith.
+# Per ADR 0013 — Python coordinator replaces the source-author agent
+# monolith. The coordinator owns workflow control and uses litellm for
+# per-step structured LLM calls, so the OpenHands SDK Agent/Conversation
+# stack is no longer used by the per-source loop.
 sys.path.insert(0, str(Path(__file__).parent))
 from source_coordinator import (
     SourceCoordinator, CoordinatorError, MalformedResponseError,
 )
-import litellm  # the coordinator's LLM uses this directly
+import litellm
 
 
 # ─── Configuration ───────────────────────────────────────────────────────
@@ -77,469 +71,9 @@ BENCH_GRADE = (
     else "/home/vmihaylov/forge/labs/wiki-bench/evals/grade/bench_grade.py"
 )
 
-# Per-source bounds — see openhands-sdk-orchestration.md
-TOP_ORCH_INPUT_TOKENS_PER_SOURCE_LIMIT = 100_000
-TOP_ORCH_EVENTS_PER_SOURCE_LIMIT = 30
 
 
-# ─── Sub-agent prompts (same as step7 — validated GREEN on synth) ────────
 
-IDEA_CLASSIFIER_PROMPT = """\
-You are idea-classifier. Each task message contains:
-  - claim: the empirical claim text
-  - lecture_transcript: full lecture transcript (read-only context)
-  - candidate_prior_claims: top-K nearest prior claims from the
-    retrieval index (JSON array of {claim, source_slug, score}).
-    Max 5 candidates. Empty for source 0.
-
-Step 1: Decide NEW vs REPEATED based on candidate_prior_claims.
-  - If `claim` covers the same proposition as one of the candidates
-    (paraphrase, restatement, or near-lexical match) AND the
-    candidate's `score` is ≥ 0.78 → output
-    `REPEATED from <source_slug from that candidate>`.
-  - Otherwise (no candidate, all scores < 0.78, or the high-scoring
-    candidate is on a clearly different proposition) → `NEW`.
-
-Calibration of the score field (multilingual-e5-base, normalised):
-  - score ≥ 0.85 — near-lexical match (definitely REPEATED)
-  - 0.78 ≤ score < 0.85 — paraphrase of the same idea (REPEATED)
-  - 0.65 ≤ score < 0.78 — related topic but different proposition (NEW)
-  - score < 0.65 — not returned (filtered by retrieval)
-
-Step 2: Pick a thematic_category from this list (or propose new kebab-case):
-  architecture-of-the-method | neuroanatomy | psychology-and-instinct |
-  culture-and-society | dynamics-and-conflict | philosophy-and-method |
-  history-and-attribution | empirical-paradigms
-
-Output ONE LINE: `<verdict> | category=<thematic-tag>`. Then call finish.
-"""
-
-FACT_CHECKER_PROMPT = """\
-You are fact-checker. Each task contains:
-  - claim
-  - lecture_transcript
-
-Step 1: `cd wiki && python3 skills/benchmark/scripts/factcheck.py "<claim>"`
-Step 2: Pick BEST matching Wikipedia URLs. **Cite BOTH ru.wikipedia and
-en.wikipedia URLs when both are returned for the same topic** (separate
-each by ` ; `). Russian sources (ru.wiki) take priority when content
-overlap is >70%; otherwise EN gives broader/deeper coverage.
-Step 3: Scan lecture_transcript for speaker's caveats about THIS claim.
-Step 4: Compose verdict + Notes.
-
-Output exactly 3 lines:
-  marker: <NEW|CONTRADICTS_FACTS|NO_MATCH>
-  url: <best-Wikipedia-URL[;second-URL] or none>
-  notes: <2-3 sentences combining (a) speaker's quote with «...», (b) Wikipedia
-          status, (c) optional journal ref>
-
-Then call finish with that 3-line text.
-"""
-
-CONCEPT_CURATOR_PROMPT = """\
-You are concept-curator. You produce wiki concept articles per the
-CANONICAL skill v2 contract from
-`wiki/prompts/concept-article.md`. The shape is:
-
-  ---
-  slug: <kebab-case-id>
-  first_introduced_in: <full source slug>
-  touched_by:
-    - <full source slug 1>
-    - <full source slug 2>
-  ---
-  # <Russian title>
-
-  ## Definition
-
-  <2 paragraphs grounded in lecture content. If Kurpatov's usage
-  diverges from mainstream — short paragraph labeled
-  **How Kurpatov uses this**.>
-
-  ## Contributions by source
-
-  ### <source slug>
-  - <bullet on what this source adds about the concept>
-  - <bullet>
-  - See [<short title>](../sources/<source slug>.md).
-  - Timestamps `[mm:ss]` from that source's raw.json when they help.
-
-  ## Related concepts
-
-  - [<other-slug>](<other-slug>.md) — one-sentence relationship.
-
-Task message contains:
-  - concept_slug (kebab-case)
-  - definition (one paragraph in Russian, derived from this source)
-  - source_slug (the source CALLING you NOW — full slug,
-    `Course/Module/<stem>` form)
-  - lecture_transcript (this source's transcript)
-  - related_concepts (list of related concept slugs)
-  - this_source_bullets (list of 2-4 strings, what this source says
-    about this concept; ≥30 chars per bullet)
-  - this_source_timestamp_sec (int or null; e.g. 1842 → `[30:42]`)
-
-Workflow:
-
-Step 0. `pwd` to know the workspace absolute path. file_editor
-        requires ABSOLUTE paths.
-
-Step 1. Check file-system existence with the slug you were given.
-   The source-author has already canonicalised the slug via
-   `embed_helpers.py find-concepts` before calling you, so the
-   slug here is the canonical name to use directly.
-
-   ⚠️ **HARD path rule.** Concept files live at
-   `wiki/data/concepts/<slug>.md`, NEVER at `wiki/concepts/<slug>.md`.
-   Always use `data/concepts/` in every `ls`, `cat`, and
-   `file_editor` call. The cross-link `../../../concepts/<slug>.md`
-   inside a source.md is RELATIVE to the source's location and
-   resolves correctly — but it is NOT a path you can pass to
-   `file_editor` directly:
-
-        `ls wiki/data/concepts/<concept_slug>.md 2>/dev/null && \\
-         echo EXISTS || echo NEW`
-
-   (Do NOT re-run find-concepts here — that work is done.)
-
-Step 2a. **If NEW** (file does not exist):
-   Use file_editor (ABSOLUTE path) to CREATE with the canonical
-   template above. The first `### <source slug>` sub-section in
-   `## Contributions by source` is THIS source.
-
-   Bullets in the sub-section: from `this_source_bullets`.
-   Last bullet is always
-   `- See [<short title>](../sources/<source_slug>.md). [<mm:ss>]`
-   where `<mm:ss>` is from `this_source_timestamp_sec` (omit if null).
-
-   Then update wiki/data/concept-index.json to register the concept:
-   `python3 -c "import json; p='wiki/data/concept-index.json'; \\
-    d=json.load(open(p)); d.setdefault('concepts',{})['<slug>']= \\
-    {'first_introduced_in':'<source>'}; \\
-    d.setdefault('processed_sources',[]); \\
-    json.dump(d, open(p,'w'), ensure_ascii=False, indent=2)"`
-
-Step 2b. **If EXISTS** (file already exists):
-   APPEND a new `### <source_slug>` sub-section under
-   `## Contributions by source`, BELOW all existing sub-sections and
-   ABOVE `## Related concepts`. Use file_editor str_replace on the
-   `## Related concepts` line as the anchor.
-
-   Format of the new sub-section is the same as 2a.
-   ALSO update frontmatter `touched_by:` to include `<source_slug>`
-   (deduplicate).
-   DO NOT modify `## Definition` or any earlier sub-section.
-   DO NOT change `first_introduced_in`.
-
-Step 3. Output `concept <slug> ready` and finish.
-
-Rules:
-- Each bullet in `this_source_bullets` ≥ 30 chars.
-- The `### <source_slug>` heading uses the FULL source slug, not the
-  short label (e.g. `Психолог-консультант/005 …/000 Вводная лекция …`).
-- Cross-link target uses `../sources/<source_slug>.md` (relative path
-  from concepts/ to sources/).
-- Timestamp format: `[mm:ss]` if < 600s, `[mm:ss]` otherwise (always
-  zero-padded). Brackets are square. Omit if `timestamp_sec` is null.
-- If `this_source_bullets` describes a contradiction with an earlier
-  source, quote both sides explicitly per the
-  `CONTRADICTS EARLIER` rule.
-"""
-
-SOURCE_AUTHOR_PROMPT = f"""\
-You are source-author (D8 pilot — concept template v3 + selective factcheck).
-
-Task message: source_n, raw_path, target_path.
-
-Tools: terminal, file_editor, task, finish, think.
-Subagent_types for task(): idea-classifier, fact-checker, concept-curator.
-
-Course: `{COURSE}`
-
-Note: this orchestrator processes one or more modules in source-order. DO NOT use any module-name hint in your prior reasoning — the module for each source is encoded in the slug you receive in the per-source task message (`Course/Module/<stem>`). Always read it from the slug, never from prior conversation or training memory.
-
-Cyrillic paths: course / module are LITERAL — do NOT romanize.
-
-## ⚠️ NFC/NFD HAZARD ON THIS FILESYSTEM (read this FIRST)
-
-The Cyrillic paths I give you in this prompt are in **NFC** (precomposed
-form, e.g. `й` = 1 codepoint). The actual on-disk filenames at
-`/workspace/raw/...` may be in **NFD** (decomposed form, e.g.
-`й` = `и` + COMBINING BREVE = 2 codepoints) because the data was
-originally created on macOS, which historically writes NFD.
-
-`bash`, `Path.exists`, `open()`, and `os.stat` do NOT normalise — they
-match bytes. If you type a Cyrillic path literally and get `No such
-file or directory`, the file IS there; you have an NFC↔NFD mismatch,
-not a missing file. Retrying the same literal will fail forever.
-
-**Recovery rules — use these EVERY time you touch a Cyrillic path:**
-
-1. **Never retype a non-ASCII path literally into bash or python.**
-   The path I give you in the task message is byte-correct (it came
-   from `os.listdir` on the same filesystem). Pass it through env
-   vars or argv, never as a code literal:
-   ```
-   RAW="<the raw_path I gave you>" python3 - <<'PY'
-   import json, os
-   d = json.load(open(os.environ["RAW"]))
-   print(len(d["segments"]))
-   PY
-   ```
-2. **If something fails, `ls` first, then use the actual on-disk name.**
-   Never retry the same literal:
-   ```
-   ls "/workspace/raw/data/<course>/<module>/" | head
-   # then copy-paste the EXACT bytes ls printed
-   ```
-3. **Globs work.** The kernel matches on bytes, so:
-   ```
-   ls /workspace/raw/data/*/*/006*мир*/raw.json
-   ```
-   finds NFD-named files even if your literal is NFC.
-4. **In Python, normalise both sides before comparing:**
-   ```
-   import unicodedata, os
-   target = unicodedata.normalize("NFC", candidate)
-   for entry in os.listdir(parent):
-       if unicodedata.normalize("NFC", entry) == target:
-           real = entry  # USE THIS, not `candidate`
-           break
-   ```
-
-**Sentinel.** If `cd "<cyrillic>"` or `python3 -c "open('<cyrillic>')"`
-fails with `No such file or directory`, the next thing you do is
-`ls -la "<parent>"` — not a retry. Get the actual on-disk bytes
-and use them verbatim.
-
-The orchestrator already passed you the raw_path with byte-correct
-encoding. Use the raw_path string from your task message DIRECTLY;
-do not reconstruct it from course/module/stem in code.
-
-(See forge ADR 0011 + policies/cross-platform-paths.md for the full
-rationale. This warning exists because LLM tokenizers normalise to
-NFC; ignoring this hazard is the K1 verify-fail bug.)
-
-## File location rule (HARD)
-
-All wiki content lives under `wiki/data/`. Specifically:
-
-- Source articles: `wiki/data/sources/<Course>/<Module>/<stem>.md`
-- Concept articles: `wiki/data/concepts/<slug>.md`
-- Concept index:    `wiki/data/concept-index.json`
-- Embedding index:  `wiki/data/embeddings/`
-
-NEVER create files at `wiki/concepts/<slug>.md` or `wiki/sources/...` (no `data/` prefix). Those paths do not exist. The cross-link `[label](../../../concepts/<slug>.md)` you write inside a source.md resolves correctly to `wiki/data/concepts/<slug>.md` because the source.md lives at `wiki/data/sources/<Course>/<Module>/<stem>.md` (three `../` from there land at `wiki/data/`, then `concepts/` → `wiki/data/concepts/`). Do NOT use the cross-link path as a literal file-create path — when creating concept files, always use the absolute form `wiki/data/concepts/<slug>.md`.
-
-## Workflow
-
-### A. Read transcript + segments
-```
-python3 -c "import json; d=json.load(open('<raw_path>')); print(json.dumps({{'segments': d['segments'], 'duration': int(d['info']['duration'])}}))"
-```
-**FAIL-FAST**: if JSON read fails — call finish with
-  `failed: cannot read transcript at <raw_path>: <reason>`.
-
-Save segments list (each has start, end, text). You'll search them
-in step E for excerpts/timestamps.
-
-### B. (Removed — retrieval is per-claim in step D)
-
-The idea-classifier no longer receives the bulk `prior_claims_json`.
-Instead, the orchestrator pre-builds a numpy + sqlite retrieval index
-of all prior claims (across every committed source). In step D you
-will call `embed_helpers.py find-claims` per-claim to fetch the
-top-K nearest candidates (~3 KB context) and pass those to the
-classifier.
-
-Skip directly to step C.
-
-### C. Extract claims (LLM reasoning, no tools)
-Identify ALL distinct empirical claims. Density target:
-**~1 claim per 60 seconds of transcript**.
-For a 50-minute lecture this means **≈ 50 claims, NOT 13**.
-For a 20-minute lecture this means **≈ 20 claims, NOT 5-7**.
-Do NOT under-extract. If you have <30 claims for a lecture above 30 min,
-re-scan the transcript for missed propositions.
-
-For EACH claim: pick 2-5 concept slugs (kebab-case), assign needs_factcheck.
-
-`needs_factcheck: false` — confident: speaker's own concepts, well-known
-anatomy, methodological framings.
-`needs_factcheck: true` — uncertain: specific dates, named-person
-attributions, specific numbers, controversial. Default true when unsure.
-
-### D. Per-claim sub-agent calls — record marker for EACH claim
-For claim i (sequential):
-  1. RETRIEVE top-5 prior claim candidates via the embed_helpers CLI:
-     ```
-     python3 /opt/forge/embed_helpers.py find-claims wiki \\
-       --claim "<claim_text>" --k 5
-     ```
-     The output is a JSON array of objects
-     `[{{"claim": "...", "source_slug": "...", "score": 0.91}}, ...]`
-     (empty `[]` for source 0 or when no neighbours pass the
-     threshold). Capture this verbatim as `candidate_prior_claims`.
-  2. ALWAYS task(idea-classifier, prompt=claim + lecture +
-     candidate_prior_claims)
-     → parse `<verdict> | category=<theme>`
-  3. IF needs_factcheck[i]: task(fact-checker, prompt=claim + lecture)
-     → parse marker/url/notes
-
-  Combine into final_marker[i]:
-    - factchecker said CONTRADICTS_FACTS → `[CONTRADICTS_FACTS]`
-    - elif classifier said REPEATED      → `[REPEATED (from: <slug>)]`
-    - else                                → `[NEW]`
-
-  ⚠️ Persist (claim_text, final_marker, url, notes, thematic_category)
-     for every claim — you will need ALL of these in step F.
-
-⚙️ Retrieval contract: the index is built/updated by the orchestrator
-   BEFORE this source-author runs (covers every prior committed
-   source). You do NOT rebuild it. You only QUERY via find-claims.
-
-### E. Concept curator calls — for EVERY concept in concepts_touched
-
-🔴 Call concept-curator for EVERY concept the lecture mentions, NOT just
-the ones first-introduced here. The curator handles NEW vs EXISTS:
-- NEW → creates a new concept article via canonical skill v2 template
-- EXISTS → appends a new `### <source_slug>` sub-section under
-  `## Contributions by source`, updates `touched_by:` frontmatter
-
-For each concept slug in concepts_touched:
-
-  1. **CANONICALISE the slug via retrieval.** Before deciding which
-     concept file the curator should write/append to, look up
-     semantically-similar existing concepts:
-
-     ```
-     python3 /opt/forge/embed_helpers.py find-concepts wiki \\
-       --slug-or-text "<proposed_concept_slug>" --k 3
-     ```
-
-     The output is a JSON array of candidates
-     `[{{"slug": "...", "definition": "...", "score": 0.91}}, ...]`
-     (empty `[]` if the index has no related concepts yet).
-
-     Calibration of the score field
-     (multilingual-e5-base, normalised; same as REPEATED-claim
-     thresholds in step D):
-       - score ≥ 0.85 — near-lexical / unambiguous match. Replace
-         your proposed slug with the candidate's slug.
-       - 0.78 ≤ score < 0.85 — paraphrase / semantic match. Replace
-         your proposed slug with the candidate's slug ONLY if the
-         candidate's `definition` covers the same idea you intended;
-         otherwise keep proposed.
-       - score < 0.78 — different concept; keep your proposed slug.
-
-     Call the slug after this step `canonical_slug`. Use it
-     everywhere downstream (frontmatter `concepts_touched`, body
-     cross-refs `[label](../../../concepts/<canonical_slug>.md)`,
-     and the `concept_slug` arg to the concept-curator task below).
-
-  2. Find segments where the concept is discussed (search by Russian
-     title or kebab keyword translation). Pick 2-4 substantive bullets
-     summarizing what THIS source adds about THIS concept (each ≥ 30
-     chars). These go in the `### <source_slug>` sub-section.
-
-  3. Find the FIRST such segment's `start` field (round int) as
-     `timestamp_sec` — used as `[mm:ss]` annotation on the See-link
-     bullet.
-
-  4. task(concept-curator, prompt with: concept_slug=canonical_slug,
-     definition (1 paragraph grounded in lecture, used only if NEW),
-     source_slug (full slug — Course/Module/Stem form),
-     lecture_transcript, related_concepts (also canonicalised via
-     find-concepts), this_source_bullets (the 2-4 strings),
-     this_source_timestamp_sec)
-
-⚙️ Retrieval contract for concepts: the same index that powers
-   find-claims also indexes concept slugs + definitions. The
-   orchestrator rebuilds it before each source. If the rebuild fails
-   or the index is stale, find-concepts will return `[]` and you
-   fall back to using your proposed slug as the canonical one.
-
-Do NOT skip concepts you think "already exist" — the curator handles
-that case via the EXISTS branch. Skipping is the source of cross-ref
-violations: source.md lists slug in `concepts_touched` but no concept
-file exists yet.
-
-Strict subset rule: `concepts_introduced ⊂ concepts_touched`.
-- `concepts_introduced` = slugs you BELIEVE are first-mentioned in this
-  source (curator EXISTS-check confirms or downgrades them).
-- `concepts_touched` = ALL slugs mentioned, including REPEATED from
-  prior sources.
-- Always: introduced ⊆ touched. Never: introduced = touched (unless
-  every concept is genuinely new, which is unusual past source 0).
-
-### F. Assemble source.md (CRITICAL — write to target_path)
-
-Frontmatter (between --- fences, FIRST):
-  slug: <derive: drop "wiki/data/sources/" prefix from target_path, drop ".md">
-  course: {COURSE}
-  module: {MODULE}
-  extractor: whisper
-  source_raw: <raw_path>
-  duration_sec: <integer from STEP A>
-  language: ru
-  processed_at: 2026-04-26T00:00:00Z
-  fact_check_performed: true
-  concepts_touched: [<all 5+ slugs from claims>]
-  concepts_introduced: [<STRICT subset: only first-mentioned-here>]
-
-CRITICAL: slug must NOT include "data/sources/" or "wiki/" prefix.
-CRITICAL: concepts_introduced ⊂ concepts_touched (strict subset).
-
-Body — EXACTLY 5 `## ` sections in order. Use `# <Russian title>` for H1.
-
-  `## TL;DR` — one paragraph
-
-  ⚠️ **Tone of voice (TL;DR + Лекция сжато sections only — FIRST PERSON, lecturer's voice).** Both TL;DR and "Лекция сжато" are written from the lecturer's first-person point of view ("я", "мы с вами"), exactly as Курпатов would speak — same speaker, same voice across both sections. NOT a third-person retelling ("автор утверждает", "лектор говорит") — that's wrong. Keep the lecturer's original tone and phrasing wherever it adds signal: Курпатов's emotional emphases, sceptical asides, characteristic metaphors and dramatic punctuation are part of the content, not noise. Do NOT sanitize them into neutral encyclopedic prose. Faithfulness to the speaker's voice is part of the time-saving goal — a reader who skipped the audio should still recognise the speaker. The Claims and concept-link sections, by contrast, stay neutral and structural.
-
-  `## Лекция сжато (только новое и проверенное)` — 3-5 paragraphs
-    written FIRST PERSON in the lecturer's voice (same speaker as TL;DR),
-    condensing the lecture but keeping ONLY material that is either NEW
-    or REPEATED-yet-verified. Drop everything that contradicts facts or
-    duplicates already-summarised material from prior sources.
-    Inline `[<concept-slug>](../../../concepts/<slug>.md)` links.
-  `## Claims — provenance and fact-check` — numbered list. EVERY entry:
-       `<n>. <final_marker[n]> <claim_text>`
-       <notes paragraph if fact-checked>
-       — <url> (if factchecker provided)
-    🔴 EVERY claim MUST START with one of `[NEW]`, `[REPEATED (from: ...)]`,
-       or `[CONTRADICTS_FACTS]` — placed at the BEGINNING of the line,
-       BEFORE the claim text. NO bare claims allowed.
-       💡 Why first, not last: the reader scans the marker and decides
-       in one glance whether to read the claim — `[REPEATED]` claims can
-       be skipped without reading their text. Marker-at-end forces the
-       reader to finish the sentence before knowing if it was worth
-       reading. Marker-first saves the reader's time.
-  `## New ideas (verified)` — bullets grouped by thematic_category:
-       `**<Theme>**`
-       `- <bullet> ([<concept-link>](...))`
-  `## All ideas` — flat bullet list
-
-mkdir -p target dir before file_editor (ABSOLUTE path).
-
-### F.6. Update concept-index.json
-
-After writing source.md, append the source slug to
-`wiki/data/concept-index.json` `processed_sources` list (deduplicate).
-Use python3 inline:
-```
-python3 -c "import json; p='wiki/data/concept-index.json'; \\
-  d=json.load(open(p)); s='<full source slug>'; \\
-  d.setdefault('processed_sources', []); \\
-  s in d['processed_sources'] or d['processed_sources'].append(s); \\
-  json.dump(d, open(p,'w'), ensure_ascii=False, indent=2)"
-```
-
-This is the registry consumed by future runs to know which sources are
-already canonicalized. Skipping this step causes cross-ref violations
-in bench_grade.py.
-
-### G. Finish: `done` (or `failed: <reason>`).
-"""
 
 
 # ─── Helpers ──────────────────────────────────────────────────────────────
@@ -720,23 +254,6 @@ def build_inputs(sources):
     return inputs
 
 
-def setup_agents():
-    register_tool("task_tool_set", TaskToolSet)
-    for spec in [
-        ("idea-classifier", "Classify NEW vs REPEATED + thematic_category.",
-         [], IDEA_CLASSIFIER_PROMPT),
-        ("fact-checker", "factcheck.py + paragraph Notes.",
-         ["terminal"], FACT_CHECKER_PROMPT),
-        ("concept-curator", "Concept template v3 — backlinks + excerpts.",
-         ["terminal", "file_editor"], CONCEPT_CURATOR_PROMPT),
-        ("source-author", "Process ONE lecture; selective factcheck; concept v3.",
-         ["terminal", "file_editor", "task_tool_set"], SOURCE_AUTHOR_PROMPT),
-    ]:
-        name, desc, tools, prompt = spec
-        ad = AgentDefinition(name=name, description=desc, tools=tools, system_prompt=prompt)
-        register_agent(ad.name, agent_definition_to_factory(ad), ad)
-
-
 def verify_source(n, original_n=None, module_subdir="", stem="", deadline_secs=90.0):
     """Verify a per-source artifact. Two phases:
 
@@ -909,18 +426,6 @@ def record_per_source_outcome(state, n, slug, verify_result, policy="fail_fast")
         return "continue"
     return "stop"
 
-
-def measure_top_orch(conv: Conversation):
-    n_events = len(conv.state.events)
-    total_input = 0
-    for ev in conv.state.events:
-        ts = getattr(ev, "tokens_input", None)
-        if ts is not None:
-            total_input += int(ts)
-    return n_events, total_input
-
-
-# ─── Concept template v3 validator (L1.5) ──────────────────────────────
 
 # ─── Coordinator wiring (ADR 0013) ─────────────────────────────────────
 
@@ -1110,8 +615,6 @@ def write_bench_report(state, branch, partial=False):
              "",
              "## Architectural invariants",
              "",
-             "- INVARIANT A (top-orch context bounded per source): see "
-             "per-source events column",
              "- INVARIANT B (concept template v3): see concept_violations row",
              "",
              "## Per-source", ""]
@@ -1153,21 +656,12 @@ def main():
         original_count = len(inputs)
         inputs = [t for t in inputs if t[0] >= resume_from]
         print(f'[main] D8_PILOT_RESUME_FROM={resume_from} \u2192 {len(inputs)}/{original_count} sources to process', file=sys.stderr)
-    setup_agents()
 
-    llm = LLM(
-        model=os.getenv("LLM_MODEL", "openai/qwen3.6-27b-fp8"),
-        api_key=os.getenv("LLM_API_KEY"),
-        base_url=os.getenv("LLM_BASE_URL"),
-        usage_id="d8-pilot",
-    )
-
-    # Coordinator's LLM is a thin litellm wrapper, separate from the
-    # OpenHands SDK LLM (which we keep available for any sub-agent
-    # invocation that lands in a follow-up).
+    # The coordinator (ADR 0013) talks to vLLM directly via litellm \u2014
+    # no OpenHands SDK Agent/Conversation in the per-source loop.
     coordinator_llm = _make_coordinator_llm()
 
-    # ─── PYTHON-LOOP TOP-ORCHESTRATOR (INVARIANT A) ──────────────────
+    # ─── Python-loop top-orchestrator (per-source coordinator) ─────
     state = []
     stopped_at = None
     t0_total = time.time()
