@@ -201,7 +201,11 @@ def setup_workspace():
         deleted_concepts = 0
         # Delete pre-existing module 005 source dirs.
         for course_dir in sources_root.iterdir() if sources_root.exists() else []:
+            if not course_dir.is_dir():
+                continue
             for module_dir in course_dir.iterdir():
+                if not module_dir.is_dir():
+                    continue
                 if module_dir.name.startswith("005 "):
                     shutil.rmtree(module_dir)
                     deleted_sources += 1
