@@ -46,5 +46,5 @@ folder via GitHub. The substantive docs are:
 - The product this lab realises:
   [`forge/phase-b-business-architecture/products/kurpatov-wiki.md`](../../../../phase-b-business-architecture/products/kurpatov-wiki.md)
   (and `tarasov-wiki.md`).
-- The capability stack this lab carries:
-  [`forge/phase-b-business-architecture/products/wiki-product-line.md`](../../../../phase-b-business-architecture/products/wiki-product-line.md).
+- The capability this lab realises:
+  [`forge/phase-b-business-architecture/capabilities/develop-wiki-product-line.md`](../../../../phase-b-business-architecture/capabilities/develop-wiki-product-line.md).

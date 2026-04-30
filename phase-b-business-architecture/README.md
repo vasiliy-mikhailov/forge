@@ -14,6 +14,12 @@ those capabilities ship.
 - [`capabilities/service-operation.md`](capabilities/service-operation.md)
   — the active capability with its quality-dimension trajectory
   (throughput / stability / cost-per-token; G1 / G2 history).
+- [`capabilities/develop-wiki-product-line.md`](capabilities/develop-wiki-product-line.md)
+  — the capability exercised across every member of the
+  [Wiki product line](products/wiki-product-line.md): take an
+  author's lecture corpus and produce a smart-reading wiki that
+  preserves the author's voice. Decomposes R&D + Product delivery +
+  Architecture knowledge management for the wiki domain.
 
 ## Organization units (who does it)
 

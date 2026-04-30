@@ -64,18 +64,16 @@ human reader — saves ~60 min per lecture per use,
 
 ## Member of
 
-[`wiki-product-line.md`](wiki-product-line.md) — line membership, line-wide value proposition, shared capability stack across Kurpatov + Tarasov + future authors.
+[`wiki-product-line.md`](wiki-product-line.md) — line membership and line-wide value proposition. The capability all line members exercise is [`Develop wiki product line`](../capabilities/develop-wiki-product-line.md).
 
-## Capabilities (from forge AGENTS.md Phase B)
+## Capability drawn on
 
-| Capability                           | Lab          | Quality dimension                                                                                |
-|--------------------------------------|--------------|--------------------------------------------------------------------------------------------------|
-| Audio → text transcription           | wiki-ingest  | Russian-WER on a held-out audit set                                                              |
-| Compile lecture into source.md       | wiki-bench   | **Fast for reading + preserves speaker voice** — bullets, TL;DR, no narrative bloat AND Курпатов's tone of voice intact in narrative sections |
-| Cross-source dedup of claims         | wiki-bench   | No repetitions — REPEATED markers, retrieval-augmented                                           |
-| Fact-check empirical claims          | wiki-bench   | No fake statements — Wikipedia URLs, CONTRADICTS_FACTS                                           |
-| Concept extraction + linking         | wiki-bench   | Canonical skill v2 shape                                                                         |
-| Benchmark open-weight LLMs vs Opus   | wiki-bench   | Reproducible from `(Dockerfile + transcripts)` only                                              |
+[`../capabilities/develop-wiki-product-line.md`](../capabilities/develop-wiki-product-line.md)
+— the same capability all line members exercise. Operations
+stack (Transcription / Compilation / LLM serving / Wiki
+requirements collection), per-operation quality dimensions, and
+realising labs are described once there.
+
 
 ## Source repos
 

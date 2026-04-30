@@ -2,8 +2,9 @@
 
 R&D output of forge. Smart-reading wiki distilled from audio/video
 lectures by Vladimir Tarasov on management ("Управленческая борьба",
-"Искусство управленческой борьбы", etc.). Same value stream and
-capability stack as Kurpatov Wiki, applied to management content
+"Искусство управленческой борьбы", etc.). Same value stream and same capability
+([`Develop wiki product line`](../capabilities/develop-wiki-product-line.md))
+as Kurpatov Wiki, applied to management content
 instead of psychology — and **preserves Тарасов's distinctive
 voice** the same way Kurpatov Wiki preserves Курпатов's.
 
@@ -43,19 +44,17 @@ human reader — saves ~60 min per lecture per use,
 
 ## Member of
 
-[`wiki-product-line.md`](wiki-product-line.md) — line membership, line-wide value proposition, shared capability stack across Kurpatov + Tarasov + future authors.
+[`wiki-product-line.md`](wiki-product-line.md) — line membership and line-wide value proposition. The capability all line members exercise is [`Develop wiki product line`](../capabilities/develop-wiki-product-line.md).
 
-## Capabilities
+## Capability drawn on
 
-Same capability stack as Kurpatov Wiki (see
-[`kurpatov-wiki.md`](kurpatov-wiki.md) and
-[`../products/wiki-product-line.md`](../products/wiki-product-line.md)).
-The wiki-bench lab realises all five
-compile/dedup/factcheck/concept/benchmark capabilities for both
-content sets; differences live only in the input repo, fact-check
-domain (psychology Wikipedia articles for Kurpatov; management
-literature + Wikipedia for Tarasov), and the skill v2 ritual's
-domain-specific glossary.
+[`../capabilities/develop-wiki-product-line.md`](../capabilities/develop-wiki-product-line.md)
+— same as Kurpatov Wiki; both products are members of the
+[Wiki product line](wiki-product-line.md) and exercise the same
+capability. Per-product differences live in input corpus,
+fact-check domain (management literature for Tarasov), and
+skill-v2 ritual's domain glossary — no capability extension.
+
 
 ## Source repos (planned)
 

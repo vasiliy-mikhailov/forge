@@ -53,7 +53,7 @@ into trajectories.
   (wearing the wiki PM hat) discovers requirements for a new wiki
   product from the raw corpus + reader needs, before the general
   lifecycle takes over. Realises the Phase B capability
-  [`Wiki requirements collection`](../phase-b-business-architecture/products/wiki-product-line.md).
+  [`Develop wiki product line`](../phase-b-business-architecture/capabilities/develop-wiki-product-line.md), Requirement traceability dimension.
 - [`traceability.md`](traceability.md) — worked example traces
   (Phase A goal → Phase B / D dimension → Phase F experiment →
   Phase H promotion).

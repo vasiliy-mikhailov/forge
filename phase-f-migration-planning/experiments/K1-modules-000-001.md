@@ -130,8 +130,8 @@ If falsified, the first signal is *which* gate triggered:
 ## Cross-references
 
 - Phase B capability targeted (indirectly): all four wiki
-  capabilities in
-  [`../../phase-b-business-architecture/products/wiki-product-line.md`](../../phase-b-business-architecture/products/wiki-product-line.md).
+  capability
+  [`../../phase-b-business-architecture/capabilities/develop-wiki-product-line.md`](../../phase-b-business-architecture/capabilities/develop-wiki-product-line.md).
 - Phase D services exercised:
   [`llm-inference`](../../phase-d-technology-architecture/services/llm-inference.md),
   [`agent-orchestration`](../../phase-d-technology-architecture/services/agent-orchestration.md),
