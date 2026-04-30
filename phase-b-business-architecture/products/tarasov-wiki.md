@@ -22,7 +22,7 @@ delivery are part of what makes his lectures distinctive. A wiki
 that strips the speaker's voice loses the differential value of
 having compiled THIS author's work — exactly the same product-
 line argument as for Kurpatov Wiki, see
-[`../capabilities/wiki-product-line.md`](../capabilities/wiki-product-line.md)
+[`../products/wiki-product-line.md`](../products/wiki-product-line.md)
 for the full reasoning.
 
 ## Value stream
@@ -49,7 +49,7 @@ human reader — saves ~60 min per lecture per use,
 
 Same capability stack as Kurpatov Wiki (see
 [`kurpatov-wiki.md`](kurpatov-wiki.md) and
-[`../capabilities/wiki-product-line.md`](../capabilities/wiki-product-line.md)).
+[`../products/wiki-product-line.md`](../products/wiki-product-line.md)).
 The wiki-bench lab realises all five
 compile/dedup/factcheck/concept/benchmark capabilities for both
 content sets; differences live only in the input repo, fact-check

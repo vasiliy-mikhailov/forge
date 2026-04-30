@@ -9,9 +9,6 @@ those capabilities ship.
   the four forge-level capabilities (R&D; Service operation;
   Product delivery; Architecture knowledge management) and the
   quality dimension each is judged on.
-- [`capabilities/wiki-product-line.md`](capabilities/wiki-product-line.md)
-  — the capability stack shared by every wiki product (Kurpatov,
-  Tarasov, future authors).
 - [`capabilities/rl-2048.md`](capabilities/rl-2048.md) — rl-2048
   capability stub.
 - [`capabilities/service-operation.md`](capabilities/service-operation.md)

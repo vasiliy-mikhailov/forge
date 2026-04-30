@@ -12,7 +12,7 @@ general lifecycle takes over.
 
 In TOGAF terms this is the Architecture Requirements specification
 activity scoped to **wiki product lines** (Phase B
-[`capabilities/wiki-product-line.md`](../phase-b-business-architecture/capabilities/wiki-product-line.md)
+[`products/wiki-product-line.md`](../phase-b-business-architecture/products/wiki-product-line.md)
 row "Wiki requirements collection"). The activity runs once when a
 new wiki is opened (Kurpatov, Tarasov, future authors) and is
 re-walked when material new evidence appears (a new module, a new

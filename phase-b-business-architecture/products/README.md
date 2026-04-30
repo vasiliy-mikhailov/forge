@@ -11,10 +11,12 @@ file per product in this folder.
 | ⤷ **Tarasov Wiki**     | wiki-ingest + wiki-bench + wiki-compiler                 | Pre-pilot — content acquisition phase                             | [`tarasov-wiki.md`](tarasov-wiki.md)                     |
 | **rl-2048**             | rl-2048 lab                                              | Pre-methodology phase                                             | [`rl-2048.md`](rl-2048.md)                               |
 
-The capability stacks for each product line live in
-[`../capabilities/`](../capabilities/). The wiki-* products share
-one stack ([`../capabilities/wiki-product-line.md`](../capabilities/wiki-product-line.md))
-— see also the line definition
-([`wiki-product-line.md`](wiki-product-line.md)) for line membership and
-line-wide value proposition. rl-2048 has its own stack
-([`../capabilities/rl-2048.md`](../capabilities/rl-2048.md)).
+The wiki line's operations stack — what `wiki-*` labs do per
+product, and which forge capability each operation draws on —
+lives in [`wiki-product-line.md`](wiki-product-line.md) on this
+side, since each row describes *what this product line does*,
+not *what forge can do in the abstract*. The forge-level
+capabilities those operations draw on are in
+[`../capabilities/forge-level.md`](../capabilities/forge-level.md).
+(rl-2048 still keeps its operations table under `../capabilities/`
+for now; same category-error fix is queued.)
