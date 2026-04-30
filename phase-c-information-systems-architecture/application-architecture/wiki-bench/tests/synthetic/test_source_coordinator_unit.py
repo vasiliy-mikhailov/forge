@@ -81,6 +81,8 @@ class CoordinatorContract(unittest.TestCase):
         return [
             {"claims": [{"text": "claim 1", "needs_factcheck": False}]},
             {"classifications": [{"claim_index": 1, "verdict": "NEW", "category": "test"}]},
+            {"tldr": "stub TL;DR for unit test."},
+            {"lecture": "stub condensed lecture for unit test."},
         ]
 
     def test_writes_file_at_target_path(self):
@@ -106,7 +108,8 @@ class CoordinatorContract(unittest.TestCase):
             slug="C/M/001 stem", curator=lambda *_: None,
         )
         kinds = [call["response_format"]["title"] for call in llm.calls]
-        self.assertEqual(kinds, ["claims_list", "claims_batch_classification"])
+        self.assertEqual(kinds, ["claims_list", "claims_batch_classification",
+                                  "tldr", "lecture_condensed"])
 
     def test_each_call_specifies_response_schema(self):
         """Every LLM call MUST pass a `response_format` JSON schema. This
@@ -150,6 +153,8 @@ class CoordinatorRetry(unittest.TestCase):
             "this is not valid JSON for claims schema",  # first → MalformedResponseError
             {"claims": [{"text": "claim 1", "needs_factcheck": False}]},  # retry → ok
             {"classifications": [{"claim_index": 1, "verdict": "NEW", "category": "test"}]},
+            {"tldr": "stub TL;DR for unit test."},
+            {"lecture": "stub condensed lecture for unit test."},
         ])
         c = SourceCoordinator(llm=llm, workdir=self.workdir)
         result = c.process_source(
@@ -157,8 +162,8 @@ class CoordinatorRetry(unittest.TestCase):
             slug="C/M/001 stem", curator=lambda *_: None,
         )
         self.assertTrue(self.target.exists())
-        # 1 extract attempt + 1 retry + 1 classify = 3 calls.
-        self.assertEqual(len(llm.calls), 3)
+        # 1 extract attempt + 1 retry + 1 classify + 1 tldr + 1 lecture = 5 calls.
+        self.assertEqual(len(llm.calls), 5)
 
     def test_two_malformed_responses_raise_coordinator_error(self):
         """Second malformed response is a hard error. No silent
@@ -202,6 +207,8 @@ class CoordinatorTemplate(unittest.TestCase):
         llm = _FakeLLM([
             {"claims": [{"text": "claim 1", "needs_factcheck": False}]},
             {"classifications": [{"claim_index": 1, "verdict": "NEW", "category": "test"}]},
+            {"tldr": "stub TL;DR for unit test."},
+            {"lecture": "stub condensed lecture for unit test."},
         ])
         c = SourceCoordinator(llm=llm, workdir=self.workdir)
         c.process_source(
@@ -220,6 +227,8 @@ class CoordinatorTemplate(unittest.TestCase):
         llm = _FakeLLM([
             {"claims": [{"text": "first claim", "needs_factcheck": False}]},
             {"classifications": [{"claim_index": 1, "verdict": "NEW", "category": "test"}]},
+            {"tldr": "stub TL;DR for unit test."},
+            {"lecture": "stub condensed lecture for unit test."},
         ])
         c = SourceCoordinator(llm=llm, workdir=self.workdir)
         c.process_source(

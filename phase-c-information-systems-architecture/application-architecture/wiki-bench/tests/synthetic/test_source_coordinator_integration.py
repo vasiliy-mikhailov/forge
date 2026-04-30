@@ -170,6 +170,8 @@ class CoordinatorIntegration(unittest.TestCase):
                 {"claim_index": 1, "verdict": "NEW",
                  "category": "test-category-one"},
             ]},
+            {"tldr": "Stub TL;DR for integration test."},
+            {"lecture": "Stub condensed lecture for integration test."},
         ])
         curator = _stub_curator(self.fx.workdir)
         c = SourceCoordinator(llm=llm, workdir=self.fx.workdir)
@@ -205,6 +207,8 @@ class CoordinatorIntegration(unittest.TestCase):
             # Fact-check for claim B (needs_factcheck=True).
             {"marker": "NEW", "url": "https://example.com",
              "notes": "Verified against public source."},
+            {"tldr": "Stub TL;DR."},
+            {"lecture": "Stub condensed lecture."},
         ])
         curator = _stub_curator(self.fx.workdir)
         c = SourceCoordinator(llm=llm, workdir=self.fx.workdir)
@@ -235,6 +239,8 @@ class CoordinatorIntegration(unittest.TestCase):
                 {"claim_index": 1, "verdict": "NEW",
                  "category": "retry-cat"},
             ]},
+            {"tldr": "Stub TL;DR."},
+            {"lecture": "Stub condensed lecture."},
         ])
         curator = _stub_curator(self.fx.workdir)
         c = SourceCoordinator(llm=llm, workdir=self.fx.workdir)
@@ -249,7 +255,8 @@ class CoordinatorIntegration(unittest.TestCase):
         self.assertEqual(graded.get("verified"), "ok",
                          f"bench_grade rejected: {graded.get('violations')}")
         # 1 extract retry + 1 extract success + 1 classify = 3 calls.
-        self.assertEqual(len(llm.calls), 3)
+        # extract retry + extract success + classify + tldr + lecture = 5
+        self.assertEqual(len(llm.calls), 5)
 
     # 4. Two consecutive malformed responses → CoordinatorError, NO file
     # written. This is the property SRC 17 (the "shape of a closing tag"

@@ -147,6 +147,24 @@ SCHEMA_FACT_CHECK = {
     },
 }
 
+SCHEMA_TLDR = {
+    "title": "tldr",
+    "schema": {
+        "type": "object",
+        "required": ["tldr"],
+        "properties": {"tldr": {"type": "string"}},
+    },
+}
+
+SCHEMA_LECTURE = {
+    "title": "lecture_condensed",
+    "schema": {
+        "type": "object",
+        "required": ["lecture"],
+        "properties": {"lecture": {"type": "string"}},
+    },
+}
+
 
 # ─── Coordinator ──────────────────────────────────────────────────────
 
@@ -316,9 +334,31 @@ class SourceCoordinator:
                   flush=True)
         result.steps.append(StepResult("fact_check", True))
 
+        # Step 4.5 — generate TL;DR + condensed Лекция (LLM, schema-bound).
+        # Both run in parallel against the same transcript; both must be in
+        # the transcript's language (lecturer's first-person voice).
+        print(f"  [coord] tldr+lecture: parallel ×2", flush=True)
+        t_summ = time.monotonic()
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            fut_tldr = pool.submit(
+                self._llm_with_retry,
+                prompt=self._prompt_tldr(transcript, classified),
+                schema=SCHEMA_TLDR, max_tokens=600,
+            )
+            fut_lect = pool.submit(
+                self._llm_with_retry,
+                prompt=self._prompt_lecture(transcript, classified),
+                schema=SCHEMA_LECTURE, max_tokens=2000,
+            )
+            tldr = fut_tldr.result()["tldr"]
+            lecture = fut_lect.result()["lecture"]
+        print(f"  [coord] tldr+lecture done ({time.monotonic()-t_summ:.0f}s)",
+              flush=True)
+        result.steps.append(StepResult("tldr_lecture", True))
+
         # Step 5 — compose source.md from collected results (deterministic).
         body = self._compose_md(slug=slug, transcript=transcript,
-                                claims=classified)
+                                claims=classified, tldr=tldr, lecture=lecture)
 
         # Step 6 — WRITE FILE (deterministic, the property SRC 17 violated).
         target = Path(target_path)
@@ -434,6 +474,9 @@ class SourceCoordinator:
             "Extract distinct empirical claims from this lecture "
             "transcript. Aim for ~1 claim per 60 seconds of audio "
             "density.\n\n"
+            "🇷🇺 LANGUAGE: Output every claim in the SAME LANGUAGE as the "
+            "TRANSCRIPT below. If the transcript is in Russian, claims "
+            "must be in Russian. Do not translate.\n\n"
             "Set needs_factcheck=true ONLY if the claim contains a "
             "concrete external fact:\n"
             "  - a specific person's name + biographical/historical "
@@ -502,6 +545,57 @@ class SourceCoordinator:
             prompt += "\n"
         return prompt
 
+    def _prompt_tldr(self, transcript: str, claims: list[dict]) -> str:
+        # Use first ~10K chars of transcript so the prompt stays bounded
+        # but the model still has the lecture's substance.
+        sample = transcript[:10_000]
+        verified_claims = [c["text"] for c in claims
+                           if c["verdict"] == "NEW"
+                           and c.get("fact_marker") != "CONTRADICTS_FACTS"][:8]
+        ck = "\n  - ".join(verified_claims) if verified_claims else "(none)"
+        return (
+            "Write a TL;DR for this lecture as the {tldr} field of the JSON "
+            "response.\n\n"
+            "🇷🇺 LANGUAGE: same language as the TRANSCRIPT below. If the "
+            "transcript is in Russian, your TL;DR is in Russian. Do not "
+            "translate.\n\n"
+            "TONE: first person, lecturer's voice — exactly as the speaker "
+            "would summarise their own lecture (\"Я расскажу...\", "
+            "\"Мы рассмотрим...\"). NOT a third-person retelling.\n\n"
+            "LENGTH: one paragraph, 80-200 words.\n\n"
+            "CONTENT: the lecture's main thesis + the 2-4 most important "
+            "ideas. Skip greetings, course logistics, and self-promotion.\n\n"
+            f"TRANSCRIPT (first 10K chars):\n{sample}\n\n"
+            f"VERIFIED NEW CLAIMS (use as anchor):\n  - {ck}\n"
+        )
+
+    def _prompt_lecture(self, transcript: str, claims: list[dict]) -> str:
+        # Lecture sees more transcript than TL;DR — it produces the
+        # condensed retelling, so it needs the substance.
+        sample = transcript[:25_000]
+        verified_claims = [c["text"] for c in claims
+                           if c["verdict"] == "NEW"
+                           and c.get("fact_marker") != "CONTRADICTS_FACTS"]
+        ck = "\n  - ".join(verified_claims) if verified_claims else "(none)"
+        return (
+            "Write a condensed retelling of this lecture as the {lecture} "
+            "field of the JSON response.\n\n"
+            "🇷🇺 LANGUAGE: same as the TRANSCRIPT below. If transcript is "
+            "Russian, your retelling is Russian.\n\n"
+            "TONE: first person, lecturer's voice (same as the TL;DR). NOT "
+            "third-person retelling. Курпатов's emotional emphases, "
+            "characteristic metaphors, and dramatic punctuation are part of "
+            "the content — preserve them; do not sanitise into neutral "
+            "encyclopedic prose.\n\n"
+            "LENGTH: 3-5 paragraphs.\n\n"
+            "CONTENT: condense the lecture but keep ONLY material that is "
+            "either NEW or REPEATED-yet-verified. Drop everything that "
+            "duplicates already-summarised material from prior sources or "
+            "that the fact-check marked CONTRADICTS_FACTS.\n\n"
+            f"TRANSCRIPT (first 25K chars):\n{sample}\n\n"
+            f"VERIFIED NEW CLAIMS (use as anchor):\n  - {ck}\n"
+        )
+
     def _prompt_fact_check(self, claim: dict) -> str:
         return (
             "Fact-check this empirical claim against public knowledge.\n\n"
@@ -521,7 +615,8 @@ class SourceCoordinator:
     # ─── source.md composition ────────────────────────────────────
 
     def _compose_md(self, *, slug: str, transcript: str,
-                    claims: list[dict]) -> str:
+                    claims: list[dict],
+                    tldr: str = "", lecture: str = "") -> str:
         """Compose the final source.md body from deterministic Python.
 
         Per the prompt-change earlier this week:
@@ -530,8 +625,8 @@ class SourceCoordinator:
           - Claim markers lead at line start: `1. [NEW] <text>`
         """
         parts = [self._frontmatter(slug, claims)]
-        parts.append(self._section_tldr(transcript, claims))
-        parts.append(self._section_lecture(transcript))
+        parts.append(self._section_tldr(tldr or self._fallback_tldr(transcript)))
+        parts.append(self._section_lecture(lecture or self._fallback_lecture(transcript)))
         parts.append(self._section_claims(claims))
         parts.append(self._section_new_ideas(claims))
         parts.append(self._section_all_ideas(claims))
@@ -562,18 +657,22 @@ class SourceCoordinator:
         ]
         return "\n".join(fm_lines)
 
-    def _section_tldr(self, transcript: str, claims: list[dict]) -> str:
-        # Coordinator-side default: a short paragraph stitched from the
-        # first sentence of the transcript. The integration layer will
-        # replace this with a dedicated LLM call if needed.
-        first = transcript[:200].rstrip()
-        return f"## TL;DR\n\n{first}"
+    def _section_tldr(self, tldr_text: str) -> str:
+        return f"## TL;DR\n\n{tldr_text}"
 
-    def _section_lecture(self, transcript: str) -> str:
+    def _section_lecture(self, lecture_text: str) -> str:
         return (
             "## Лекция сжато (только новое и проверенное)\n\n"
-            f"{transcript}"
+            f"{lecture_text}"
         )
+
+    # Fallbacks used by tests and as defensive defaults — production
+    # path always passes LLM-generated tldr/lecture into _compose_md.
+    def _fallback_tldr(self, transcript: str) -> str:
+        return transcript[:200].rstrip()
+
+    def _fallback_lecture(self, transcript: str) -> str:
+        return transcript
 
     def _section_claims(self, claims: list[dict]) -> str:
         lines = ["## Claims — provenance and fact-check", ""]
