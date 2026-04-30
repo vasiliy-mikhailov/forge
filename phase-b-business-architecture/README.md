@@ -26,7 +26,9 @@ those capabilities ship.
 
 ## Products (what those capabilities ship)
 
-- [`products/`](products/) — one file per product. Index in
+- [`products/`](products/) — one file per product, plus the
+  [`products/wiki-product-line.md`](products/wiki-product-line.md)
+  file for the multi-author wiki line itself. Index in
   [`products/README.md`](products/README.md).
 
 ## ADRs

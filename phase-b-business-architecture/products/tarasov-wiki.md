@@ -41,6 +41,10 @@ human reader — saves ~60 min per lecture per use,
               still hears Тарасов
 ```
 
+## Member of
+
+[`wiki-product-line.md`](wiki-product-line.md) — line membership, line-wide value proposition, shared capability stack across Kurpatov + Tarasov + future authors.
+
 ## Capabilities
 
 Same capability stack as Kurpatov Wiki (see

@@ -62,6 +62,10 @@ human reader — saves ~60 min per lecture per use,
               still hears Курпатов
 ```
 
+## Member of
+
+[`wiki-product-line.md`](wiki-product-line.md) — line membership, line-wide value proposition, shared capability stack across Kurpatov + Tarasov + future authors.
+
 ## Capabilities (from forge AGENTS.md Phase B)
 
 | Capability                           | Lab          | Quality dimension                                                                                |
