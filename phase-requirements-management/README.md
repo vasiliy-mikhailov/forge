@@ -48,6 +48,12 @@ into trajectories.
   phase that addresses it, and status.
 - [`process.md`](process.md) — how a requirement enters the
   catalog, gets routed to a Phase F experiment, and exits.
+- [`wiki-requirements-collection.md`](wiki-requirements-collection.md) —
+  the wiki-specific *front-end* to `process.md`: how the architect
+  (wearing the wiki PM hat) discovers requirements for a new wiki
+  product from the raw corpus + reader needs, before the general
+  lifecycle takes over. Realises the Phase B capability
+  [`Wiki requirements collection`](../phase-b-business-architecture/capabilities/wiki-product-line.md).
 - [`traceability.md`](traceability.md) — worked example traces
   (Phase A goal → Phase B / D dimension → Phase F experiment →
   Phase H promotion).

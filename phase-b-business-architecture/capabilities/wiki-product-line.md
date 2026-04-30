@@ -12,6 +12,7 @@ no component change needed.
 
 | Capability                           | Lab           | Quality dimension                                                                                |
 |--------------------------------------|---------------|--------------------------------------------------------------------------------------------------|
+| Wiki requirements collection         | (architect)   | **Every implementation choice cites a requirement** — prompts, schemas, graders reference R-IDs from `phase-requirements-management/catalog.md`; no orphan rules. Process: [`../../phase-requirements-management/wiki-requirements-collection.md`](../../phase-requirements-management/wiki-requirements-collection.md). |
 | Audio → text transcription           | wiki-ingest   | Russian-WER on a held-out audit set                                                              |
 | Compile lecture into source.md       | wiki-bench    | **Fast for reading + preserves speaker voice** — bullets, TL;DR, no narrative bloat AND author's tone of voice intact in narrative sections (TL;DR + Лекция); structural sections stay neutral |
 | Cross-source dedup of claims         | wiki-bench    | **No repetitions** — REPEATED markers, retrieval-augmented                                       |
