@@ -73,3 +73,7 @@ tmp/
 
 # --- stray rl-2048 dir at forge root (notebooks-only artefact, not the lab) ---
 /rl-2048/
+
+# ArchiMate 4 spec PDF — Open Group "Evaluation Copy. Not for redistribution"
+# kept locally for offline reference; not committed.
+phase-preliminary/adr/archimate-4-spec.pdf

@@ -8,13 +8,24 @@ does not.
 - **TOGAF ADM phase vocabulary and layering.** Forge organizes its
   documentation by classic TOGAF ADM phases (Preliminary, A — H).
   This is the structural backbone every reader navigates by.
-- **ArchiMate vocabulary inside Phase D.** When describing
-  Technology Architecture we distinguish *services* (a behavior
-  exposed by tech) from *components* (the artefact realising the
-  service — vLLM 0.19.1, OpenHands SDK 1.17.0). Trajectories
-  attach to service quality dimensions, not to components.
-  Replacing a component (vLLM 0.19 → 0.20) is the next step on
-  the same trajectory.
+- **ArchiMate 4 vocabulary across all phases** (extended in
+  [ADR 0014](adr/0014-archimate-across-all-layers.md)). Forge
+  uses ArchiMate 4 as its modeling vocabulary throughout the
+  TOGAF phases — every named element (Role, Capability,
+  Application Component, Plateau, etc.) maps to one ArchiMate 4
+  type per the cross-reference table in
+  [`archimate-vocabulary.md`](archimate-vocabulary.md).
+  Relationships use the typed verbs from §5 of the spec
+  (Aggregation, Composition, Assignment, Realization, Serving,
+  Access, Influence, Association, Triggering, Flow,
+  Specialization). Trajectories attach to service / capability
+  quality dimensions and are typed as a pair of Plateaus +
+  Work Package + Deliverables (Implementation & Migration
+  domain). Replacing a component (vLLM 0.19 → 0.20) is the
+  next step on the same trajectory — the System Software
+  changes; the Capability and the Function it realizes do not.
+  The pre-2026-04-30 narrower scope ("ArchiMate vocabulary
+  inside Phase D") is superseded by ADR 0014.
 - **Capability vocabulary inside Phase B.** What forge can do is a
   *capability*; what produces shippable output for users is a
   *product*; the org units are a separate axis. These three are
