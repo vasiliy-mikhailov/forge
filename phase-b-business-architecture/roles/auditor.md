@@ -98,11 +98,16 @@ file as the durable artefact.
 ## Tests
 
 [`/tests/phase-b-business-architecture/roles/test-auditor.md`](../../tests/phase-b-business-architecture/roles/test-auditor.md)
-— pass/fail predicates for the role. Tests are authored before
-the role is filled for the first time (TDD per ADR 0013) and
-stay `RED` until the role's output passes them. Convention
-defined inside the test file. Coverage target: L3 (every
-audit-process predicate has at least one decision test).
+— pass/fail predicates for the role. 11 tests across two
+kinds: I-AU-NN (inspection over the latest `audit-<date>.md`
+report — file presence, section structure, finding shape,
+summary totals) and D-AU-NN (decision over inline fixtures —
+P6 catches `operations stack`, `is responsible for`,
+`agent`-as-org-unit, `drives`/`owns` as relationship verbs,
+and produces zero findings on a clean ArchiMate-typed
+fixture). Verifier:
+[`test-auditor-verifier.py`](../../tests/phase-b-business-architecture/roles/test-auditor-verifier.py).
+All 11 GREEN after first run.
 
 ## References
 

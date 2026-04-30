@@ -193,10 +193,19 @@ Predicate: P<NN>. Path(s): <forge-relative path(s)>.
 ## Findings — verdict WARN
 
 ### F<N>. …
+(same shape as FAIL findings)
 
 ## Findings — verdict INFO
 
-### F<N>. …
+### F<N>. <one-line title>
+Predicate: P<NN>. Path(s): <forge-relative path(s)>.
+**Symptom.** <what was observed>
+**Note.** <why this is noteworthy but not a violation; predicate
+refinement, documented exception, etc.>
+
+(INFO findings may omit **Rule.** and **Proposed fix.** because
+they do not represent rule violations; the **Note.** paragraph
+captures both why it's noteworthy and any follow-up action.)
 
 ## Summary
 
