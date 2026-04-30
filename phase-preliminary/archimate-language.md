@@ -1,266 +1,413 @@
 # ArchiMate 4 — language description
 
-The modeling language forge adopted in
-[ADR 0014](adr/0014-archimate-across-all-layers.md). This file is
-the forge-internal description of what ArchiMate 4 *is*: its
-structure, its element types, its relationship types. It is the
-companion to [`archimate-vocabulary.md`](archimate-vocabulary.md)
-(which maps existing forge concepts to ArchiMate 4 elements) and
-to [`framework-tailoring.md`](framework-tailoring.md) (which says
-which parts forge adopts and skips).
+A reference for the ArchiMate® 4 modeling language as standardised
+by The Open Group. This file describes the language itself —
+domains, element types, relationship types, structural rules —
+independent of how any specific project applies it. It is intended
+to be a portable digest a reader can rely on without knowing the
+project context.
 
-Source: ArchiMate® 4 Specification (The Open Group, 2026), kept
-locally for offline lookup at `adr/archimate-4-spec.pdf`
-(gitignored — Open Group spec is "Evaluation Copy. Not for
-redistribution"; download from
-<https://publications.opengroup.org/standards/archimate>). Every
-section below cites the relevant spec section so a contributor
-with access can dig deeper. Definitions in this file are in
-forge's own words.
+For how this project specifically maps its concepts to ArchiMate 4
+elements, see the companion file
+[`archimate-vocabulary.md`](archimate-vocabulary.md). For the
+decision to adopt ArchiMate 4, see
+[ADR 0014](adr/0014-archimate-across-all-layers.md). For the full
+normative text, refer to the ArchiMate 4 Specification (The Open
+Group, 2026); section numbers (e.g. §4.1.1) cited below point into
+that document. Definitions in this file are paraphrased; the
+spec is the source of truth.
 
-This file is a **digest**, not a translation of the spec. Where
-the spec exhaustively enumerates every constraint, this file
-records only what forge actually relies on. Elements forge does
-not use today are simply absent from the tables below; per the
-[architecture method's](architecture-method.md) delete-on-
-promotion rule, the working tree reads as current truth, not as
-a status log.
+## Contents
+
+- [What ArchiMate is](#what-archimate-is)
+- [Language structure](#language-structure)
+- [Common Domain](#common-domain)
+- [Motivation Domain](#motivation-domain)
+- [Strategy Domain](#strategy-domain)
+- [Business Domain](#business-domain)
+- [Application Domain](#application-domain)
+- [Technology Domain](#technology-domain)
+- [Implementation & Migration Domain](#implementation--migration-domain)
+- [Relationships and Junctions](#relationships-and-junctions)
+- [Stakeholders, Views, and Viewpoints](#stakeholders-views-and-viewpoints)
+- [Language Customization](#language-customization)
 
 ## What ArchiMate is
 
-A modeling language for enterprise architecture, developed by The
-Open Group. Two things matter for forge:
+ArchiMate is an Enterprise Architecture modeling language
+maintained as an Open Group standard. It provides a **fixed
+vocabulary** of element types and relationship types used to
+describe an organisation's architecture across multiple concerns
+— motivations, strategy, business, applications, technology,
+implementation — plus a **graphical notation** for diagrams. The
+language sits *alongside* TOGAF: TOGAF provides the development
+method and phase scaffolding; ArchiMate provides the typed terms
+that fill those phases.
 
-- A **fixed vocabulary** of element types (each with a precise
-  definition) and relationship types (each with a precise
-  semantics). When a forge file says "X realizes Y", that verb
-  is one of 11 named relationships with a defined meaning, not
-  prose.
-- A **layered metamodel** organised by domains (Strategy,
-  Business, Application, Technology, Motivation, Implementation
-  & Migration, Common, Physical). Each domain has its own
-  element types; cross-domain relations are explicit.
+Two halves of the language matter:
 
-The language also defines a visual notation (boxes, arrows,
-icons) and a viewpoint mechanism for producing diagrams. Forge
-**adopts the vocabulary and skips the notation** — see
-[`framework-tailoring.md`](framework-tailoring.md). The forge
-artefacts are markdown; ArchiMate gives them typed names.
+- **Vocabulary.** Element types (Capability, Application
+  Component, Plateau, …) and relationship types (Realization,
+  Assignment, Influence, …) with precise semantics. Two
+  artefacts that name the same thing using ArchiMate vocabulary
+  refer to the same element.
+- **Notation.** Boxes, arrows, icons, colours that render the
+  vocabulary visually. Optional — adopting the vocabulary
+  without the notation is conformant.
 
-## Structural axes (spec §3)
+ArchiMate 4 (2026) restructures the language relative to v3:
+common cross-domain elements (Role, Service, Process, Function,
+Event, Collaboration, Path, Grouping, Location) move into a
+single **Common Domain**, and the Implementation & Migration
+domain reduces to three elements (Work Package, Deliverable,
+Plateau — v3's *Gap* element is retired).
 
-Every element belongs to one *aspect*. The three aspects are:
+## Language structure
 
-- **Active structure** — entities that perform behavior (Actors,
-  Components, Nodes, Roles).
-- **Passive structure** — entities behavior acts on (Data
-  Objects, Business Objects, Artifacts).
-- **Behavior** — the activities themselves (Functions,
-  Processes, Services, Events).
+Spec §3.
 
-Plus three special-case aspects:
+### Aspects
 
-- **Motivation** — the *why* (Stakeholders, Drivers, Goals,
-  Requirements). Spec §6.
-- **Composite** — elements that aggregate other elements
-  (Grouping, Location, Product, Plateau). Cross-aspect.
+Every element belongs to one *aspect*. The three core aspects
+are:
+
+- **Active Structure** — entities that *perform* behaviour.
+  Examples: Business Actor, Application Component, Node, Role.
+- **Passive Structure** — entities that behaviour *acts on*.
+  Examples: Business Object, Data Object, Artifact.
+- **Behavior** — the activities themselves. Examples: Service,
+  Process, Function, Event.
+
+Three further aspects sit alongside the core three:
+
+- **Motivation** — the *why*. Stakeholder, Driver, Goal,
+  Requirement, etc.
+- **Composite** — elements that aggregate concepts from multiple
+  aspects. Grouping, Location, Product, Plateau.
 - **Implementation & Migration** — Work Package, Deliverable,
-  Plateau (these have their own domain). Spec §12.
+  Plateau (this aspect overlaps Composite for Plateau).
 
-The three core aspects (active / passive / behavior) appear in
-every domain that has core elements (Business, Application,
-Technology). The **Common Domain** (spec §4) is the v4-specific
-unification: Role, Service, Process, Function, Event,
-Collaboration, Path, Grouping, Location are *cross-domain*
-elements — they don't belong to Business or Application or
-Technology individually. This is the major change from
-ArchiMate 3 forge contributors should be aware of.
+### Domains
 
-## Domains and their elements
+Elements are organised into seven **domains** (called *layers*
+in ArchiMate 3):
 
-**Tables list only the elements forge actually uses today.** Elements not listed are described in the spec; if forge starts using one, its row is added to the relevant table at that point. This matches the architecture-method.md rule that the working tree reads as current truth, not as a status log.
+| Domain                              | Spec § | Purpose                                                                                                              |
+|-------------------------------------|--------|-----------------------------------------------------------------------------------------------------------------------|
+| **Common**                          | §4     | Cross-domain elements (Role, Service, Process, Function, etc.) that can be used in Strategy, Business, Application, or Technology. |
+| **Motivation**                      | §6     | The *why* — Stakeholder, Driver, Assessment, Goal, Outcome, Principle, Requirement, Meaning, Value.                  |
+| **Strategy**                        | §7     | What the enterprise *can do* (Capabilities, Resources) and *plans to do* (Courses of Action, Value Streams).         |
+| **Business**                        | §8     | The business layer — actors, interfaces, business objects, products.                                                |
+| **Application**                     | §9     | Application components, interfaces, data objects.                                                                    |
+| **Technology**                      | §10    | Infrastructure — nodes, devices, system software, networks, plus a Physical sub-domain (Equipment, Facility, etc.). |
+| **Implementation & Migration**     | §12    | Work Packages, Deliverables, Plateaus.                                                                                |
 
-Listed in the order forge phases use them (Motivation first
-because it drives Phase A; Strategy → Business → Application →
-Technology because that's the layering; Implementation &
-Migration last because it sits orthogonally).
+Cross-domain references are normal and the language defines them
+explicitly (e.g. an Application Component may *realize* a
+Capability — §11).
 
-### Common domain (spec §4)
+### Active / Passive / Behavior in core domains
 
-Cross-domain elements — Role, Service, Process, Function, Event,
-Collaboration, Path, Grouping, Location. These can be assigned
-to / realized by elements in any of the Strategy / Business /
-Application / Technology domains.
+Each of Business, Application, Technology has its own Active
+Structure, Passive Structure, and Behavior elements *in addition
+to* the cross-domain Common elements. So Application has both
+**Application Component** (Active) and **Data Object** (Passive)
+of its own, while reusing **Service**, **Process**, **Function**,
+**Event** from Common.
 
-| Element       | One-line definition (forge phrasing)                                                                    | Spec ref |
-|---------------|----------------------------------------------------------------------------------------------------------|----------|
-| **Role**          | The position or purpose an active structure element (Business Actor, Application Component, Node, etc.) plays in performing behavior. *Forge example: Wiki PM.* | §4.1.1 |
-| **Service**       | An explicitly defined behavior an active structure element provides to its environment, accessible through interfaces. *Forge example: LLM inference service exposed by wiki-compiler.* | §4.2.1 |
-| **Process**       | A sequence of behaviors that achieves a specific result; ordered "flow" of activities. *Forge example: per-source progression in K1 v2.* | §4.2.2 |
-| **Function**      | A collection of behavior grouped by required skills / resources / knowledge — *not* by sequence. Realizes Capabilities. *Forge example: Compile-lecture-into-source.md.* | §4.2.3 |
-| **Event**         | An instantaneous occurrence (state change) that triggers / is triggered by behavior. *Forge example: "Pilot completed" triggering "Publish step".* | §4.2.4 |
-| **Grouping**      | A composite element that aggregates concepts belonging together by some criterion. *Forge example: the Wiki product line aggregating Kurpatov + Tarasov Products.* | §4.3.1 |
+## Common Domain
 
-### Motivation domain (spec §6)
+Spec §4. Elements in this domain are not tied to any single core
+domain — they can apply to actors / components / nodes from any
+of Strategy, Business, Application, or Technology.
 
-The *why* layer. Reasons behind the architecture.
+### Active Structure
 
-| Element       | One-line definition (forge phrasing)                                                                    | Spec ref |
-|---------------|----------------------------------------------------------------------------------------------------------|----------|
-| **Stakeholder** | An individual or group with a stake in the outcome of the architecture. *Forge example: architect of record, future operator.* | §6.3.1 |
-| **Driver**      | An external or internal condition that motivates the organization to define its goals and implement changes. *Forge example: "AI tools should save human time on cognitive work".* | §6.3.2 |
-| **Assessment**  | The result of analysis of the state of the enterprise with respect to a driver — surfaces strengths, weaknesses, opportunities, threats. *Forge example: a Phase H audit row.* | §6.3.3 |
-| **Goal**        | A high-level statement of intent or direction for the enterprise. *Forge example: TTS, PTS, EB, Architect-velocity (Phase A).* | §6.4.1 |
-| **Principle**   | A normative property of all systems in a given context. *Forge example: the four architecture-principles (single architect, capability trajectories, containers-only, single server).* | §6.4.3 |
-| **Requirement** | A statement of need that must be realized by the architecture. *Forge example: each row in `phase-requirements-management/catalog.md`.* | §6.4.4 |
+| Element            | Definition                                                                                                                                                    | Spec § |
+|--------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------|--------|
+| **Role**           | The position or purpose that an active structure element (Business Actor, Application Component, Node, Device, System Software, Equipment, Facility, or a Collaboration) has in performing specific behaviour. | §4.1.1 |
+| **Collaboration**  | A (possibly temporary) collection of internal active structure elements that work together to perform collective behaviour.                                                                                     | §4.1.2 |
+| **Path**           | A logical link between active structure elements through which they exchange information, data, energy, or material.                                                                                            | §4.1.3 |
 
-### Strategy domain (spec §7)
+### Behavior
 
-What the enterprise *can do*.
+| Element       | Definition                                                                                                                                                              | Spec § |
+|---------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------|
+| **Service**   | An explicitly defined behaviour that an active structure element provides to its environment, accessible through interfaces. Externally observable.                       | §4.2.1 |
+| **Process**   | A sequence of behaviours that achieves a specific result. Sequence- or flow-oriented.                                                                                    | §4.2.2 |
+| **Function**  | A collection of behaviour grouped by required skills, resources, knowledge, etc. — *not* by sequence. Functions can realize Capabilities.                                | §4.2.3 |
+| **Event**     | An instantaneous occurrence (e.g., state change) inside or outside the enterprise. Triggers or is triggered by other behaviour.                                          | §4.2.4 |
 
-| Element       | One-line definition (forge phrasing)                                                                    | Spec ref |
-|---------------|----------------------------------------------------------------------------------------------------------|----------|
-| **Capability**     | An ability the enterprise possesses; *what* the enterprise can do, independent of how it implements it. *Forge example: Develop wiki product line; Service operation.* | §7.3.1 |
+Process vs Function: a Process is *sequence-of-activities*; a
+Function is *grouping-by-skill-or-resource*. The same set of
+activities can be modelled both ways depending on the question
+being asked.
 
-A Capability is *realized by* one or more Functions. A Function
-is *assigned to* a Role and / or an Application Component / Node.
-This chain — Capability ← Function ← Role / Component — is the
-load-bearing one for forge (see §[Metamodel chains forge relies
-on](#metamodel-chains-forge-relies-on)).
+### Composite
 
-### Business domain (spec §8)
+| Element     | Definition                                                                                                                                                                  | Spec § |
+|-------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------|
+| **Grouping** | A composite element that aggregates a collection of concepts belonging together based on some common characteristic. Used for arbitrary groupings (e.g. ABBs/SBBs in TOGAF). | §4.3.1 |
+| **Location** | A composite element representing a conceptual or physical place or position where concepts are located.                                                                     | §4.3.2 |
 
-The Business domain in v4 is intentionally thin — most behavior /
-service / process / function / role concepts moved to Common
-Domain.
+## Motivation Domain
 
-| Element       | One-line definition (forge phrasing)                                                                    | Spec ref |
-|---------------|----------------------------------------------------------------------------------------------------------|----------|
-| **Business Actor**     | An organizational entity (person, org unit, organization) capable of performing behavior. *Forge example: architect of record (the human); a Cowork session (an LLM agent).* | §8.2.1 |
-| **Business Object**    | A passive element of business significance — concept / information / fact relevant to the business domain. *Forge example: source.md / concept.md content; corpus-observations.md.* | §8.3.1 |
-| **Product**            | A coherent collection of Services and Business Objects, accompanied by a Contract / set of agreements offered to customers. *Forge example: Kurpatov Wiki, Tarasov Wiki.* | §8.4.1 |
+Spec §6. The *why* layer. Captures the reasons behind the
+architecture — who cares, what drives change, what goals exist,
+what requirements follow.
 
-### Application domain (spec §9)
+### Stakeholders, Drivers, Assessments
 
-The application / software layer.
+| Element        | Definition                                                                                                                                                            | Spec § |
+|----------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------|
+| **Stakeholder** | The perspective from which a Business Actor perceives the effects of the architecture. Has interests / concerns; sets and emphasises Goals.                            | §6.3.1 |
+| **Driver**      | An external or internal condition that motivates an organisation to define its goals and implement changes. (Drivers associated with a Stakeholder are *concerns*.)   | §6.3.2 |
+| **Assessment**  | The result of an analysis of the state of affairs of the enterprise with respect to some Driver. Surfaces strengths, weaknesses, opportunities, threats.              | §6.3.3 |
 
-| Element       | One-line definition (forge phrasing)                                                                    | Spec ref |
-|---------------|----------------------------------------------------------------------------------------------------------|----------|
-| **Application Component** | An encapsulated software unit with well-defined functionality and interfaces. *Forge example: wiki-bench, wiki-compiler, wiki-ingest.* | §9.2.1 |
-| **Data Object**           | Data structured for automated processing. *Forge example: raw.json, the source.md / concept.md files (as files, not as content), catalog.md.* | §9.3.1 |
+### Goals, Outcomes, Principles, Requirements
 
-### Technology domain (spec §10)
+| Element        | Definition                                                                                                                                                                 | Spec § |
+|----------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------|
+| **Goal**       | A high-level statement of intent, direction, or desired end state for an organisation and its stakeholders. Typically uses qualitative words ("increase", "improve").       | §6.4.1 |
+| **Outcome**    | An end result, effect, or consequence of a state of affairs. Tangible, possibly quantitative, time-related. Distinguishes "what you get" from a Goal's "what you want."     | §6.4.2 |
+| **Principle**  | A statement of intent defining a general property that applies to *any* system in a certain context. Broader and more abstract than a Requirement.                          | §6.4.3 |
+| **Requirement** | A statement of need defining a property that applies to a *specific* system as described by the architecture. The "means" to realize Goals.                                 | §6.4.4 |
 
-The infrastructure / hardware layer. Includes the Physical
-sub-domain (Equipment, Facility, Distribution Network, Material).
+Principle vs Requirement: a Principle constrains *all* solutions
+in a context ("Data should be stored only once"); a Requirement
+constrains *one specific* system ("Use a single CRM system").
 
-| Element       | One-line definition (forge phrasing)                                                                    | Spec ref |
-|---------------|----------------------------------------------------------------------------------------------------------|----------|
-| **Node**            | A computational or physical resource that hosts, manipulates, or interacts with other resources. *Forge example: the mikhailov.tech host.* | §10.2.1 |
-| **Technology Interface** | A point of access where Technology Services are made available. *Forge example: HTTPS endpoint at inference.mikhailov.tech.* | §10.2.2 |
-| **Device**          | A physical IT resource. *Forge example: the Blackwell GPU; the RTX 5090.* | §10.2.3 |
-| **System Software** | Software environment supporting application and other software components. *Forge example: vLLM, faster-whisper, caddy, Docker.* | §10.2.4 |
-| **Facility**        | A physical structure providing the environment for hosting equipment. *Forge example: the home-lab room.* | §10.2.6 |
-| **Communication Network** | A set of structures and behaviors that connect computer systems. *Forge example: the proxy-net Docker network.* | §10.2.7 |
+### Meaning and Value
 
-### Implementation & Migration domain (spec §12)
+| Element     | Definition                                                                                                                                                | Spec § |
+|-------------|------------------------------------------------------------------------------------------------------------------------------------------------------------|--------|
+| **Meaning** | The knowledge or expertise present in, or the interpretation given to, a concept in a particular context. Often used to describe Passive Structure elements. | §6.5.1 |
+| **Value**   | The relative worth, utility, or importance of an element. May differ across stakeholders.                                                                  | §6.5.2 |
 
-Three elements only in v4. The v3 *Gap* element is gone — a
-trajectory between two Plateaus is implicit.
+## Strategy Domain
 
-| Element       | One-line definition (forge phrasing)                                                                    | Spec ref |
-|---------------|----------------------------------------------------------------------------------------------------------|----------|
-| **Work Package** | A series of actions identified to achieve specific results within time / resource constraints. Has a start and an end. *Forge example: a Phase F experiment (e.g. K1 v2).* | §12.2.1 |
-| **Deliverable**  | A result of a Work Package. *Forge example: the new Docker image, the new ADR, the canonical commit produced by an experiment.* | §12.2.2 |
-| **Plateau**      | A relatively stable state of the architecture during a limited period of time. *Forge example: Level 1 (today) and Level 2 (next planned) for a quality-dimension trajectory.* | §12.2.3 |
+Spec §7. What the enterprise *can do* and how it plans to do it.
 
-A Plateau may aggregate any Strategy or Core domain element. A
-Deliverable may realize a Plateau (or any Strategy / Core
-element). A Role may be assigned to a Work Package (e.g. a
-project manager). Motivation elements (Goals, Requirements) can
-be related to specific Plateaus — useful when requirements differ
-between current and target architectures.
+### Structure
 
-## Relationships and Junctions (spec §5)
+| Element     | Definition                                                                                                                              | Spec § |
+|-------------|------------------------------------------------------------------------------------------------------------------------------------------|--------|
+| **Resource** | An asset (tangible or intangible) owned or controlled by an individual or organisation. Active structure on the Strategy layer.        | §7.2.1 |
 
-The 11 typed verbs forge prose uses. Spec § 5.1–5.4 gives full
-semantics; this is forge's compressed reference.
+### Behavior
 
-| Class       | Verb               | Forge prose form                          | Source-target pattern |
-|-------------|--------------------|--------------------------------------------|------------------------|
-| Structural  | **Aggregation**     | "X *aggregates* Y" / "Y is *part of* X"    | Composite (Product, Plateau, Grouping) ← part |
-| Structural  | **Composition**     | "X *is composed of* Y"                     | Whole ← exclusive part (stronger than Aggregation) |
-| Structural  | **Assignment**      | "X *is assigned to* Y"                     | Active structure → Behavior (or Role / Function); Actor → Role |
-| Structural  | **Realization**     | "X *realizes* Y"                           | Concrete → abstract (Function → Capability; Component → Service; Deliverable → Plateau) |
-| Dependency  | **Serving**         | "X *serves* Y" / "Y *is served by* X"      | Provider behavior → consumer |
-| Dependency  | **Access**          | "X *accesses* Y"                           | Behavior → passive (Function accesses Data Object) |
-| Dependency  | **Influence**       | "X *influences* Y"                         | Motivation only (Driver → Goal; Goal → Requirement) |
-| Dependency  | **Association**     | "X *is associated with* Y"                 | Catch-all when none of the above fits |
-| Dynamic     | **Triggering**      | "X *triggers* Y"                           | Time-ordered: Event → Process; Process → Process |
-| Dynamic     | **Flow**            | "X *flows to* Y"                           | Information / data / material passing |
-| Other       | **Specialization**  | "X *is a specialization of* Y"             | Sub-type → super-type |
+| Element            | Definition                                                                                                                                                                   | Spec § |
+|--------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------|
+| **Capability**     | An ability that an active structure element possesses. Describes *what* the enterprise can do, independent of *how* it implements it. Realized by Functions / Processes.       | §7.3.1 |
+| **Value Stream**   | A sequence of value-creating stages an enterprise performs to provide value to its stakeholders. Each stage typically uses one or more Capabilities.                          | §7.3.2 |
+| **Course of Action** | A plan or directional approach for configuring some unit of an enterprise's strategy. Differentiated, externally focused, and time-bounded.                                  | §7.3.3 |
 
-**Junctions** (§5.5): an *And-junction* connects multiple
-relationships of the same type that all hold; an *Or-junction*
-connects relationships where at least one holds. Used in
-diagrams; forge prose uses "and" / "or" naturally.
+Capability vs Function: Capability is *intentional and
+implementation-independent*; Function is *current, day-to-day,
+organisation-aligned*. A Capability can be realized by one or
+more Functions.
 
-**Multiplicity** (§5.6): every relationship has a multiplicity
-(0..1, 0..*, 1..1, 1..*) which forge does not write explicitly
-in prose unless ambiguous.
+## Business Domain
 
-**Derivation** (§5.8): some relationships imply others (e.g.
-Composition → Aggregation; Realization → Specialization). Forge
-does not rely on derivation in prose.
+Spec §8. The business layer is intentionally thin in v4 — most
+behavior / service / process / function / event concepts moved
+to the Common Domain.
 
-## Stakeholders, Views, Viewpoints (spec §13)
+### Active Structure
 
-A **viewpoint** is a specification of conventions for selecting,
-classifying, and presenting concepts of a model — for a specific
-audience addressing specific concerns. A **view** is the
-application of a viewpoint to produce a representation. ArchiMate
-defines an extensible set of example viewpoints (Capability Map,
-Business Process View, Application Cooperation View, etc.).
+| Element                | Definition                                                                                                                                              | Spec § |
+|------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------|--------|
+| **Business Actor**     | An organisational entity (person, organisation, or organisational unit) capable of performing behaviour.                                                | §8.2.1 |
+| **Business Interface** | A point of access where a Service is made available to the environment.                                                                                  | §8.2.2 |
 
-Forge does not adopt viewpoints / views as a deliverable
-mechanism. Each TOGAF phase folder serves the same purpose
-prose-style; ADR 0014 explicitly skips diagrams and viewpoints.
-The mechanism is documented here so a future contributor knows
-the option exists if forge ever needs structured per-stakeholder
-views.
+### Passive Structure
 
-## Language Customization (spec §14)
+| Element            | Definition                                                                                                                                                                          | Spec § |
+|--------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------|
+| **Business Object** | A concept used within a particular business domain — a passive element of business significance. Represents information / facts that a process or function operates on.            | §8.3.1 |
 
-ArchiMate 4 allows specialization of element types and addition
-of attributes. Forge does not customize the language today —
-all element types used are stock. If a future need arises (e.g.
-"GPU Capacity" as a specialised Resource), the customization is
-declared in the same archimate-vocabulary.md table by adding a
-row with a "specialization of" column.
+### Composite
 
+| Element    | Definition                                                                                                                                                                                                  | Spec § |
+|------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------|
+| **Product** | A coherent collection of Services, Business Objects, and / or Passive Structure elements, accompanied by a contract / set of agreements offered to internal or external customers as a whole.              | §8.4.1 |
 
-## What this file is NOT
+## Application Domain
 
-- **Not a substitute for the spec.** When in doubt, read the
-  spec section cited in the row. This file is forge-specific
-  digest, not a translation.
-- **Not exhaustive.** It enumerates the elements and
-  relationships forge uses or might use; lower-level concepts
-  (e.g. detailed semantics of Composition vs Aggregation) live
-  in the spec.
-- **Not a tutorial.** ArchiMate has rich training material and
-  certification courses; a contributor who needs to learn the
-  language from scratch should use those resources, then come
-  back here for forge's specific usage.
+Spec §9. Software components, interfaces, data.
 
-## Cross-references
+### Active Structure
 
+| Element                       | Definition                                                                                                                                                | Spec § |
+|-------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------|--------|
+| **Application Component**     | An encapsulated unit of software with well-defined functionality and interfaces. Modular and replaceable.                                                  | §9.2.1 |
+| **Application Interface**     | A point of access where Application Services are made available to a user, another application component, or a node.                                       | §9.2.2 |
+
+### Passive Structure
+
+| Element        | Definition                                                                                                                                                                  | Spec § |
+|----------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------|
+| **Data Object** | Data structured for automated processing. The application-layer counterpart to a Business Object.                                                                          | §9.3.1 |
+
+## Technology Domain
+
+Spec §10. Infrastructure layer; includes a Physical sub-domain.
+
+### Active Structure
+
+| Element                  | Definition                                                                                                                                                                                                            | Spec § |
+|--------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------|
+| **Node**                 | A computational or physical resource that hosts, manipulates, or interacts with other resources. Generic technology-domain active structure.                                                                          | §10.2.1 |
+| **Technology Interface** | A point of access where Technology Services are made available.                                                                                                                                                       | §10.2.2 |
+| **Device**               | A physical IT resource on which System Software and Artifacts may be stored or deployed. Specialisation of Node.                                                                                                      | §10.2.3 |
+| **System Software**      | Software environment supporting application or other software components. Specialisation of Node. Examples: operating systems, database engines, application servers, container runtimes.                              | §10.2.4 |
+| **Equipment**            | One or more physical machines, tools, or instruments that can create, use, store, move, or transform materials. Physical sub-domain.                                                                                   | §10.2.5 |
+| **Facility**             | A physical structure or environment hosting Equipment or providing the location for technology. Physical sub-domain.                                                                                                    | §10.2.6 |
+| **Communication Network** | A set of structures and behaviours that connects computer systems and devices for the exchange of data.                                                                                                              | §10.2.7 |
+| **Distribution Network** | A physical network used to transport materials or energy. Physical sub-domain.                                                                                                                                         | §10.2.8 |
+
+### Passive Structure
+
+| Element        | Definition                                                                                                                                                          | Spec § |
+|----------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------|
+| **Artifact**   | A piece of data used or produced in a software development or system operation context. The deployable / deployed counterpart of a Data Object on the technology layer. | §10.3.1 |
+| **Material**   | A tangible physical material used or produced in a manufacturing process. Physical sub-domain.                                                                       | §10.3.2 |
+
+## Implementation & Migration Domain
+
+Spec §12. Three elements only in v4.
+
+| Element           | Definition                                                                                                                                                              | Spec § |
+|-------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------|
+| **Work Package**  | A series of actions identified and designed to achieve specific results within specified time and resource constraints. Has a start and an end. Used for projects, programs, sprints. | §12.2.1 |
+| **Deliverable**   | A result of a Work Package. May be a report, document, software, physical product, organisational change, or implementation of (part of) an architecture.              | §12.2.2 |
+| **Plateau**       | A relatively stable state of the architecture during a limited period of time. Used to model Baseline / Transition / Target architectures.                              | §12.2.3 |
+
+A Plateau may aggregate any Strategy / Common / Business /
+Application / Technology element. A Deliverable may realize
+(parts of) a Plateau or any element of those domains. Motivation
+elements (Goals, Requirements) can be related to specific
+Plateaus — useful when requirements differ between current and
+target architectures.
+
+ArchiMate 4 has no *Gap* element; the v3 Gap is implicit in the
+existence of two Plateaus connected by a Work Package.
+
+## Relationships and Junctions
+
+Spec §5. ArchiMate defines eleven typed relationship verbs plus
+junctions, multiplicity, and derivation rules.
+
+### Structural Relationships (§5.1)
+
+| Relationship       | Spec §  | Source → Target pattern                                                                                                                  | Semantics                                                                                                            |
+|--------------------|---------|------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------|
+| **Aggregation**    | §5.1.1  | Composite ← part                                                                                                                          | A composite element conceptually contains other elements (parts can exist independently).                            |
+| **Composition**    | §5.1.2  | Whole ← exclusive part                                                                                                                   | Stronger than Aggregation: parts cannot exist outside the whole.                                                     |
+| **Assignment**     | §5.1.3  | Active Structure → Behavior (or Role / Function); Actor → Role; Role → Process / Function; Component → Function / Service.               | Allocates responsibility: who performs what.                                                                         |
+| **Realization**    | §5.1.4  | Concrete → abstract (Function realizes Capability; Component realizes Service; Deliverable realizes Plateau; Requirement realizes Goal). | The source makes the target real.                                                                                    |
+
+### Dependency Relationships (§5.2)
+
+| Relationship    | Spec §  | Source → Target pattern                                                              | Semantics                                                                                                                  |
+|-----------------|---------|---------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------|
+| **Serving**     | §5.2.1  | Provider behaviour / interface → consumer (active or behaviour).                      | The source provides functional value to the target.                                                                       |
+| **Access**      | §5.2.2  | Behaviour → Passive Structure (Function / Process / Service accesses Object).         | A behaviour reads from / writes to / uses a passive element.                                                              |
+| **Influence**   | §5.2.3  | Motivation → Motivation (Driver influences Goal; Goal influences Requirement).        | Positive or negative effect on motivation. Annotated with `+` / `−` or strength.                                          |
+| **Association** | §5.2.4  | Any → any.                                                                            | Catch-all for relations that don't fit any other type. Generic linkage.                                                  |
+
+### Dynamic Relationships (§5.3)
+
+| Relationship    | Spec §  | Source → Target pattern                                       | Semantics                                                                                                |
+|-----------------|---------|----------------------------------------------------------------|----------------------------------------------------------------------------------------------------------|
+| **Triggering**  | §5.3.1  | Behavior → Behavior; Event → Behavior; Behavior → Event.       | Time-ordered: source causes target to start / occur. Used for control flow.                              |
+| **Flow**        | §5.3.2  | Behavior → Behavior.                                            | Information / data / value transferred from source to target. Used for information flow.                |
+
+### Other Relationships (§5.4)
+
+| Relationship       | Spec §  | Source → Target pattern              | Semantics                                                              |
+|--------------------|---------|---------------------------------------|------------------------------------------------------------------------|
+| **Specialization** | §5.4.1  | Sub-type → super-type.                | The source is a kind of the target. Inheritance of properties / relations. |
+
+### Junctions (§5.5)
+
+A **Junction** is a graphical connector that combines or splits
+relationships of the same type. Two kinds:
+
+- **And-junction** — all the connected relationships must hold.
+- **Or-junction** — at least one of the connected relationships
+  holds.
+
+Junctions are used to model many-to-many connections compactly
+and to express logical structure (e.g., a Goal is realized when
+*all* of three Requirements are met = And-junction).
+
+### Multiplicity (§5.6)
+
+Each ArchiMate relationship type has a default multiplicity
+(0..1, 0..*, 1..1, 1..*). The spec specifies the cardinality for
+each relationship type. Annotating multiplicity on a diagram is
+permitted and is useful when the default is ambiguous.
+
+### Derivation of Relationships (§5.8)
+
+Some relationships *imply* others. ArchiMate defines derivation
+rules so that a model is internally consistent without explicit
+representation of every implied relationship. Examples:
+
+- Composition implies Aggregation.
+- Realization across a chain (A realizes B, B realizes C) can
+  often be derived as A realizes C (subject to spec rules).
+
+The full derivation table is in spec Appendix B; valid
+relationships and derivation rules are normative.
+
+## Stakeholders, Views, and Viewpoints
+
+Spec §13.
+
+- **Stakeholder** (§13.2) — same element as in the Motivation
+  Domain; here the focus is on how Stakeholders' *concerns*
+  drive the choice of architecture views.
+- **View** (§2.4) — a representation of a system from the
+  perspective of related concerns. Realised by a model fragment
+  drawn from the architecture.
+- **Viewpoint** (§2.5, §13.3) — a specification of the
+  conventions for selecting, classifying, and presenting
+  concepts of the model in views. Defines what kind of
+  Stakeholder concerns a View addresses.
+
+ArchiMate defines an extensible set of **example viewpoints**
+in §13.5 and Appendix C — Capability Map, Business Process View,
+Application Cooperation View, Layered View, etc. — each tailored
+to specific Stakeholder concerns.
+
+The Viewpoint mechanism (§13.4) lets architects define new
+viewpoints for project-specific concerns, classify them, and use
+them to produce reusable views.
+
+## Language Customization
+
+Spec §14. ArchiMate 4 allows controlled extension of the
+language by:
+
+- **Specialization of element types** — a customised element
+  type that is a sub-type of a stock element, inheriting its
+  semantics and relationships.
+- **Adding attributes** — extra properties on stock or
+  customised element types.
+
+Customizations are local to a project and must remain
+distinguishable from the standard language. The customization
+mechanism is the formal way to add domain-specific concepts
+without violating conformance.
+
+## See also
+
+- [`archimate-vocabulary.md`](archimate-vocabulary.md) — how
+  this project specifically maps its concepts to the elements
+  above. Read after this file.
 - [ADR 0014](adr/0014-archimate-across-all-layers.md) — the
-  decision to adopt ArchiMate 4 across all phases.
-- [`archimate-vocabulary.md`](archimate-vocabulary.md) — every
-  forge concept's mapping to one of the elements above.
-- [`framework-tailoring.md`](framework-tailoring.md) — what
-  forge adopts and skips; pointer back to this file.
-- [`architecture-method.md`](architecture-method.md) — the
-  trajectory model expressed in ArchiMate 4 terms (Plateaus +
-  Work Packages + Deliverables).
+  decision that brought ArchiMate 4 into this project.
+- ArchiMate® 4 Specification (The Open Group, 2026) — the
+  normative source. Section numbers above point into it.
