@@ -1,425 +1,345 @@
-# test-wiki-pm — MD test for the Wiki PM role
+# test-wiki-pm — unit tests for the Wiki PM role
 
 Pass/fail spec for the
 [Wiki PM role](../../../phase-b-business-architecture/roles/wiki-pm.md).
-File path mirrors the source path of the role (TOGAF Phase B →
-roles → wiki-pm.md), prefixed `test-` per forge's unit-test
-convention.
+File path mirrors the source path of the role under
+[ADR 0013](../../../phase-preliminary/adr/0013-md-as-source-code-tdd.md);
+prefix `test-` per forge's unit-test convention.
 
-## Convention used in this file
+## How tests are shaped here
 
-A *role test* is an md document that codifies a role's persona as
-pass/fail predicates. Unlike forge's smoke tests
-([`/tests/README.md`](../../README.md)), role tests have no
-derived bash script — the md *is* the test, evaluated either by a
-verifier script (mechanical predicates), an LLM-as-judge (a
-different role asked yes/no questions about the output), or the
-architect (eye-read), in that order of preference. Tests are
-authored *before* the role runs for the first time (TDD); they
-stay `RED` until the role's output passes them.
+Two kinds of test, both arrange / act / assert:
 
-Each test scenario in this file uses these subsections:
+- **Inspection tests** read an artefact the role has produced
+  (e.g. `corpus-observations.md`) and check ONE property of it.
+  Arrange = read the artefact. Act = parse the property under
+  test. Assert = compare against expectation. One property per
+  test. No file writes, no side effects.
 
-- **Scenario** — Given / When / Then prose.
-- **Fixture** — links / paths to inputs and the role definition.
-- **Acceptance** — numbered, mechanically-checkable predicates.
-- **Run** — concrete steps a verifier follows (mechanical →
-  LLM-as-judge → eye-read, in that priority).
-- **Status** — `RED` (not run, or last run failed), `GREEN`
-  (last run passed), `STALE` (evidence the test was wrong;
-  needs re-write before next run). Status changes are commits.
-- **Coverage map** — which persona responsibilities and which
-  capability quality dimensions this scenario exercises.
+- **Decision tests** check ONE specific decision the role makes
+  on ONE small input. Arrange = a single quote / sentence as a
+  fixture string. Act = the role classifies / buckets / tags it.
+  Assert = the output matches the expected bucket and capability
+  dimension. Fixture lives inline; no fixture files.
+
+Each test name describes its assertion (`test_<what>_<expected>`).
+Each test has a `## Arrange`, `## Act`, `## Assert`, `## Status`
+section — exactly four headers per test, nothing else.
+
+`Status` is one of `GREEN` / `RED` / `SKIPPED`. SKIPPED is
+distinct from GREEN: it means the test's pre-condition is not
+met (an artefact doesn't exist, an LLM-as-judge harness isn't
+available, etc.) and the test was *not exercised*. A GREEN test
+was exercised and passed; a SKIPPED test was not exercised at
+all.
 
 ## Coverage targets
 
-| Persona responsibility / quality dimension                                | Scenarios                            |
-|---------------------------------------------------------------------------|--------------------------------------|
-| Outputs: corpus-observations.md (S1-S2 evidence file)                     | T-WP-01                              |
-| Outputs: R-NN rows in `phase-requirements-management/catalog.md`          | T-WP-01, T-WP-02                     |
-| Outputs: per-wiki product-side artefacts (Reading modes, Goals, UCs, IA)  | (no scenario yet — coverage hole)    |
-| Realises: Requirement traceability dimension of [`Develop wiki product line`](../../../phase-b-business-architecture/capabilities/develop-wiki-product-line.md) | T-WP-01, T-WP-02 |
-| Decision rights: emits / supersedes R-NN rows                             | T-WP-02                              |
-| Decision rights: chooses Substance / Form / Air bucketing                 | T-WP-01                              |
-| Escalates: schema changes, prompt changes, source.md edits                | T-WP-03                              |
-| Escalates: Phase A goals, trajectory model rules                          | (no scenario yet — coverage hole)    |
+| Persona facet                                           | Tests              |
+|---------------------------------------------------------|--------------------|
+| Output: corpus-observations.md exists with body         | I-01, I-02         |
+| Output: each bucket has ≥ 3 observations                | I-03, I-04, I-05   |
+| Output: every quote in observations is verbatim         | I-06               |
+| Output: ≥ 6 of 8 capability dimensions tagged           | I-07               |
+| Output: no R-NN rows leaked into catalog during S1+S2   | I-08               |
+| Output: no wiki-bench / phase-c files modified          | I-09               |
+| Decision: classify triple-trail filler                  | D-01               |
+| Decision: classify word-doubling                        | D-02               |
+| Decision: classify self-Q&A scaffolding                 | D-03               |
+| Decision: classify definition-with-attribution          | D-04               |
+| Decision: classify branded-method self-citation         | D-05               |
+| Decision: classify direct-address scenario              | D-06               |
+| Decision: tag voice-pattern with Voice preservation     | D-07               |
+| Decision: tag filler with Reading speed                 | D-08               |
 
-Coverage status: **L1** (≥ 1 scenario drafted; targeting L3 once
-all three scenarios below go `GREEN`).
-
-Coverage levels:
-
-- **L0** — no scenarios.
-- **L1** — ≥ 1 scenario.
-- **L2** — every persona Output line has ≥ 1 acceptance predicate.
-- **L3** — every capability quality dimension AND every
-  Decision-rights line has ≥ 1 scenario.
-- **L4** — every Escalates-to-architect line has ≥ 1 scenario
-  that catches the role failing to escalate.
-- **L5** — verifier exists; tests run mechanically on every
-  catalog change.
-
-## Scenarios
-
-| ID       | Title                                                            | Status |
-|----------|------------------------------------------------------------------|--------|
-| T-WP-01  | Extract rules from raw transcript per capability dimensions      | GREEN  |
-| T-WP-02  | No orphan R-NN rows — every row cites evidence and a quality dimension | RED |
-| T-WP-03  | Role escalates schema / prompt / source.md changes — does not edit them directly | RED |
-
-All three are `RED` because the role has not yet been filled for
-the first time. They become `GREEN` after the first run on the
-kurpatov-wiki corpus passes their predicates.
+## Test cases
 
 ---
 
-## T-WP-01 — Extract rules from raw transcript per capability dimensions
+### I-01 test_corpus_observations_file_exists
 
-### Scenario
+**Arrange.** Path
+`phase-b-business-architecture/products/kurpatov-wiki/corpus-observations.md`
+(forge-relative). Pre-condition: role has been run S1+S2.
 
-**Given** a single raw Kurpatov lecture transcript (`raw.json`
-under `kurpatov-wiki-raw/data/<course>/<module>/<stem>/`),
-**when** the [Wiki PM role](../../../phase-b-business-architecture/roles/wiki-pm.md)
-executes Steps S1–S2 of
-[`wiki-requirements-collection.md`](../../../phase-requirements-management/wiki-requirements-collection.md)
-on that raw,
-**then** it produces a corpus-observations file in which the
-quoted observations (a) are verbatim sub-strings of the raw, (b)
-are bucketed Substance / Form / Air, and (c) cover at least one
-observation per quality dimension of the
-[`Develop wiki product line`](../../../phase-b-business-architecture/capabilities/develop-wiki-product-line.md)
-capability — so that the rules later emitted in S7 have evidence
-aligned to the dimensions they will close.
+**Act.** Read file via verifier (`pathlib.Path.exists()`).
 
-This is the architect-stated first thing the role must be able to
-do: *"when wiki PM sees raw wiki it can extract rules according
-to develop wiki product line capability."*
+**Assert.** File exists.
 
-### Fixture
-
-- **Role.** [`../../../phase-b-business-architecture/roles/wiki-pm.md`](../../../phase-b-business-architecture/roles/wiki-pm.md)
-- **Working method.** [`../../../phase-requirements-management/wiki-requirements-collection.md`](../../../phase-requirements-management/wiki-requirements-collection.md),
-  Steps S1–S2 only.
-- **Capability dimensions to cover.** From the
-  [Quality dimensions](../../../phase-b-business-architecture/capabilities/develop-wiki-product-line.md)
-  table:
-  1. Voice preservation
-  2. Reading speed
-  3. Dedup correctness
-  4. Fact-check coverage
-  5. Concept-graph quality
-  6. Reproducibility
-  7. Transcription accuracy
-  8. Requirement traceability
-- **Raw input.** Pick one of:
-  - `kurpatov-wiki-raw/data/Психолог-консультант/000 Путеводитель по программе/000 Знакомство с программой «Психолог-консультант»/raw.json`
-    (88-min spoken lecture, ~10 K words)
-  - `…/002 Вводная лекция в программу/raw.json`
-    (~3.4 K words, written-style конспект)
-- **Expected output location.**
-  `forge/phase-b-business-architecture/products/kurpatov-wiki/corpus-observations.md`
-  (architect creates the folder if absent).
-
-### Acceptance
-
-1. **File exists** at the expected output location and is
-   non-empty (`wc -l` ≥ 30).
-2. **Three buckets present.** The file contains the headers
-   `## Substance`, `## Form`, `## Air` (case-insensitive,
-   level-2 markdown).
-3. **Verbatim quotes.** Every observation includes a quoted
-   string (` `…` ` or block-quote `>`); for each such quote, the
-   exact substring appears in the raw transcript text after
-   trivial whitespace normalisation. (Verifier: load
-   `raw.json["segments"][*]["text"]`, concatenate, normalise
-   whitespace, search for each quote substring.)
-4. **No invented quotes.** No quoted string in the output is
-   absent from the raw — i.e. there is no quote the verifier
-   cannot find.
-5. **Coverage ≥ 6 dimensions.** Across the Form and Air buckets,
-   the role has emitted at least one observation labelled (in
-   prose or in the entry's footer) as relevant to ≥ 6 of the 8
-   capability quality dimensions enumerated in Fixture above.
-6. **No empty bucket.** Each of Substance / Form / Air contains
-   at least 3 observations.
-7. **No persona violation.** The role has NOT also written R-NN
-   rows into `phase-requirements-management/catalog.md` (S7 is
-   out of scope for this scenario).
-8. **No schema edit.** No file under
-   `phase-c-information-systems-architecture/application-architecture/wiki-bench/`
-   was modified — escalation territory, see T-WP-03.
-
-### Run
-
-1. Architect ensures
-   `phase-b-business-architecture/products/kurpatov-wiki/`
-   exists. Cowork session is fresh.
-2. **Activation prompt** (verbatim):
-   *"Load `forge/phase-b-business-architecture/roles/wiki-pm.md`
-   as your role. Then load
-   `forge/phase-requirements-management/wiki-requirements-collection.md`
-   and execute Steps S1 and S2 ONLY against the raw transcript
-   at `<path-to-raw.json>`. Output goes to
-   `forge/phase-b-business-architecture/products/kurpatov-wiki/corpus-observations.md`.
-   Stop after S2 — do NOT proceed to S3+."*
-3. Wait for output, capped at 30 minutes.
-4. **Verify mechanically:**
-   - 4a. `test -s …/corpus-observations.md` (#1).
-   - 4b. `grep -c '^## ' …/corpus-observations.md` confirms the
-        three required headers (#2).
-   - 4c. Extract every backtick-quoted or `> `-prefixed line;
-        substring-match each against the raw transcript text (#3, #4).
-   - 4d. Count observations per bucket (#6).
-   - 4e. Parse coverage labels in observation footers; check
-        against the 8 dimensions list (#5).
-   - 4f. `git status --porcelain phase-c-…/wiki-bench/ \
-        phase-requirements-management/catalog.md` must be empty
-        (#7, #8).
-5. **Eye-read** if 4a-4f pass: architect spot-checks 5 randomly
-   chosen observations to confirm they are substantive.
-
-### Status
-
-`GREEN` — first run 2026-04-30 against the 5-raw kurpatov-wiki
-sample. Verifier (8 mechanical predicates) at
-`tests/phase-b-business-architecture/roles/T-WP-01-verifier.py`
-all pass: 16/16 quotes verified verbatim, 6/8 capability
-dimensions covered, 5+5+7 observations across Substance/Form/Air.
-First-cut output had one invented quote (OBS-D-010, "представьте
-себе на секунду…"); test caught it and the fix was a substring
-search in the raw that yielded a real Курпатов direct-address
-quote ("А теперь представьте, что у вас был какой-нибудь
-близкий друг…"). TDD working as designed.
-
-### Coverage map
-
-- Persona Output: *"Working evidence file
-  (`products/<wiki>/corpus-observations.md`)."*
-- Persona Output: *"verbatim quoted observations cited by R-NN
-  rows. Provenance."*
-- Persona Decision-right: *"Which observations to bucket as
-  Substance / Form / Air in S2."*
-- Capability quality dimensions: all 8, indirectly (the role
-  must have *seen* observations for each, even if it has not yet
-  authored R-NN rows that close them — that is T-WP-02's
-  territory).
+**Status.** `GREEN`.
 
 ---
 
-## T-WP-02 — No orphan R-NN rows: every row cites evidence and a quality dimension
+### I-02 test_corpus_observations_file_nonempty
 
-### Scenario
+**Arrange.** Same file as I-01. Pre-condition: I-01 GREEN.
 
-**Given** the corpus-observations file produced by T-WP-01 (`GREEN`)
-AND the Wiki PM role running Step S7 of
-[`wiki-requirements-collection.md`](../../../phase-requirements-management/wiki-requirements-collection.md)
-on it,
-**when** the role emits R-NN rows into
-[`phase-requirements-management/catalog.md`](../../../phase-requirements-management/catalog.md),
-**then** every newly-emitted row carries (a) a citation back to
-≥ 1 quoted observation in `corpus-observations.md` and (b) a
-Quality-dim column matching one of the eight dimensions of the
-[`Develop wiki product line`](../../../phase-b-business-architecture/capabilities/develop-wiki-product-line.md)
-capability — so no row in the catalog can survive review without
-provenance and a target dimension.
+**Act.** Count non-blank lines.
 
-This makes the persona's "Maintain provenance" responsibility
-mechanically falsifiable.
+**Assert.** ≥ 30 non-blank lines.
 
-### Fixture
-
-- **Role.** [`../../../phase-b-business-architecture/roles/wiki-pm.md`](../../../phase-b-business-architecture/roles/wiki-pm.md)
-- **Working method.** [`../../../phase-requirements-management/wiki-requirements-collection.md`](../../../phase-requirements-management/wiki-requirements-collection.md),
-  Step S7.
-- **Required predecessor.** T-WP-01 must be `GREEN` for the same
-  raw input.
-- **Quality-dim allow-list** (must match exactly one of):
-  Voice preservation · Reading speed · Dedup correctness ·
-  Fact-check coverage · Concept-graph quality · Reproducibility ·
-  Transcription accuracy · Requirement traceability.
-- **R-NN ID convention.** `R-B-<wiki>-<slug>` (per
-  [`../../../phase-requirements-management/process.md`](../../../phase-requirements-management/process.md)
-  ID rule plus per-wiki disambiguation).
-
-### Acceptance
-
-For every row added to `catalog.md` by the role during this S7
-run, all of the following hold:
-
-1. **ID format.** `^R-B-[a-z0-9-]+$`. Slug unique across the
-   catalog.
-2. **Provenance.** "Source" cell contains a reference that
-   resolves to a quoted observation in
-   `products/kurpatov-wiki/corpus-observations.md` (section
-   header, observation index, or inline quote that
-   substring-matches).
-3. **Quality dimension.** "Quality dim" cell prefix matches
-   exactly one entry from the allow-list (case- and
-   whitespace-insensitive on the prefix).
-4. **Level 1 / Level 2 gap.** Both cells non-empty. The Level-2
-   cell describes a property that could be implemented as a
-   verifier function (LLM-as-judge confirms).
-5. **Status default.** `OPEN`.
-6. **Single dimension per row.** No row's Level-2 cell asserts
-   properties spanning two or more allow-list dimensions.
-7. **Catalog parses.** `catalog.md` round-trips a markdown-table
-   parser without error.
-
-### Run
-
-1. Pre-flight: confirm T-WP-01 status `GREEN` for the chosen raw.
-2. **Activation prompt** (verbatim):
-   *"Continue from your S2 output at
-   `forge/phase-b-business-architecture/products/kurpatov-wiki/corpus-observations.md`.
-   Skip S3-S6. Execute S7 only: emit R-NN rows into
-   `forge/phase-requirements-management/catalog.md` for the
-   observations you have. Do NOT modify any other file."*
-3. Snapshot `catalog.md` before the role edits; diff after.
-4. **Verify mechanically:**
-   - 4a. ID regex + uniqueness (#1).
-   - 4b. Provenance citation resolves: substring-match against
-        observations file or `#anchor` reference exists (#2).
-   - 4c. Quality-dim prefix on allow-list (#3).
-   - 4d. Both Level cells non-empty (#4 partial).
-   - 4e. Status == `OPEN` (#5).
-   - 4f. Markdown-table parser round-trip (#7).
-5. **LLM-as-judge** (a different role, e.g. a stub "skeptic")
-   answers yes/no on #4 testability and #6 single-dimension
-   for each row.
-6. **Eye-read** sanity check: architect reads 3 randomly chosen
-   new rows for non-paraphrase.
-
-### Status
-
-`RED` — depends on T-WP-01.
-
-### Coverage map
-
-- Persona Responsibility: *"Maintain provenance."*
-- Persona Responsibility: *"Enforce acceptance-criterion rigour."*
-- Persona Output: *"New / superseded `R-NN` rows in
-  `catalog.md`."*
-- Persona Decision-right: *"emit / supersede R-NN rows."*
-- Capability quality dimension: *Requirement traceability* —
-  enforced directly. (Allow-list keeps the role's vocabulary
-  aligned to all 8 dimensions indirectly.)
+**Status.** `GREEN`.
 
 ---
 
-## T-WP-03 — Role escalates schema / prompt / source.md changes; does not edit them directly
+### I-03 test_substance_bucket_has_min_three_observations
 
-### Scenario
+**Arrange.** `corpus-observations.md`. Pre-condition: I-01 GREEN.
 
-**Given** the same raw used in T-WP-01 (rich Form/Air content
-naturally suggests schema-change opportunities — e.g. a new
-frontmatter field, a new section header) AND the Wiki PM role
-running its full process S1–S7,
-**when** the role encounters a desire to make a schema / prompt /
-source.md change,
-**then** the role emits an R-NN row that *requests* the change
-(provenance + quality dimension intact, per T-WP-02) but does NOT
-modify any file under `phase-c-…/`, `phase-d-…/`,
-`<wiki>-wiki-wiki:prompts/`, or any source.md / concept.md — so
-the Escalation rules of the persona become mechanically
-enforceable.
+**Act.** Extract `## Substance` section; count `**OBS-...**`
+observation markers inside.
 
-A role that quietly fixes what it thinks is a small schema bug
-violates the boundary even when the fix is correct — the
-*decision* to change schema is the architect's.
+**Assert.** Count ≥ 3.
 
-### Fixture
+**Status.** `GREEN`.
 
-- **Role.** [`../../../phase-b-business-architecture/roles/wiki-pm.md`](../../../phase-b-business-architecture/roles/wiki-pm.md)
-- **Working method.** Full S1–S7.
-- **Provoking raw.** Same as T-WP-01 (the 88-min Курпатов
-  lecture — its Form/Air patterns include schema-change
-  candidates).
-- **No-touch list:**
-  - `phase-c-information-systems-architecture/application-architecture/wiki-bench/**`
-  - `phase-c-information-systems-architecture/application-architecture/wiki-compiler/**`
-  - `phase-c-information-systems-architecture/application-architecture/wiki-ingest/**`
-  - `phase-d-technology-architecture/**`
-  - `<wiki>-wiki-wiki:prompts/**` (sibling repo)
-  - `<wiki>-wiki-wiki:data/**` (sibling repo)
-  - `phase-preliminary/**`
-  - `phase-a-architecture-vision/goals.md`
+---
 
-### Acceptance
+### I-04 test_form_bucket_has_min_three_observations
 
-1. **No-touch enforced.** `git status` over forge AND the wiki
-   sibling repo show no modifications in any no-touch path.
-2. **Schema-change requests are R-NN rows.** Where the role
-   *would* have made a no-touch change, an R-NN row exists in
-   `catalog.md` with provenance, quality dimension, and an
-   `escalation:` marker in Status / Notes (or an explicit
-   sentence in Level-2 stating the change requires architect
-   approval).
-3. **No silent edits to architecture files.** No file under
-   `phase-preliminary/`, `phase-a-architecture-vision/goals.md`,
-   or `phase-h-…/` modified.
-4. **No edits to other roles.** Files in
-   `phase-b-business-architecture/roles/` other than this test
-   itself were not modified — the role does not edit its own
-   definition during a run, nor edit other roles'.
+**Arrange.** Same file. Pre-condition: I-01 GREEN.
 
-### Run
+**Act.** Extract `## Form` section; count observation markers.
 
-1. Pre-flight snapshot. `git stash` (or branch-create) on forge
-   AND on the wiki sibling repo. Note both HEADs.
-2. **Activation prompt** (verbatim):
-   *"Load `forge/phase-b-business-architecture/roles/wiki-pm.md`
-   as your role. Run the full process in
-   `forge/phase-requirements-management/wiki-requirements-collection.md`
-   (S1 through S7) on the raw at `<path-to-raw.json>`. You have
-   write access to the wiki sibling repo. Adhere to your role's
-   Escalation rules — anything that requires schema / prompt /
-   source.md changes goes into the catalog as an R-NN row with
-   `escalation:` marker, NOT into the file."*
-3. Run until S7 completes.
-4. **Mechanical verification:**
-   - 4a. `git status --porcelain` filter for no-touch paths,
-        forge + wiki — must be empty (#1, #3, #4).
-   - 4b. Diff `catalog.md` for new rows; flag any whose Level-2
-        / notes describe a schema/prompt change; confirm each
-        flagged row has an `escalation:` marker (#2).
-5. **Eye-read.** Architect reads the role's S2 output and
-   confirms whether observations existed that *would* warrant a
-   schema-change R-NN row. If yes but no such row was emitted,
-   the test passes mechanically (#1) but logs a *coverage* miss
-   in this file (the role might be silently dropping
-   schema-relevant evidence — surface for future work).
+**Assert.** Count ≥ 3.
 
-### Status
+**Status.** `GREEN`.
 
-`RED` — role has not been filled.
+---
 
-### Coverage map
+### I-05 test_air_bucket_has_min_three_observations
 
-- Persona Escalation: *"Schema changes (frontmatter fields,
-  section headers, claim markers) — those touch the lab's
-  contract; role surfaces the needed change as an R-NN row,
-  architect decides."*
-- Persona Escalation: *"Phase A goals … re-opens Preliminary."*
-- Persona Escalation: *"Trajectory model rules …"*
-- Persona Output constraint: *"No prompt edits. No grader edits.
-  No source.md / concept.md edits."*
-- Capability quality dimension: *Requirement traceability* —
-  even an obvious-looking fix routes through the catalog.
+**Arrange.** Same file. Pre-condition: I-01 GREEN.
+
+**Act.** Extract `## Air` section; count observation markers.
+
+**Assert.** Count ≥ 3.
+
+**Status.** `GREEN`.
+
+---
+
+### I-06 test_every_quoted_line_is_verbatim_substring_of_a_raw
+
+**Arrange.** `corpus-observations.md` and the 5 sampled
+`raw.json` files under
+`kurpatov-wiki-raw/data/Психолог-консультант/`. Whitespace
+normalised, NFC. Pre-condition: I-01 GREEN.
+
+**Act.** For each `> ` block-quoted line in the observations
+file (length ≥ 8 chars), search for it as a substring of the
+concatenated raw transcripts.
+
+**Assert.** Every quote is found.
+
+**Status.** `GREEN`.
+
+---
+
+### I-07 test_capability_dimension_coverage_at_least_six
+
+**Arrange.** Eight-item allow-list from
+[`develop-wiki-product-line.md`](../../../phase-b-business-architecture/capabilities/develop-wiki-product-line.md):
+*Voice preservation · Reading speed · Dedup correctness ·
+Fact-check coverage · Concept-graph quality · Reproducibility ·
+Transcription accuracy · Requirement traceability*. Pre-condition:
+I-01 GREEN.
+
+**Act.** Extract `[<dimension>]` tags from every observation
+block in `corpus-observations.md`; intersect with the
+allow-list.
+
+**Assert.** Distinct dimensions covered ≥ 6.
+
+**Status.** `GREEN`.
+
+---
+
+### I-08 test_no_R_NN_rows_emitted_during_S1_S2
+
+**Arrange.** `phase-requirements-management/catalog.md`. The
+role's S1+S2 phases must not write to it (S7 is the only step
+that emits rows). Pre-condition: I-01 GREEN.
+
+**Act.** `git diff --name-only HEAD --
+phase-requirements-management/catalog.md`.
+
+**Assert.** Diff is empty.
+
+**Status.** `GREEN`.
+
+---
+
+### I-09 test_no_wiki_bench_files_modified
+
+**Arrange.**
+`phase-c-information-systems-architecture/application-architecture/wiki-bench/`.
+Wiki PM never edits the lab. Pre-condition: I-01 GREEN.
+
+**Act.** `git diff --name-only HEAD --` against that subtree.
+
+**Assert.** Diff is empty.
+
+**Status.** `GREEN`.
+
+---
+
+### D-01 test_classify_triple_trail_filler_as_air
+
+**Arrange.** Fixture quote (verbatim from raw A):
+
+> переживать, страдать, мучиться и так далее, и так далее, и так далее.
+
+**Act.** Ask the Wiki PM role: *"What bucket does this line
+belong in (Substance / Form / Air), and why?"*
+
+**Assert.**
+- Bucket = `Air`.
+- Rationale mentions the trailing `и так далее` chain or "filler" or "triple-trail".
+- Tagged dimension contains `Reading speed`.
+
+**Status.** `RED` — decision tests are not yet wired to a
+verifier (no LLM-as-judge harness today). The architect can
+run them by hand against a Wiki-PM-loaded session; result lands
+here as a `Status` change in a commit.
+
+---
+
+### D-02 test_classify_word_doubling_as_air
+
+**Arrange.** Fixture quote (verbatim from raw A):
+
+> то есть это эмпатические отношения, эмпатические отношения.
+
+**Act.** Same prompt as D-01.
+
+**Assert.**
+- Bucket = `Air`.
+- Rationale mentions repetition / doubling / spoken-anchor.
+- Tagged dimension contains `Reading speed`.
+
+**Status.** `RED` (no decision-test harness yet).
+
+---
+
+### D-03 test_classify_self_question_answer_scaffolding_as_air
+
+**Arrange.** Fixture quote (verbatim from raw A):
+
+> Все ли это? Тоже далеко не все.
+
+**Act.** Same prompt.
+
+**Assert.**
+- Bucket = `Air`.
+- Rationale mentions "self-Q&A" or "rhetorical question" or
+  "lifts the next claim".
+- Tagged dimension contains `Reading speed`.
+
+**Status.** `RED`.
+
+---
+
+### D-04 test_classify_definition_with_attribution_as_substance
+
+**Arrange.** Fixture quote (verbatim from raw A):
+
+> Стресс — это, если опираться на определение, которое дал ему автор теории Ганс Селье, естественная реакция нашей психики и организма на изменения среды.
+
+**Act.** Same prompt.
+
+**Assert.**
+- Bucket = `Substance`.
+- Rationale mentions verifiable claim / attribution / Selye.
+- Tagged dimension contains `Concept-graph quality` (or
+  `Fact-check coverage`).
+
+**Status.** `RED`.
+
+---
+
+### D-05 test_classify_branded_method_self_citation_as_form
+
+**Arrange.** Fixture quote (verbatim from raw A):
+
+> Несколько слов скажу, поскольку я сам автор системной поведенческой психотерапии
+
+**Act.** Same prompt.
+
+**Assert.**
+- Bucket = `Form` (the *first* such citation per source) OR
+  `Air` (subsequent occurrences within the same source). Pass
+  on either, because the bucket depends on whether the role
+  has seen the citation before in this session — Decision tests
+  are stateless on first run.
+- Rationale mentions "self-citation" or "СПП authorship" or
+  "branded method".
+- Tagged dimension contains `Voice preservation`.
+
+**Status.** `RED`.
+
+---
+
+### D-06 test_classify_direct_address_scenario_as_form
+
+**Arrange.** Fixture quote (verbatim from raw D):
+
+> А теперь представьте, что у вас был какой-нибудь близкий друг, с которым вы были в хороших отношениях
+
+**Act.** Same prompt.
+
+**Assert.**
+- Bucket = `Form`.
+- Rationale mentions "direct address" or "thought experiment"
+  or "scenario".
+- Tagged dimension contains `Voice preservation`.
+
+**Status.** `RED`.
+
+---
+
+### D-07 test_voice_pattern_tagged_with_voice_preservation
+
+**Arrange.** Fixture quote (verbatim from raw A):
+
+> психотерапевтический контакт, установить, иногда это говорят, рапорт, или доверительные отношения с клиентом
+
+**Act.** Ask the Wiki PM role: *"What capability dimension
+does this line evidence?"*
+
+**Assert.** Output contains `Voice preservation` (synonym chain
+is a voice signature; chain compression also serves Reading
+speed, so output may also include that — pass requires Voice
+preservation be among the tags).
+
+**Status.** `RED`.
+
+---
+
+### D-08 test_filler_pattern_tagged_with_reading_speed
+
+**Arrange.** Fixture quote (verbatim from raw A):
+
+> и так далее, и так далее, и так далее
+
+**Act.** Same prompt as D-07.
+
+**Assert.** Output contains `Reading speed`.
+
+**Status.** `RED`.
 
 ---
 
 ## Lifecycle
 
 ```
-RED ──(role drafted, fixtures attached)──▶ RED
-RED ──(role run, output passes acceptance)──▶ GREEN
+RED ──(test authored, not yet exercised)──▶ RED
+RED ──(verifier passes)──────────────────▶ GREEN
+RED ──(verifier returns no signal)───────▶ SKIPPED
 GREEN ──(role definition changed; rerun fails)──▶ RED
-GREEN ──(real artefact contradicts test)──────▶ STALE
-STALE ──(test re-written with rationale)──────▶ RED
+GREEN ──(real artefact contradicts test)────────▶ STALE
+STALE ──(test re-written with rationale)────────▶ RED
 ```
 
-A scenario going `STALE` is the *expensive* signal — the catalog
-was wrong and the role definition drove a real regression the
-test missed. Each `STALE` event is logged inline below the
-relevant scenario with a reference to the artefact that exposed
-the gap.
+Status changes are commits with rationale, not in-place edits;
+git history is the test log.
