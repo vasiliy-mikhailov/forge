@@ -108,6 +108,7 @@ RUN python3 -c "from sentence_transformers import SentenceTransformer; \
 RUN mkdir -p /opt/forge
 COPY orchestrator/run-d8-pilot.py /opt/forge/run-d8-pilot.py
 COPY orchestrator/embed_helpers.py /opt/forge/embed_helpers.py
+COPY orchestrator/source_coordinator.py /opt/forge/source_coordinator.py
 COPY tests/synthetic-orchestrator/step8_smoke.py /opt/forge/step8_smoke.py
 COPY tests/synthetic-orchestrator/step7_orchestrator.py /opt/forge/step7_orchestrator.py
 COPY evals/grade/bench_grade.py /opt/forge/bench_grade.py
