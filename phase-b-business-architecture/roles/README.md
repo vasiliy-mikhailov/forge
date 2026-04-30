@@ -20,6 +20,7 @@ side.
 | Role | File | Tests | One-line purpose |
 |------|------|-------|------------------|
 | Wiki PM | [`wiki-pm.md`](wiki-pm.md) | [`/tests/phase-b-business-architecture/roles/test-wiki-pm.md`](../../tests/phase-b-business-architecture/roles/test-wiki-pm.md) | Own the requirements catalog for every product on the [Wiki product line](../products/wiki-product-line.md). |
+| Auditor | [`auditor.md`](auditor.md) | (queued — `tests/phase-b-business-architecture/roles/test-auditor.md`) | Periodically check forge's working tree for conformance to its declared architectural rules; produce typed findings per [`audit-process.md`](../../phase-h-architecture-change-management/audit-process.md). |
 
 ## When to add a new role file
 

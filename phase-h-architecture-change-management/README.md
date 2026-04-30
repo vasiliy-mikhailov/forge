@@ -13,6 +13,11 @@ working tree.
 - [`brainstorm-experiments.md`](brainstorm-experiments.md) — the
   meta-capability that generates Level-2 proposals. Definition of
   "baggage" + the deletion test.
-- [`audit-2026-04-25.md`](audit-2026-04-25.md) — the most recent
-  working-tree audit. Future audits land alongside it.
+- [`audit-process.md`](audit-process.md) — the typed checklist
+  the [Auditor role](../phase-b-business-architecture/roles/auditor.md)
+  walks. Defines predicates P1–P13 + output format.
+- `audit-<YYYY-MM-DD>.md` — date-stamped audit reports. Most
+  recent: [`audit-2026-04-30.md`](audit-2026-04-30.md). Each
+  audit produces exactly one file; closing a finding is recorded
+  in a *new* audit, not by editing the old one.
 - [`adr/`](adr/) — Phase H scoped ADRs.

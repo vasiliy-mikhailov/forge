@@ -41,6 +41,7 @@ describes the responsibility, not the actor.
 | Role | Definition | Activates from | Realises |
 |------|------------|----------------|----------|
 | Wiki PM | [`roles/wiki-pm.md`](roles/wiki-pm.md) | [`../phase-requirements-management/wiki-requirements-collection.md`](../phase-requirements-management/wiki-requirements-collection.md) | Requirement traceability dimension of the [`Develop wiki product line`](capabilities/develop-wiki-product-line.md) capability |
+| Auditor | [`roles/auditor.md`](roles/auditor.md) | [`../phase-h-architecture-change-management/audit-process.md`](../phase-h-architecture-change-management/audit-process.md) | Architecture Knowledge Management capability ([`capabilities/forge-level.md`](capabilities/forge-level.md)) — single source of truth + TOGAF-style doc threading dimensions |
 
 Other roles that operate today but aren't yet formalised as
 role files (when one of them produces a regression requiring
