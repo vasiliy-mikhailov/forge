@@ -19,10 +19,14 @@ re-walked when material new evidence appears (a new module, a new
 audience segment, a quality regression that no existing R-NN
 explains).
 
-The architect of record performs this activity wearing the
-"wiki PM" hat — there is no separate role; the discipline is what
-matters. See
-[`../phase-preliminary/architecture-team.md`](../phase-preliminary/architecture-team.md).
+This activity is performed by the
+[Wiki PM agent](../phase-b-business-architecture/agents/wiki-pm.md).
+The agent is a Claude session loaded with this file as its
+activation; it is a separate org-unit from the architect (who
+designs the structure) and from the labs (which run the
+operational pipeline). See
+[`../phase-b-business-architecture/org-units.md`](../phase-b-business-architecture/org-units.md)
+for the split.
 
 ## When to walk the activity
 

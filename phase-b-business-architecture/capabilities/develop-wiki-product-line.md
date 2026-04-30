@@ -25,7 +25,7 @@ are identical — that's what makes this a single capability.
 
 | Dimension                           | Realised in            | Metric / property                                                                                                                                               |
 |-------------------------------------|------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **Requirement traceability**        | (architect)            | Every implementation choice (prompt rule, schema field, grader check) cites an `R-NN` from `phase-requirements-management/catalog.md`. No orphan rules.         |
+| **Requirement traceability**        | (wiki-PM agent)        | Every implementation choice (prompt rule, schema field, grader check) cites an `R-NN` from `phase-requirements-management/catalog.md`. No orphan rules.         |
 | **Voice preservation**              | wiki-bench             | Narrative sections (`## TL;DR`, `## Лекция`) retain the author's tone, sceptical asides, characteristic metaphors. Structural sections stay neutral.            |
 | **Reading speed**                   | wiki-bench             | Reader gets the gist of a lecture in 1–2 minutes via TL;DR + bullets + cross-links; full read in 5–15 minutes.                                                  |
 | **Transcription accuracy**          | wiki-ingest            | Russian-WER on a held-out audit set.                                                                                                                              |
@@ -60,15 +60,19 @@ The labs that physically exercise the capability:
   `inference.mikhailov.tech`). Realises Reproducibility (in part)
   and is the dependency wiki-bench calls into. Its own
   capability angle is [Service Operation](service-operation.md).
-- **(architect)** — the **Wiki requirements collection**
-  sub-activity (process at
-  [`../../phase-requirements-management/wiki-requirements-collection.md`](../../phase-requirements-management/wiki-requirements-collection.md)).
+- **[Wiki PM agent](../agents/wiki-pm.md)** — the **Wiki
+  requirements collection** sub-activity. Activates from
+  [`../../phase-requirements-management/wiki-requirements-collection.md`](../../phase-requirements-management/wiki-requirements-collection.md)
+  and emits `R-NN` rows into the
+  [requirements catalog](../../phase-requirements-management/catalog.md).
   Realises Requirement traceability.
 
-The fact that one of the four sub-activities is "(architect)"
-rather than a lab is intentional: requirements collection is
-human-driven by design (see ADR rationale in
-[`../../phase-requirements-management/wiki-requirements-collection.md`](../../phase-requirements-management/wiki-requirements-collection.md)).
+The fact that one of the four sub-activities is realised by an
+agent (not a lab) is intentional: requirements collection is
+LLM-agent work driven from a process spec, sitting between the
+architect (who designs the structure) and the labs (which run
+the operational pipeline). See [`../org-units.md`](../org-units.md)
+for the architect / agents split.
 
 ## Decomposition into Phase D sub-trajectories
 
