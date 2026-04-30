@@ -83,6 +83,7 @@ docker run --rm \
   --entrypoint python3 \
   -e D8_PILOT_WORKDIR=/workspace \
   -e D8_PILOT_FAIL_POLICY="$FAIL_POLICY" \
+  -e D8_PILOT_MAX_PARALLEL="${D8_PILOT_MAX_PARALLEL:-15}" \
   -e D8_PILOT_COURSE="Психолог-консультант" \
   -e D8_PILOT_MODULES="000 Путеводитель по программе|001 Глубинная психология и психодиагностика в консультировании" \
   -e D8_PILOT_BRANCH="$BRANCH" \
