@@ -303,7 +303,7 @@ class SourceCoordinator:
             return c, self._llm_with_retry(
                 prompt=self._prompt_fact_check(c),
                 schema=SCHEMA_FACT_CHECK,
-                max_tokens=600,
+                max_tokens=300,  # bounded — caps the rambling-JSON failure mode
             )
 
         with ThreadPoolExecutor(max_workers=_MAX_PARALLEL) as pool:
@@ -504,10 +504,17 @@ class SourceCoordinator:
 
     def _prompt_fact_check(self, claim: dict) -> str:
         return (
-            "Fact-check this empirical claim. Set marker to one of "
-            "NEW (consistent with public knowledge), CONTRADICTS_FACTS "
-            "(verifiably wrong), or NO_MATCH (no source found). If "
-            "marker is NEW or CONTRADICTS_FACTS, provide url + notes.\n\n"
+            "Fact-check this empirical claim against public knowledge.\n\n"
+            "Output schema:\n"
+            "  marker: one of NEW (consistent), CONTRADICTS_FACTS "
+            "(verifiably wrong), NO_MATCH (no source found).\n"
+            "  url: ONE Wikipedia or canonical source URL (omit if NO_MATCH).\n"
+            "  notes: ONE sentence. Plain ASCII. No multi-step reasoning, "
+            "no 'wait, let me re-evaluate' spirals, no nested quotes, "
+            "no escaped backslashes. If you find yourself second-guessing, "
+            "pick a marker and write one sentence.\n\n"
+            "Hard rules: notes ≤ 240 characters. No newlines inside notes. "
+            "No backslashes inside notes.\n\n"
             f"CLAIM: {claim['text']!r}\n"
         )
 
