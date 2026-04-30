@@ -10,13 +10,18 @@ fidelity layer for the agent + container + real LLM is the e2e test.
 """
 from __future__ import annotations
 import json
+import sys
 import unittest
 from pathlib import Path
 from unittest.mock import MagicMock
 
+# Add orchestrator/ to sys.path so we can import the module under test.
+_HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(_HERE.parent.parent / "orchestrator"))
+
 # Module under test (will not import until coordinator is implemented).
 # Import at top so test_collection itself fails loud if module missing.
-from source_coordinator import (
+from source_coordinator import (  # noqa: E402
     SourceCoordinator,
     StepResult,
     CoordinatorError,
