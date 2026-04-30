@@ -265,3 +265,70 @@ This contract was emergent in practice — the coordinator originally
 defaulted to English claim text and English fact-check notes, the
 user caught both by eye, the prompts were iterated. Codifying it
 here so a future change won't silently regress.
+
+## Quality contract: what bench_grade does NOT check
+
+P6 ("completeness over availability for compiled artifacts") was
+written about silent skips of source files. The same logic applies
+to silent skips of CONTENT inside files. A wiki that ships every
+source.md with structurally-valid frontmatter and the five required
+sections, but where every Лекция is one paragraph from the first
+30 minutes of a 90-minute lecture and every concept article has a
+one-claim Definition, satisfies the LETTER of P6 (no missing
+files, no skipped sources) and violates the SPIRIT (the artifact
+does not capture what readers will use it for).
+
+bench_grade today checks **structure**: required sections, claim
+markers, frontmatter fields, marker validity. It does NOT check:
+
+- **Лекция coverage** — whether the condensed retelling covers the
+  whole transcript or just the model's input window. A 1-paragraph
+  Лекция from a 90-minute lecture passes bench_grade.
+- **Concept article richness** — whether the Definition is
+  encyclopedic prose or just the most-recent claim text repeated
+  verbatim. A `Definition\n\n{claim_text}` block passes
+  bench_grade.
+- **Concept dedup** — whether 1523 concept files represent 1523
+  distinct ideas or ~150 ideas with multiple spellings. K1 v2
+  produced 10× more concept files than K1 v1 from the same source
+  set; bench_grade reported neither as a violation.
+- **Fact-check coverage** — whether every `needs_factcheck=true`
+  claim was actually fact-checked, or capped at 8. Capped claims
+  keep their classification but lose URL + notes; bench_grade
+  doesn't notice.
+- **Concept-to-concept cross-references** — whether each concept
+  article links to ≥ 1 related concept. K1 v2 concept articles are
+  islands; bench_grade doesn't notice.
+- **concept-index.json maintenance** — whether
+  `processed_sources` and `first_introduced_in` are kept current.
+  K1 v2 doesn't update the file; bench_grade doesn't read it.
+- **concepts_introduced precision** — whether the
+  `concepts_introduced` field is a strict subset of
+  `concepts_touched` filtered to "first appearance in the
+  retrieval index" (K1 v1) or just a copy of `concepts_touched`
+  (K1 v2). bench_grade only checks subset, not source-of-truth.
+
+Quality gates that bench_grade SHOULD enforce, queued as work:
+
+- `lecture_word_count >= 0.5% * transcript_word_count`
+- `concept Definition word_count >= 30 AND not exact-match any
+  single claim in concept's Contributions`
+- `concept_dedup_ratio = (count of slugs with cosine > 0.85
+  against another slug) / total_slugs <= 0.10`
+- `fact_check_coverage = (claims with fact_marker set) /
+  (claims with needs_factcheck=true) >= 0.90`
+- `concept_xref_count >= 1 per concept article`
+- `concept-index.json processed_sources covers the run's commits`
+
+Until those gates exist and pass, the coordinator's output is
+*structurally correct, content-thin* — a faster pipeline producing
+a thinner artifact, not a publishable wiki.
+
+The K1 v2 run that produced this ADR section was structurally
+44/44 verified=ok. By the quality contract above it was a draft.
+The wall-time win came partly from real efficiency (~5× from no
+agent state accumulation, ~3× from parallelism, ~1.4× from
+schema-bound outputs) and partly from skipping work that
+bench_grade couldn't measure — concept-curator depth (~3×) and
+fact-check breadth (~1.2×). Naming the trade-off here so future
+runs cannot quietly cash in on the same skip.
