@@ -166,6 +166,27 @@ def grade_source(path: Path):
             notes_count += 1
         citation_count += urls
 
+    # Quality contract (per ADR 0013) — checks bench_grade does
+    # against content, not just structure. Surfaced as quality_metrics
+    # + quality_violations so callers can decide soft/hard.
+    lecture_words = len((lecture_block or "").split())
+    claims_with_evidence = notes_count  # notes_flagged or fact_check_citations
+    claims_marked = sum(marker_counts.values())  # excludes unmarked
+    fact_check_coverage = (
+        claims_with_evidence / claims_marked if claims_marked else 0.0
+    )
+    quality_violations = []
+    if lecture_words < 200:
+        quality_violations.append(
+            f"quality: Лекция too short ({lecture_words} words; <200 floor)"
+        )
+    if claim_idx > 5 and fact_check_coverage < 0.10:
+        # Source has substantive claim count but <10% have any evidence.
+        quality_violations.append(
+            f"quality: fact-check coverage {fact_check_coverage:.0%} "
+            f"({claims_with_evidence}/{claims_marked}); <10% floor"
+        )
+
     return {
         "path": str(path),
         "stem": path.stem,
@@ -188,8 +209,10 @@ def grade_source(path: Path):
             "fact_check_citations": citation_count,
             "new_ideas_bullets": count_bullets(new_ideas_block),
             "all_ideas_bullets": count_bullets(all_ideas_block),
-            "lecture_words": len((lecture_block or "").split()),
+            "lecture_words": lecture_words,
+            "fact_check_coverage": round(fact_check_coverage, 3),
         },
+        "quality_violations": quality_violations,
         "violations": violations,
     }
 
@@ -236,6 +259,37 @@ def grade_concept(path: Path):
             v15_violations.append("L1.5: frontmatter missing first_introduced_in")
     violations.extend(v15_violations)
 
+    # Quality contract — content depth checks (per ADR 0013):
+    # definition richness, internal cross-refs, contribution avg length.
+    definition_block = extract_section(body, "## Definition") or ""
+    definition_text = definition_block.strip()
+    definition_words = len(definition_text.split())
+    # Concept-to-concept cross-references: links of the form
+    # `[label](concept-slug.md)` or `[label](../concepts/...)`. Excludes
+    # source-md links and external URLs.
+    xref_re = re.compile(r"\]\((?!https?://)(?!\.\./sources/)([^\)]+\.md)\)")
+    xrefs = xref_re.findall(body)
+    # Definition is "thin" if it's an exact substring match of any
+    # contribution claim — that means it's just claim-text repetition.
+    contrib_text = (contributions_block or "").strip()
+    definition_is_claim_repetition = (
+        definition_text and definition_text in contrib_text
+    )
+    quality_violations = []
+    if definition_words < 30:
+        quality_violations.append(
+            f"quality: Definition too thin ({definition_words} words; <30 floor)"
+        )
+    if definition_is_claim_repetition:
+        quality_violations.append(
+            "quality: Definition is exact match of a Contribution claim "
+            "(no synthesis)"
+        )
+    if not xrefs and len(touched_by) > 0:
+        quality_violations.append(
+            "quality: 0 concept-to-concept cross-references"
+        )
+
     return {
         "path": str(path),
         "slug": path.stem,
@@ -247,9 +301,13 @@ def grade_concept(path: Path):
         "touched_by": list(fm.get("touched_by") or []),
         "metrics": {
             "definition_present": "## Definition" in body,
+            "definition_words": definition_words,
+            "definition_is_claim_repetition": definition_is_claim_repetition,
+            "concept_xref_count": len(xrefs),
             "contributions_count": len(contrib_subs),
             "body_lines": len(body.splitlines()),
         },
+        "quality_violations": quality_violations,
         "violations": violations,
     }
 
@@ -325,6 +383,35 @@ def grade_repo(repo: Path):
             sum(len(c["violations"]) for c in concepts) +
             len(index_violations) + len(cross_violations)
         ),
+        # ADR 0013 quality contract — content-depth properties.
+        "quality_violations_count": (
+            sum(len(s.get("quality_violations", [])) for s in sources) +
+            sum(len(c.get("quality_violations", [])) for c in concepts)
+        ),
+        "sources_with_quality_violations": sum(
+            1 for s in sources if s.get("quality_violations")),
+        "concepts_with_quality_violations": sum(
+            1 for c in concepts if c.get("quality_violations")),
+        # Concept-depth aggregates.
+        "concepts_with_thin_definition": sum(
+            1 for c in concepts
+            if c["metrics"].get("definition_words", 0) < 30),
+        "concepts_with_zero_xrefs": sum(
+            1 for c in concepts
+            if c["metrics"].get("concept_xref_count", 0) == 0
+            and c["frontmatter"]["touched_by_count"] > 0),
+        "concepts_with_definition_is_claim_repetition": sum(
+            1 for c in concepts
+            if c["metrics"].get("definition_is_claim_repetition")),
+        "concepts_total": len(concepts),
+        # Source-depth aggregates.
+        "sources_with_short_lecture": sum(
+            1 for s in sources
+            if s["metrics"]["lecture_words"] < 200),
+        "sources_with_low_factcheck_coverage": sum(
+            1 for s in sources
+            if s["metrics"]["claims_total"] > 5
+            and s["metrics"].get("fact_check_coverage", 0.0) < 0.10),
     }
 
     return {
@@ -333,6 +420,10 @@ def grade_repo(repo: Path):
         "sources": sources,
         "concepts_count_by_definition_present": sum(1 for c in concepts if c["metrics"]["definition_present"]),
         "concept_violations": [c for c in concepts if c["violations"]],
+        "quality_source_violations": [
+            s for s in sources if s.get("quality_violations")],
+        "quality_concept_violations": [
+            c for c in concepts if c.get("quality_violations")],
         "index_violations": index_violations,
         "cross_violations": cross_violations,
     }
