@@ -180,6 +180,40 @@ concepts: [<slug-1>, <slug-2>, …]
 | L1 + L2      | ≥ 0.40 (recall ~0.92, ratio ~0.55 → 0.92 × 0.45 = 0.41)  |
 | L1 + L2 + L3 | ≥ 0.50 (recall ~0.90, ratio ~0.40 → 0.90 × 0.60 = 0.54)  |
 
+**Gate engine.** `forward_recall` and (after restore) `backward_
+recall` are computed mechanically by:
+
+```
+python3 scripts/test-runners/measure-corpus-recall.py \
+    --source A --against <Compact-or-Restore-output>.md
+```
+
+The harness parses the 20 source-A observations from
+[`corpus-observations.md`](../../phase-b-business-architecture/products/kurpatov-wiki/corpus-observations.md)
+(4 Substance, 7 Form, 9 Air), extracts the top-3 characteristic
+Cyrillic content words from each verbatim quote (length ≥ 4,
+function-word stopwords dropped), and counts an observation
+"covered" iff ALL three keywords co-occur in the target file
+(NFC-normalised, lowercase). Per-bucket coverage, forward recall
+(Substance + Form pooled), and **Air-leakage rate** (Air
+observations that wrongly survived L1 — *lower is better;
+0 = perfect Air-strip*) are reported.
+
+**Why ≥ 3 keywords (not "≥ 1").** Single-keyword matches
+false-positive on common content words. Three distinct content
+words from one observation co-occurring in the target is a
+strong signal the *idea* is preserved (robust to filler removal
+and faithful paraphrase).
+
+**Sanity-check baseline.** Run against the corpus-observations
+md itself (perfect knowledge) → 11/11 forward recall (1.000)
+and Air-leakage 8/9 (the corpus *contains* the Air verbatims as
+quoted prose, so this is the upper-bound reference, not a
+target). Run against an empty file → 0/11. Run against just
+Substance verbatims → 4/4 Substance, 0/7 Form, 0/9 Air, forward
+recall 4/11 = 0.364 — the harness correctly attributes coverage
+per bucket. Tested at gate-engine commit time.
+
 ### Guardrail metrics
 
 - **No factual loss.** Restore(Compact(A)) preserves every
