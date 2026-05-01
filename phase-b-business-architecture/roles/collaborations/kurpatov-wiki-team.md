@@ -11,8 +11,10 @@ sessions.
 This is the **product team** for the Kurpatov wiki — the
 broadest collaboration in forge today. Includes the
 [Architect of record](../architect.md) at the steering level
-and the four execution roles (Wiki PM / Auditor / Developer /
-DevOps). One collaboration is enough — when only a subset of
+and six execution roles: Wiki PM (requirements) + Auditor
+(conformance) + Developer (code) + DevOps (host) +
+Source-author (per-source compile) + Concept-curator (graph
+upkeep). One collaboration is enough — when only a subset of
 roles is needed for a task (e.g. Developer + DevOps for a K2
 run), load this file and use the role decision-rights matrix
 below to scope the work; spawning sub-collaborations for every
@@ -29,6 +31,8 @@ Five aggregated roles:
 | **Auditor**     | Walks `audit-process.md` predicates against the working tree; emits typed findings; surfaces violations *without* fixing them.        | [`../auditor.md`](../auditor.md)                     |
 | **Developer**   | Implements code in wiki-bench / wiki-compiler / wiki-ingest against an active R-NN trajectory or experiment spec; pairs with TDD.    | [`../developer.md`](../developer.md)                 |
 | **DevOps**      | Operates `mikhailov.tech` (Blackwell + RTX 5090); runs containers per [P3](../../../phase-preliminary/architecture-principles.md); appends to `operations.md` `## Operational log`. | [`../devops.md`](../devops.md)                       |
+| **Source-author**   | Operational role: compiles one raw transcript into one `source.md` per activation. Filled by an OpenHands SDK agent inside the wiki-bench harness. Realises Voice preservation + Reading speed + Concept-graph quality. | [`../source-author.md`](../source-author.md) |
+| **Concept-curator** | Operational role: maintains `data/concepts/` (create on `concepts_introduced`, update on `concepts_touched`, keep `concept-index.json` consistent). Sub-Conversation spawned from source-author. Realises Concept-graph quality + Dedup correctness. | [`../concept-curator.md`](../concept-curator.md) |
 
 The team **does not** include external readers, sales, content
 authors, or any human acting as Курпатов himself — this is the
@@ -83,6 +87,11 @@ The team's decision rights are **NOT a union** — they are
 | Emit a finding (FAIL / WARN / INFO)             | **Auditor**                        |
 | Refuse to fix a finding                         | **Architect** (Auditor surfaces)  |
 | Edit lab source code                            | **Developer**                      |
+| Compile one raw → one source.md                 | **Source-author** (per activation; bench harness commits) |
+| Create / update one concept.md (graph upkeep)   | **Concept-curator** (per activation; spawned by source-author) |
+| Mark a concept stale (frontmatter flag)         | **Concept-curator**                |
+| Pick a slug for a new concept                   | **Concept-curator**                |
+| Coin / rename a slug across the whole graph     | **Wiki PM** (R-NN), **Developer** ships find-replace |
 | Add a unit test                                 | **Developer**                      |
 | Run a sweep / measure trip-quality              | **Developer**                      |
 | Commit + push to `main`                         | **Developer** OR **DevOps** (per their commit-prefix conventions) |

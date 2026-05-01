@@ -622,6 +622,7 @@ def i_au_11_audit_has_aggregate_section() -> Result:
     text = p.read_text(encoding='utf-8')
     canonical = [
         'Architect', 'Auditor', 'Wiki PM', 'Developer', 'DevOps',
+        'Source-author', 'Concept-curator',
         'rl-2048 lab AGENTS.md', 'wiki-bench lab AGENTS.md',
         'wiki-compiler lab AGENTS.md', 'wiki-ingest lab AGENTS.md',
     ]
@@ -654,18 +655,18 @@ def i_au_11_audit_has_aggregate_section() -> Result:
                       f'score={score}/4.0; ' + ', '.join(notes),
                       score=score, score_max=4.0, threshold=4.0)
     # C3 — >= 6 data rows
-    if len(data_rows) >= 9:
+    if len(data_rows) >= 11:
         score += 1; notes.append(f'C3=rows={len(data_rows)}')
     else:
-        notes.append(f'C3=rows={len(data_rows)}<9')
+        notes.append(f'C3=rows={len(data_rows)}<11')
     # C4 — canonical units present in first column
     found = [name for name in canonical
              if any(name in row for row in data_rows)]
-    if len(found) >= 9:
-        score += 1; notes.append(f'C4=units=9/9')
+    if len(found) >= 11:
+        score += 1; notes.append(f'C4=units=11/11')
     else:
         missing = [n for n in canonical if n not in found]
-        notes.append(f'C4=units={len(found)}/9 missing={missing[:3]}')
+        notes.append(f'C4=units={len(found)}/11 missing={missing[:3]}')
     return Result(adr0015_verdict(score, 4.0, 4.0),
                   f'score={score}/4.0; ' + ', '.join(notes),
                   score=score, score_max=4.0, threshold=4.0)
