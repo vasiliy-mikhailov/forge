@@ -397,3 +397,18 @@ docker exec jupyter-kurpatov-wiki \
     --dry-run
 # verify the plan → remove --dry-run
 ```
+
+
+## Operational log
+
+Chronological log of host-level actions per the
+[DevOps role](../phase-b-business-architecture/roles/devops.md).
+Format: `- YYYY-MM-DD <action> — <ADR / R-NN cited> — <outcome>`.
+Newest entries above oldest.
+
+- 2026-05-02 bootstrap — ADR 0007 + ADR 0014 — operational log
+  appendix opened. The runbook above documents *how to* operate;
+  this section logs *when* an operational action ran. Audited by
+  DO-02 (dated entries) + DO-03 (every governing-keyword
+  paragraph cites an ADR or R-NN). Pre-existing runbook content
+  stays untouched.

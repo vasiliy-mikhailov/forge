@@ -44,6 +44,12 @@ def gather() -> list[dict]:
     wiki_pm = sh.aggregate_per_runner(HISTORY / 'test-wiki-pm-runner.jsonl')
     wiki_pm['unit'] = 'Wiki PM'
     rows.append(wiki_pm)
+    developer = sh.aggregate_per_runner(HISTORY / 'test-developer-runner.jsonl')
+    developer['unit'] = 'Developer'
+    rows.append(developer)
+    devops = sh.aggregate_per_runner(HISTORY / 'test-devops-runner.jsonl')
+    devops['unit'] = 'DevOps'
+    rows.append(devops)
     per_lab = sh.aggregate_per_lab(HISTORY / 'test-lab-AGENTS-runner.jsonl')
     for code in ['RL', 'WB', 'WC', 'WI']:
         if code in per_lab:

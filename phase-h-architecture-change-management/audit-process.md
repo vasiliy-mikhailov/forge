@@ -339,14 +339,14 @@ runner).
 **Property.** Each audit md carries a section
 `## Aggregate scores per agentic-md unit` listing the latest
 per-runner / per-lab aggregate score (ADR 0015 dec 6). The table
-covers 6 units today: Auditor, Wiki PM, and each of the 4 lab
-AGENTS.md files (rl-2048, wiki-bench, wiki-compiler, wiki-ingest).
+covers 8 units today: Auditor, Wiki PM, Developer, DevOps, and
+each of the 4 lab AGENTS.md files (rl-2048, wiki-bench, wiki-compiler, wiki-ingest).
 Each row carries: unit name, cases scored / total, aggregate
 score (sum / max = normalised), band (`PASS` / `italian-strike` /
 `FAIL`), per-verdict counts.
 **Signal.** Grep the latest audit md for `^## Aggregate scores
 per agentic-md unit$`; verify a markdown table follows with
-≥ 6 data rows and ≥ 5 columns; verify the unit names are the 6
+≥ 8 data rows and ≥ 5 columns; verify the unit names are the 8
 canonical ones.
 **Helper.** The architect runs
 `python3 scripts/test-runners/aggregate-scores.py` and pastes

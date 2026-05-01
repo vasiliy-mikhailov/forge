@@ -19,8 +19,10 @@ side.
 
 | Role | File | Tests | One-line purpose |
 |------|------|-------|------------------|
-| Wiki PM | [`wiki-pm.md`](wiki-pm.md) | [`/tests/phase-b-business-architecture/roles/test-wiki-pm.md`](../../tests/phase-b-business-architecture/roles/test-wiki-pm.md) | Own the requirements catalog for every product on the [Wiki product line](../products/wiki-product-line.md). |
-| Auditor | [`auditor.md`](auditor.md) | (queued — `tests/phase-b-business-architecture/roles/test-auditor.md`) | Periodically check forge's working tree for conformance to its declared architectural rules; produce typed findings per [`audit-process.md`](../../phase-h-architecture-change-management/audit-process.md). |
+| Wiki PM   | [`wiki-pm.md`](wiki-pm.md)     | [`/tests/phase-b-business-architecture/roles/test-wiki-pm.md`](../../tests/phase-b-business-architecture/roles/test-wiki-pm.md)     | Own the requirements catalog for every product on the [Wiki product line](../products/wiki-product-line.md). |
+| Auditor   | [`auditor.md`](auditor.md)     | [`/tests/phase-b-business-architecture/roles/test-auditor.md`](../../tests/phase-b-business-architecture/roles/test-auditor.md)     | Periodically check forge's working tree for conformance to its declared architectural rules; produce typed findings per [`audit-process.md`](../../phase-h-architecture-change-management/audit-process.md). |
+| Developer | [`developer.md`](developer.md) | [`/tests/phase-b-business-architecture/roles/test-developer.md`](../../tests/phase-b-business-architecture/roles/test-developer.md) | Implement production code in the labs against an active R-NN trajectory or Phase F R&D experiment; pair with TDD tests; ship diffs that close hypotheses. |
+| DevOps    | [`devops.md`](devops.md)       | [`/tests/phase-b-business-architecture/roles/test-devops.md`](../../tests/phase-b-business-architecture/roles/test-devops.md)       | Operate the single-host deployment (mikhailov.tech): apply deploys, restart containers, allocate GPU power-caps, rotate keys, keep [`operations.md`](../../phase-g-implementation-governance/operations.md) current. |
 
 ## When to add a new role file
 
