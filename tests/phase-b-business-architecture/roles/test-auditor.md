@@ -83,6 +83,22 @@ A file matching `audit-\d{4}-\d{2}-\d{2}\.md` exists under
 
 ---
 
+### Reward
+
+**Motivation reference.** Realises the *Outcome* "audit work product exists at the canonical path" — a precondition for any later case in this file. Rolls up to the *Architect-velocity* Goal.
+
+**Score components**:
+
+- C1. File matching `audit-\d{4}-\d{2}-\d{2}\.md` exists (1 pt)
+
+**Aggregate.** sum.
+
+**Score range.** 0..1.
+
+**PASS threshold.** 1.
+
+**Italian-strike band.** n/a (binary case; only PASS or FAIL).
+
 ## AU-02 When the Auditor produces an audit, then the file has FAIL / WARN / INFO sections
 
 ### Set expected result
@@ -110,6 +126,22 @@ permitted; the headers must be present.
 - **Verdict.** PASS if all three found.
 
 ---
+
+### Reward
+
+**Motivation reference.** Realises a thoroughness sub-Outcome of "the audit produces a substantive report." An audit with 5 lines is technically valid but useless; the threshold of 30 lines is the minimum body that includes Predicates-walked + at least one finding + Summary.
+
+**Score components**:
+
+- C1. ≥ 30 non-blank lines (1 pt)
+
+**Aggregate.** sum.
+
+**Score range.** 0..1.
+
+**PASS threshold.** 1.
+
+**Italian-strike band.** n/a (binary).
 
 ## AU-03 When the Auditor produces a finding, then the finding carries Predicate ID + Symptom + (Rule + Proposed fix for FAIL/WARN; Note for INFO)
 
@@ -145,6 +177,22 @@ Each `### F<N>. …` block in the audit:
 
 ---
 
+### Reward
+
+**Motivation reference.** Realises the *Outcome* "every finding the audit emits is actionable" — without Predicate ID + Symptom + Rule (FAIL/WARN) or Note (INFO), the architect can't act on the finding.
+
+**Score components**:
+
+- C1. Per-section shape check across all findings (FAIL/WARN need pred+symptom+rule+fix; INFO needs pred+symptom+note) (1 pt)
+
+**Aggregate.** fraction (well-formed / total).
+
+**Score range.** 0..1.
+
+**PASS threshold.** 1.
+
+**Italian-strike band.** 0.7 ≤ score < 1.0 (most findings well-formed but some malformed; surfaces audits that are mostly-good but sloppy on some).
+
 ## AU-04 When the Auditor produces an audit, then the Summary table totals match the per-section finding counts
 
 ### Set expected result
@@ -170,6 +218,22 @@ blocks in each verdict section.
 - **Verdict.** PASS if all match.
 
 ---
+
+### Reward
+
+**Motivation reference.** Realises the *Outcome* "the audit's totals are trustable." A summary table that disagrees with the in-section finding counts erodes architect confidence in the whole report.
+
+**Score components**:
+
+- C1. All 3 verdict counts match per-section ### F<N> blocks (1 pt)
+
+**Aggregate.** sum.
+
+**Score range.** 0..1.
+
+**PASS threshold.** 1.
+
+**Italian-strike band.** n/a (binary).
 
 ## AU-05 When the Auditor's input contains "operations stack", then it produces a P6 finding under verdict FAIL citing the phrase
 
@@ -269,6 +333,27 @@ phrase "is responsible for" (or its grammatical variants
 
 ---
 
+### Reward
+
+**Motivation reference.** Same as AU-05 — *Outcome* "architecture inconsistencies are surfaced before they propagate" rolling up to *Architect-velocity*. Different specific violation pattern ("is responsible for" vs "operations stack").
+
+**Score components**:
+
+- C1. Finding exists in FAIL section (1 pt)
+- C2. Predicate cell names `P6` (1 pt)
+- C3. Symptom paragraph quotes the phrase verbatim (1 pt)
+- C4. Rule paragraph cites ADR 0014 (1 pt)
+- C5. Proposed-fix paragraph is concrete (≥ 10 words AND references at least one ArchiMate verb such as `is assigned to`, `realizes`, `serves`) (1 pt)
+- C6. Proposed fix replaces the forbidden phrase with the correct ArchiMate verb (Assignment / Realization) (1 pt)
+
+**Aggregate.** sum.
+
+**Score range.** 0..6.
+
+**PASS threshold.** 3.
+
+**Italian-strike band.** 3 ≤ score < 5 (finding present and predicate-cited but fix is vague or wrong).
+
 ## AU-07 When the Auditor's input contains "agent" used as an org-unit, then it produces a P6 FAIL finding
 
 ### Set expected result
@@ -300,6 +385,27 @@ position (treating "agent" as a typed term) is forbidden.
 
 ---
 
+### Reward
+
+**Motivation reference.** Same as AU-05/AU-06. Specific violation: "agent" used as an org-unit type (per ADR 0014 the typed term is *Business Actor* + *Role*).
+
+**Score components**:
+
+- C1. Finding exists in FAIL section (1 pt)
+- C2. Predicate cell names `P6` (1 pt)
+- C3. Symptom quotes the input string (1 pt)
+- C4. Rule paragraph cites ADR 0014 + the *Business Actor / Role* distinction (1 pt)
+- C5. Proposed fix is concrete (1 pt)
+- C6. Proposed fix splits the term into *Business Actor* (the LLM session) + *Role* (what it plays) (1 pt)
+
+**Aggregate.** sum.
+
+**Score range.** 0..6.
+
+**PASS threshold.** 3.
+
+**Italian-strike band.** 3 ≤ score < 5.
+
 ## AU-08 When the Auditor's input contains only ArchiMate-typed verbs, then it produces no P6 finding
 
 ### Set expected result
@@ -329,6 +435,23 @@ references the input.
 - **Verdict.** PASS if no P6 finding cites the input.
 
 ---
+
+### Reward
+
+**Motivation reference.** Realises the *Outcome* "the auditor does not produce false-positive findings on clean inputs." An auditor that flags ArchiMate-typed prose as a violation costs architect time.
+
+**Score components**:
+
+- C1. Zero P6 findings on the clean fixture (1 pt)
+- C2. No spurious findings under any other predicate (the runner does not over-trigger) (1 pt)
+
+**Aggregate.** sum.
+
+**Score range.** 0..2.
+
+**PASS threshold.** 2.
+
+**Italian-strike band.** n/a (any false positive on a clean fixture is FAIL, not partial credit).
 
 ## AU-09 When the Auditor's input contains "X drives Y" or "X owns Y" as relationship verbs, then it produces a P6 FAIL finding per offence
 
@@ -364,6 +487,25 @@ used as a relationship verb.
 - **Verdict.** PASS if at least two such findings exist.
 
 ---
+
+### Reward
+
+**Motivation reference.** Same as AU-06/AU-07. Two specific violations in one fixture (`drives`, `owns`).
+
+**Score components**:
+
+- C1. ≥ 1 P6 finding for `drives` (1 pt)
+- C2. ≥ 1 P6 finding for `owns` (1 pt)
+- C3. Each finding has Predicate=P6, Symptom quote, Rule cite (1 pt)
+- C4. Each Proposed-fix replaces the verb with an ArchiMate-typed equivalent (`is assigned to`, `realizes`, `serves`, etc.) (1 pt)
+
+**Aggregate.** sum.
+
+**Score range.** 0..4.
+
+**PASS threshold.** 2.
+
+**Italian-strike band.** 2 ≤ score < 3.2 (one verb caught but the other missed, or the fix is vague).
 
 ## Verdict lifecycle
 

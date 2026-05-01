@@ -88,6 +88,23 @@ non-empty (≥ 30 non-blank lines).
 
 ---
 
+### Reward
+
+**Motivation reference.** Realises the *Outcome* "corpus-observations.md exists as the role's working evidence file" — precondition for every later WP case.
+
+**Score components**:
+
+- C1. File exists at canonical path (1 pt)
+- C2. ≥ 30 non-blank lines (1 pt)
+
+**Aggregate.** sum.
+
+**Score range.** 0..2.
+
+**PASS threshold.** 2.
+
+**Italian-strike band.** n/a (both criteria binary).
+
 ## WP-02 When the corpus-observations file is produced, then it has Substance / Form / Air buckets each with ≥ 3 observations
 
 ### Set expected result
@@ -114,6 +131,24 @@ has at least 3 observations marked `**OBS-<raw>-NNN**`.
 - **Verdict.** PASS if all conditions met.
 
 ---
+
+### Reward
+
+**Motivation reference.** Realises the *Outcome* "the role's bucketing reaches usable depth" — a bucket with 1 observation is technically present but not substantively useful. ≥ 3 is the floor; richer is better.
+
+**Score components**:
+
+- C1. Substance bucket: 0 if <3 obs, 0.5 if 3-9, 1 if ≥10 (1 pt)
+- C2. Form bucket: same scale (1 pt)
+- C3. Air bucket: same scale (1 pt)
+
+**Aggregate.** sum.
+
+**Score range.** 0..3.
+
+**PASS threshold.** 1.5.
+
+**Italian-strike band.** 1.5 ≤ score < 2.4 (just-above-floor; reader would call the file shallow).
 
 ## WP-03 When the corpus-observations file is produced, then every block-quoted line is a verbatim substring of one of the sampled raw transcripts
 
@@ -143,6 +178,22 @@ collapsing).
 - **Verdict.** PASS if zero invented quotes.
 
 ---
+
+### Reward
+
+**Motivation reference.** Realises the *Outcome* "the role does not invent quotes — provenance is intact." A single fabricated quote breaks reader trust in the entire file.
+
+**Score components**:
+
+- C1. fraction = (verbatim quotes verified) / (total quotes ≥ 8 chars) (1 pt)
+
+**Aggregate.** fraction.
+
+**Score range.** 0..1.
+
+**PASS threshold.** 1.
+
+**Italian-strike band.** n/a — any fabrication is FAIL, not partial credit. Threshold and max are equal.
 
 ## WP-04 When the corpus-observations file is produced, then it tags ≥ 6 of the 8 capability quality dimensions across observations
 
@@ -174,6 +225,22 @@ appear.
 
 ---
 
+### Reward
+
+**Motivation reference.** Realises the *Outcome* "the role's observations cover the breadth of the capability" — a corpus walk that only addresses 3 of 8 quality dimensions misses substantive coverage.
+
+**Score components**:
+
+- C1. fraction = (distinct dimensions tagged) / 8 (1 pt)
+
+**Aggregate.** fraction.
+
+**Score range.** 0..1.
+
+**PASS threshold.** 0.75.
+
+**Italian-strike band.** 0.75 ≤ score < 0.8 (six of eight dimensions exactly; surfaces walks that just barely meet threshold).
+
 ## WP-05 When the Wiki PM walks S1+S2, then it does not write R-NN rows to the requirements catalog
 
 ### Set expected result
@@ -199,6 +266,22 @@ scope for this case).
 
 ---
 
+### Reward
+
+**Motivation reference.** Realises the *Outcome* "the role respects its own scope (S7 emits R-NN; S1+S2 do not)." Out-of-scope writes pollute the requirements catalog with un-vetted rows.
+
+**Score components**:
+
+- C1. catalog.md unchanged from pre-run state (1 pt)
+
+**Aggregate.** sum.
+
+**Score range.** 0..1.
+
+**PASS threshold.** 1.
+
+**Italian-strike band.** n/a (binary).
+
 ## WP-06 When the Wiki PM walks S1+S2, then it does not modify any wiki-bench file
 
 ### Set expected result
@@ -223,6 +306,22 @@ is modified by the agent.
 - **Verdict.** PASS if no changes.
 
 ---
+
+### Reward
+
+**Motivation reference.** Realises the *Outcome* "the role does not edit lab code." The role is product-management, not a developer agent; lab edits belong to a different role.
+
+**Score components**:
+
+- C1. wiki-bench subtree unchanged (1 pt)
+
+**Aggregate.** sum.
+
+**Score range.** 0..1.
+
+**PASS threshold.** 1.
+
+**Italian-strike band.** n/a (binary).
 
 ## WP-07 When the Wiki PM is given a triple-trail filler, then it classifies the line as Air with the Reading-speed dimension
 
@@ -264,6 +363,16 @@ The agent's classification of the input contains:
 
 ---
 
+### Reward
+
+**Motivation reference.** Realises the *Outcome* "the role's classification of a Курпатов line matches the catalogued pattern (Air/Form/Substance with the right dimension)." Sub-Outcome of *Voice preservation* / *Reading speed* (whichever the case targets).
+
+**Score components.** PENDING (no mechanical reward function).
+
+**Aggregate / Score range / PASS threshold / Italian-strike band.**
+PENDING (no mechanical reward function). Components require an LLM-as-judge harness: one component per assertion in the case (bucket match, dimension keyword present, rationale keyword present). Each would be 0/1 once wired. The case stays in the
+PENDING verdict until the harness lands.
+
 ## WP-08 When the Wiki PM is given a word-doubling line, then it classifies it as Air with the Reading-speed dimension
 
 ### Set expected result
@@ -289,6 +398,16 @@ mentions "doubling" / "repetition" / "spoken-anchor".
 
 ---
 
+### Reward
+
+**Motivation reference.** Realises the *Outcome* "the role's classification of a Курпатов line matches the catalogued pattern (Air/Form/Substance with the right dimension)." Sub-Outcome of *Voice preservation* / *Reading speed* (whichever the case targets).
+
+**Score components.** PENDING (no mechanical reward function).
+
+**Aggregate / Score range / PASS threshold / Italian-strike band.**
+PENDING (no mechanical reward function). Components require an LLM-as-judge harness: one component per assertion in the case (bucket match, dimension keyword present, rationale keyword present). Each would be 0/1 once wired. The case stays in the
+PENDING verdict until the harness lands.
+
 ## WP-09 When the Wiki PM is given a self-Q&A scaffolding line, then it classifies it as Air with the Reading-speed dimension
 
 ### Set expected result
@@ -311,6 +430,16 @@ claim".
 
 ---
 
+### Reward
+
+**Motivation reference.** Realises the *Outcome* "the role's classification of a Курпатов line matches the catalogued pattern (Air/Form/Substance with the right dimension)." Sub-Outcome of *Voice preservation* / *Reading speed* (whichever the case targets).
+
+**Score components.** PENDING (no mechanical reward function).
+
+**Aggregate / Score range / PASS threshold / Italian-strike band.**
+PENDING (no mechanical reward function). Components require an LLM-as-judge harness: one component per assertion in the case (bucket match, dimension keyword present, rationale keyword present). Each would be 0/1 once wired. The case stays in the
+PENDING verdict until the harness lands.
+
 ## WP-10 When the Wiki PM is given a definition-with-attribution line, then it classifies it as Substance with the Concept-graph-quality dimension
 
 ### Set expected result
@@ -332,6 +461,16 @@ Bucket = Substance; dimension contains "Concept-graph quality"
 - Same shape as WP-07. Verdict: PENDING.
 
 ---
+
+### Reward
+
+**Motivation reference.** Realises the *Outcome* "the role's classification of a Курпатов line matches the catalogued pattern (Air/Form/Substance with the right dimension)." Sub-Outcome of *Voice preservation* / *Reading speed* (whichever the case targets).
+
+**Score components.** PENDING (no mechanical reward function).
+
+**Aggregate / Score range / PASS threshold / Italian-strike band.**
+PENDING (no mechanical reward function). Components require an LLM-as-judge harness: one component per assertion in the case (bucket match, dimension keyword present, rationale keyword present). Each would be 0/1 once wired. The case stays in the
+PENDING verdict until the harness lands.
 
 ## WP-11 When the Wiki PM is given a branded-method self-citation, then it classifies it as Form (or Air on subsequent occurrences) with the Voice-preservation dimension
 
@@ -357,6 +496,16 @@ call. Dimension contains "Voice preservation"; rationale mentions
 
 ---
 
+### Reward
+
+**Motivation reference.** Realises the *Outcome* "the role's classification of a Курпатов line matches the catalogued pattern (Air/Form/Substance with the right dimension)." Sub-Outcome of *Voice preservation* / *Reading speed* (whichever the case targets).
+
+**Score components.** PENDING (no mechanical reward function).
+
+**Aggregate / Score range / PASS threshold / Italian-strike band.**
+PENDING (no mechanical reward function). Components require an LLM-as-judge harness: one component per assertion in the case (bucket match, dimension keyword present, rationale keyword present). Each would be 0/1 once wired. The case stays in the
+PENDING verdict until the harness lands.
+
 ## WP-12 When the Wiki PM is given a direct-address scenario from raw, then it classifies it as Form with the Voice-preservation dimension
 
 ### Set expected result
@@ -378,6 +527,16 @@ rationale mentions "direct address" / "thought experiment" /
 - Same shape as WP-07. Verdict: PENDING.
 
 ---
+
+### Reward
+
+**Motivation reference.** Realises the *Outcome* "the role's classification of a Курпатов line matches the catalogued pattern (Air/Form/Substance with the right dimension)." Sub-Outcome of *Voice preservation* / *Reading speed* (whichever the case targets).
+
+**Score components.** PENDING (no mechanical reward function).
+
+**Aggregate / Score range / PASS threshold / Italian-strike band.**
+PENDING (no mechanical reward function). Components require an LLM-as-judge harness: one component per assertion in the case (bucket match, dimension keyword present, rationale keyword present). Each would be 0/1 once wired. The case stays in the
+PENDING verdict until the harness lands.
 
 ## WP-13 When the Wiki PM is given a synonym-chain line, then it tags the chain with the Voice-preservation dimension
 
@@ -402,6 +561,16 @@ among the tags.
 
 ---
 
+### Reward
+
+**Motivation reference.** Realises the *Outcome* "the role's classification of a Курпатов line matches the catalogued pattern (Air/Form/Substance with the right dimension)." Sub-Outcome of *Voice preservation* / *Reading speed* (whichever the case targets).
+
+**Score components.** PENDING (no mechanical reward function).
+
+**Aggregate / Score range / PASS threshold / Italian-strike band.**
+PENDING (no mechanical reward function). Components require an LLM-as-judge harness: one component per assertion in the case (bucket match, dimension keyword present, rationale keyword present). Each would be 0/1 once wired. The case stays in the
+PENDING verdict until the harness lands.
+
 ## WP-14 When the Wiki PM is given a triple-trail filler, then it tags the line with the Reading-speed dimension
 
 ### Set expected result
@@ -421,6 +590,16 @@ Dimension contains "Reading speed". Bucket = Air.
 - Same shape as WP-07. Verdict: PENDING.
 
 ---
+
+### Reward
+
+**Motivation reference.** Realises the *Outcome* "the role's classification of a Курпатов line matches the catalogued pattern (Air/Form/Substance with the right dimension)." Sub-Outcome of *Voice preservation* / *Reading speed* (whichever the case targets).
+
+**Score components.** PENDING (no mechanical reward function).
+
+**Aggregate / Score range / PASS threshold / Italian-strike band.**
+PENDING (no mechanical reward function). Components require an LLM-as-judge harness: one component per assertion in the case (bucket match, dimension keyword present, rationale keyword present). Each would be 0/1 once wired. The case stays in the
+PENDING verdict until the harness lands.
 
 ## Verdict lifecycle
 
