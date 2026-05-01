@@ -371,11 +371,30 @@ The agent's classification of the input contains:
 
 **Motivation reference.** Realises the *Outcome* "the role's classification of a Курпатов line matches the catalogued pattern (Air/Form/Substance with the right dimension)." Sub-Outcome of *Voice preservation* / *Reading speed* (whichever the case targets).
 
-**Score components.** PENDING (no mechanical reward function).
+**Score components** (each 1 pt):
 
-**Aggregate / Score range / PASS threshold / Italian-strike band.**
-PENDING (no mechanical reward function). Components require an LLM-as-judge harness: one component per assertion in the case (bucket match, dimension keyword present, rationale keyword present). Each would be 0/1 once wired. The case stays in the
-PENDING verdict until the harness lands.
+- C1. Answer's bucket matches expected (or is in the
+  expected list / non-empty when expected is `None`).
+- C2. Any expected_dim string appears in answer's
+  dimensions (case-insensitive substring).
+- C3. Any rationale_keyword appears in answer's rationale.
+
+**Aggregate.** Sum.
+
+**Score range.** 0..3.
+
+**PASS threshold.** 2 (any 2 of 3 components correct).
+
+**Italian-strike band.** 2 ≤ score < 2.4 (the agent gets
+bucket OR dimension OR rationale right but not all three —
+classification is structurally accepted but qualitatively
+weak).
+
+**Harness note.** Per ADR 0015 dec 3, the Wiki PM agent's
+classification per fixture is captured in
+[`wiki-pm-answers.json`](wiki-pm-answers.json); the runner
+does mechanical substring scoring over that ledger. No
+free-text judgement leaks into the score.
 
 ## WP-08 When the Wiki PM is given a word-doubling line, then it classifies it as Air with the Reading-speed dimension
 
@@ -406,11 +425,30 @@ mentions "doubling" / "repetition" / "spoken-anchor".
 
 **Motivation reference.** Realises the *Outcome* "the role's classification of a Курпатов line matches the catalogued pattern (Air/Form/Substance with the right dimension)." Sub-Outcome of *Voice preservation* / *Reading speed* (whichever the case targets).
 
-**Score components.** PENDING (no mechanical reward function).
+**Score components** (each 1 pt):
 
-**Aggregate / Score range / PASS threshold / Italian-strike band.**
-PENDING (no mechanical reward function). Components require an LLM-as-judge harness: one component per assertion in the case (bucket match, dimension keyword present, rationale keyword present). Each would be 0/1 once wired. The case stays in the
-PENDING verdict until the harness lands.
+- C1. Answer's bucket matches expected (or is in the
+  expected list / non-empty when expected is `None`).
+- C2. Any expected_dim string appears in answer's
+  dimensions (case-insensitive substring).
+- C3. Any rationale_keyword appears in answer's rationale.
+
+**Aggregate.** Sum.
+
+**Score range.** 0..3.
+
+**PASS threshold.** 2 (any 2 of 3 components correct).
+
+**Italian-strike band.** 2 ≤ score < 2.4 (the agent gets
+bucket OR dimension OR rationale right but not all three —
+classification is structurally accepted but qualitatively
+weak).
+
+**Harness note.** Per ADR 0015 dec 3, the Wiki PM agent's
+classification per fixture is captured in
+[`wiki-pm-answers.json`](wiki-pm-answers.json); the runner
+does mechanical substring scoring over that ledger. No
+free-text judgement leaks into the score.
 
 ## WP-09 When the Wiki PM is given a self-Q&A scaffolding line, then it classifies it as Air with the Reading-speed dimension
 
@@ -438,11 +476,30 @@ claim".
 
 **Motivation reference.** Realises the *Outcome* "the role's classification of a Курпатов line matches the catalogued pattern (Air/Form/Substance with the right dimension)." Sub-Outcome of *Voice preservation* / *Reading speed* (whichever the case targets).
 
-**Score components.** PENDING (no mechanical reward function).
+**Score components** (each 1 pt):
 
-**Aggregate / Score range / PASS threshold / Italian-strike band.**
-PENDING (no mechanical reward function). Components require an LLM-as-judge harness: one component per assertion in the case (bucket match, dimension keyword present, rationale keyword present). Each would be 0/1 once wired. The case stays in the
-PENDING verdict until the harness lands.
+- C1. Answer's bucket matches expected (or is in the
+  expected list / non-empty when expected is `None`).
+- C2. Any expected_dim string appears in answer's
+  dimensions (case-insensitive substring).
+- C3. Any rationale_keyword appears in answer's rationale.
+
+**Aggregate.** Sum.
+
+**Score range.** 0..3.
+
+**PASS threshold.** 2 (any 2 of 3 components correct).
+
+**Italian-strike band.** 2 ≤ score < 2.4 (the agent gets
+bucket OR dimension OR rationale right but not all three —
+classification is structurally accepted but qualitatively
+weak).
+
+**Harness note.** Per ADR 0015 dec 3, the Wiki PM agent's
+classification per fixture is captured in
+[`wiki-pm-answers.json`](wiki-pm-answers.json); the runner
+does mechanical substring scoring over that ledger. No
+free-text judgement leaks into the score.
 
 ## WP-10 When the Wiki PM is given a definition-with-attribution line, then it classifies it as Substance with the Concept-graph-quality dimension
 
@@ -470,11 +527,30 @@ Bucket = Substance; dimension contains "Concept-graph quality"
 
 **Motivation reference.** Realises the *Outcome* "the role's classification of a Курпатов line matches the catalogued pattern (Air/Form/Substance with the right dimension)." Sub-Outcome of *Voice preservation* / *Reading speed* (whichever the case targets).
 
-**Score components.** PENDING (no mechanical reward function).
+**Score components** (each 1 pt):
 
-**Aggregate / Score range / PASS threshold / Italian-strike band.**
-PENDING (no mechanical reward function). Components require an LLM-as-judge harness: one component per assertion in the case (bucket match, dimension keyword present, rationale keyword present). Each would be 0/1 once wired. The case stays in the
-PENDING verdict until the harness lands.
+- C1. Answer's bucket matches expected (or is in the
+  expected list / non-empty when expected is `None`).
+- C2. Any expected_dim string appears in answer's
+  dimensions (case-insensitive substring).
+- C3. Any rationale_keyword appears in answer's rationale.
+
+**Aggregate.** Sum.
+
+**Score range.** 0..3.
+
+**PASS threshold.** 2 (any 2 of 3 components correct).
+
+**Italian-strike band.** 2 ≤ score < 2.4 (the agent gets
+bucket OR dimension OR rationale right but not all three —
+classification is structurally accepted but qualitatively
+weak).
+
+**Harness note.** Per ADR 0015 dec 3, the Wiki PM agent's
+classification per fixture is captured in
+[`wiki-pm-answers.json`](wiki-pm-answers.json); the runner
+does mechanical substring scoring over that ledger. No
+free-text judgement leaks into the score.
 
 ## WP-11 When the Wiki PM is given a branded-method self-citation, then it classifies it as Form (or Air on subsequent occurrences) with the Voice-preservation dimension
 
@@ -504,11 +580,30 @@ call. Dimension contains "Voice preservation"; rationale mentions
 
 **Motivation reference.** Realises the *Outcome* "the role's classification of a Курпатов line matches the catalogued pattern (Air/Form/Substance with the right dimension)." Sub-Outcome of *Voice preservation* / *Reading speed* (whichever the case targets).
 
-**Score components.** PENDING (no mechanical reward function).
+**Score components** (each 1 pt):
 
-**Aggregate / Score range / PASS threshold / Italian-strike band.**
-PENDING (no mechanical reward function). Components require an LLM-as-judge harness: one component per assertion in the case (bucket match, dimension keyword present, rationale keyword present). Each would be 0/1 once wired. The case stays in the
-PENDING verdict until the harness lands.
+- C1. Answer's bucket matches expected (or is in the
+  expected list / non-empty when expected is `None`).
+- C2. Any expected_dim string appears in answer's
+  dimensions (case-insensitive substring).
+- C3. Any rationale_keyword appears in answer's rationale.
+
+**Aggregate.** Sum.
+
+**Score range.** 0..3.
+
+**PASS threshold.** 2 (any 2 of 3 components correct).
+
+**Italian-strike band.** 2 ≤ score < 2.4 (the agent gets
+bucket OR dimension OR rationale right but not all three —
+classification is structurally accepted but qualitatively
+weak).
+
+**Harness note.** Per ADR 0015 dec 3, the Wiki PM agent's
+classification per fixture is captured in
+[`wiki-pm-answers.json`](wiki-pm-answers.json); the runner
+does mechanical substring scoring over that ledger. No
+free-text judgement leaks into the score.
 
 ## WP-12 When the Wiki PM is given a direct-address scenario from raw, then it classifies it as Form with the Voice-preservation dimension
 
@@ -536,11 +631,30 @@ rationale mentions "direct address" / "thought experiment" /
 
 **Motivation reference.** Realises the *Outcome* "the role's classification of a Курпатов line matches the catalogued pattern (Air/Form/Substance with the right dimension)." Sub-Outcome of *Voice preservation* / *Reading speed* (whichever the case targets).
 
-**Score components.** PENDING (no mechanical reward function).
+**Score components** (each 1 pt):
 
-**Aggregate / Score range / PASS threshold / Italian-strike band.**
-PENDING (no mechanical reward function). Components require an LLM-as-judge harness: one component per assertion in the case (bucket match, dimension keyword present, rationale keyword present). Each would be 0/1 once wired. The case stays in the
-PENDING verdict until the harness lands.
+- C1. Answer's bucket matches expected (or is in the
+  expected list / non-empty when expected is `None`).
+- C2. Any expected_dim string appears in answer's
+  dimensions (case-insensitive substring).
+- C3. Any rationale_keyword appears in answer's rationale.
+
+**Aggregate.** Sum.
+
+**Score range.** 0..3.
+
+**PASS threshold.** 2 (any 2 of 3 components correct).
+
+**Italian-strike band.** 2 ≤ score < 2.4 (the agent gets
+bucket OR dimension OR rationale right but not all three —
+classification is structurally accepted but qualitatively
+weak).
+
+**Harness note.** Per ADR 0015 dec 3, the Wiki PM agent's
+classification per fixture is captured in
+[`wiki-pm-answers.json`](wiki-pm-answers.json); the runner
+does mechanical substring scoring over that ledger. No
+free-text judgement leaks into the score.
 
 ## WP-13 When the Wiki PM is given a synonym-chain line, then it tags the chain with the Voice-preservation dimension
 
@@ -569,11 +683,30 @@ among the tags.
 
 **Motivation reference.** Realises the *Outcome* "the role's classification of a Курпатов line matches the catalogued pattern (Air/Form/Substance with the right dimension)." Sub-Outcome of *Voice preservation* / *Reading speed* (whichever the case targets).
 
-**Score components.** PENDING (no mechanical reward function).
+**Score components** (each 1 pt):
 
-**Aggregate / Score range / PASS threshold / Italian-strike band.**
-PENDING (no mechanical reward function). Components require an LLM-as-judge harness: one component per assertion in the case (bucket match, dimension keyword present, rationale keyword present). Each would be 0/1 once wired. The case stays in the
-PENDING verdict until the harness lands.
+- C1. Answer's bucket matches expected (or is in the
+  expected list / non-empty when expected is `None`).
+- C2. Any expected_dim string appears in answer's
+  dimensions (case-insensitive substring).
+- C3. Any rationale_keyword appears in answer's rationale.
+
+**Aggregate.** Sum.
+
+**Score range.** 0..3.
+
+**PASS threshold.** 2 (any 2 of 3 components correct).
+
+**Italian-strike band.** 2 ≤ score < 2.4 (the agent gets
+bucket OR dimension OR rationale right but not all three —
+classification is structurally accepted but qualitatively
+weak).
+
+**Harness note.** Per ADR 0015 dec 3, the Wiki PM agent's
+classification per fixture is captured in
+[`wiki-pm-answers.json`](wiki-pm-answers.json); the runner
+does mechanical substring scoring over that ledger. No
+free-text judgement leaks into the score.
 
 ## WP-14 When the Wiki PM is given a triple-trail filler, then it tags the line with the Reading-speed dimension
 
@@ -599,11 +732,30 @@ Dimension contains "Reading speed". Bucket = Air.
 
 **Motivation reference.** Realises the *Outcome* "the role's classification of a Курпатов line matches the catalogued pattern (Air/Form/Substance with the right dimension)." Sub-Outcome of *Voice preservation* / *Reading speed* (whichever the case targets).
 
-**Score components.** PENDING (no mechanical reward function).
+**Score components** (each 1 pt):
 
-**Aggregate / Score range / PASS threshold / Italian-strike band.**
-PENDING (no mechanical reward function). Components require an LLM-as-judge harness: one component per assertion in the case (bucket match, dimension keyword present, rationale keyword present). Each would be 0/1 once wired. The case stays in the
-PENDING verdict until the harness lands.
+- C1. Answer's bucket matches expected (or is in the
+  expected list / non-empty when expected is `None`).
+- C2. Any expected_dim string appears in answer's
+  dimensions (case-insensitive substring).
+- C3. Any rationale_keyword appears in answer's rationale.
+
+**Aggregate.** Sum.
+
+**Score range.** 0..3.
+
+**PASS threshold.** 2 (any 2 of 3 components correct).
+
+**Italian-strike band.** 2 ≤ score < 2.4 (the agent gets
+bucket OR dimension OR rationale right but not all three —
+classification is structurally accepted but qualitatively
+weak).
+
+**Harness note.** Per ADR 0015 dec 3, the Wiki PM agent's
+classification per fixture is captured in
+[`wiki-pm-answers.json`](wiki-pm-answers.json); the runner
+does mechanical substring scoring over that ledger. No
+free-text judgement leaks into the score.
 
 ## Verdict lifecycle
 
