@@ -11,9 +11,6 @@ across forge is the union of those.
 - `../phase-c-information-systems-architecture/application-architecture/rl-2048/docs/STATE-OF-THE-LAB.md`
   — TBD (when rl-2048 grows beyond the Jupyter sandbox).
 
-## ADRs
-
-
 ## Forward to Phase F
 
 The transition from gap → sequenced work happens in

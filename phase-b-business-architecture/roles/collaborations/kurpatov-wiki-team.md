@@ -12,9 +12,11 @@ This is the **product team** for the Kurpatov wiki — the
 broadest collaboration in forge today. Includes the
 [Architect of record](../architect.md) at the steering level
 and the four execution roles (Wiki PM / Auditor / Developer /
-DevOps). The narrower [Developer-DevOps K2](developer-devops-k2.md)
-collaboration is a **sub-collaboration** of this one — same
-ArchiMate type, smaller membership, scoped to K2 execution.
+DevOps). One collaboration is enough — when only a subset of
+roles is needed for a task (e.g. Developer + DevOps for a K2
+run), load this file and use the role decision-rights matrix
+below to scope the work; spawning sub-collaborations for every
+2-3 role pair is over-modelling.
 
 ## Composition
 
@@ -109,15 +111,6 @@ collaboration must have **all** of them available simultaneously:
   the runners' output).
 - The Wiki PM's LLM-as-judge harness for WP-07..14 (Wiki PM).
 
-## Sub-collaborations
-
-- [Developer-DevOps K2](developer-devops-k2.md) — narrower
-  collaboration scoped to K2 execution. When K2-Rn runs land,
-  the Developer-DevOps sub-collab is the executor; the broader
-  Kurpatov-wiki-team collab takes over for the architect-decision
-  + audit + Wiki PM follow-up steps. Both collabs share the
-  same role definitions; the only difference is membership.
-
 ## Filled by (today)
 
 A single Cowork session that has all the capabilities above.
@@ -168,16 +161,3 @@ decision point 1, applied to a collaboration:
 - **Function**: Operate-the-Kurpatov-wiki-product-team.
 - **Collaboration**: Kurpatov-wiki-team (this file).
 
-## When to spin a smaller sub-collaboration instead
-
-When a recurring task involves only 2-3 of the five roles, a
-sub-collaboration is cheaper to load. Example: K2 execution
-runs only need Developer + DevOps; loading the full
-Kurpatov-wiki-team collab pulls in the Architect / Wiki PM /
-Auditor activation files unnecessarily. Today's sub-collabs:
-
-- [Developer-DevOps K2](developer-devops-k2.md).
-
-When a sub-collaboration's scope grows to need a 4th role,
-promote it to a peer of Kurpatov-wiki-team OR fold it back into
-the parent.

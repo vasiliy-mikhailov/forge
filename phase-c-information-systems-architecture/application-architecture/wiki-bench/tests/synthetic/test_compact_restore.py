@@ -35,7 +35,7 @@ LAB = THIS_DIR.parents[1]
 FIXTURE = THIS_DIR / 'fixtures' / 'k2' / 'lecture_A_synth.json'
 
 sys.path.insert(0, str(LAB))
-from compact_restore.compact import compact_l1   # noqa: E402
+from compact_restore.compact import compact_l1, _normalise_raw  # noqa: E402
 from compact_restore.restore import restore_l1   # noqa: E402
 
 
@@ -59,6 +59,74 @@ def compacted(raw):
 
 def _norm(s):
     return unicodedata.normalize('NFC', s).lower()
+
+
+# ─────────────── Schema-normaliser tests (real wiki-ingest schema) ───────────────
+
+class TestNormaliseRaw:
+    def test_synth_schema_passthrough(self, raw):
+        """Synth fixture already has top-level 'transcript' — normaliser
+        is identity on the keys we care about."""
+        n = _normalise_raw(raw)
+        assert n['transcript'] == raw['transcript']
+        assert n['stem'] == raw['stem']
+
+    def test_real_schema_built_from_segments(self):
+        """Real wiki-ingest schema: {info, segments[]}, no top-level
+        transcript. The normaliser builds transcript by joining
+        segment text fields with .strip()."""
+        real_shape = {
+            'info': {
+                'language': 'ru',
+                'duration': 5318.6,
+                'source_path': '/workspace/sources/Психолог-консультант/000 Путеводитель по программе/000 Знакомство с программой «Психолог-консультант».mp4',
+                'extractor': 'whisper',
+            },
+            'segments': [
+                {'id': 0, 'start': 0.0, 'end': 4.5, 'text': ' Приветствую вас, дорогие друзья.'},
+                {'id': 1, 'start': 4.5, 'end': 9.0, 'text': ' Здесь, на этой лекции, я расскажу о том,'},
+                {'id': 2, 'start': 9.0, 'end': 14.0, 'text': ' что нужно для того, чтобы пройти обучение.'},
+            ],
+        }
+        n = _normalise_raw(real_shape)
+        assert n['transcript'].startswith('Приветствую вас')
+        # leading-space artefact stripped per segment
+        assert ' Приветствую' not in n['transcript']
+        assert n['transcript'].split()[0] == 'Приветствую'
+        # stem extracted from source_path basename
+        assert n['stem'].startswith('000 Знакомство')
+        # course / module from path parts
+        assert 'Психолог-консультант' in n['course']
+        assert '000 Путеводитель' in n['module']
+        # segments preserved
+        assert len(n['segments']) == 3
+
+    def test_real_schema_compact_l1_works(self):
+        """compact_l1 accepts the real schema directly via the
+        normaliser — no manual transcript-build required by callers."""
+        real_shape = {
+            'info': {'source_path': '/x/y/z/lecture.mp4'},
+            'segments': [
+                {'text': ' Стресс — это, эээ, естественная реакция.'},
+                {'text': ' и так далее, и так далее, и так далее.'},
+            ],
+        }
+        c = compact_l1(real_shape, variant='V4_aggressive')
+        assert 'compact_metadata' in c
+        # эээ should be removed; substance ('Стресс') survives
+        assert 'эээ' not in c['transcript'].lower()
+        assert 'стресс' in c['transcript'].lower()
+        # Triple-trail и-так-далее should be collapsed
+        assert 'и так далее, и так далее' not in c['transcript'].lower()
+
+    def test_real_schema_missing_info_does_not_crash(self):
+        """Defensive: a degenerate raw (no info key) still produces a
+        normalised dict with empty stem/course/module rather than
+        raising."""
+        n = _normalise_raw({'segments': [{'text': 'a'}]})
+        assert n['transcript'] == 'a'
+        assert n['stem'] == 'unknown'
+        assert n['course'] == ''
 
 
 # ─────────────── Air-strip tests (RED before implementation) ───────────────

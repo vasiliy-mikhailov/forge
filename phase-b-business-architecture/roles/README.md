@@ -33,8 +33,7 @@ Roles via a Collaboration. Today's collaborations:
 
 | Collaboration | File | Roles aggregated | Use |
 |---------------|------|------------------|-----|
-| Kurpatov-wiki-team | [`collaborations/kurpatov-wiki-team.md`](collaborations/kurpatov-wiki-team.md) | Architect + Wiki PM + Auditor + Developer + DevOps | Full product team for the Kurpatov wiki; load when an end-to-end cycle (R-NN identification → spec → ship → deploy → audit) needs to land in one Cowork pass. |
-| Developer-DevOps K2 | [`collaborations/developer-devops-k2.md`](collaborations/developer-devops-k2.md) | Developer + DevOps | Sub-collaboration of Kurpatov-wiki-team scoped to K2 execution (run a sweep against real lecture A; log to operations.md). Cheaper to load than the parent collab when only execution is needed. |
+| Kurpatov-wiki-team | [`collaborations/kurpatov-wiki-team.md`](collaborations/kurpatov-wiki-team.md) | Architect + Wiki PM + Auditor + Developer + DevOps | Full product team for the Kurpatov wiki; load when any cycle that may need the team's collective behaviour starts. The role decision-rights matrix scopes any subset of roles for a given task — no separate sub-collaboration needed. |
 
 ## When to add a new role file
 
