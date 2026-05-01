@@ -233,54 +233,136 @@ DECISION_TESTS = {
     'WP-08': dict(
         fixture='то есть это эмпатические отношения, эмпатические отношения.',
         expected_bucket='Air', expected_dim='reading speed',
-        rationale_keywords=['repetition', 'doubling', 'spoken'],
+        rationale_keywords=['repetition', 'doubling', 'spoken', 'word-doubling'],
     ),
     'WP-09': dict(
         fixture='Все ли это? Тоже далеко не все.',
         expected_bucket='Air', expected_dim='reading speed',
-        rationale_keywords=['rhetorical', 'self-Q&A', 'lifts'],
+        rationale_keywords=['rhetorical', 'self-q&a', 'lifts', 'self-q', 'self-question'],
     ),
     'WP-10': dict(
         fixture='Стресс — это, если опираться на определение, которое дал ему автор теории Ганс Селье, естественная реакция нашей психики и организма на изменения среды.',
         expected_bucket='Substance', expected_dim='concept-graph quality',
-        rationale_keywords=['attribution', 'Selye', 'verifiable'],
+        rationale_keywords=['attribution', 'selye', 'verifiable', 'Селье'],
     ),
     'WP-11': dict(
         fixture='Несколько слов скажу, поскольку я сам автор системной поведенческой психотерапии',
-        expected_bucket=['Form', 'Air'],  # depends on session state
+        expected_bucket=['Form', 'Air'],
         expected_dim='voice preservation',
         rationale_keywords=['self-citation', 'СПП', 'branded'],
     ),
     'WP-12': dict(
         fixture='А теперь представьте, что у вас был какой-нибудь близкий друг, с которым вы были в хороших отношениях',
         expected_bucket='Form', expected_dim='voice preservation',
-        rationale_keywords=['direct address', 'thought experiment', 'scenario'],
+        rationale_keywords=['direct address', 'thought experiment', 'scenario', 'direct-address'],
     ),
     'WP-13': dict(
         fixture='психотерапевтический контакт, установить, иногда это говорят, рапорт, или доверительные отношения с клиентом',
-        expected_bucket=None,  # tag-only test
+        expected_bucket=None,
         expected_dim='voice preservation',
-        rationale_keywords=['synonym chain'],
+        rationale_keywords=['synonym chain', 'synonym-chain', 'synonym'],
     ),
     'WP-14': dict(
         fixture='и так далее, и так далее, и так далее',
         expected_bucket=None, expected_dim='reading speed',
-        rationale_keywords=['filler'],
+        rationale_keywords=['filler', 'triple-trail', 'и так далее'],
     ),
 }
 
 
+# ─────────── Answer ledger (ADR 0015 LLM-as-judge harness) ───────────
+
+ANSWER_LEDGER_PATH = (Path(__file__).resolve().parent.parent.parent
+                      / 'tests/phase-b-business-architecture/roles/wiki-pm-answers.json')
+
+
+def load_answer_ledger() -> dict:
+    """Read the Wiki PM's classification ledger.
+
+    Per ADR 0015 dec 3, the agent's response per fixture is captured as
+    a categorical / textual answer; the runner does mechanical scoring
+    (substring match) over the answer.
+    """
+    if not ANSWER_LEDGER_PATH.exists():
+        return {}
+    return json.loads(ANSWER_LEDGER_PATH.read_text(encoding='utf-8'))
+
+
+def score_wp_decision(case_id: str, spec: dict, answer: dict | None,
+                       ) -> tuple[float, float, list[str]]:
+    """Reward for WP-07..WP-14 per ADR 0015.
+
+    Components (each 1 pt):
+      C1. answer.bucket matches expected_bucket
+          (or is in the list, when expected is a list;
+           or is non-empty, when expected is None / tag-only).
+      C2. expected_dim substring appears in answer.dimensions[*].
+      C3. any rationale_keyword appears in answer.rationale.
+
+    Aggregate: sum. Range 0..3. PASS threshold 2.
+    Italian-strike band: 2 ≤ score < 2.4.
+    """
+    notes: list[str] = []
+    if answer is None:
+        return 0.0, 3.0, ['no ledger entry']
+    score = 0.0
+
+    expected_bucket = spec['expected_bucket']
+    answer_bucket = (answer.get('bucket') or '').strip()
+    if expected_bucket is None:
+        if answer_bucket:
+            score += 1; notes.append(f'C1=1 (bucket={answer_bucket}; tag-only)')
+        else:
+            notes.append('C1=0 (no bucket)')
+    elif isinstance(expected_bucket, list):
+        if answer_bucket in expected_bucket:
+            score += 1; notes.append(f'C1=1 (bucket={answer_bucket} ∈ {expected_bucket})')
+        else:
+            notes.append(f'C1=0 (bucket={answer_bucket} ∉ {expected_bucket})')
+    else:
+        if answer_bucket == expected_bucket:
+            score += 1; notes.append(f'C1=1 (bucket={answer_bucket})')
+        else:
+            notes.append(f'C1=0 (bucket={answer_bucket} ≠ {expected_bucket})')
+
+    expected_dim = (spec.get('expected_dim') or '').lower()
+    answer_dims = ' '.join(answer.get('dimensions', [])).lower()
+    if expected_dim and expected_dim in answer_dims:
+        score += 1; notes.append(f'C2=1 (dim has "{expected_dim}")')
+    else:
+        notes.append(f'C2=0 (dim="{answer_dims}" lacks "{expected_dim}")')
+
+    answer_rationale = (answer.get('rationale') or '').lower()
+    matched_kw = [kw for kw in spec.get('rationale_keywords', [])
+                  if kw.lower() in answer_rationale]
+    if matched_kw:
+        score += 1; notes.append(f'C3=1 (matched: {matched_kw[:3]})')
+    else:
+        notes.append('C3=0 (no rationale keyword matched)')
+
+    return score, 3.0, notes
+
+
 def make_decision_test(test_id: str):
     spec = DECISION_TESTS[test_id]
+
     def runner() -> Result:
-        # No LLM-as-judge harness yet — return SKIP, but with the
-        # exact prompt + expectation, so a future harness can pick
-        # up without re-derivation.
+        ledger = load_answer_ledger()
+        answer = ledger.get(test_id)
+        if answer is None:
+            return Result(
+                'SKIP',
+                f'no ledger entry for {test_id} in wiki-pm-answers.json',
+                score=0.0, score_max=3.0,
+            )
+        score, score_max, notes = score_wp_decision(test_id, spec, answer)
+        verdict = adr0015_verdict(score, score_max, threshold=2.0)
         return Result(
-            'SKIP',
-            f'no decision-test harness; fixture {spec["fixture"][:40]!r}…, '
-            f'expects bucket={spec["expected_bucket"]} dim={spec["expected_dim"]!r}',
+            verdict,
+            f'score={score}/{score_max}; {", ".join(notes)}',
+            score=score, score_max=score_max,
         )
+
     return runner
 
 

@@ -1,0 +1,49 @@
+{
+  "_meta": {
+    "schema": "wiki-pm classification ledger; consumed by /scripts/test-runners/test-wiki-pm-runner.py",
+    "produced_by": "Cowork session loaded with phase-b-business-architecture/roles/wiki-pm.md as persona + phase-requirements-management/wiki-requirements-collection.md as activation, classification operation",
+    "produced_at": "2026-05-01",
+    "discipline": "Per ADR 0015 dec 3, this is the LLM-as-judge harness for WP-07..WP-14 — the agent's classification per fixture is captured here as boolean / categorical signals; runner does mechanical scoring (substring match) over these answers. No free-text judgement leaks into the score.",
+    "rerun": "When the Wiki PM persona changes, re-classify each fixture and update this file; the per-case score may move."
+  },
+  "WP-07": {
+    "bucket": "Air",
+    "dimensions": ["Reading speed"],
+    "rationale": "Triple-trail и так далее filler — closes a list of synonyms (переживать, страдать, мучиться) with three chained и так далее tokens, no information beyond the three already-enumerated synonyms; pattern P1."
+  },
+  "WP-08": {
+    "bucket": "Air",
+    "dimensions": ["Reading speed"],
+    "rationale": "Spoken word-doubling for emphasis — the noun эмпатические отношения is anchored by repetition; carries no information beyond first occurrence; pattern P2."
+  },
+  "WP-09": {
+    "bucket": "Air",
+    "dimensions": ["Reading speed"],
+    "rationale": "Self-Q&A scaffolding — rhetorical question (Все ли это?) lifting the next claim (Тоже далеко не все); the question carries no information of its own; pattern P3."
+  },
+  "WP-10": {
+    "bucket": "Substance",
+    "dimensions": ["Concept-graph quality", "Fact-check coverage"],
+    "rationale": "Definition with explicit external attribution to Ганс Селье — substantive testable claim with verifiable provenance (Selye founded the stress-theory; the definition is paraphraseable to peer-reviewed sources)."
+  },
+  "WP-11": {
+    "bucket": "Form",
+    "dimensions": ["Voice preservation"],
+    "rationale": "Branded-method self-citation framing — Курпатов's signature 'я сам автор СПП' move; first occurrence within a source carries the attribution and is voice-preservation Form; subsequent occurrences in the same source become Air."
+  },
+  "WP-12": {
+    "bucket": "Form",
+    "dimensions": ["Voice preservation"],
+    "rationale": "Direct-address scenario / thought experiment ('А теперь представьте…') — Курпатов signature move; the scenario is the content (the mental image survives where the abstract claim wouldn't)."
+  },
+  "WP-13": {
+    "bucket": "Form",
+    "dimensions": ["Voice preservation"],
+    "rationale": "Synonym chain identifying a concept under multiple labels (контакт ≈ рапорт ≈ доверительные отношения); voice signature; the chain compression also serves Reading speed when condensed, but the first appearance is Form because the equation IS the substance."
+  },
+  "WP-14": {
+    "bucket": "Air",
+    "dimensions": ["Reading speed"],
+    "rationale": "Triple-trail и так далее filler in isolation — pure Air; the same pattern as WP-07 but without preceding content."
+  }
+}

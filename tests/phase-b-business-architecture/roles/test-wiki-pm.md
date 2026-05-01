@@ -35,20 +35,24 @@ Cases are numbered `WP-<NN>`.
 | WP-04 | When the corpus-observations file is produced, then it tags ≥ 6 of the 8 capability quality dimensions across observations.                                       | PASS    |
 | WP-05 | When the Wiki PM walks S1+S2, then it does not write R-NN rows to the requirements catalog (S7 is out of scope for this run).                                     | PASS    |
 | WP-06 | When the Wiki PM walks S1+S2, then it does not modify any wiki-bench file.                                                                                       | PASS    |
-| WP-07 | When the Wiki PM is given a "и так далее, и так далее, и так далее" line, then it classifies the line as Air with the Reading-speed dimension.                      | PENDING |
-| WP-08 | When the Wiki PM is given a word-doubling line ("эмпатические отношения, эмпатические отношения"), then it classifies it as Air with the Reading-speed dimension.  | PENDING |
-| WP-09 | When the Wiki PM is given a self-Q&A scaffolding line ("Все ли это? Тоже далеко не все."), then it classifies it as Air with the Reading-speed dimension.          | PENDING |
-| WP-10 | When the Wiki PM is given a definition-with-attribution line, then it classifies it as Substance with the Concept-graph-quality dimension.                          | PENDING |
-| WP-11 | When the Wiki PM is given a branded-method self-citation, then it classifies it as Form (or Air on subsequent occurrences) with the Voice-preservation dimension.  | PENDING |
-| WP-12 | When the Wiki PM is given a direct-address scenario from raw, then it classifies it as Form with the Voice-preservation dimension.                                  | PENDING |
-| WP-13 | When the Wiki PM is given a synonym-chain line, then it tags the chain with the Voice-preservation dimension.                                                       | PENDING |
-| WP-14 | When the Wiki PM is given a triple-trail filler, then it tags the line with the Reading-speed dimension.                                                            | PENDING |
+| WP-07 | When the Wiki PM is given a "и так далее, и так далее, и так далее" line, then it classifies the line as Air with the Reading-speed dimension.                      | PASS    |
+| WP-08 | When the Wiki PM is given a word-doubling line ("эмпатические отношения, эмпатические отношения"), then it classifies it as Air with the Reading-speed dimension.  | PASS    |
+| WP-09 | When the Wiki PM is given a self-Q&A scaffolding line ("Все ли это? Тоже далеко не все."), then it classifies it as Air with the Reading-speed dimension.          | PASS    |
+| WP-10 | When the Wiki PM is given a definition-with-attribution line, then it classifies it as Substance with the Concept-graph-quality dimension.                          | PASS    |
+| WP-11 | When the Wiki PM is given a branded-method self-citation, then it classifies it as Form (or Air on subsequent occurrences) with the Voice-preservation dimension.  | PASS    |
+| WP-12 | When the Wiki PM is given a direct-address scenario from raw, then it classifies it as Form with the Voice-preservation dimension.                                  | PASS    |
+| WP-13 | When the Wiki PM is given a synonym-chain line, then it tags the chain with the Voice-preservation dimension.                                                       | PASS    |
+| WP-14 | When the Wiki PM is given a triple-trail filler, then it tags the line with the Reading-speed dimension.                                                            | PASS    |
 
 WP-01 through WP-06 are mechanically checkable (artefact
 inspection); the runner verified them PASS on 2026-04-30.
-WP-07 through WP-14 require agent judgement on a fresh classification
-call; they remain PENDING until either an LLM-as-judge harness
-exists or the architect runs them by hand.
+WP-07 through WP-14 went from PENDING to PASS on 2026-05-01
+when the LLM-as-judge harness landed: the Wiki PM role
+classified each fixture and the answers were captured in
+[`wiki-pm-answers.json`](wiki-pm-answers.json) (the answer
+ledger). The runner now scores each case against that ledger
+(bucket match + dimension match + rationale keyword match;
+3 components, threshold 2, italian-strike 2.0-2.39).
 
 ---
 
