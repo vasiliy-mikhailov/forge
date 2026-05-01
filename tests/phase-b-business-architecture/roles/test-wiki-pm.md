@@ -1,345 +1,453 @@
-# test-wiki-pm — unit tests for the Wiki PM role
+# test-wiki-pm — agentic behaviour tests for the Wiki PM role
 
-Pass/fail spec for the
+Behavioural specification for the
 [Wiki PM role](../../../phase-b-business-architecture/roles/wiki-pm.md).
-File path mirrors the source path of the role under
-[ADR 0013](../../../phase-preliminary/adr/0013-md-as-source-code-tdd.md);
-prefix `test-` per forge's unit-test convention.
+Path mirrors the source path of the role (per
+[ADR 0013](../../../phase-preliminary/adr/0013-md-as-source-code-tdd.md)).
 
-## How tests are shaped here
+## What an agentic behaviour test is
 
-Two kinds of test, both arrange / act / assert:
+A test case states **when [condition] then [expected behaviour]**.
+The test is the spec — not code. A separate *runner* (manual,
+scripted, or LLM-as-judge) executes the case by setting up the
+agent, sending the input, and comparing the agent's real output
+against the expected result. The runner is a derived mechanism
+and lives outside `tests/` (today: `scripts/test-runners/`).
 
-- **Inspection tests** read an artefact the role has produced
-  (e.g. `corpus-observations.md`) and check ONE property of it.
-  Arrange = read the artefact. Act = parse the property under
-  test. Assert = compare against expectation. One property per
-  test. No file writes, no side effects.
+Each case has four sections:
 
-- **Decision tests** check ONE specific decision the role makes
-  on ONE small input. Arrange = a single quote / sentence as a
-  fixture string. Act = the role classifies / buckets / tags it.
-  Assert = the output matches the expected bucket and capability
-  dimension. Fixture lives inline; no fixture files.
+- **Set expected result** — what the agent should produce.
+  Defined first.
+- **Arrange** — bake in the input data; arrange the agent.
+- **Act** — send the input; gather the real result.
+- **Assert** — `expected = real`. Verdict: `PASS` / `FAIL` /
+  `PENDING`.
 
-Each test name describes its assertion (`test_<what>_<expected>`).
-Each test has a `## Arrange`, `## Act`, `## Assert`, `## Status`
-section — exactly four headers per test, nothing else.
+Cases are numbered `WP-<NN>`.
 
-`Status` is one of `GREEN` / `RED` / `SKIPPED`. SKIPPED is
-distinct from GREEN: it means the test's pre-condition is not
-met (an artefact doesn't exist, an LLM-as-judge harness isn't
-available, etc.) and the test was *not exercised*. A GREEN test
-was exercised and passed; a SKIPPED test was not exercised at
-all.
+## Cases
 
-## Coverage targets
+| ID    | When … then …                                                                                                                                                  | Verdict |
+|-------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|---------|
+| WP-01 | When the Wiki PM walks S1+S2, then it produces a corpus-observations file at the canonical path.                                                                | PASS    |
+| WP-02 | When the corpus-observations file is produced, then it has Substance / Form / Air buckets each with ≥ 3 observations.                                            | PASS    |
+| WP-03 | When the corpus-observations file is produced, then every block-quoted line is a verbatim substring of one of the sampled raw transcripts.                        | PASS    |
+| WP-04 | When the corpus-observations file is produced, then it tags ≥ 6 of the 8 capability quality dimensions across observations.                                       | PASS    |
+| WP-05 | When the Wiki PM walks S1+S2, then it does not write R-NN rows to the requirements catalog (S7 is out of scope for this run).                                     | PASS    |
+| WP-06 | When the Wiki PM walks S1+S2, then it does not modify any wiki-bench file.                                                                                       | PASS    |
+| WP-07 | When the Wiki PM is given a "и так далее, и так далее, и так далее" line, then it classifies the line as Air with the Reading-speed dimension.                      | PENDING |
+| WP-08 | When the Wiki PM is given a word-doubling line ("эмпатические отношения, эмпатические отношения"), then it classifies it as Air with the Reading-speed dimension.  | PENDING |
+| WP-09 | When the Wiki PM is given a self-Q&A scaffolding line ("Все ли это? Тоже далеко не все."), then it classifies it as Air with the Reading-speed dimension.          | PENDING |
+| WP-10 | When the Wiki PM is given a definition-with-attribution line, then it classifies it as Substance with the Concept-graph-quality dimension.                          | PENDING |
+| WP-11 | When the Wiki PM is given a branded-method self-citation, then it classifies it as Form (or Air on subsequent occurrences) with the Voice-preservation dimension.  | PENDING |
+| WP-12 | When the Wiki PM is given a direct-address scenario from raw, then it classifies it as Form with the Voice-preservation dimension.                                  | PENDING |
+| WP-13 | When the Wiki PM is given a synonym-chain line, then it tags the chain with the Voice-preservation dimension.                                                       | PENDING |
+| WP-14 | When the Wiki PM is given a triple-trail filler, then it tags the line with the Reading-speed dimension.                                                            | PENDING |
 
-| Persona facet                                           | Tests              |
-|---------------------------------------------------------|--------------------|
-| Output: corpus-observations.md exists with body         | I-01, I-02         |
-| Output: each bucket has ≥ 3 observations                | I-03, I-04, I-05   |
-| Output: every quote in observations is verbatim         | I-06               |
-| Output: ≥ 6 of 8 capability dimensions tagged           | I-07               |
-| Output: no R-NN rows leaked into catalog during S1+S2   | I-08               |
-| Output: no wiki-bench / phase-c files modified          | I-09               |
-| Decision: classify triple-trail filler                  | D-01               |
-| Decision: classify word-doubling                        | D-02               |
-| Decision: classify self-Q&A scaffolding                 | D-03               |
-| Decision: classify definition-with-attribution          | D-04               |
-| Decision: classify branded-method self-citation         | D-05               |
-| Decision: classify direct-address scenario              | D-06               |
-| Decision: tag voice-pattern with Voice preservation     | D-07               |
-| Decision: tag filler with Reading speed                 | D-08               |
-
-## Test cases
+WP-01 through WP-06 are mechanically checkable (artefact
+inspection); the runner verified them PASS on 2026-04-30.
+WP-07 through WP-14 require agent judgement on a fresh classification
+call; they remain PENDING until either an LLM-as-judge harness
+exists or the architect runs them by hand.
 
 ---
 
-### I-01 test_corpus_observations_file_exists
+## WP-01 When the Wiki PM walks S1+S2, then it produces a corpus-observations file at the canonical path
 
-**Arrange.** Path
-`phase-b-business-architecture/products/kurpatov-wiki/corpus-observations.md`
-(forge-relative). Pre-condition: role has been run S1+S2.
+### Set expected result
 
-**Act.** Read file via verifier (`pathlib.Path.exists()`).
+A file exists at
+`phase-b-business-architecture/products/kurpatov-wiki/corpus-observations.md`,
+non-empty (≥ 30 non-blank lines).
 
-**Assert.** File exists.
+### Arrange
 
-**Status.** `GREEN`.
+- **Input data.** A pre-selected sample of 5 raw transcripts
+  under `kurpatov-wiki-raw/data/Психолог-консультант/` (one
+  per format: 88-min spoken intro; written конспект of same;
+  module-005 spoken intro; module-005 lecture #1; глубинная
+  intro).
+- **Agent.** Cowork session loaded with
+  [`wiki-pm.md`](../../../phase-b-business-architecture/roles/wiki-pm.md)
+  as persona and
+  [`wiki-requirements-collection.md`](../../../phase-requirements-management/wiki-requirements-collection.md)
+  as activation; only Steps S1 and S2 enabled (S3+ out of scope).
 
----
+### Act
 
-### I-02 test_corpus_observations_file_nonempty
+- Hand the agent the sample raws.
+- The agent walks S1 (sample notes) then S2 (bucketed observations).
+- The agent writes output to the canonical corpus-observations
+  path.
 
-**Arrange.** Same file as I-01. Pre-condition: I-01 GREEN.
+### Assert
 
-**Act.** Count non-blank lines.
-
-**Assert.** ≥ 30 non-blank lines.
-
-**Status.** `GREEN`.
-
----
-
-### I-03 test_substance_bucket_has_min_three_observations
-
-**Arrange.** `corpus-observations.md`. Pre-condition: I-01 GREEN.
-
-**Act.** Extract `## Substance` section; count `**OBS-...**`
-observation markers inside.
-
-**Assert.** Count ≥ 3.
-
-**Status.** `GREEN`.
+- **Expected.** File exists at the path with ≥ 30 non-blank lines.
+- **Real.** File presence + line count.
+- **Verdict.** PASS if both conditions met.
 
 ---
 
-### I-04 test_form_bucket_has_min_three_observations
+## WP-02 When the corpus-observations file is produced, then it has Substance / Form / Air buckets each with ≥ 3 observations
 
-**Arrange.** Same file. Pre-condition: I-01 GREEN.
+### Set expected result
 
-**Act.** Extract `## Form` section; count observation markers.
+The corpus-observations.md file contains three Markdown level-2
+headers — `## Substance`, `## Form`, `## Air` — and each section
+has at least 3 observations marked `**OBS-<raw>-NNN**`.
 
-**Assert.** Count ≥ 3.
+### Arrange
 
-**Status.** `GREEN`.
+- **Input data.** The corpus-observations.md from WP-01.
+- **Agent.** Already produced the file (WP-01 PASS).
 
----
+### Act
 
-### I-05 test_air_bucket_has_min_three_observations
+- Read the file.
+- Find each bucket header.
+- Count `**OBS-` markers within each bucket.
 
-**Arrange.** Same file. Pre-condition: I-01 GREEN.
+### Assert
 
-**Act.** Extract `## Air` section; count observation markers.
-
-**Assert.** Count ≥ 3.
-
-**Status.** `GREEN`.
-
----
-
-### I-06 test_every_quoted_line_is_verbatim_substring_of_a_raw
-
-**Arrange.** `corpus-observations.md` and the 5 sampled
-`raw.json` files under
-`kurpatov-wiki-raw/data/Психолог-консультант/`. Whitespace
-normalised, NFC. Pre-condition: I-01 GREEN.
-
-**Act.** For each `> ` block-quoted line in the observations
-file (length ≥ 8 chars), search for it as a substring of the
-concatenated raw transcripts.
-
-**Assert.** Every quote is found.
-
-**Status.** `GREEN`.
+- **Expected.** Three buckets present, each with ≥ 3 observations.
+- **Real.** Header count + per-bucket observation count.
+- **Verdict.** PASS if all conditions met.
 
 ---
 
-### I-07 test_capability_dimension_coverage_at_least_six
+## WP-03 When the corpus-observations file is produced, then every block-quoted line is a verbatim substring of one of the sampled raw transcripts
 
-**Arrange.** Eight-item allow-list from
-[`develop-wiki-product-line.md`](../../../phase-b-business-architecture/capabilities/develop-wiki-product-line.md):
-*Voice preservation · Reading speed · Dedup correctness ·
-Fact-check coverage · Concept-graph quality · Reproducibility ·
-Transcription accuracy · Requirement traceability*. Pre-condition:
-I-01 GREEN.
+### Set expected result
 
-**Act.** Extract `[<dimension>]` tags from every observation
-block in `corpus-observations.md`; intersect with the
-allow-list.
+For every block-quoted line (`> …`) in corpus-observations.md
+where the quote text is ≥ 8 characters, the quote is found as a
+substring of the concatenated whisper-segment text of one of the
+sampled raws (after NFC normalisation and whitespace
+collapsing).
 
-**Assert.** Distinct dimensions covered ≥ 6.
+### Arrange
 
-**Status.** `GREEN`.
+- **Input data.** The corpus-observations.md + the 5 sampled
+  raw transcripts.
+- **Agent.** Already produced the file (WP-01 PASS).
 
----
+### Act
 
-### I-08 test_no_R_NN_rows_emitted_during_S1_S2
+- Extract every block-quoted line ≥ 8 chars.
+- For each, search across the concatenated raw transcripts.
 
-**Arrange.** `phase-requirements-management/catalog.md`. The
-role's S1+S2 phases must not write to it (S7 is the only step
-that emits rows). Pre-condition: I-01 GREEN.
+### Assert
 
-**Act.** `git diff --name-only HEAD --
-phase-requirements-management/catalog.md`.
-
-**Assert.** Diff is empty.
-
-**Status.** `GREEN`.
+- **Expected.** Every quote found verbatim.
+- **Real.** Per-quote substring search.
+- **Verdict.** PASS if zero invented quotes.
 
 ---
 
-### I-09 test_no_wiki_bench_files_modified
+## WP-04 When the corpus-observations file is produced, then it tags ≥ 6 of the 8 capability quality dimensions across observations
 
-**Arrange.**
-`phase-c-information-systems-architecture/application-architecture/wiki-bench/`.
-Wiki PM never edits the lab. Pre-condition: I-01 GREEN.
+### Set expected result
 
-**Act.** `git diff --name-only HEAD --` against that subtree.
+Across the observation tags `[Dimension]` in corpus-observations.md,
+at least 6 of the 8 distinct quality dimensions of the
+[Develop wiki product line capability](../../../phase-b-business-architecture/capabilities/develop-wiki-product-line.md)
+appear.
 
-**Assert.** Diff is empty.
+### Arrange
 
-**Status.** `GREEN`.
+- **Input data.** The corpus-observations.md.
+- **Agent.** Already produced the file (WP-01 PASS).
 
----
+### Act
 
-### D-01 test_classify_triple_trail_filler_as_air
+- Extract every `[Dimension]` tag from observation blocks.
+- Intersect with the 8-item allow-list (Voice preservation,
+  Reading speed, Dedup correctness, Fact-check coverage,
+  Concept-graph quality, Reproducibility, Transcription
+  accuracy, Requirement traceability).
 
-**Arrange.** Fixture quote (verbatim from raw A):
+### Assert
 
-> переживать, страдать, мучиться и так далее, и так далее, и так далее.
-
-**Act.** Ask the Wiki PM role: *"What bucket does this line
-belong in (Substance / Form / Air), and why?"*
-
-**Assert.**
-- Bucket = `Air`.
-- Rationale mentions the trailing `и так далее` chain or "filler" or "triple-trail".
-- Tagged dimension contains `Reading speed`.
-
-**Status.** `RED` — decision tests are not yet wired to a
-verifier (no LLM-as-judge harness today). The architect can
-run them by hand against a Wiki-PM-loaded session; result lands
-here as a `Status` change in a commit.
+- **Expected.** ≥ 6 distinct dimensions covered.
+- **Real.** Distinct-dimension count.
+- **Verdict.** PASS if ≥ 6.
 
 ---
 
-### D-02 test_classify_word_doubling_as_air
+## WP-05 When the Wiki PM walks S1+S2, then it does not write R-NN rows to the requirements catalog
 
-**Arrange.** Fixture quote (verbatim from raw A):
+### Set expected result
 
-> то есть это эмпатические отношения, эмпатические отношения.
+`phase-requirements-management/catalog.md` is unchanged from the
+state before the agent's S1+S2 run (S7 — emit R-NN — is out of
+scope for this case).
 
-**Act.** Same prompt as D-01.
+### Arrange
 
-**Assert.**
-- Bucket = `Air`.
-- Rationale mentions repetition / doubling / spoken-anchor.
-- Tagged dimension contains `Reading speed`.
+- **Input data.** Pre-run catalog.md state.
+- **Agent.** Same as WP-01 (S1+S2 only enabled).
 
-**Status.** `RED` (no decision-test harness yet).
+### Act
 
----
+- Diff catalog.md vs pre-run state.
 
-### D-03 test_classify_self_question_answer_scaffolding_as_air
+### Assert
 
-**Arrange.** Fixture quote (verbatim from raw A):
-
-> Все ли это? Тоже далеко не все.
-
-**Act.** Same prompt.
-
-**Assert.**
-- Bucket = `Air`.
-- Rationale mentions "self-Q&A" or "rhetorical question" or
-  "lifts the next claim".
-- Tagged dimension contains `Reading speed`.
-
-**Status.** `RED`.
+- **Expected.** No diff.
+- **Real.** Diff result.
+- **Verdict.** PASS if no changes.
 
 ---
 
-### D-04 test_classify_definition_with_attribution_as_substance
+## WP-06 When the Wiki PM walks S1+S2, then it does not modify any wiki-bench file
 
-**Arrange.** Fixture quote (verbatim from raw A):
+### Set expected result
 
-> Стресс — это, если опираться на определение, которое дал ему автор теории Ганс Селье, естественная реакция нашей психики и организма на изменения среды.
+No file under
+`phase-c-information-systems-architecture/application-architecture/wiki-bench/`
+is modified by the agent.
 
-**Act.** Same prompt.
+### Arrange
 
-**Assert.**
-- Bucket = `Substance`.
-- Rationale mentions verifiable claim / attribution / Selye.
-- Tagged dimension contains `Concept-graph quality` (or
-  `Fact-check coverage`).
+- **Input data.** Pre-run wiki-bench tree state.
+- **Agent.** Same as WP-01.
 
-**Status.** `RED`.
+### Act
 
----
+- Diff the wiki-bench subtree vs pre-run state.
 
-### D-05 test_classify_branded_method_self_citation_as_form
+### Assert
 
-**Arrange.** Fixture quote (verbatim from raw A):
-
-> Несколько слов скажу, поскольку я сам автор системной поведенческой психотерапии
-
-**Act.** Same prompt.
-
-**Assert.**
-- Bucket = `Form` (the *first* such citation per source) OR
-  `Air` (subsequent occurrences within the same source). Pass
-  on either, because the bucket depends on whether the role
-  has seen the citation before in this session — Decision tests
-  are stateless on first run.
-- Rationale mentions "self-citation" or "СПП authorship" or
-  "branded method".
-- Tagged dimension contains `Voice preservation`.
-
-**Status.** `RED`.
+- **Expected.** No diff.
+- **Real.** Diff result.
+- **Verdict.** PASS if no changes.
 
 ---
 
-### D-06 test_classify_direct_address_scenario_as_form
+## WP-07 When the Wiki PM is given a triple-trail filler, then it classifies the line as Air with the Reading-speed dimension
 
-**Arrange.** Fixture quote (verbatim from raw D):
+### Set expected result
 
-> А теперь представьте, что у вас был какой-нибудь близкий друг, с которым вы были в хороших отношениях
+The agent's classification of the input contains:
 
-**Act.** Same prompt.
+- `bucket = Air`,
+- `dimension contains Reading speed`,
+- `rationale mentions the trailing "и так далее" chain or the term "filler" / "tail"`.
 
-**Assert.**
-- Bucket = `Form`.
-- Rationale mentions "direct address" or "thought experiment"
-  or "scenario".
-- Tagged dimension contains `Voice preservation`.
+### Arrange
 
-**Status.** `RED`.
+- **Input data.**
 
----
+  > переживать, страдать, мучиться и так далее, и так далее, и так далее.
 
-### D-07 test_voice_pattern_tagged_with_voice_preservation
+  (Verbatim from `kurpatov-wiki-raw/.../000 Знакомство.../raw.json`.)
 
-**Arrange.** Fixture quote (verbatim from raw A):
+- **Agent.** Cowork session loaded with `wiki-pm.md` as persona
+  and `wiki-requirements-collection.md` as activation; the
+  classification operation is exposed (the agent is asked
+  "what bucket does this line belong in").
 
-> психотерапевтический контакт, установить, иногда это говорят, рапорт, или доверительные отношения с клиентом
+### Act
 
-**Act.** Ask the Wiki PM role: *"What capability dimension
-does this line evidence?"*
+- Send the input. Ask: "What bucket does this sentence belong
+  in (Substance / Form / Air), and which capability dimension
+  does it relate to? One-paragraph rationale."
+- Capture the agent's response.
 
-**Assert.** Output contains `Voice preservation` (synonym chain
-is a voice signature; chain compression also serves Reading
-speed, so output may also include that — pass requires Voice
-preservation be among the tags).
+### Assert
 
-**Status.** `RED`.
-
----
-
-### D-08 test_filler_pattern_tagged_with_reading_speed
-
-**Arrange.** Fixture quote (verbatim from raw A):
-
-> и так далее, и так далее, и так далее
-
-**Act.** Same prompt as D-07.
-
-**Assert.** Output contains `Reading speed`.
-
-**Status.** `RED`.
+- **Expected.** Bucket = Air; dimension contains "Reading
+  speed"; rationale references the filler chain.
+- **Real.** Parsed agent response.
+- **Verdict.** PASS if all three match. PENDING until the
+  classification is run.
 
 ---
 
-## Lifecycle
+## WP-08 When the Wiki PM is given a word-doubling line, then it classifies it as Air with the Reading-speed dimension
+
+### Set expected result
+
+Bucket = Air; dimension contains "Reading speed"; rationale
+mentions "doubling" / "repetition" / "spoken-anchor".
+
+### Arrange
+
+- **Input data.**
+
+  > то есть это эмпатические отношения, эмпатические отношения.
+
+- **Agent.** Same as WP-07.
+
+### Act
+
+- Same as WP-07.
+
+### Assert
+
+- Same shape as WP-07. Verdict: PENDING.
+
+---
+
+## WP-09 When the Wiki PM is given a self-Q&A scaffolding line, then it classifies it as Air with the Reading-speed dimension
+
+### Set expected result
+
+Bucket = Air; dimension contains "Reading speed"; rationale
+mentions "rhetorical question" / "self-Q&A" / "lifts the next
+claim".
+
+### Arrange
+
+- **Input data.**
+
+  > Все ли это? Тоже далеко не все.
+
+- **Agent.** Same as WP-07.
+
+### Act / Assert
+
+- Same shape as WP-07. Verdict: PENDING.
+
+---
+
+## WP-10 When the Wiki PM is given a definition-with-attribution line, then it classifies it as Substance with the Concept-graph-quality dimension
+
+### Set expected result
+
+Bucket = Substance; dimension contains "Concept-graph quality"
+(or "Fact-check coverage"); rationale mentions "attribution" /
+"verifiable claim" / "Selye".
+
+### Arrange
+
+- **Input data.**
+
+  > Стресс — это, если опираться на определение, которое дал ему автор теории Ганс Селье, естественная реакция нашей психики и организма на изменения среды.
+
+- **Agent.** Same as WP-07.
+
+### Act / Assert
+
+- Same shape as WP-07. Verdict: PENDING.
+
+---
+
+## WP-11 When the Wiki PM is given a branded-method self-citation, then it classifies it as Form (or Air on subsequent occurrences) with the Voice-preservation dimension
+
+### Set expected result
+
+Bucket = Form (the *first* such citation per source) OR Air
+(subsequent occurrences within the same source). Pass on either
+since Decision tests are stateless on a single classification
+call. Dimension contains "Voice preservation"; rationale mentions
+"self-citation" / "branded method" / "СПП authorship".
+
+### Arrange
+
+- **Input data.**
+
+  > Несколько слов скажу, поскольку я сам автор системной поведенческой психотерапии
+
+- **Agent.** Same as WP-07.
+
+### Act / Assert
+
+- Same shape as WP-07. Verdict: PENDING.
+
+---
+
+## WP-12 When the Wiki PM is given a direct-address scenario from raw, then it classifies it as Form with the Voice-preservation dimension
+
+### Set expected result
+
+Bucket = Form; dimension contains "Voice preservation";
+rationale mentions "direct address" / "thought experiment" /
+"scenario".
+
+### Arrange
+
+- **Input data.**
+
+  > А теперь представьте, что у вас был какой-нибудь близкий друг, с которым вы были в хороших отношениях
+
+- **Agent.** Same as WP-07.
+
+### Act / Assert
+
+- Same shape as WP-07. Verdict: PENDING.
+
+---
+
+## WP-13 When the Wiki PM is given a synonym-chain line, then it tags the chain with the Voice-preservation dimension
+
+### Set expected result
+
+Dimension contains "Voice preservation". Bucket may be Form
+(synonym chain identifies a concept) or Air (chain compression
+serves Reading speed); pass requires Voice preservation be
+among the tags.
+
+### Arrange
+
+- **Input data.**
+
+  > психотерапевтический контакт, установить, иногда это говорят, рапорт, или доверительные отношения с клиентом
+
+- **Agent.** Same as WP-07.
+
+### Act / Assert
+
+- Same shape as WP-07. Verdict: PENDING.
+
+---
+
+## WP-14 When the Wiki PM is given a triple-trail filler, then it tags the line with the Reading-speed dimension
+
+### Set expected result
+
+Dimension contains "Reading speed". Bucket = Air.
+
+### Arrange
+
+- **Input data.**
+
+  > и так далее, и так далее, и так далее
+
+- **Agent.** Same as WP-07.
+
+### Act / Assert
+
+- Same shape as WP-07. Verdict: PENDING.
+
+---
+
+## Verdict lifecycle
 
 ```
-RED ──(test authored, not yet exercised)──▶ RED
-RED ──(verifier passes)──────────────────▶ GREEN
-RED ──(verifier returns no signal)───────▶ SKIPPED
-GREEN ──(role definition changed; rerun fails)──▶ RED
-GREEN ──(real artefact contradicts test)────────▶ STALE
-STALE ──(test re-written with rationale)────────▶ RED
+PENDING ──(case authored, runner not yet executed)──▶ PENDING
+PENDING ──(runner executes, real == expected)───────▶ PASS
+PENDING ──(runner executes, real ≠ expected)────────▶ FAIL
+PASS    ──(persona / activation changed; rerun real ≠ expected)──▶ FAIL
+PASS    ──(real artefact contradicts expected; spec was wrong)───▶ STALE
+STALE   ──(case re-written with rationale)──────────▶ PENDING
 ```
 
-Status changes are commits with rationale, not in-place edits;
-git history is the test log.
+A `STALE` event is the expensive signal — the spec was wrong
+about what the agent should produce.
+
+## Runner
+
+The runner that automates the executable subset lives at
+[`/scripts/test-runners/test-wiki-pm-runner.py`](../../../scripts/test-runners/test-wiki-pm-runner.py).
+It implements the Act + Assert steps for cases that don't need
+agent-level judgement (today: WP-01 through WP-06 — artefact
+inspection over `corpus-observations.md`).
+
+WP-07 through WP-14 require agent judgement on a fresh
+classification call; they remain `PENDING` until either an
+LLM-as-judge harness exists or the architect runs them by
+hand. Each case carries the fixture + expected behaviour so a
+future runner picks up without re-derivation.
+
+The runner is *not* a test; it is a derived mechanism.

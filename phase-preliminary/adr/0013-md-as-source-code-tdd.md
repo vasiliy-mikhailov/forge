@@ -110,7 +110,19 @@ Concretely:
    downstream artefact is bad), the test goes `STALE` and is
    re-written with rationale.
 
-5. **Coverage levels** are per-md, defined inside the test file:
+5. **Tests are specs, not code.** A test md is a *behavioural
+   specification*: each case states *when [condition] then
+   [expected behaviour]* with sub-sections Set-expected-result,
+   Arrange (input + agent), Act (send to agent, gather real),
+   Assert (expected = real). For tests covering md that drives
+   an LLM agent, these are called *agentic behaviour tests*.
+   The test md does not contain code. Any code that mechanises
+   the Act + Assert steps is a **runner** — a derived mechanism
+   that lives under `scripts/test-runners/`, not under
+   `tests/`. Runners are optional; manual execution by the
+   architect is conformant.
+
+6. **Coverage levels** are per-md, defined inside the test file:
    L0 (no tests) → L1 (≥ 1 scenario) → L2 (every Output line has
    a predicate) → L3 (every quality dimension + decision-right
    has a scenario) → L4 (every escalation has a falsifying test)
@@ -118,14 +130,14 @@ Concretely:
    / process / capability description; missing the target without
    rationale is a defect.
 
-6. **Verifier preference order.** When an acceptance predicate
+7. **Verifier preference order.** When an acceptance predicate
    can be implemented mechanically (regex, parse, numeric
    comparison), it must be — that is the runner. When it cannot,
    LLM-as-judge (a *different* role asked yes/no) is the
    fallback. Eye-read is allowed but is a smell flag — too many
    eye-read predicates means the test is not really a test.
 
-7. **Failure handling matches code TDD.** A failing test on main
+8. **Failure handling matches code TDD.** A failing test on main
    blocks merges that depend on it. A persona change that turns
    `GREEN` to `RED` reverts or the test is rewritten *and the
    reason is in the commit message*. No "test was wrong, deleted"

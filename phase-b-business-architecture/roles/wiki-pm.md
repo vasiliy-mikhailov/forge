@@ -121,9 +121,15 @@ Coverage target: L3 (every capability quality dimension and
 every Decision-rights line has ≥ 1 test) before the role's
 outputs are merged.
 
-Current scenarios: T-WP-01 (extract rules from raw), T-WP-02
-(no orphan R-NN rows), T-WP-03 (escalates schema / prompt /
-source.md changes). All `RED` — role has not yet been run.
+Current cases: WP-01..06 (artefact inspection over the role's
+corpus-observations output) PASS as of 2026-04-30; WP-07..14
+(per-line classification decisions) PENDING — they need an
+LLM-as-judge harness or architect eye-read.
+
+Per ADR 0013 these are agentic behaviour tests — the md file is
+the spec; the runner at
+[`/scripts/test-runners/test-wiki-pm-runner.py`](../../scripts/test-runners/test-wiki-pm-runner.py)
+is the derived mechanism that automates the executable subset.
 
 ## References
 

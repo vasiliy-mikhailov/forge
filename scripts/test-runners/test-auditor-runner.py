@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
 """Unit-test runner for tests/phase-b-business-architecture/roles/test-auditor.md
 
-Per ADR 0013, each test in the md file has Arrange / Act / Assert and
-one of three outcomes: GREEN, RED, SKIPPED. This runner mirrors the md
+Per ADR 0013 the md is the spec; this runner is the derived mechanism
+(per the smoke.md → smoke.sh pattern). Outcomes: PASS, FAIL, SKIP. This runner mirrors the md
 test cases as Python functions and prints PASS / FAIL / SKIP per test.
 
-Two kinds of test:
-  - Inspection (I-AU-NN) — parse the latest audit report and assert
-                           one property.
-  - Decision   (D-AU-NN) — run an inline P6 implementation against a
-                           fixture string; assert the finding count.
+All cases live in test-auditor.md as agentic behaviour tests
+(AU-NN). This runner automates each case mechanically — predicate
+P6 is grep-based, so Decision cases run inline without an
+LLM-as-judge harness. Outcomes: PASS, FAIL, SKIP.
 
 Usage:
     python3 test-auditor-verifier.py            # run all
@@ -27,7 +26,7 @@ from dataclasses import dataclass
 from fnmatch import fnmatch
 from pathlib import Path
 
-FORGE = Path(__file__).resolve().parents[3]
+FORGE = Path(__file__).resolve().parents[2]
 PHASE_H = FORGE / 'phase-h-architecture-change-management'
 
 
@@ -197,27 +196,27 @@ def i_au_06_predicates_walked_line() -> Result:
 # ─────────────── Decision tests (D-AU-NN) ───────────────
 
 DECISION_FIXTURES = {
-    'D-AU-01': {
+    'AU-05': {
         'fixture': "The wiki line's operations stack — what wiki-* labs do per product.",
         'expect_findings': True,
         'expect_label_substr': 'operations',
     },
-    'D-AU-02': {
+    'AU-06': {
         'fixture': 'The Wiki PM role is responsible for emitting requirements into the catalog.',
         'expect_findings': True,
         'expect_label_substr': 'responsible',
     },
-    'D-AU-03': {
+    'AU-07': {
         'fixture': 'The Wiki PM agent emits R-NN rows into the catalog.',
         'expect_findings': True,
         'expect_label_substr': 'agent',
     },
-    'D-AU-04': {
+    'AU-08': {
         'fixture': ('The Wiki PM Role is assigned to the Wiki-requirements-collection '
                     'Function. The Function realizes the Develop-wiki-product-line Capability.'),
         'expect_findings': False,
     },
-    'D-AU-05': {
+    'AU-09': {
         'fixture': 'The compiler component drives the publish step. The bench owns the catalog.',
         'expect_findings': True,
         'min_findings': 2,
@@ -258,12 +257,12 @@ def make_decision_test(test_id: str):
 # ─────────────── Registry + driver ───────────────
 
 REGISTRY = {
-    'I-AU-01': i_au_01_audit_report_exists,
-    'I-AU-02': i_au_02_audit_report_nonempty,
-    'I-AU-03': i_au_03_audit_report_has_FAIL_WARN_INFO_sections,
-    'I-AU-04': i_au_04_findings_carry_predicate_and_fix,
-    'I-AU-05': i_au_05_summary_totals_match,
-    'I-AU-06': i_au_06_predicates_walked_line,
+    'AU-01': i_au_01_audit_report_exists,
+    'AU-01b': i_au_02_audit_report_nonempty,
+    'AU-02': i_au_03_audit_report_has_FAIL_WARN_INFO_sections,
+    'AU-03': i_au_04_findings_carry_predicate_and_fix,
+    'AU-04': i_au_05_summary_totals_match,
+    'AU-04b': i_au_06_predicates_walked_line,
     **{k: make_decision_test(k) for k in DECISION_FIXTURES},
 }
 

@@ -52,18 +52,27 @@ smoke.sh" without touching `tests/` is a code smell.
   prose models in `*.md` paired with bash assertion scripts
   under `scripts/` or per-lab `tests/`. The discipline below
   was written for these.
-- **Role tests** — md tests for the [Phase B roles](../phase-b-business-architecture/roles/).
-  Each role's persona is codified as pass/fail predicates in
-  `tests/<role-source-path>/test-<role>.md`. Role tests have
-  no derived bash script — the md *is* the test, evaluated
-  by a verifier (mechanical predicates) → LLM-as-judge
-  (different role asked yes/no) → architect (eye-read), in
-  that priority. Convention is documented inside each role-
-  test file's preamble; the meta-discipline is
+- **Agentic behaviour tests** — md tests for the
+  [Phase B roles](../phase-b-business-architecture/roles/)
+  (and any other md that drives an LLM agent's behaviour).
+  The md file is the spec, NOT code. Each test case states
+  *when [condition] then [expected behaviour]* and breaks
+  down as Set-expected-result → Arrange (input + agent) →
+  Act (send to agent, gather real result) → Assert
+  (expected = real). Verdict: PASS / FAIL / PENDING /
+  STALE. Convention is documented inside each test file's
+  preamble; the meta-discipline is
   [ADR 0013](../phase-preliminary/adr/0013-md-as-source-code-tdd.md).
+
+  Runners that automate the executable subset are *not*
+  in `tests/` (they are derived mechanisms, not tests);
+  they live under `scripts/test-runners/`.
 
   Currently:
   - [`phase-b-business-architecture/roles/test-wiki-pm.md`](phase-b-business-architecture/roles/test-wiki-pm.md)
+    — runner: [`/scripts/test-runners/test-wiki-pm-runner.py`](../scripts/test-runners/test-wiki-pm-runner.py)
+  - [`phase-b-business-architecture/roles/test-auditor.md`](phase-b-business-architecture/roles/test-auditor.md)
+    — runner: [`/scripts/test-runners/test-auditor-runner.py`](../scripts/test-runners/test-auditor-runner.py)
 
 ## Coverage map
 

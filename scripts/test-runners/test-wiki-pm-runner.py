@@ -1,17 +1,16 @@
 #!/usr/bin/env python3
 """Unit-test runner for tests/phase-b-business-architecture/roles/test-wiki-pm.md
 
-Per ADR 0013, each test in the md file has Arrange / Act / Assert and one
-of three outcomes: GREEN, RED, SKIPPED. This runner mirrors the md test
+Per ADR 0013 the md is the spec; this runner is the derived mechanism
+(per the smoke.md → smoke.sh pattern). Outcomes: PASS, FAIL, SKIP. This runner mirrors the md test
 cases as Python functions, runs them, and prints one PASS / FAIL / SKIP
 line per test.
 
-Two kinds of test:
-  - Inspection (I-NN) — read an artefact, assert one property.
-  - Decision   (D-NN) — given a fixture quote, assert the role's
-                        classification matches expectations. SKIPPED
-                        until a decision-test harness exists (no
-                        LLM-as-judge integration today).
+All cases live in test-wiki-pm.md as agentic behaviour tests
+(WP-NN). This runner automates the executable subset (artefact
+inspection over corpus-observations.md). Cases requiring agent
+judgement (WP-07..WP-14) return SKIP — they need an
+LLM-as-judge harness or architect eye-read.
 
 Usage:
     python3 test-wiki-pm-verifier.py             # run all
@@ -33,7 +32,7 @@ from dataclasses import dataclass
 from fnmatch import fnmatch
 from pathlib import Path
 
-FORGE = Path(__file__).resolve().parents[3]
+FORGE = Path(__file__).resolve().parents[2]
 OUT_OBS = FORGE / 'phase-b-business-architecture/products/kurpatov-wiki/corpus-observations.md'
 RAWS_ROOT = FORGE.parent / 'kurpatov-wiki-raw' / 'data' / 'Психолог-консультант'
 
@@ -174,44 +173,44 @@ def i_09_no_wiki_bench_modified() -> Result:
 # future runner can wire them up without re-deriving them from md.
 
 DECISION_TESTS = {
-    'D-01': dict(
+    'WP-07': dict(
         fixture='переживать, страдать, мучиться и так далее, и так далее, и так далее.',
         expected_bucket='Air', expected_dim='reading speed',
         rationale_keywords=['и так далее', 'filler', 'triple-trail'],
     ),
-    'D-02': dict(
+    'WP-08': dict(
         fixture='то есть это эмпатические отношения, эмпатические отношения.',
         expected_bucket='Air', expected_dim='reading speed',
         rationale_keywords=['repetition', 'doubling', 'spoken'],
     ),
-    'D-03': dict(
+    'WP-09': dict(
         fixture='Все ли это? Тоже далеко не все.',
         expected_bucket='Air', expected_dim='reading speed',
         rationale_keywords=['rhetorical', 'self-Q&A', 'lifts'],
     ),
-    'D-04': dict(
+    'WP-10': dict(
         fixture='Стресс — это, если опираться на определение, которое дал ему автор теории Ганс Селье, естественная реакция нашей психики и организма на изменения среды.',
         expected_bucket='Substance', expected_dim='concept-graph quality',
         rationale_keywords=['attribution', 'Selye', 'verifiable'],
     ),
-    'D-05': dict(
+    'WP-11': dict(
         fixture='Несколько слов скажу, поскольку я сам автор системной поведенческой психотерапии',
         expected_bucket=['Form', 'Air'],  # depends on session state
         expected_dim='voice preservation',
         rationale_keywords=['self-citation', 'СПП', 'branded'],
     ),
-    'D-06': dict(
+    'WP-12': dict(
         fixture='А теперь представьте, что у вас был какой-нибудь близкий друг, с которым вы были в хороших отношениях',
         expected_bucket='Form', expected_dim='voice preservation',
         rationale_keywords=['direct address', 'thought experiment', 'scenario'],
     ),
-    'D-07': dict(
+    'WP-13': dict(
         fixture='психотерапевтический контакт, установить, иногда это говорят, рапорт, или доверительные отношения с клиентом',
         expected_bucket=None,  # tag-only test
         expected_dim='voice preservation',
         rationale_keywords=['synonym chain'],
     ),
-    'D-08': dict(
+    'WP-14': dict(
         fixture='и так далее, и так далее, и так далее',
         expected_bucket=None, expected_dim='reading speed',
         rationale_keywords=['filler'],
@@ -236,15 +235,15 @@ def make_decision_test(test_id: str):
 # ─────────────── Registry + driver ───────────────
 
 REGISTRY = {
-    'I-01': i_01_file_exists,
-    'I-02': i_02_file_nonempty,
-    'I-03': i_03_substance_min_three,
-    'I-04': i_04_form_min_three,
-    'I-05': i_05_air_min_three,
-    'I-06': i_06_quotes_verbatim,
-    'I-07': i_07_dimension_coverage,
-    'I-08': i_08_no_R_NN_emitted,
-    'I-09': i_09_no_wiki_bench_modified,
+    'WP-01': i_01_file_exists,
+    'WP-01b': i_02_file_nonempty,
+    'WP-02a': i_03_substance_min_three,
+    'WP-02b': i_04_form_min_three,
+    'WP-02c': i_05_air_min_three,
+    'WP-03': i_06_quotes_verbatim,
+    'WP-04': i_07_dimension_coverage,
+    'WP-05': i_08_no_R_NN_emitted,
+    'WP-06': i_09_no_wiki_bench_modified,
     **{k: make_decision_test(k) for k in DECISION_TESTS},
 }
 
