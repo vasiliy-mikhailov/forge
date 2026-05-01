@@ -57,25 +57,40 @@ def norm(s: str) -> str:
 
 @dataclass
 class Result:
-    verdict: str  # PASS | FAIL | SKIP
+    verdict: str  # PASS | FAIL | SKIP | PASS-italian-strike
     detail: str = ''
+    score: float | None = None
+    score_max: float | None = None
+
+
+def adr0015_verdict(score: float, score_max: float, threshold: float) -> str:
+    """Per ADR 0015: PASS ≥ 0.8*max; PASS-italian-strike ≥ threshold; FAIL < threshold."""
+    if score < threshold:
+        return 'FAIL'
+    if score >= 0.8 * score_max:
+        return 'PASS'
+    return 'PASS-italian-strike'
 
 
 # ─────────────── Inspection tests (I-NN) ───────────────
 
 def i_01_file_exists() -> Result:
+    """WP-01 component-1 spec: 1 pt, binary."""
     if OUT_OBS.exists():
-        return Result('PASS')
-    return Result('FAIL', f'file missing: {OUT_OBS.relative_to(FORGE)}')
+        return Result('PASS', score=1.0, score_max=1.0)
+    return Result('FAIL', f'file missing: {OUT_OBS.relative_to(FORGE)}',
+                  score=0.0, score_max=1.0)
 
 
 def i_02_file_nonempty() -> Result:
+    """WP-01 component-2: ≥30 non-blank lines, 1 pt, binary."""
     if not OUT_OBS.exists():
-        return Result('SKIP', 'I-01 not green')
+        return Result('SKIP', 'WP-01 component-1 not green')
     lines = [ln for ln in OUT_OBS.read_text(encoding='utf-8').splitlines() if ln.strip()]
-    if len(lines) >= 30:
-        return Result('PASS')
-    return Result('FAIL', f'only {len(lines)} non-blank lines (<30)')
+    score = 1.0 if len(lines) >= 30 else 0.0
+    return Result(adr0015_verdict(score, 1.0, 1.0),
+                  f'{len(lines)} non-blank lines',
+                  score=score, score_max=1.0)
 
 
 def _bucket_obs_count(section: str) -> int | None:
@@ -88,35 +103,57 @@ def _bucket_obs_count(section: str) -> int | None:
     return len(re.findall(r'(?m)^\*\*OBS-', body.group(1)))
 
 
+def _bucket_score(n: int | None) -> float:
+    """WP-02 ladder: 0 if <3, 0.5 if 3-9, 1.0 if ≥10. None → 0."""
+    if n is None or n < 3:
+        return 0.0
+    if n < 10:
+        return 0.5
+    return 1.0
+
+
 def i_03_substance_min_three() -> Result:
+    """WP-02 component-Substance: ladder 0/0.5/1, italian-strike 0.5."""
     n = _bucket_obs_count('Substance')
     if n is None:
-        return Result('SKIP', 'I-01 not green')
-    return Result('PASS') if n >= 3 else Result('FAIL', f'{n} obs <3')
+        return Result('SKIP', 'WP-01 not green', score=0.0, score_max=1.0)
+    score = _bucket_score(n)
+    # Threshold 0.5 (≥3 obs); italian-strike at 0.5 (just-above-floor); PASS at 1.0.
+    return Result(adr0015_verdict(score, 1.0, 0.5),
+                  f'{n} obs', score=score, score_max=1.0)
 
 
 def i_04_form_min_three() -> Result:
+    """WP-02 component-Form."""
     n = _bucket_obs_count('Form')
     if n is None:
-        return Result('SKIP', 'I-01 not green')
-    return Result('PASS') if n >= 3 else Result('FAIL', f'{n} obs <3')
+        return Result('SKIP', 'WP-01 not green', score=0.0, score_max=1.0)
+    score = _bucket_score(n)
+    return Result(adr0015_verdict(score, 1.0, 0.5),
+                  f'{n} obs', score=score, score_max=1.0)
 
 
 def i_05_air_min_three() -> Result:
+    """WP-02 component-Air."""
     n = _bucket_obs_count('Air')
     if n is None:
-        return Result('SKIP', 'I-01 not green')
-    return Result('PASS') if n >= 3 else Result('FAIL', f'{n} obs <3')
+        return Result('SKIP', 'WP-01 not green', score=0.0, score_max=1.0)
+    score = _bucket_score(n)
+    return Result(adr0015_verdict(score, 1.0, 0.5),
+                  f'{n} obs', score=score, score_max=1.0)
 
 
 def i_06_quotes_verbatim() -> Result:
+    """WP-03 spec: fraction = verified/total, 0..1, threshold 1.0 (any
+    fabrication is FAIL — no partial credit). italian-strike: n/a.
+    """
     if not OUT_OBS.exists():
-        return Result('SKIP', 'I-01 not green')
+        return Result('SKIP', 'WP-01 not green', score=0.0, score_max=1.0)
     text = OUT_OBS.read_text(encoding='utf-8')
     quotes = [m.group(1).strip() for m in re.finditer(r'(?m)^> (.+)$', text)
               if len(m.group(1).strip()) >= 8]
     if not quotes:
-        return Result('SKIP', 'no quotes to verify')
+        return Result('SKIP', 'no quotes to verify', score=0.0, score_max=1.0)
     hay = ''
     for g in SAMPLE_GLOBS:
         for m in RAWS_ROOT.glob(g):
@@ -124,14 +161,22 @@ def i_06_quotes_verbatim() -> Result:
             hay += norm(' '.join(s.get('text', '').strip()
                                  for s in d.get('segments', []))) + ' '
     invented = [q[:60] for q in quotes if norm(q) not in hay]
-    if not invented:
-        return Result('PASS', f'{len(quotes)} quotes verified')
-    return Result('FAIL', f'{len(invented)} of {len(quotes)} not in raws: {invented[:3]}')
+    score = round((len(quotes) - len(invented)) / len(quotes), 3)
+    return Result(
+        adr0015_verdict(score, 1.0, 1.0),
+        (f'{len(quotes)} quotes verified' if not invented
+         else f'{len(invented)} of {len(quotes)} not in raws: {invented[:3]}'),
+        score=score, score_max=1.0,
+    )
 
 
 def i_07_dimension_coverage() -> Result:
+    """WP-04 spec: fraction = distinct/8, 0..1, threshold 0.75,
+    italian-strike 0.75 ≤ score < 0.8 (just-above-threshold; 6/8
+    exactly = 0.75, fits the italian-strike band).
+    """
     if not OUT_OBS.exists():
-        return Result('SKIP', 'I-01 not green')
+        return Result('SKIP', 'WP-01 not green', score=0.0, score_max=1.0)
     text = OUT_OBS.read_text(encoding='utf-8')
     dims_seen: set[str] = set()
     for m in re.finditer(r'\[([^\]]+)\]', text):
@@ -139,31 +184,38 @@ def i_07_dimension_coverage() -> Result:
             piece = piece.strip()
             if piece in CAP_ALLOWLIST:
                 dims_seen.add(piece)
-    if len(dims_seen) >= 6:
-        return Result('PASS', f'{len(dims_seen)}/8 covered')
-    return Result('FAIL', f'only {len(dims_seen)}/8: {sorted(dims_seen)}')
+    score = round(len(dims_seen) / 8, 3)
+    return Result(
+        adr0015_verdict(score, 1.0, 0.75),
+        f'{len(dims_seen)}/8 covered: {sorted(dims_seen)[:4]}...',
+        score=score, score_max=1.0,
+    )
 
 
 def i_08_no_R_NN_emitted() -> Result:
+    """WP-05 spec: 1 pt, binary."""
     diff = subprocess.run(
         ['git', 'diff', '--name-only', 'HEAD', '--',
          'phase-requirements-management/catalog.md'],
         capture_output=True, text=True, cwd=FORGE,
     ).stdout.strip()
-    if not diff:
-        return Result('PASS')
-    return Result('FAIL', f'catalog.md modified: {diff}')
+    score = 0.0 if diff else 1.0
+    return Result(adr0015_verdict(score, 1.0, 1.0),
+                  f'catalog.md modified: {diff}' if diff else '',
+                  score=score, score_max=1.0)
 
 
 def i_09_no_wiki_bench_modified() -> Result:
+    """WP-06 spec: 1 pt, binary."""
     diff = subprocess.run(
         ['git', 'diff', '--name-only', 'HEAD', '--',
          'phase-c-information-systems-architecture/application-architecture/wiki-bench/'],
         capture_output=True, text=True, cwd=FORGE,
     ).stdout.strip()
-    if not diff:
-        return Result('PASS')
-    return Result('FAIL', f'wiki-bench modified: {diff}')
+    score = 0.0 if diff else 1.0
+    return Result(adr0015_verdict(score, 1.0, 1.0),
+                  f'wiki-bench modified: {diff}' if diff else '',
+                  score=score, score_max=1.0)
 
 
 # ─────────────── Decision tests (D-NN) ───────────────
@@ -255,15 +307,20 @@ def main() -> int:
         print(f'no tests match pattern {pat!r}')
         return 1
 
-    counts = {'PASS': 0, 'FAIL': 0, 'SKIP': 0}
+    counts = {'PASS': 0, 'FAIL': 0, 'SKIP': 0, 'PASS-italian-strike': 0}
     for tid in selected:
         r = REGISTRY[tid]()
-        counts[r.verdict] += 1
-        line = f'  {tid:<6} {r.verdict:<4}  {r.detail}'.rstrip()
+        counts[r.verdict] = counts.get(r.verdict, 0) + 1
+        score_str = ''
+        if r.score is not None and r.score_max is not None:
+            score_str = f' [{r.score}/{r.score_max}]'
+        line = f'  {tid:<6} {r.verdict:<19}{score_str}  {r.detail}'.rstrip()
         print(line)
 
     print()
-    print(f'  total: PASS={counts["PASS"]}  FAIL={counts["FAIL"]}  SKIP={counts["SKIP"]}')
+    print(f'  total: PASS={counts["PASS"]}  '
+          f'PASS-italian-strike={counts.get("PASS-italian-strike", 0)}  '
+          f'FAIL={counts["FAIL"]}  SKIP={counts["SKIP"]}')
     return 1 if counts['FAIL'] else 0
 
 
