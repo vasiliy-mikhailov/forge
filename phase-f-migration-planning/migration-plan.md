@@ -1,8 +1,7 @@
-# Migration plan
+# Implementation and Migration Plan
 
-The sequenced execution of the Phase E roadmap. TOGAF Phase F's
-named deliverable is the **Implementation and Migration Plan**;
-this is forge's realisation.
+The sequenced execution of the Phase E roadmap — TOGAF Phase F's
+named deliverable, in forge form.
 
 Each row below is one Phase F experiment. The order is the
 landing order — earlier rows must land before later rows because

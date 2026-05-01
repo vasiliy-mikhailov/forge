@@ -18,8 +18,8 @@ working tree — once Level 2 is reached, it *becomes* the new Level
 1 and the prior Level 1 description is **deleted from docs**. The
 next planned state becomes the new Level 2.
 
-This is **forge's chosen architecture method**, declared here in
-the Preliminary phase. Phase H operates the method (records
+This is **forge's chosen approach to architecture**, declared
+here in the Preliminary phase. Phase H operates the method (records
 promotions, defines what "baggage" is, runs the brainstorm-
 experiments meta-capability); Preliminary just declares it.
 

@@ -1,7 +1,7 @@
 # Trajectory model
 
-The Level 1 / Level 2 trajectory model is **forge's chosen
-architecture method** and is declared in the Preliminary phase.
+The Level 1 / Level 2 mechanism is **forge's chosen architecture
+method** and is declared in the Preliminary phase.
 See [`../phase-preliminary/architecture-method.md`](../phase-preliminary/architecture-method.md)
 for:
 

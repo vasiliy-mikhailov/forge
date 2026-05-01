@@ -27,7 +27,7 @@ because most of what is written into the repo is for them.
   *layer-changing* decisions.
 - **Velocity is a goal, not a side-effect.** Architect-velocity
   (capability advances per architect-hour) is a Phase A goal
-  precisely because the architecture team is one person. Anything
+  precisely because the team is one person. Anything
   that adds friction to the architect's edit-test loop is a
   candidate for removal.
 

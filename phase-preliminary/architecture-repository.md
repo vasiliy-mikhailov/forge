@@ -31,8 +31,8 @@ optional `adr/` subfolder for that phase's ADRs.
 
 ## Mapping to canonical TOGAF Architecture Repository
 
-TOGAF's Architecture Repository has **six components**. Each
-maps to a location in forge:
+TOGAF defines **six repository components**. Each maps to a
+location in forge:
 
 | TOGAF component               | Where it lives in forge                                                                                                            |
 |-------------------------------|-------------------------------------------------------------------------------------------------------------------------------------|

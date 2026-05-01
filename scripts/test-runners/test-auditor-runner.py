@@ -161,10 +161,15 @@ def p20_findings(text: str) -> list[tuple[str, str]]:
             title = m.group(1).strip()
             break
     if title and len(title.split()) >= 2:
-        # Strip markdown link text [Title](path) and bracketed
-        # reference text — they're cross-references, not restatements.
+        # Strip cross-reference shapes — these are pointers to a
+        # named thing, not restatements of the title:
+        #   [Title](path)         markdown link text
+        #   "Title"               quoted label / row name
+        #   `Title`               code / identifier reference
         after_h1_raw = '\n'.join(lines[h1_idx + 1:])
         after_h1 = re.sub(r'\[[^\]]*\]', '', after_h1_raw)
+        after_h1 = re.sub(r'"[^"]{0,200}?"', '', after_h1, flags=re.DOTALL)
+        after_h1 = re.sub(r'`[^`]{0,200}?`', '', after_h1, flags=re.DOTALL)
         for occ in re.finditer(re.escape(title), after_h1, re.IGNORECASE):
             # exclude header lines (e.g. ## Title) from counting
             line_start = after_h1.rfind('\n', 0, occ.start()) + 1
