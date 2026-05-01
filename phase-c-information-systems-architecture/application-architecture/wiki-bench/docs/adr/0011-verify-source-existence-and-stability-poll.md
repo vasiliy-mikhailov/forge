@@ -108,7 +108,7 @@ race in the K1 run.
 
 - The pattern that triggered this: K1 SRC 0, SRC 1, SRC 6
   (verify-source races) — see
-  [`../../../../phase-f-migration-planning/experiments/K1-modules-000-001.md`](../../../../phase-f-migration-planning/experiments/K1-modules-000-001.md)
+  [`../../../../../phase-f-migration-planning/experiments/K1-modules-000-001.md`](../../../../../phase-f-migration-planning/experiments/K1-modules-000-001.md)
   closure notes when K1 finishes.
 - Implementation:
   [`../../orchestrator/run-d8-pilot.py`](../../orchestrator/run-d8-pilot.py)
@@ -117,5 +117,5 @@ race in the K1 run.
   `42a3147` (extended retry budget), `0da7d4d` (replaced with
   two-stage poll).
 - Phase D services this affects:
-  [`../../../../phase-d-technology-architecture/services/agent-orchestration.md`](../../../../phase-d-technology-architecture/services/agent-orchestration.md)
+  [`../../../../../phase-d-technology-architecture/services/agent-orchestration.md`](../../../../../phase-d-technology-architecture/services/agent-orchestration.md)
   (wiki-bench's orchestration of agent + per-source verify).

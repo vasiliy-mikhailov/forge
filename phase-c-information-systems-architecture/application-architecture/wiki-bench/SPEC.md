@@ -9,7 +9,7 @@ directory under `${STORAGE_ROOT}/labs/wiki-bench/experiments/` and a
 branch-on-origin in the wiki repo. Multiple model runs are compared
 offline against the same fixed task.
 
-Bench is a **lab** inside forge (since [ADR 0007](../../phase-g-implementation-governance/adr/0007-labs-restructure-self-contained-caddy.md)) but functionally a *client* of the compiler lab — it talks to `${INFERENCE_DOMAIN}`
+Bench is a **lab** inside forge (since [ADR 0007](../../../phase-g-implementation-governance/adr/0007-labs-restructure-self-contained-caddy.md)) but functionally a *client* of the compiler lab — it talks to `${INFERENCE_DOMAIN}`
 over HTTPS like any other external agent. Bench has no caddy and no
 port binding, so it is the one lab that **co-runs** with another lab
 (specifically, `phase-c-information-systems-architecture/application-architecture/wiki-compiler/`).

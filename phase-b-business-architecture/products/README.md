@@ -11,7 +11,7 @@ file per product in this folder.
 | ⤷ **Tarasov Wiki**     | wiki-ingest + wiki-bench + wiki-compiler                 | Pre-pilot — content acquisition phase                             | [`tarasov-wiki.md`](tarasov-wiki.md)                     |
 | **rl-2048**             | rl-2048 lab                                              | Pre-methodology phase                                             | [`rl-2048.md`](rl-2048.md)                               |
 
-The wiki line's operations stack — what `wiki-*` labs do per
+The wiki line's Capability Map — what `wiki-*` labs do per
 product, and which forge capability each operation draws on —
 lives in [`wiki-product-line.md`](wiki-product-line.md) on this
 side, since each row describes *what this product line does*,

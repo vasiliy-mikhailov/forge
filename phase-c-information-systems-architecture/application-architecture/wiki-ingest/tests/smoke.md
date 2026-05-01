@@ -1,7 +1,7 @@
 # Smoke — wiki-ingest
 
 Source of truth for [`./smoke.sh`](smoke.sh). Helpers come from
-[`../../../scripts/smoke-lib.sh`](../../../scripts/smoke-lib.sh).
+[`../../../../scripts/smoke-lib.sh`](../../../../scripts/smoke-lib.sh).
 
 ## Preconditions
 

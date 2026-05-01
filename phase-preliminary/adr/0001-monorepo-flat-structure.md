@@ -1,7 +1,7 @@
 # ADR 0001 — flat monorepo, no submodules
 
 ## Status
-Accepted (2026-04-19). **Layout amended by [ADR 0007](0007-labs-restructure-self-contained-caddy.md) (2026-04-25)**: top-level subsystem folders moved under `labs/<lab>/`. Core decision (single repo, no submodules) preserved.
+Accepted (2026-04-19). **Layout amended by [ADR 0007](../../phase-g-implementation-governance/adr/0007-labs-restructure-self-contained-caddy.md) (2026-04-25)**: top-level subsystem folders moved under `labs/<lab>/`. Core decision (single repo, no submodules) preserved.
 
 ## Context
 I have several subsystems (caddy, mlflow, rl-2048, kurpatov-wiki) running on

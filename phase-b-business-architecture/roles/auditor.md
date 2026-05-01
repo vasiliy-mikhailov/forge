@@ -106,7 +106,7 @@ P6 catches `operations stack`, `is responsible for`,
 `agent`-as-org-unit, `drives`/`owns` as relationship verbs,
 and produces zero findings on a clean ArchiMate-typed
 fixture). Verifier:
-[`test-auditor-verifier.py`](../../tests/phase-b-business-architecture/roles/test-auditor-verifier.py).
+[`test-auditor-verifier.py`](../../scripts/test-runners/test-auditor-runner.py).
 All 11 GREEN after first run.
 
 ## Motivation chain

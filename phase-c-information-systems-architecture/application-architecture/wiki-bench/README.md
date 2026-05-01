@@ -42,9 +42,9 @@ folder via GitHub. The substantive docs are:
 ## Forge-level cross-references
 
 - Forge architecture vision and capabilities:
-  [`forge/AGENTS.md`](../../../../AGENTS.md).
+  [`forge/AGENTS.md`](../../../AGENTS.md).
 - The product this lab realises:
-  [`forge/phase-b-business-architecture/products/kurpatov-wiki.md`](../../../../phase-b-business-architecture/products/kurpatov-wiki.md)
+  [`forge/phase-b-business-architecture/products/kurpatov-wiki.md`](../../../phase-b-business-architecture/products/kurpatov-wiki.md)
   (and `tarasov-wiki.md`).
 - The capability this lab realises:
-  [`forge/phase-b-business-architecture/capabilities/develop-wiki-product-line.md`](../../../../phase-b-business-architecture/capabilities/develop-wiki-product-line.md).
+  [`forge/phase-b-business-architecture/capabilities/develop-wiki-product-line.md`](../../../phase-b-business-architecture/capabilities/develop-wiki-product-line.md).

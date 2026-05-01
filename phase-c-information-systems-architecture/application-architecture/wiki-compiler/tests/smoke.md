@@ -2,7 +2,7 @@
 
 Source of truth for [`./smoke.sh`](smoke.sh). Helper functions
 (`pass`/`fail`/`check_*`) come from the shared library
-[`../../../scripts/smoke-lib.sh`](../../../scripts/smoke-lib.sh).
+[`../../../../scripts/smoke-lib.sh`](../../../../scripts/smoke-lib.sh).
 
 ## Preconditions
 

@@ -50,7 +50,7 @@ make du    # on-disk sizes under STORAGE_ROOT
 On a fresh machine with two NVIDIA Blackwell cards (RTX PRO 6000 Workstation
 + RTX 5090) CUDA does not work out of the box either with the proprietary
 driver or with default HMM settings. The reasons and details are in
-[phase-d-technology-architecture/adr/0004-nvidia-driver-open-plus-hmm-off.md](adr/0004-nvidia-driver-open-plus-hmm-off.md).
+[phase-d-technology-architecture/adr/0004-nvidia-driver-open-plus-hmm-off.md](../phase-d-technology-architecture/adr/0004-nvidia-driver-open-plus-hmm-off.md).
 The one-time setup on a fresh Ubuntu 24.04:
 
 ```bash
@@ -315,7 +315,7 @@ instead of `-open`, or jumped to 595+) — reinstall
 `nvidia-driver-590-open` and reboot. This is rare, but happens after
 `apt full-upgrade` on a neglected machine.
 
-Full runbook: [phase-d-technology-architecture/adr/0004-nvidia-driver-open-plus-hmm-off.md](adr/0004-nvidia-driver-open-plus-hmm-off.md).
+Full runbook: [phase-d-technology-architecture/adr/0004-nvidia-driver-open-plus-hmm-off.md](../phase-d-technology-architecture/adr/0004-nvidia-driver-open-plus-hmm-off.md).
 
 ## Rotating GPUs between services
 

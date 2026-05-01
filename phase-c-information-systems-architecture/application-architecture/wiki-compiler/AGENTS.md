@@ -85,7 +85,7 @@ L1 stability: 50 % UVM-crash rate within 2.5 h sustained inference at
 default vLLM settings. Failure mode is `gdn_linear_attn._forward_core`
 → `cudaErrorLaunchFailure` followed by kernel-side
 `BUG uvm_gpu_chunk_5`. Recovery requires `modprobe -r/+ nvidia` or
-reboot. Cross-reference: [`forge/phase-f-migration-planning/experiments/G1-blackwell-stability.md`](../../../../phase-f-migration-planning/experiments/G1-blackwell-stability.md) (closed 2026-04-27).
+reboot. Cross-reference: [`forge/phase-f-migration-planning/experiments/G1-blackwell-stability.md`](../../../phase-f-migration-planning/experiments/G1-blackwell-stability.md) (closed 2026-04-27).
 
 L2 stability target: ≤ 5 % crash rate over 7-source pilots —
 closed by G1 (400 W power cap + persistence, gpu-memory-utilization
@@ -114,7 +114,7 @@ git history per Phase H.
   400 W power cap + persistence-mode + gpu-memory-utilization 0.85.
   Service Operation stability dim L1 set at ≥ 169 min sustained.
   Spec at
-  [`forge/phase-f-migration-planning/experiments/G1-blackwell-stability.md`](../../../../phase-f-migration-planning/experiments/G1-blackwell-stability.md).
+  [`forge/phase-f-migration-planning/experiments/G1-blackwell-stability.md`](../../../phase-f-migration-planning/experiments/G1-blackwell-stability.md).
 
 ## Phase G — Implementation Governance
 
@@ -132,7 +132,7 @@ git history per Phase H.
   deliberate edit, recorded in git history (and likely an ADR).
 - **Hot-swap model swap procedure**: the model registry contract
   is forge-level —
-  [`forge/phase-d-technology-architecture/adr/0008-model-registry-single-source-of-truth.md`](../../../../phase-d-technology-architecture/adr/0008-model-registry-single-source-of-truth.md).
+  [`forge/phase-d-technology-architecture/adr/0008-model-registry-single-source-of-truth.md`](../../../phase-d-technology-architecture/adr/0008-model-registry-single-source-of-truth.md).
   Swap by editing `forge/.env: INFERENCE_ACTIVE_MODEL_ID`, then
   `make wiki-compiler-down && make wiki-compiler`.
 - **GPU recovery from UVM crash:**
@@ -160,5 +160,5 @@ git history per Phase H.
 - Forge-level: `forge/AGENTS.md` Phase D (service tenancy table) +
   Phase G (per-lab AGENTS.md template, GPU recovery convention).
 - G1 experiment (closed):
-  [`forge/phase-f-migration-planning/experiments/G1-blackwell-stability.md`](../../../../phase-f-migration-planning/experiments/G1-blackwell-stability.md).
+  [`forge/phase-f-migration-planning/experiments/G1-blackwell-stability.md`](../../../phase-f-migration-planning/experiments/G1-blackwell-stability.md).
 - Power-limit unit: `/etc/systemd/system/nvidia-power-limit.service`.

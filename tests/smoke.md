@@ -9,10 +9,10 @@ This file is the source of truth for the **dispatcher** in
 [`scripts/smoke.sh`](../scripts/smoke.sh), not for individual checks.
 Per-lab smoke contracts live alongside each lab:
 
-- [`phase-c-information-systems-architecture/application-architecture/wiki-compiler/tests/smoke.md`](../labs/wiki-compiler/tests/smoke.md)
-- [`phase-c-information-systems-architecture/application-architecture/wiki-ingest/tests/smoke.md`](../labs/wiki-ingest/tests/smoke.md)
-- [`phase-c-information-systems-architecture/application-architecture/rl-2048/tests/smoke.md`](../labs/rl-2048/tests/smoke.md)
-- [`phase-c-information-systems-architecture/application-architecture/wiki-bench/tests/smoke.md`](../labs/wiki-bench/tests/smoke.md)
+- [`phase-c-information-systems-architecture/application-architecture/wiki-compiler/tests/smoke.md`](../phase-c-information-systems-architecture/application-architecture/wiki-compiler/tests/smoke.md)
+- [`phase-c-information-systems-architecture/application-architecture/wiki-ingest/tests/smoke.md`](../phase-c-information-systems-architecture/application-architecture/wiki-ingest/tests/smoke.md)
+- [`phase-c-information-systems-architecture/application-architecture/rl-2048/tests/smoke.md`](../phase-c-information-systems-architecture/application-architecture/rl-2048/tests/smoke.md)
+- [`phase-c-information-systems-architecture/application-architecture/wiki-bench/tests/smoke.md`](../phase-c-information-systems-architecture/application-architecture/wiki-bench/tests/smoke.md)
 
 Shared helpers (pretty-print, container/GPU/HTTP/log assertions) are in
 [`scripts/smoke-lib.sh`](../scripts/smoke-lib.sh) — every per-lab

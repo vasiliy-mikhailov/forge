@@ -60,7 +60,7 @@ capability, not just a tagline.
 
 → [`../capabilities/develop-wiki-product-line.md`](../capabilities/develop-wiki-product-line.md)
 
-That file holds the operations stack (Transcription,
+That file holds the Capability Map (Transcription,
 Compilation, LLM serving, Wiki requirements collection), each
 operation's quality dimensions, the labs that realise it, the
 sub-trajectories rolled into Phase D, and the references to the

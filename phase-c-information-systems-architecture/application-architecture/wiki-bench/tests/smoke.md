@@ -1,7 +1,7 @@
 # Smoke — wiki-bench
 
 Source of truth for [`./smoke.sh`](smoke.sh). Helpers come from
-[`../../../scripts/smoke-lib.sh`](../../../scripts/smoke-lib.sh).
+[`../../../../scripts/smoke-lib.sh`](../../../../scripts/smoke-lib.sh).
 
 Bench is a one-shot agent harness, not a long-running service — it has
 no caddy, no compose, no port binding. This smoke is therefore
