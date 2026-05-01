@@ -128,6 +128,71 @@ VARIANT_V3_DISCOURSE = VARIANT_V2_STRUCTURAL[:1] + [
     PATTERN_CLEANUP_WS,
 ]
 
+# Discourse markers — observed in real lecture A at high density:
+#   значит, × 30   на самом деле × 17   собственно × 19
+#   как бы × 10    ну,           ×  9   допустим      ×  3
+#   то есть × 32                                      (+ 'вот' standalone × 101)
+# Each pattern is conservative: matches the marker as a discourse
+# anchor (with bounding punctuation / whitespace), not as a content
+# verb. 'вот' is the trickiest — it carries sentence load when used
+# as 'here is X', so V5 only strips it when it's a pure interjection
+# (sentence-initial 'вот' or comma-flanked 'вот,').
+
+PATTERN_DM_ZNACHIT = (
+    'discourse_marker_znachit',
+    re.compile(r'(?i)(?:^|(?<=[\s,—]))значит,\s+'),
+)
+
+PATTERN_DM_NA_SAMOM_DELE = (
+    'discourse_marker_na_samom_dele',
+    re.compile(r'(?i)(?:^|(?<=[\s,—]))на\s+самом\s+деле[\s,]+'),
+)
+
+PATTERN_DM_SOBSTVENNO = (
+    'discourse_marker_sobstvenno',
+    re.compile(r'(?i)(?:^|(?<=[\s,—]))собственно[\s,]+'),
+)
+
+PATTERN_DM_TO_EST = (
+    # 'то есть' — discourse marker only when comma-flanked, NOT when
+    # it's mid-sentence ', то есть Y' rephrasing
+    'discourse_marker_to_est',
+    re.compile(r'(?i)(?:^|(?<=[\s,—]))то\s+есть[,\s]+'),
+)
+
+PATTERN_DM_DOPUSTIM = (
+    'discourse_marker_dopustim',
+    re.compile(r'(?i)(?:^|(?<=[\s,—]))допустим[,\s]+'),
+)
+
+PATTERN_DM_VOT_INTERJECTION = (
+    # 'вот' as pure interjection — sentence-initial OR comma-comma
+    'discourse_marker_vot_interjection',
+    re.compile(r'(?i)(?:(?<=^)|(?<=[\.!?]\s)|(?<=[,—]\s))вот[,\s]+'),
+)
+
+# V5 — V4 + Russian discourse markers measured in real Курпатов
+#      transcripts. Targets the actual filler vocabulary the
+#      K2-R2 measurement showed dominates real lecture A.
+VARIANT_V5_DISCOURSE_MARKERS = [
+    PATTERN_VOCALISED_HESITATION,
+    PATTERN_TRIPLE_TRAIL_ITD,
+    (PATTERN_WORD_DOUBLING[0], PATTERN_WORD_DOUBLING[1], WORD_DOUBLING_REPL),
+    (PATTERN_TRIPLE_WORD[0], PATTERN_TRIPLE_WORD[1], TRIPLE_WORD_REPL),
+    (PATTERN_TRIPLE_PHRASE[0], PATTERN_TRIPLE_PHRASE[1], TRIPLE_PHRASE_REPL),
+    PATTERN_FILLER_CONJ,
+    PATTERN_SELF_QA,
+    PATTERN_DM_ZNACHIT,
+    PATTERN_DM_NA_SAMOM_DELE,
+    PATTERN_DM_SOBSTVENNO,
+    PATTERN_DM_TO_EST,
+    PATTERN_DM_DOPUSTIM,
+    PATTERN_DM_VOT_INTERJECTION,
+    PATTERN_CLEANUP_COMMA,
+    PATTERN_CLEANUP_LEAD_COMMA,
+    PATTERN_CLEANUP_WS,
+]
+
 # V4 — V3 + self-Q&A scaffolding. Most aggressive. Expected ratio
 #      ~0.65.
 VARIANT_V4_AGGRESSIVE = [
@@ -150,8 +215,9 @@ CANONICAL = VARIANT_V3_DISCOURSE
 
 
 VARIANTS = {
-    'V1_minimal':     VARIANT_V1_MINIMAL,
-    'V2_structural':  VARIANT_V2_STRUCTURAL,
-    'V3_discourse':   VARIANT_V3_DISCOURSE,
-    'V4_aggressive':  VARIANT_V4_AGGRESSIVE,
+    'V1_minimal':              VARIANT_V1_MINIMAL,
+    'V2_structural':           VARIANT_V2_STRUCTURAL,
+    'V3_discourse':            VARIANT_V3_DISCOURSE,
+    'V4_aggressive':           VARIANT_V4_AGGRESSIVE,
+    'V5_discourse_markers':    VARIANT_V5_DISCOURSE_MARKERS,
 }

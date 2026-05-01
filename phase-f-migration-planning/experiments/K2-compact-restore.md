@@ -274,6 +274,11 @@ the trajectory lifts.
 
 | run_id  | date       | layer | variant       | ratio | saved% | fwd recall | bwd recall | trip-quality | gate | voice (eye-read) | artifact link |
 |---------|------------|-------|---------------|-------|--------|------------|------------|--------------|------|------------------|---------------|
+| K2-R3-real-A-V5_discourse_markers | 2026-05-02 | L1 | V5_discourse_markers | 0.973 | 2.7%  | 0.909 | 0.909 | **0.0243**   | **FAIL** | n/a | real lecture A; new V5 variant targeting Russian discourse markers |
+| K2-R3-real-A-V4_aggressive | 2026-05-02 | L1 | V4_aggressive | 0.987 | 1.3% | 0.909 | 0.909 | 0.0116 | FAIL | n/a | real lecture A (regression check vs K2-R2; identical to K2-R2-V4) |
+| K2-R3-real-A-V3_discourse  | 2026-05-02 | L1 | V3_discourse  | 0.988 | 1.2% | 0.909 | 0.909 | 0.0110 | FAIL | n/a | same |
+| K2-R3-real-A-V2_structural | 2026-05-02 | L1 | V2_structural | 0.995 | 0.5% | 0.909 | 0.909 | 0.0044 | FAIL | n/a | same |
+| K2-R3-real-A-V1_minimal    | 2026-05-02 | L1 | V1_minimal    | 1.000 | 0.0% | 0.909 | 0.909 | 0.0000 | FAIL | n/a | same |
 | K2-R2-real-A-V4_aggressive | 2026-05-02 | L1 | V4_aggressive | 0.987 | 1.3%  | 0.909      | 0.909      | **0.0116**   | **FAIL** | n/a (no eye-read this run) | real `kurpatov-wiki-raw/.../000 Знакомство.../raw.json` (9963 words) |
 | K2-R2-real-A-V3_discourse  | 2026-05-02 | L1 | V3_discourse  | 0.988 | 1.2%  | 0.909      | 0.909      | 0.0110       | FAIL | n/a | same |
 | K2-R2-real-A-V2_structural | 2026-05-02 | L1 | V2_structural | 0.995 | 0.5%  | 0.909      | 0.909      | 0.0044       | FAIL | n/a | same |
@@ -325,6 +330,59 @@ link-out), then re-run on real lecture A from
 kurpatov-wiki-raw.
 
 ## Post-Mortem & Insights
+
+### K2-R3 (2026-05-02) — V5_discourse_markers vs V1..V4 on real lecture A
+
+**What happened.** Authored V5_discourse_markers per K2-R2's
+post-mortem Insight 1 (Курпатов uses discourse markers, not
+vocalised hesitations: значит ×30, на самом деле ×17,
+собственно ×19, то есть ×32, как бы ×10, ну, ×9, допустим ×3,
+вот ×101 standalone). Each pattern conservative — only matches
+the marker as a discourse anchor (comma- or whitespace-
+flanked), not as a content verb. 7 new TDD pytest cases lock
+the contract.
+
+V5 wins at trip-quality **0.0243** — **2.1× V4's 0.0116** —
+but still 8× below the 0.20 L1 gate. Forward recall stuck at
+0.909 (the OBS-A-001 cap; SA-01 closure pending).
+
+**Why the algorithm hit a ceiling.** Real lecture A is **content-
+dense**, not filler-heavy. Even the most aggressive L1 pattern
+set the architect can author drops only ~3% of tokens. The L1
+spec target of 25% saved-time was wishful — calibrated against
+the synth fixture's 230-word filler-heavy dialogue, not against
+a 9963-word substantive lecture transcript.
+
+**Architect call (queued).** Three paths forward:
+
+1. **Accept L1's ceiling at ~3% saved-time on content-dense
+   lectures.** Rewrite the K2 spec's L1 target band downward;
+   move the 0.20 trip-quality gate to L1+L2 (cross-source
+   dedup, where 30%+ saved-time is plausible since the next 43
+   sources will repeat ~10-30% of A's content per the K1
+   REPEATED detection observation).
+
+2. **Augment L1 with extractive summarization.** Use an LLM
+   pass to rank sentences by information density and keep the
+   top N% (e.g., 60%). This gives 40% saved-time but is no
+   longer pure-Python regex — it requires wiki-compiler GPU
+   time and changes L1's 'cheap floor' character. Probably
+   wrong for L1.
+
+3. **Move directly to L2/L3.** Skip further L1 iteration; ship
+   L2 (cross-source dedup) and L3 (concept-graph link-out).
+   The K2 spec's L1+L2 target is 0.40 trip-quality; L1+L2+L3
+   is 0.50. With forward recall preserved at 0.909, hitting
+   L1+L2 at 0.40 requires ratio ≤ 0.56 — i.e. saved-time
+   ≥ 44%. Plausible if L2 deduplicates aggressively against
+   the existing 2 source.md + 51 concept.md graph.
+
+**Recommendation.** Path 3 — move to L2. L1's measurement IS
+the win (we know exactly what filler vocabulary survives
+Whisper, and we have V5 in the bank for any lecture where
+filler IS the bottleneck). L2's machinery already exists in
+wiki-bench (REPEATED detection); the work is wiring it through
+the compact pipeline.
 
 ### K2-R2 (2026-05-02) — real lecture A from kurpatov-wiki-raw
 
