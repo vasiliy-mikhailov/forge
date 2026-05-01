@@ -171,6 +171,91 @@ last edit.
 **Verdict.** Stale status (test file says GREEN but verifier
 returns FAIL) = `FAIL`; missing status = `WARN`.
 
+### P14 — Motivation chain present in role files
+
+**Property.** Every role file under
+`phase-b-business-architecture/roles/` (excluding README.md)
+declares a `## Motivation chain` section per ADR 0015 decision
+point 1, citing the Driver → Goal → Outcome → Capability →
+Function → Role chain it serves.
+**Signal.** For each role md, grep for `^## Motivation chain`.
+**Rule.** [ADR 0015](../phase-preliminary/adr/0015-verifiable-agent-rewards.md)
+decision point 1.
+**Verdict.** Missing section = `WARN` (newly required; existing
+roles transition on next edit). New role files added without the
+section = `FAIL`.
+
+### P15 — Catalog rows cite Goal or Driver in their Source cell
+
+**Property.** Every Phase B / D row in
+`phase-requirements-management/catalog.md` has a Source cell
+naming a Phase A Goal (TTS / PTS / EB / Architect-velocity) or
+a Driver (from `phase-a/drivers.md`), OR an upstream Phase F
+closure (e.g. "G3 close-out").
+**Signal.** Parse the Source cell of each row; check substring
+match against the Phase A goal/driver names.
+**Rule.** Architecture-method requirement-traceability +
+ArchiMate Motivation chain (Driver → Goal → Requirement).
+**Verdict.** Source cell empty or unrelated to the chain =
+`WARN`.
+
+### P16 — Per-product capabilities decompose from forge-level capabilities
+
+**Property.** Every per-product capability file in
+`phase-b-business-architecture/capabilities/` (other than
+`forge-level.md` itself) cross-references one or more of the
+four forge-level capabilities (R&D, Service operation, Product
+delivery, Architecture knowledge management).
+**Signal.** Grep for `forge-level.md` link in each capability
+file.
+**Rule.** ArchiMate Strategy domain decomposition; per
+[`framework-tailoring.md`](../phase-preliminary/framework-tailoring.md)
+forge organises capabilities hierarchically.
+**Verdict.** Missing reference = `WARN`.
+
+### P17 — Test cases have a Reward section per ADR 0015
+
+**Property.** Every `## <ID> When … then …` case in a
+`tests/phase-b-business-architecture/roles/test-*.md` file has
+either a `### Reward` subsection (per ADR 0015 decision point
+2) OR is explicitly marked `PENDING (no mechanical reward
+function)`.
+**Signal.** Parse case headers and check for the matching
+`### Reward` subsection within the case body.
+**Rule.** [ADR 0015](../phase-preliminary/adr/0015-verifiable-agent-rewards.md)
+decision points 2 + 3.
+**Verdict.** Missing Reward + missing PENDING = `WARN` (newly
+required; existing cases transition on next edit).
+
+### P18 — Drivers explicitly influence Goals
+
+**Property.** Every Driver in
+`phase-a-architecture-vision/drivers.md` is connected to at
+least one Goal in `goals.md` via either an explicit "influences
+<Goal>" annotation or a parenthetical Goal reference.
+**Signal.** Parse driver bullets; check for Goal name substring
+in the bullet text.
+**Rule.** ArchiMate Motivation domain (Driver → influences →
+Goal); per spec §6.3.2.
+**Verdict.** Driver without a Goal trace = `WARN` (the linkage
+is currently implicit-prose).
+
+### P19 — Goals have at least one realising Capability trajectory
+
+**Property.** Every Goal listed in
+`phase-a-architecture-vision/goals.md` has at least one
+catalog row in `phase-requirements-management/catalog.md`
+whose Source cell cites that Goal — i.e., the Goal is being
+worked on, not aspirational-orphan.
+**Signal.** Parse Goal names from goals.md; for each, search
+catalog.md Source cells for the Goal name.
+**Rule.** ArchiMate Motivation chain (Goal → realized by →
+Capability trajectory) + architecture-method requirement
+that goals decompose into trajectories.
+**Verdict.** Goal with no realising trajectory = `WARN` (a Goal
+may legitimately be deferred — see R-A-PTS / R-A-EB rows that
+explicitly note their blockers; those are exempt).
+
 ## Output format
 
 ```
