@@ -26,6 +26,7 @@ ICE-формула, lifecycle, категории — в [`spec.md`](spec.md) §
 | 8 | D1  | skill v2 — incremental sections (quality)   |  90 | backlog  | —                                     |
 | 9 | D2  | skill v3 — terminal-only (quality)          |  80 | backlog  | —                                     |
 |10 | D3  | skill v4 — local write + git (quality)      |  70 | backlog  | —                                     |
+|11 | K2  | two-way compact/restore on lecture A        | 220 | active   | [`../../../../phase-f-migration-planning/experiments/K2-compact-restore.md`](../../../../phase-f-migration-planning/experiments/K2-compact-restore.md) |
 
 **Done:**
 - [F1](experiments/F1.md) (microbench L*) — ICE 648, **REFUTED**: Qwen3.6-27B-FP8 в isolated-call setup проходит JSON-tool-args на всех L от 1 KB до 49 KB. `L*_isolated ≥ 49 152 bytes`.

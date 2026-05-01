@@ -49,9 +49,19 @@ implementation). Loading the role = loading that file.
   (`products/<wiki>/corpus-observations.md` or appended to the
   product file) — verbatim quoted observations cited by R-NN
   rows. Provenance.
+- **R&D experiment specs** under
+  [`../../phase-f-migration-planning/experiments/`](../../phase-f-migration-planning/experiments/)
+  whose hypothesis derives from a Wiki-PM-authored R-NN
+  trajectory. The role authors the spec (hypothesis,
+  falsifiability gates, metrics, DoE matrix); the
+  [wiki-bench harness](../../phase-c-information-systems-architecture/application-architecture/wiki-bench/)
+  implements; the role accepts via eye-read + falsification-
+  gate check and emits the closure ADR if the trajectory lifts.
+  Today: K2 (two-way compact / restore on lecture A).
 
 No prompt edits. No grader edits. No source.md / concept.md
-edits.
+edits. (R&D experiment specs are *not* prompts/graders — they
+are the requirements those prompts/graders chase.)
 
 ## Realises
 
