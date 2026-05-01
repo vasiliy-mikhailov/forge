@@ -152,11 +152,16 @@ Transitively covered today by:
 - `phase-c-…/wiki-bench/tests/synthetic/test_verify_source_*.py`
   — pass-condition contract per ADR 0010-0011.
 
-Direct test md (SA-NN cases) is queued as a follow-up: the
-existing pytest coverage proves the harness end-to-end, but a
-role-test md per ADR 0013 + the dedup of WP-NN / DV-NN style
-reward functions per ADR 0015 would lift this role into the
-aggregate-scores table with a real number.
+Direct test md ([`/tests/phase-b-business-architecture/roles/test-source-author.md`](../../tests/phase-b-business-architecture/roles/test-source-author.md))
+ships with 6 SA-NN cases. The runner
+[`/scripts/test-runners/test-source-author-runner.py`](../../scripts/test-runners/test-source-author-runner.py)
+scores against the real source.md files in
+`kurpatov-wiki-wiki/data/sources/` — the role's aggregate
+appears in the audit table with a real number, not transitive
+`n/a`. Today: 9.0/11.0 = 0.818 PASS (4 PASS / 1 italian-strike
+/ 1 FAIL — the FAIL is a real artefact gap surfaced by SA-01:
+the production source.md is missing the `language` frontmatter
+field the template requires).
 
 ## Motivation chain
 

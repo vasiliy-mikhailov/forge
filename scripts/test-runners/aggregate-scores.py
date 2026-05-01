@@ -59,19 +59,16 @@ def gather() -> list[dict]:
     devops = sh.aggregate_per_runner(HISTORY / 'test-devops-runner.jsonl')
     devops['unit'] = 'DevOps'
     rows.append(devops)
-    # source-author + concept-curator — transitive coverage today by
-    # phase-c-…/wiki-bench/tests/synthetic/test_source_coordinator_*.py.
-    # No per-role runner yet (queued as SA-NN / CC-NN test md + reward
-    # function work); aggregate is n/a per ADR 0013 dec 9.
-    for unit_name in ('Source-author', 'Concept-curator'):
-        rows.append({
-            'unit': unit_name,
-            'n_cases_total': 0, 'n_cases_scored': 0,
-            'score_sum': 0.0, 'score_max_sum': 0.0,
-            'score_norm': None,
-            'band': 'transitive (wiki-bench tests)',
-            'pass_count': 0, 'italian_strike_count': 0, 'fail_count': 0,
-        })
+    # source-author + concept-curator — per-role runners now live
+    # against real kurpatov-wiki-wiki artefacts (2 source.md + 51
+    # concept.md files). Aggregate per the same ADR 0015 ladder as
+    # the other runners.
+    src_author = sh.aggregate_per_runner(HISTORY / 'test-source-author-runner.jsonl')
+    src_author['unit'] = 'Source-author'
+    rows.append(src_author)
+    concept_curator = sh.aggregate_per_runner(HISTORY / 'test-concept-curator-runner.jsonl')
+    concept_curator['unit'] = 'Concept-curator'
+    rows.append(concept_curator)
     per_lab = sh.aggregate_per_lab(HISTORY / 'test-lab-AGENTS-runner.jsonl')
     for code in ['RL', 'WB', 'WC', 'WI']:
         if code in per_lab:

@@ -157,9 +157,16 @@ Transitively covered today by:
   Skipped block: real concept-curator OpenHands agent test
   (queued — L2 work).
 
-Direct test md (CC-NN cases) is queued as a follow-up: the
-existing pytest scaffolding is in place; the role-test md per
-ADR 0013 + reward functions per ADR 0015 land when L2 ships.
+Direct test md ([`/tests/phase-b-business-architecture/roles/test-concept-curator.md`](../../tests/phase-b-business-architecture/roles/test-concept-curator.md))
+ships with 6 CC-NN cases. The runner
+[`/scripts/test-runners/test-concept-curator-runner.py`](../../scripts/test-runners/test-concept-curator-runner.py)
+scores against the real concept.md files in
+`kurpatov-wiki-wiki/data/concepts/` (today 51 files). The
+role's aggregate appears in the audit table with a real
+number, not transitive `n/a`. Today: 6.98/8.0 = 0.873 PASS
+(5 PASS / 1 italian-strike — CC-03's 58/101 forward-only-link
+asymmetry surfaces as italian-strike, an honest signal the
+graph needs back-link curation).
 
 ## Motivation chain
 
