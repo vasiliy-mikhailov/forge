@@ -36,4 +36,3 @@ those capabilities ship.
 
 ## ADRs
 
-- [`adr/`](adr/) — Phase B scoped ADRs.

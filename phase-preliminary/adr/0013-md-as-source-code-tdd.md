@@ -17,7 +17,7 @@ Forge holds two kinds of executable artefact:
    (derived script) per the existing TDD discipline in
    [`/tests/README.md`](../../tests/README.md).
 2. **Markdown that LLM agents run** — the
-   [`per-source-summarize.md`](../../phase-c-information-systems-architecture/application-architecture/wiki-bench/prompts/per-source-summarize.md)
+   [`per-source-summarize.md`](../../phase-c-information-systems-architecture/application-architecture/wiki-ingest/prompts/per-source-summarize.md)
    prompt the bench coordinator hands to the model, the
    [`wiki-requirements-collection.md`](../../phase-requirements-management/wiki-requirements-collection.md)
    process the Wiki PM role activates from, the

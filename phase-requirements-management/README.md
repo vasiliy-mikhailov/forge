@@ -57,8 +57,6 @@ into trajectories.
 - [`traceability.md`](traceability.md) — worked example traces
   (Phase A goal → Phase B / D dimension → Phase F experiment →
   Phase H promotion).
-- [`adr/`](adr/) — Requirements-Management-scoped ADRs (rare;
-  one is opened only when the *process* changes).
 
 ## Forward references
 

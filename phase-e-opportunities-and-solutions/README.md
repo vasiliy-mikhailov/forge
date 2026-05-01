@@ -13,7 +13,6 @@ across forge is the union of those.
 
 ## ADRs
 
-- [`adr/`](adr/) — Phase E scoped ADRs (cross-lab gap analyses).
 
 ## Forward to Phase F
 

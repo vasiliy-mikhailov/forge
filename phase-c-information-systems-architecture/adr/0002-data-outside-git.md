@@ -22,14 +22,14 @@ Question: what gets committed to git.
   strategy**: (3). Data. `.gitignore` excludes `vault/`, `models/`,
   `sources/`, `checkpoints/`, `mlruns/`, `mlflow/data/` (`sources/`
   was `videos/` prior to the 2026-04-20 rename — see
-  [kurpatov-wiki ADR 0004](../../labs/wiki-ingest/docs/adr/0004-mirror-sources-hierarchy.md)).
+  [kurpatov-wiki ADR 0004](../application-architecture/wiki-ingest/docs/adr/0004-mirror-sources-hierarchy.md)).
 
 ### Exception: `kurpatov-wiki/vault/raw/` is its own repo
 The raw-transcripts tree is tracked, but in a *separate* private
 GitHub repo (`kurpatov-wiki-raw`), not in forge. On the server,
 `${STORAGE_ROOT}/labs/wiki-ingest/vault/raw/` is a git working tree for
 that repo, pushed by the `kurpatov-wiki-raw-pusher` container. See
-[phase-c-information-systems-architecture/application-architecture/wiki-ingest/docs/adr/0005-split-transcribe-and-push.md](../../labs/wiki-ingest/docs/adr/0005-split-transcribe-and-push.md).
+[phase-c-information-systems-architecture/application-architecture/wiki-ingest/docs/adr/0005-split-transcribe-and-push.md](../application-architecture/wiki-ingest/docs/adr/0005-split-transcribe-and-push.md).
 The invariant "forge stays code-and-configs only" still holds — this
 exception concerns a different repo entirely. A symmetric
 `kurpatov-wiki-wiki` repo is planned for the `vault/wiki/` tree.

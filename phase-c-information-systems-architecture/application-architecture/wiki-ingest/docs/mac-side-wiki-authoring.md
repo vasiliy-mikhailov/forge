@@ -70,9 +70,9 @@ ls ~/repos/kurpatov-wiki-wiki/data  # should show index.md, concept-index.json, 
 ```
 
 If the wiki repo is empty or missing the scaffolding, the operator
-should first seed it from
-[`outputs/kurpatov-wiki-wiki-seed/`](../../../kurpatov-wiki-wiki-seed/)
-(produced alongside ADR 0007 in this commit).
+should first seed it from `outputs/kurpatov-wiki-wiki-seed/`
+(an external sibling directory produced alongside ADR 0007 in
+this commit; not committed into forge).
 
 ## Per-session checklist
 

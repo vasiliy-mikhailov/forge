@@ -65,7 +65,7 @@ multi-tool prompts — Qwen3.6's actual XML-tagged tool-call output
 isn't what `hermes` parser expects. Switching to
 `--tool-call-parser qwen3_xml` fixed it. The full lookup table
 plus the diagnostic symptom→cause mapping now lives at
-[`inference/docs/adr/0002-per-model-parsers.md`](../../inference/docs/adr/0002-per-model-parsers.md).
+[`inference/docs/adr/0002-per-model-parsers.md`](../../phase-c-information-systems-architecture/application-architecture/wiki-compiler/docs/adr/0002-per-model-parsers.md).
 
 **Reasoning extraction**. Modern open-weight models (Qwen3, R1,
 GLM-Reasoning) emit `<think>...</think>` blocks. Without

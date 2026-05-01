@@ -21,5 +21,3 @@ in Phase B, not here.
 - [`principles.md`](principles.md) — *iteration-scoped* principles
   only (none today). The forge-wide meta-principles live in
   [`../phase-preliminary/architecture-principles.md`](../phase-preliminary/architecture-principles.md).
-- [`adr/`](adr/) — Phase A scoped ADRs (vision-changing
-  decisions).

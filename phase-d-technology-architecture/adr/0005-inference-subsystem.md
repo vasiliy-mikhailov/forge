@@ -25,7 +25,7 @@ at `https://${INFERENCE_DOMAIN}/v1/...` fronted by caddy.
 Three cross-cutting design choices captured here; the
 **implementation-level** sub-decisions (vLLM vs alternatives, NGC
 image vs upstream, vLLM API key vs caddy basic auth) live in
-[`phase-c-information-systems-architecture/application-architecture/wiki-compiler/docs/adr/0001`](../../labs/wiki-compiler/docs/adr/0001-vllm-public-openai-compatible-endpoint.md).
+[`phase-c-information-systems-architecture/application-architecture/wiki-compiler/docs/adr/0001`](../../phase-c-information-systems-architecture/application-architecture/wiki-compiler/docs/adr/0001-vllm-public-openai-compatible-endpoint.md).
 
 ### 1. Mode mutex with rl-2048
 `inference` and `rl-2048` both want the Blackwell. forge has effectively

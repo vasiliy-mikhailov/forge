@@ -20,4 +20,3 @@ working tree.
   recent: [`audit-2026-04-30.md`](audit-2026-04-30.md). Each
   audit produces exactly one file; closing a finding is recorded
   in a *new* audit, not by editing the old one.
-- [`adr/`](adr/) — Phase H scoped ADRs.

@@ -18,11 +18,11 @@ The forge repo's top level is structured by TOGAF ADM phase plus
 two cross-cutting folders:
 
 - [`../`](../) — Phase Preliminary (this folder).
-- [`../../phase-requirements-management/`](../../phase-requirements-management/)
+- [`../phase-requirements-management/`](../phase-requirements-management/)
   — continuous Requirements Management (center of the ADM).
-- [`../../phase-a-architecture-vision/`](../../phase-a-architecture-vision/)
+- [`../phase-a-architecture-vision/`](../phase-a-architecture-vision/)
   through
-  [`../../phase-h-architecture-change-management/`](../../phase-h-architecture-change-management/)
+  [`../phase-h-architecture-change-management/`](../phase-h-architecture-change-management/)
   — the eight ADM phases.
 
 Each phase folder carries its own README + topical files (one file

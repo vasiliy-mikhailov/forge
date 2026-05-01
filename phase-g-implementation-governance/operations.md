@@ -263,7 +263,7 @@ lab's `tests/smoke.sh`; multiple caddies up = exit 1 (broken mutex);
 no lab up = exit 2.
 
 Full dispatcher contract: [`tests/smoke.md`](../tests/smoke.md).
-Per-lab smoke models: [`<lab>/tests/smoke.md`](phase-c-information-systems-architecture/application-architecture/).
+Per-lab smoke models: [`<lab>/tests/smoke.md`](../phase-c-information-systems-architecture/application-architecture/).
 Shared assertion helpers: [`scripts/smoke-lib.sh`](../scripts/smoke-lib.sh).
 Coverage map and TDD loop: [`tests/README.md`](../tests/README.md).
 

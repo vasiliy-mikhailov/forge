@@ -4,7 +4,7 @@ How forge is physically laid out: what lives where, how services talk
 to each other, how GPUs and disk are used. For "why" — see each lab's
 `SPEC.md` and the relevant ADR.
 
-After [ADR 0007](../adr/0007-labs-restructure-self-contained-caddy.md)
+After [ADR 0007](../phase-g-implementation-governance/adr/0007-labs-restructure-self-contained-caddy.md)
 forge is organized by TOGAF ADM phase; the labs (application components) live at `phase-c-information-systems-architecture/application-architecture/<lab>/`, each lab fully
 self-contained (own caddy, compose, SPEC, ADRs). Labs are **mutex on
 host ports :80/:443** because each lab's caddy binds them. Bench is
@@ -27,7 +27,7 @@ compiler lab.
   - Driver: `nvidia-driver-590-open` (MIT/GPL kernel module). **Not the
     proprietary one, specifically `-open`** — proprietary breaks
     multi-GPU on Blackwell. See
-    [adr/0004-nvidia-driver-open-plus-hmm-off.md](../adr/0004-nvidia-driver-open-plus-hmm-off.md).
+    [adr/0004-nvidia-driver-open-plus-hmm-off.md](adr/0004-nvidia-driver-open-plus-hmm-off.md).
   - UVM HMM disabled via `/etc/modprobe.d/nvidia-uvm.conf`:
     `options nvidia_uvm uvm_disable_hmm=1`.
   - Container toolkit: `nvidia-container-toolkit ≥ 1.19`. We don't
@@ -158,7 +158,7 @@ Every public-facing surface goes through a per-lab caddy attached to
 Auth: jupyter-* and mlflow are behind caddy basic auth
 (`BASIC_AUTH_USER` / `BASIC_AUTH_HASH`); the inference endpoint is
 the documented exception (vLLM Bearer auth, see
-[ADR 0005](../adr/0005-inference-subsystem.md)). TLS terminates at caddy
+[ADR 0005](adr/0005-inference-subsystem.md)). TLS terminates at caddy
 in every case.
 
 ## Shared conventions
@@ -189,7 +189,7 @@ in every case.
   Diagnostics: [`phase-g-implementation-governance/operations.md`](../phase-g-implementation-governance/operations.md) → "GPU suddenly
   unavailable".
 - `nvidia_uvm` loaded without `uvm_disable_hmm=1` → CUDA hangs.
-  See [ADR 0004](../adr/0004-nvidia-driver-open-plus-hmm-off.md).
+  See [ADR 0004](adr/0004-nvidia-driver-open-plus-hmm-off.md).
 - Two labs' caddies up at once → host port conflict; the second one
   fails to bind. Smoke dispatcher catches this:
   `make smoke` exits 1 with a "broken mutex" message.
