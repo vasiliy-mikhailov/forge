@@ -148,7 +148,7 @@ def i_au_04_findings_carry_predicate_and_fix() -> Result:
         for blk in re.findall(r'(?ms)^### F\d+\..+?(?=\n### |\n## |\Z)',
                               section_match.group(0)):
             total += 1
-            has_pred = bool(re.search(r'Predicate:\s*P\d+', blk))
+            has_pred = bool(re.search(r'Predicate:\s*\S', blk))
             has_symptom = '**Symptom.**' in blk
             if verdict in ('FAIL', 'WARN'):
                 has_rule = '**Rule.**' in blk

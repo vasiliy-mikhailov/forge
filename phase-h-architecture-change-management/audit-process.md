@@ -283,14 +283,20 @@ Predicate: P<NN>. Path(s): <forge-relative path(s)>.
 ## Findings — verdict INFO
 
 ### F<N>. <one-line title>
-Predicate: P<NN>. Path(s): <forge-relative path(s)>.
+Predicate: P<NN>  |  meta  |  P<NN>+P<MM>. Path(s): <forge-relative path(s)>.
 **Symptom.** <what was observed>
 **Note.** <why this is noteworthy but not a violation; predicate
 refinement, documented exception, etc.>
 
 (INFO findings may omit **Rule.** and **Proposed fix.** because
 they do not represent rule violations; the **Note.** paragraph
-captures both why it's noteworthy and any follow-up action.)
+captures both why it's noteworthy and any follow-up action.
+
+The Predicate cell on INFO findings may be `P<NN>` (a specific
+predicate hit), `meta` (an observation about the audit
+process / predicate set itself, not about a specific rule
+violation), or a list / sum of predicates (e.g. `P14+P19`)
+when the finding spans multiple predicates.)
 
 ## Summary
 
