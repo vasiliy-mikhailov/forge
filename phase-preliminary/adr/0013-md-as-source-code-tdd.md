@@ -143,6 +143,25 @@ Concretely:
    reason is in the commit message*. No "test was wrong, deleted"
    commits; STALE → re-write with rationale.
 
+9. **Transitive coverage of single-role process specs.**
+   When a process spec md is exclusively activated from a
+   single role's persona file (e.g.
+   `phase-requirements-management/wiki-requirements-collection.md`
+   is loaded only by the Wiki PM role; `phase-h-architecture-
+   change-management/audit-process.md` is loaded only by the
+   Auditor role), the role's tests transitively cover the
+   process spec — if the spec changes and the role's outputs
+   regress, the role's test catches it. No separate test md is
+   required at the process-spec mirror path.
+
+   This carve-out applies only when activation is
+   single-role-exclusive. A process spec activated from two
+   or more roles, or activated directly by a tool, needs its
+   own test md at the canonical mirror path. The carve-out is
+   recorded with each affected role: the role's persona file's
+   `## Tests` section names the process spec it transitively
+   covers.
+
 ## Consequences
 
 **Positive.**

@@ -1,7 +1,8 @@
 # wiki-ingest — agent context
 
 This file follows the same Phase A-H structure as forge-level
-`AGENTS.md`. Read forge-level first for cross-cutting rules; this
+`AGENTS.md` (canonical template:
+`forge/phase-g-implementation-governance/lab-AGENTS-template.md`). Read forge-level first for cross-cutting rules; this
 file is scoped to the ingest lab.
 
 ## Phase A — Architecture Vision

@@ -106,8 +106,16 @@ P6 catches `operations stack`, `is responsible for`,
 `agent`-as-org-unit, `drives`/`owns` as relationship verbs,
 and produces zero findings on a clean ArchiMate-typed
 fixture). Verifier:
-[`test-auditor-verifier.py`](../../scripts/test-runners/test-auditor-runner.py).
+[`test-auditor-runner.py`](../../scripts/test-runners/test-auditor-runner.py).
 All 11 GREEN after first run.
+
+**Transitive coverage** (per ADR 0013 dec 9): this role's
+tests transitively cover its activation file
+[`/phase-h-architecture-change-management/audit-process.md`](../../phase-h-architecture-change-management/audit-process.md)
+— a process spec activated only by the Auditor role; no
+separate test md exists at the process-spec mirror path.
+When the process spec changes and the Auditor's audit
+outputs regress, this role's tests catch it.
 
 ## Motivation chain
 

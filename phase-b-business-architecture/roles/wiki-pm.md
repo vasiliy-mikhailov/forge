@@ -131,6 +131,13 @@ the spec; the runner at
 [`/scripts/test-runners/test-wiki-pm-runner.py`](../../scripts/test-runners/test-wiki-pm-runner.py)
 is the derived mechanism that automates the executable subset.
 
+**Transitive coverage** (per ADR 0013 dec 9): this role's
+tests transitively cover its activation file
+[`/phase-requirements-management/wiki-requirements-collection.md`](../../phase-requirements-management/wiki-requirements-collection.md);
+no separate test md exists at the process-spec mirror path.
+When the process spec changes and the role's outputs regress,
+the role's test catches it.
+
 ## Motivation chain
 
 Per [ADR 0015](../../phase-preliminary/adr/0015-verifiable-agent-rewards.md),

@@ -73,6 +73,12 @@ smoke.sh" without touching `tests/` is a code smell.
     — runner: [`/scripts/test-runners/test-wiki-pm-runner.py`](../scripts/test-runners/test-wiki-pm-runner.py)
   - [`phase-b-business-architecture/roles/test-auditor.md`](phase-b-business-architecture/roles/test-auditor.md)
     — runner: [`/scripts/test-runners/test-auditor-runner.py`](../scripts/test-runners/test-auditor-runner.py)
+  - [`phase-c-information-systems-architecture/application-architecture/rl-2048/test-AGENTS.md`](phase-c-information-systems-architecture/application-architecture/rl-2048/test-AGENTS.md),
+    [`…/wiki-bench/test-AGENTS.md`](phase-c-information-systems-architecture/application-architecture/wiki-bench/test-AGENTS.md),
+    [`…/wiki-compiler/test-AGENTS.md`](phase-c-information-systems-architecture/application-architecture/wiki-compiler/test-AGENTS.md),
+    [`…/wiki-ingest/test-AGENTS.md`](phase-c-information-systems-architecture/application-architecture/wiki-ingest/test-AGENTS.md)
+    — shared runner: [`/scripts/test-runners/test-lab-AGENTS-runner.py`](../scripts/test-runners/test-lab-AGENTS-runner.py)
+    (parameterised over the 4 labs; LA-XX-01..04 per lab — see ADR 0013).
 
 ## Coverage map
 
