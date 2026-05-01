@@ -91,6 +91,50 @@ Cross-module concept link: C connects лимбическая система
 quality demands the link survives — both concepts already
 appear in module 000 raws; this is a `REPEATED` claim in
 authoring terms.
+**OBS-B-018 [Concept-graph quality]** *(raw B, "формула невроза" section)*
+
+> Согласно нашей генетической программе, мы должны жить в живой природе, а не в мегаполисах, в небольших группах близких нам людей
+
+The evolutionary-mismatch claim — psychology-vs-civilization
+foundation of Курпатов's neurosis theory. Substantive
+testable proposition; survives as a concept the wiki should
+catalogue.
+
+**OBS-B-019 [Concept-graph quality]** *(raw B, "формула невроза" section)*
+
+> конфликт биологии и культуры внутри нашей психики
+
+Coined load-bearing term — the fundamental conflict
+Курпатов's whole theory orbits. Concept-graph candidate slug;
+must survive condense.
+
+**OBS-A-020 [Concept-graph quality]** *(raw A, chunk 4, neuroscience excursion)*
+
+> лимбическая система устроена ядрами, там агрегации нервных клеток
+
+Substantive neuroscience claim with verifiable structure (the
+лимбическая система IS organised as ядра / nuclei, fact-
+checkable against neuroscience textbooks). Pairs with
+fact-check coverage as a candidate for primary-source
+citation.
+
+**OBS-B-021 [Concept-graph quality]** *(raw B, СПП section)*
+
+> на знаниях о работе его базовых нейронных сетей, отвечающих за взаимодействие сознательных убеждений и подсознательных установок
+
+The neuroscience-foundation claim of СПП (Системная
+поведенческая психотерапия). Substantive scientific framing;
+testable against neuroscience literature on default-mode /
+salience networks.
+
+**OBS-B-022 [Concept-graph quality]** *(raw B, "формула невроза" section)*
+
+> дистресс приводит к сбоям
+
+The compressed central claim of Курпатов's neurosis model.
+Six words; high information density; survives any condense
+pass.
+
 
 ## Form
 
@@ -151,6 +195,54 @@ move — a thought experiment that lands an abstract claim about
 social attachment. Form is distinctive; the scenario often *is*
 the content (the mental image survives in the reader where the
 abstract claim wouldn't). Must survive condense.
+**OBS-B-023 [Voice preservation]** *(raw B, end of stress section)*
+
+> Поверьте, это уже само по себе даёт невероятное чувство облегчения!
+
+Audience-direct emotional appeal ("Поверьте" + exclamation).
+Курпатов signature — bridges between abstract claim and
+reader emotion. Survives as voice; the claim it lifts
+("understanding stress brings relief") survives as substance.
+
+**OBS-A-024 [Voice preservation][Reading speed]** *(raw A, chunk 1, opening)*
+
+> Прежде всего, это Академия Психологии и Мышления, и нам нужно стать с вами психологами.
+
+Lecture-meta opener fused with curriculum framing. "Прежде
+всего" is voice-organisational (signposts the talk's
+structure); the "АПиМ + стать психологами" content is
+program-listing not psychology — a Form/Air boundary case.
+Drop the meta opener, keep the APM cross-link as a single
+structural reference.
+
+**OBS-B-025 [Voice preservation]** *(raw B, end of глубинная section)*
+
+> Не случайно я люблю называть подход личностно-ориентированной терапии — «гуманистическим континуумом системной поведенческой психотерапии»
+
+Branded-method self-citation by re-naming. "Я люблю называть"
+is the signature move — Курпатов claims naming-rights over
+how a different school's approach maps into his. Form is
+distinctive; the renaming ("гуманистический континуум") is
+a candidate concept slug if the wiki adopts it.
+
+**OBS-A-026 [Voice preservation]** *(raw A, chunk 4, near Фрейд)*
+
+> Возможно, вы слышали знаменитое объяснение Фрейда нашей творческой активности
+
+Audience-prior-knowledge framing ("Возможно, вы слышали") +
+sublimation example. Voice-signature setup for an example;
+the Фрейд-paraphrase that follows is substance, the framing
+is form. Drop the framing in condense, keep the example.
+
+**OBS-A-027 [Voice preservation]** *(raw A, chunk 1, mid)*
+
+> Что ж, со знаниями мы разобрались, и, соответственно, у нас возникнут навыки
+
+Discourse-marker section-bridge ("Что ж, … разобрались")
+fused with "соответственно у нас возникнут". Pure spoken
+delivery; provides paragraph segmentation in the absence of
+markup. Form: drop in writing, infer paragraph break.
+
 
 ## Air
 
@@ -235,6 +327,88 @@ otherwise the same source produces different output depending
 on whether Whisper happened to insert period-pause newlines.
 Reproducibility from `(Dockerfile + raw)` only requires the
 condense step to be deterministic against unstructured input.
+**OBS-A-028 [Reading speed]** *(raw A, chunk 1, ≈8% mark)*
+
+> какие-то депрессивные реакции, или еще что-то, что требует нашего профессионально-систематической работы
+
+"Или еще что-то" — vague-terminator. Same family as triple-
+trail filler (P1) but at the smaller scale of "list of things,
+plus something". Air at the scale of phrases, not sentences.
+
+**OBS-A-029 [Reading speed][Transcription accuracy]** *(raw A, chunk 1, ≈30% mark)*
+
+> у нас, кроме всего этого, есть, ну, я здесь вам написал «стресс», да, но есть, значит, кризисные состояния
+
+Discourse-marker stutter overlay ("ну", "да", "значит" all
+in one clause) + meta-deictic ("я здесь вам написал"). Three
+fillers in 18 words. Air, with a transcription-side
+contribution: this density of disfluencies is what makes
+Whisper output noisy.
+
+**OBS-A-030 [Reading speed]** *(raw A, chunk 1, near end of #5 community)*
+
+> на созвонах вместе участвовать все понимаете что вы учитесь
+
+Vague metacommentary on the act of participating ("все
+понимаете что вы учитесь") that contains no information
+beyond "students learn." Air with second-order signal —
+agent should detect that "все понимаете что" introduces a
+tautological claim that can be cut.
+
+**OBS-cross-031 [Dedup correctness][Concept-graph quality]** *(cross-source: raw A + raw C)*
+
+> вот эти три базовые потребности, потребность в самозащите, в выживании, потребность в социальном взаимодействии
+
+(raw A, chunk 4) — and raw C separately introduces the same
+three-base-needs taxonomy:
+
+> насколько гармонично и полно наши базовые потребности реализуются
+
+(raw C). The concept *базовые потребности* appears across
+both raws as the load-bearing taxonomy. Wiki must dedup the
+concept article (one slug, two `touched_by`); the *first
+introduction* in the source order (A → C) is `NEW`, the
+second is `REPEATED (from: <A's slug>)`. Critical Dedup-
+correctness case for a multi-module compile.
+
+**OBS-cross-032 [Dedup correctness]** *(cross-source: raws A + C + D)*
+
+> Это им движет инстинкт самосохранения?
+
+(raw A, chunk 4) — and the same concept reappears in raw C:
+
+> вот эта часть, это больше за инстинкт самосохранения отвечает
+
+— and again in raw D:
+
+> делать уже социальное, потом инстинкт самосохранения вида рассказывать
+
+Three-raw recurrence of *инстинкт самосохранения*. The wiki's
+dedup pass must keep one concept article and three
+`Contributions by source` entries; getting this wrong
+duplicates the slug N times across the corpus (the K1 v1
+failure mode that motivated the dedup capability).
+
+**OBS-meta-033 [Requirement traceability][Fact-check coverage]** *(meta: across all 5 raws)*
+
+> Стресс — это, если опираться на определение, которое дал ему автор теории Ганс Селье
+
+(raw A, paraphrasing Selye explicitly — see OBS-A-001) —
+versus unattributed branded claims like:
+
+> Говорить об эффективности данной технологии мы можем не только благодаря результатам тысяч наших благодарных студентов
+
+(raw B, OBS-B-015's neighbour). The corpus carries two
+classes of claim: those with explicit external attribution
+(Selye, Эпиктет, Адлер, Карл Роджерс, Карен Хоурни, Эрик
+Фромм, Маск, Фрейд appear by name) and those with self-
+attribution only (Курпатов's own framings, branded methods,
+"тысяч учеников" assertions). The wiki's `R-NN` requirements
+should distinguish: external-attribution claims roll up to
+*Fact-check coverage* (verifiable); self-attribution claims
+roll up to *Voice preservation* (signature). Mixing them is
+the trap that makes a wiki feel authoritative when it isn't.
+
 
 ## Coverage map
 
