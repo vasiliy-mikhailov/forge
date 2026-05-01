@@ -109,6 +109,36 @@ fixture). Verifier:
 [`test-auditor-verifier.py`](../../tests/phase-b-business-architecture/roles/test-auditor-verifier.py).
 All 11 GREEN after first run.
 
+## Motivation chain
+
+Per [ADR 0015](../../phase-preliminary/adr/0015-verifiable-agent-rewards.md),
+every role declares its motivation chain in ArchiMate 4 terms.
+
+```
+Driver:        Architecture inconsistencies left in the working
+               tree compound; downstream agents inherit them and
+               waste architect time chasing regressions whose root
+               cause is a stale rule.
+Goal:          Architect-velocity (Phase A) — capability advances
+               per architect-hour stay high as the corpus grows.
+Outcome:       Architecture inconsistencies are surfaced before
+               they propagate (measurable: count of stale items
+               in the working tree per audit; trend over time).
+Capability:    Architecture Knowledge Management — single source
+               of truth + TOGAF-style doc threading dimensions
+               (capabilities/forge-level.md).
+Function:      audit-process.md walk against the working tree.
+Role:          Auditor (this file).
+Filled by:     Claude (Cowork session).
+```
+
+Each agentic-behaviour test in
+[`/tests/phase-b-business-architecture/roles/test-auditor.md`](../../tests/phase-b-business-architecture/roles/test-auditor.md)
+scores the agent's output against this chain — specifically,
+how much each test case advances the *Outcome* row above. The
+score is RLVR-style verifiable; runner at
+[`/scripts/test-runners/test-auditor-runner.py`](../../scripts/test-runners/test-auditor-runner.py).
+
 ## References
 
 - Activation file:

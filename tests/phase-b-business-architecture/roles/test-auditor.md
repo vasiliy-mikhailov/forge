@@ -28,6 +28,11 @@ Cases are numbered `AU-<NN>`. There is no further classification
 (no Inspection / Decision split) — the specification doesn't care
 how the runner achieves verification.
 
+[ADR 0015](../../../phase-preliminary/adr/0015-verifiable-agent-rewards.md)
+extends each case with a `### Reward` section that scores the
+agent's output against the role's Motivation chain. Verdict
+ladder: `PENDING` → `FAIL` (score < threshold) → `PASS-italian-strike` (threshold ≤ score < 0.8 × max) → `PASS` (score ≥ 0.8 × max). The italian-strike state surfaces agents that technically conform while producing thin work.
+
 ## Cases
 
 | ID    | When … then …                                                                         | Verdict |
@@ -205,6 +210,35 @@ The audit's FAIL section contains a finding whose:
 - **Verdict.** PASS if a matching finding exists.
 
 ---
+
+### Reward
+
+**Motivation reference.** Realises the *Outcome*
+"architecture inconsistencies are surfaced before they
+propagate" — rolls up to the *Architect-velocity* Goal
+(Phase A). The score measures how thoroughly the audit
+fulfils that Outcome on this single fixture.
+
+**Score components** (each 0/1 unless noted):
+
+- C1. Finding exists in FAIL section.
+- C2. Predicate cell names `P6`.
+- C3. Symptom paragraph quotes the phrase verbatim.
+- C4. Rule paragraph cites ADR 0014.
+- C5. Proposed-fix paragraph is concrete (≥ 10 words AND
+  references at least one path / replacement term).
+- C6. Proposed fix would actually resolve the violation
+  (replacement term is one of: "capability map",
+  "function", or another ArchiMate-typed element).
+
+**Aggregate.** Sum (range 0..6).
+
+**PASS threshold.** 3.
+
+**Italian-strike band.** 3 ≤ score < 5.
+
+**Score = 6.** Ideal — architect would not need to revise
+the finding text before acting on it.
 
 ## AU-06 When the Auditor's input contains "is responsible for", then it produces a P6 FAIL finding
 

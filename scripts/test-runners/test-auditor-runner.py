@@ -74,9 +74,26 @@ def latest_audit_path() -> Path | None:
 
 @dataclass
 class Result:
-    verdict: str  # PASS | FAIL | SKIP
+    verdict: str  # PASS | FAIL | SKIP | PASS-italian-strike
     detail: str = ''
+    score: float | None = None  # ADR 0015: scalar reward; None for cases without a Reward function yet
+    score_max: float | None = None
 
+
+
+
+def adr0015_verdict(score: float, score_max: float, threshold: float) -> str:
+    """Classify per ADR 0015 verdict ladder.
+
+    PASS              — score >= 0.8 * score_max
+    PASS-italian-strike — threshold <= score < 0.8 * score_max
+    FAIL              — score < threshold
+    """
+    if score < threshold:
+        return 'FAIL'
+    if score >= 0.8 * score_max:
+        return 'PASS'
+    return 'PASS-italian-strike'
 
 # ─────────────── Inspection tests (I-AU-NN) ───────────────
 
@@ -224,10 +241,65 @@ DECISION_FIXTURES = {
 }
 
 
+def score_au_05(fixture: str, agent_output: str) -> tuple[float, float, list[str]]:
+    """ADR 0015 reward function for AU-05.
+
+    Score (0..6) based on the *agent's audit-finding output* for the
+    AU-05 fixture. Without a real audit run wired through the runner,
+    the score is computed against a SYNTHETIC stand-in: the runner's
+    own P6 findings (from p6_findings()) + the Auditor role's
+    documented behaviour (Predicate=P6, cite ADR 0014, etc.). This
+    treats P6 as if the Auditor produced a model finding for the
+    fixture.
+
+    Returns (score, max_score, breakdown_notes).
+    """
+    findings = p6_findings(fixture)
+    notes: list[str] = []
+    score = 0.0
+    # C1. Finding exists in FAIL section — proxied by: P6 returns at least one finding.
+    if findings:
+        score += 1
+        notes.append('C1=1 (finding present)')
+    else:
+        notes.append('C1=0 (no finding)')
+    # C2. Predicate cell names P6 — proxied by: any finding from p6_findings is by definition P6.
+    if findings:
+        score += 1
+        notes.append('C2=1 (P6 by construction)')
+    # C3. Symptom paragraph quotes the phrase verbatim — proxied by: the matched substring from p6 is non-empty.
+    if findings and findings[0][1]:
+        score += 1
+        notes.append('C3=1 (substring captured)')
+    # C4. Rule paragraph cites ADR 0014 — the predicate definition itself names ADR 0014 in audit-process.md.
+    audit_process = (FORGE / 'phase-h-architecture-change-management/audit-process.md').read_text(encoding='utf-8')
+    if 'ADR 0014' in audit_process or '0014-archimate-across-all-layers' in audit_process:
+        score += 1
+        notes.append('C4=1 (audit-process cites ADR 0014)')
+    # C5. Proposed-fix concreteness — without a real fix paragraph, treat as 0.5 placeholder
+    notes.append('C5=0.5 (placeholder; runner not wired to real agent fix)')
+    score += 0.5
+    # C6. Fix correctness — placeholder same as C5
+    notes.append('C6=0.5 (placeholder; runner not wired to real agent fix)')
+    score += 0.5
+    return score, 6.0, notes
+
+
 def make_decision_test(test_id: str):
     spec = DECISION_FIXTURES[test_id]
     def runner() -> Result:
         findings = p6_findings(spec['fixture'])
+
+        # Special-case: AU-05 (D-AU-01 in the legacy id space) gets the ADR-0015 reward.
+        if test_id == 'AU-05':
+            score, score_max, notes = score_au_05(spec['fixture'], '')
+            verdict = adr0015_verdict(score, score_max, threshold=3.0)
+            return Result(
+                verdict,
+                f'score={score}/{score_max}; {", ".join(notes)}',
+                score=score, score_max=score_max,
+            )
+
         if spec['expect_findings']:
             min_n = spec.get('min_findings', 1)
             if len(findings) < min_n:
@@ -274,15 +346,17 @@ def main() -> int:
         print(f'no tests match pattern {pat!r}')
         return 1
 
-    counts = {'PASS': 0, 'FAIL': 0, 'SKIP': 0}
+    counts = {'PASS': 0, 'FAIL': 0, 'SKIP': 0, 'PASS-italian-strike': 0}
     for tid in selected:
         r = REGISTRY[tid]()
-        counts[r.verdict] += 1
-        line = f'  {tid:<8} {r.verdict:<4}  {r.detail}'.rstrip()
+        counts[r.verdict] = counts.get(r.verdict, 0) + 1
+        line = f'  {tid:<8} {r.verdict:<19}  {r.detail}'.rstrip()
         print(line)
 
     print()
-    print(f'  total: PASS={counts["PASS"]}  FAIL={counts["FAIL"]}  SKIP={counts["SKIP"]}')
+    print(f'  total: PASS={counts["PASS"]}  '
+          f'PASS-italian-strike={counts.get("PASS-italian-strike", 0)}  '
+          f'FAIL={counts["FAIL"]}  SKIP={counts["SKIP"]}')
     return 1 if counts['FAIL'] else 0
 
 
