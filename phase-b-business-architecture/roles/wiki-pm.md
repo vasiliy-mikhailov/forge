@@ -131,6 +131,37 @@ the spec; the runner at
 [`/scripts/test-runners/test-wiki-pm-runner.py`](../../scripts/test-runners/test-wiki-pm-runner.py)
 is the derived mechanism that automates the executable subset.
 
+## Motivation chain
+
+Per [ADR 0015](../../phase-preliminary/adr/0015-verifiable-agent-rewards.md),
+every role declares its motivation chain in ArchiMate 4 terms.
+
+```
+Driver:        Time spent consuming information from Russian
+               psychology lectures (Kurpatov: ~60-90 min each,
+               ~200 in catalog) → influences TTS.
+Goal:          TTS — Theoretical Time Saved (Phase A);
+               Architect-velocity (cross-cutting).
+Outcome:       Every implementation choice in the wiki product
+               line cites a requirement; orphan rules do not
+               accumulate; quality regressions trace to a
+               named requirement, not 'the model is bad'.
+Capability:    Develop wiki product line — Requirement
+               traceability dimension
+               (capabilities/develop-wiki-product-line.md).
+Function:      wiki-requirements-collection.md walk
+               (Steps S1-S8).
+Role:          Wiki PM (this file).
+Filled by:     Claude (Cowork session).
+```
+
+Each agentic-behaviour test in
+[`/tests/phase-b-business-architecture/roles/test-wiki-pm.md`](../../tests/phase-b-business-architecture/roles/test-wiki-pm.md)
+scores the agent's output against this chain — specifically,
+how much each test case advances the *Outcome* row above. The
+score is RLVR-style verifiable (per ADR 0015); runner at
+[`/scripts/test-runners/test-wiki-pm-runner.py`](../../scripts/test-runners/test-wiki-pm-runner.py).
+
 ## References
 
 - Working method:

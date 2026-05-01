@@ -1,10 +1,11 @@
 # Capability: Service Operation (production framework)
 
-One of forge's four business capabilities (Phase B). Service
-Operation is the ability to run forge's production-framework
-services *reliably, cheaply, and fast enough that R&D output
-throughput is not bottlenecked on infrastructure*. It is forge's
-"keep the lights on" capability.
+One of forge's four business capabilities (Phase B), declared
+in [`forge-level.md`](forge-level.md) and deep-dived here.
+Service Operation is the ability to run forge's production-
+framework services *reliably, cheaply, and fast enough that
+R&D output throughput is not bottlenecked on infrastructure*.
+It is forge's "keep the lights on" capability.
 
 This capability covers infrastructure as a *behaviour* (services
 that run, deliver, recover); the concrete components and tech
