@@ -45,13 +45,47 @@ def _approx_token_count(text: str) -> int:
     return len(text.split())
 
 
+def _normalise_raw(raw: dict) -> dict:
+    """Accept both schemas:
+      - synth fixture: {stem, course, module, transcript, segments[]}
+      - real wiki-ingest: {info, segments[]} where info has source_path,
+        duration, etc., and segments[] each carry {start, end, text, …}.
+    Return a normalised dict with stem/course/module/transcript/segments.
+    """
+    if 'transcript' in raw:
+        return raw
+    # Real schema — build the transcript from segments
+    info = raw.get('info', {})
+    src = info.get('source_path', '')
+    # Path looks like /workspace/sources/<course>/<module>/<stem>.<ext>
+    import os as _os
+    stem = _os.path.splitext(_os.path.basename(src))[0] if src else 'unknown'
+    parts = src.split('/')
+    course = parts[-3] if len(parts) >= 3 else ''
+    module = parts[-2] if len(parts) >= 2 else ''
+    transcript = ' '.join((s.get('text') or '').strip()
+                          for s in raw.get('segments', []))
+    return {
+        'stem': stem,
+        'course': course,
+        'module': module,
+        'transcript': transcript,
+        'segments': raw.get('segments', []),
+    }
+
+
 def compact_l1(raw: dict, variant: str | None = None) -> dict:
     """Apply L1 Air-strip and return the compact-form dict.
 
     `variant`: name of a pattern set in `filler_patterns.VARIANTS`
     (e.g., 'V1_minimal', 'V4_aggressive'). Default: the canonical
     V3_discourse set.
+
+    Accepts both the synth fixture schema (top-level transcript)
+    and the real wiki-ingest schema ({info, segments}); see
+    `_normalise_raw()`.
     """
+    raw = _normalise_raw(raw)
     patterns = VARIANTS[variant] if variant else CANONICAL
     transcript = raw['transcript']
     new_transcript, fired = _apply_patterns(transcript, patterns)

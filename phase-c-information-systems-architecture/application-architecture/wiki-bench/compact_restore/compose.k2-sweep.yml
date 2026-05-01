@@ -1,0 +1,48 @@
+# K2 sweep — docker compose service. Per architecture-principles.md
+# P3 (containers-only). Per architecture-principles.md P4 (single
+# host: mikhailov.tech) — runs alongside wiki-compiler / wiki-ingest
+# without claiming :80/:443 (no Caddy; no service-mesh entry point;
+# the sweep is one-shot CLI).
+#
+# Run from the forge repo root on mikhailov.tech:
+#   docker compose -f phase-c-…/wiki-bench/compact_restore/compose.k2-sweep.yml \
+#       run --rm k2-sweep \
+#       --input "/raw/data/Психолог-консультант/000 Путеводитель по программе/000 Знакомство с программой «Психолог-консультант»/raw.json" \
+#       --observations /forge/phase-b-business-architecture/products/kurpatov-wiki/corpus-observations.md \
+#       --source A \
+#       --run-id K2-R2-real-A \
+#       --ops-log-stub
+#
+# STORAGE_ROOT is the env var the wiki-ingest pipeline already uses
+# for the vault layer (see operations.md). Default /home/vmihaylov.
+
+services:
+  k2-sweep:
+    image: forge-k2-sweep:latest
+    build:
+      context: ../  # phase-c-…/wiki-bench/
+      dockerfile: compact_restore/Dockerfile.k2-sweep
+    container_name: k2-sweep
+    network_mode: none      # pure-Python regex: no network needed
+    read_only: true         # no writes inside the container
+    user: "${UID:-1000}:${GID:-1000}"  # don't run as root
+    tmpfs:
+      - /tmp:size=64m       # for the sweep's NamedTemporaryFile output
+    volumes:
+      # Forge tree — read-only. The container reads sweep.py +
+      # corpus-observations.md from here.
+      - type: bind
+        source: ${FORGE_ROOT:-../../../../..}
+        target: /forge
+        read_only: true
+      # kurpatov-wiki-raw vault — read-only. The lecture A raw.json
+      # lives under /raw/data/<course>/<module>/<stem>/raw.json.
+      - type: bind
+        source: ${STORAGE_ROOT:-/home/vmihaylov}/labs/wiki-ingest/vault/raw
+        target: /raw
+        read_only: true
+    # Resource caps so a runaway sweep can't eat the host. L1 is
+    # ~10MB peak for a 9963-word transcript; cap conservatively.
+    mem_limit: 256m
+    cpus: 1.0
+    # Logs go to docker; DevOps tails them with `docker compose logs k2-sweep`.

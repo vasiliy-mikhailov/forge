@@ -44,6 +44,15 @@ def gather() -> list[dict]:
     wiki_pm = sh.aggregate_per_runner(HISTORY / 'test-wiki-pm-runner.jsonl')
     wiki_pm['unit'] = 'Wiki PM'
     rows.append(wiki_pm)
+    # Architect — no separate runner (transitively covered by
+    # audit-process per ADR 0013 dec 9). Aggregate is n/a.
+    rows.append({
+        'unit': 'Architect',
+        'n_cases_total': 0, 'n_cases_scored': 0,
+        'score_sum': 0.0, 'score_max_sum': 0.0,
+        'score_norm': None, 'band': 'transitive (audit-process)',
+        'pass_count': 0, 'italian_strike_count': 0, 'fail_count': 0,
+    })
     developer = sh.aggregate_per_runner(HISTORY / 'test-developer-runner.jsonl')
     developer['unit'] = 'Developer'
     rows.append(developer)

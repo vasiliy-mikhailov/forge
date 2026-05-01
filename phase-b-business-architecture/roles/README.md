@@ -19,10 +19,22 @@ side.
 
 | Role | File | Tests | One-line purpose |
 |------|------|-------|------------------|
+| Architect | [`architect.md`](architect.md) | (transitive — covered by audit-process predicates per ADR 0013 dec 9) | Decide what the architecture *is*. Open ADRs, promote trajectories, approve catalog rows, refuse to delegate the single-decision-maker scope (P1). |
 | Wiki PM   | [`wiki-pm.md`](wiki-pm.md)     | [`/tests/phase-b-business-architecture/roles/test-wiki-pm.md`](../../tests/phase-b-business-architecture/roles/test-wiki-pm.md)     | Own the requirements catalog for every product on the [Wiki product line](../products/wiki-product-line.md). |
 | Auditor   | [`auditor.md`](auditor.md)     | [`/tests/phase-b-business-architecture/roles/test-auditor.md`](../../tests/phase-b-business-architecture/roles/test-auditor.md)     | Periodically check forge's working tree for conformance to its declared architectural rules; produce typed findings per [`audit-process.md`](../../phase-h-architecture-change-management/audit-process.md). |
 | Developer | [`developer.md`](developer.md) | [`/tests/phase-b-business-architecture/roles/test-developer.md`](../../tests/phase-b-business-architecture/roles/test-developer.md) | Implement production code in the labs against an active R-NN trajectory or Phase F R&D experiment; pair with TDD tests; ship diffs that close hypotheses. |
 | DevOps    | [`devops.md`](devops.md)       | [`/tests/phase-b-business-architecture/roles/test-devops.md`](../../tests/phase-b-business-architecture/roles/test-devops.md)       | Operate the single-host deployment (mikhailov.tech): apply deploys, restart containers, allocate GPU power-caps, rotate keys, keep [`operations.md`](../../phase-g-implementation-governance/operations.md) current. |
+
+## Collaborations formalised today
+
+Per ArchiMate 4 §4.1.2 (Business Collaboration), one Actor (a
+Cowork session, a CI runner, or the architect) can fill multiple
+Roles via a Collaboration. Today's collaborations:
+
+| Collaboration | File | Roles aggregated | Use |
+|---------------|------|------------------|-----|
+| Kurpatov-wiki-team | [`collaborations/kurpatov-wiki-team.md`](collaborations/kurpatov-wiki-team.md) | Architect + Wiki PM + Auditor + Developer + DevOps | Full product team for the Kurpatov wiki; load when an end-to-end cycle (R-NN identification → spec → ship → deploy → audit) needs to land in one Cowork pass. |
+| Developer-DevOps K2 | [`collaborations/developer-devops-k2.md`](collaborations/developer-devops-k2.md) | Developer + DevOps | Sub-collaboration of Kurpatov-wiki-team scoped to K2 execution (run a sweep against real lecture A; log to operations.md). Cheaper to load than the parent collab when only execution is needed. |
 
 ## When to add a new role file
 

@@ -274,6 +274,10 @@ the trajectory lifts.
 
 | run_id  | date       | layer | variant       | ratio | saved% | fwd recall | bwd recall | trip-quality | gate | voice (eye-read) | artifact link |
 |---------|------------|-------|---------------|-------|--------|------------|------------|--------------|------|------------------|---------------|
+| K2-R2-real-A-V4_aggressive | 2026-05-02 | L1 | V4_aggressive | 0.987 | 1.3%  | 0.909      | 0.909      | **0.0116**   | **FAIL** | n/a (no eye-read this run) | real `kurpatov-wiki-raw/.../000 Знакомство.../raw.json` (9963 words) |
+| K2-R2-real-A-V3_discourse  | 2026-05-02 | L1 | V3_discourse  | 0.988 | 1.2%  | 0.909      | 0.909      | 0.0110       | FAIL | n/a | same |
+| K2-R2-real-A-V2_structural | 2026-05-02 | L1 | V2_structural | 0.995 | 0.5%  | 0.909      | 0.909      | 0.0044       | FAIL | n/a | same |
+| K2-R2-real-A-V1_minimal    | 2026-05-02 | L1 | V1_minimal    | 1.000 | 0.0%  | 0.909      | 0.909      | 0.0000       | FAIL | n/a | same |
 | K2-R1-V4_aggressive | 2026-05-02 | L1   | V4_aggressive | 0.774 | 22.6%  | 1.000      | 1.000      | **0.2261**   | PASS | n/a (synth)      | [`phase-c-…/wiki-bench/compact_restore/`](../../phase-c-information-systems-architecture/application-architecture/wiki-bench/compact_restore/) + [synth fixture](../../phase-c-information-systems-architecture/application-architecture/wiki-bench/tests/synthetic/fixtures/k2/lecture_A_synth.json) |
 | K2-R1-V3_discourse  | 2026-05-02 | L1   | V3_discourse  | 0.804 | 19.6%  | 1.000      | 1.000      | 0.1957       | FAIL (sub-gate) | n/a | same |
 | K2-R1-V2_structural | 2026-05-02 | L1   | V2_structural | 0.844 | 15.6%  | 1.000      | 1.000      | 0.1565       | FAIL | n/a | same |
@@ -321,6 +325,81 @@ link-out), then re-run on real lecture A from
 kurpatov-wiki-raw.
 
 ## Post-Mortem & Insights
+
+### K2-R2 (2026-05-02) — real lecture A from kurpatov-wiki-raw
+
+**What happened.** Ran the same V1..V4 sweep against the real
+`000 Знакомство с программой «Психолог-консультант»/raw.json`
+(9963 words, 1361 segments, schema `{info, segments[]}`, no
+top-level `transcript` — handled by a new `_normalise_raw()`
+in `compact.py` that builds the transcript from segments).
+**All 4 variants FAIL the L1 gate (≥ 0.20)** at trip-quality
+0.0000 → 0.0116. V4 (the synth winner) drops to 1.3% saved-time.
+
+**Why this is the right answer (not a bug).** The synth fixture
+was hand-crafted with synthetic filler density (8 vocalised
+hesitations + 6 triple-trails in 230 words). Real Курпатов
+lecture A — after faster-whisper transcription — has:
+
+| Filler pattern              | Count in lecture A |
+|-----------------------------|---|
+| `эээ` (vocalised hesitation) | **0** — Whisper drops these as silence/no-text |
+| `эм` / `эмм`                | **0** |
+| `и так далее`               | **71** (mostly non-adjacent) |
+| adjacent word-doubling      | **1** |
+| `ну, `                      | **9** |
+| `как бы`                    | **10** |
+| `значит,`                   | **30** |
+| `вот` (standalone)          | **101** |
+| `на самом деле`             | **17** |
+| `то есть`                   | **32** |
+| `собственно`                | **19** |
+| `допустим`                  | **3** |
+
+The real Курпатов uses **discourse markers** (значит / вот /
+то есть / на самом деле / собственно), not vocalised hesitations.
+My V1..V4 patterns target the wrong vocabulary. RLVR delivered
+the honest signal: synth-tuned algorithms over-promise on real
+corpora.
+
+**Insight 1 (the synth-vs-real gap).** Whisper acts as an
+implicit L0 Air-strip — vocalised hesitations and short pauses
+are dropped at transcription time. The compact algorithm only
+sees pre-cleaned text. The L1 patterns must target *what
+survived Whisper*, not *what a human transcriber would have
+typed*. V5 should remove discourse-marker filler ("значит,",
+"вот ", "на самом деле", "то есть", "собственно", "допустим",
+"скажем,", "ну, "). With 311 candidate occurrences in the 9963
+words, even half-survival would push saved-time well above 1.3%.
+
+**Insight 2 (the OBS-A-001 missing-attribution finding).** V4
+shows forward recall 0.909 (10/11 on Substance + Form). The
+missed observation is **OBS-A-001** — the Selye-attributed
+stress definition. Top-3 keywords (`естественная`,
+`определение`, `изменения`) are **all absent** from the actual
+lecture A transcript. So is `Селье` (0×), `Ганс` (0×),
+`опираться` (0×). The Wiki PM's verbatim isn't a literal quote
+from raw A — it's a paraphrase or quote from a sibling lecture
+(possibly source B = the konspekt). This is a **real
+corpus-observations data-quality issue**, not an algorithm
+issue. Wiki PM follow-up: re-walk source A with `--literal-only`
+discipline (only paste exact-substring verbatims; flag
+paraphrases as separate observations).
+
+**Insight 3 (Whisper artefacts are part of the input contract).**
+Real raw.json's segments carry leading-space prefixes
+(`" Приветствую…"`) which the segment-text join handled but the
+raw `transcript` build needs `.strip()` per segment. Already
+fixed in `_normalise_raw()`. Future ingestion regressions of
+this shape land here.
+
+**Next step.** **Author V5_discourse_markers** in
+`filler_patterns.py` covering the 12-pattern table above; rerun
+K2-R2; expect trip-quality jump from 0.012 to ~0.10-0.20
+depending on how aggressive V5 dares to be. In parallel,
+**Wiki PM re-walks source A** to harden OBS-A-001's verbatim;
+without it, K2-R2 forward recall is permanently capped at
+10/11 = 0.909.
 
 ### K2-R1 (2026-05-02)
 

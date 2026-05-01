@@ -1,0 +1,36 @@
+# K2 sweep container — pure-Python regex over raw.json transcripts.
+#
+# Per architecture-principles.md P3 (containers-only execution):
+# every executable artefact runs inside Docker. This image is the
+# minimal one for K2's L1 algorithm — slim Python + the forge tree
+# bind-mounted read-only + the kurpatov-wiki-raw vault bind-mounted
+# read-only. No GPU. No network at run time. No host-pip.
+#
+# Build:
+#   docker build -t forge-k2-sweep:latest \
+#       -f phase-c-…/wiki-bench/compact_restore/Dockerfile.k2-sweep \
+#       phase-c-…/wiki-bench/
+#
+# Run (via compose.k2-sweep.yml — see that file for the canonical
+# bind-mount layout):
+#   docker compose -f phase-c-…/wiki-bench/compact_restore/compose.k2-sweep.yml \
+#       run --rm k2-sweep \
+#       --input  /raw/data/Психолог-консультант/000\ Путеводитель\ по\ программе/000\ Знакомство\ с\ программой\ «Психолог-консультант»/raw.json \
+#       --observations /forge/phase-b-business-architecture/products/kurpatov-wiki/corpus-observations.md \
+#       --source A \
+#       --run-id K2-R2-real-A \
+#       --ops-log-stub
+
+FROM python:3.12-slim
+
+# No host-pip dependencies needed — the L1 sweep is pure regex.
+# (When L2/L3 land they'll add tiktoken / numpy / vllm-client; pin
+#  versions in this Dockerfile, not on the host.)
+
+WORKDIR /forge
+
+# Default entry: the sweep CLI. Bind-mount the forge tree at /forge
+# and the raw vault at /raw via the compose file.
+ENTRYPOINT ["python3", \
+            "/forge/phase-c-information-systems-architecture/application-architecture/wiki-bench/compact_restore/sweep.py"]
+CMD ["--help"]

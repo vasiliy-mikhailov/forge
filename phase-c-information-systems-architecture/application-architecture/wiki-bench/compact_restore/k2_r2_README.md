@@ -40,18 +40,44 @@ find "$STORAGE_ROOT/labs/wiki-ingest/vault/raw/data" \
     -name 'raw.json' -path '*000 Знакомство*' -print
 ```
 
-## Step 2 — Developer: pull the latest forge + run the sweep
+## Step 2 — DevOps: build the K2 sweep container (one-time)
+
+Per [architecture-principles.md P3](../../../../../phase-preliminary/architecture-principles.md)
+(containers-only execution): NO host-Python on `mikhailov.tech`.
+The sweep runs inside a docker container that bind-mounts the
+forge tree (read-only) and the kurpatov-wiki-raw vault
+(read-only).
 
 ```bash
 cd ~/forge
 git pull origin main
-python3 phase-c-information-systems-architecture/application-architecture/wiki-bench/compact_restore/sweep.py \
-    --input "$RAW" \
-    --observations phase-b-business-architecture/products/kurpatov-wiki/corpus-observations.md \
+docker compose -f phase-c-information-systems-architecture/application-architecture/wiki-bench/compact_restore/compose.k2-sweep.yml \
+    build k2-sweep
+```
+
+The image is `forge-k2-sweep:latest` — slim Python 3.12 + the
+sweep entry point. No GPU. No network. ~150 MB.
+
+## Step 3 — Developer: run the sweep through the container
+
+```bash
+docker compose -f phase-c-information-systems-architecture/application-architecture/wiki-bench/compact_restore/compose.k2-sweep.yml \
+    run --rm k2-sweep \
+    --input "/raw/data/Психолог-консультант/000 Путеводитель по программе/000 Знакомство с программой «Психолог-консультант»/raw.json" \
+    --observations /forge/phase-b-business-architecture/products/kurpatov-wiki/corpus-observations.md \
     --source A \
     --run-id K2-R2-real-A \
     --ops-log-stub
 ```
+
+Inside the container: forge tree at `/forge` (read-only), vault
+at `/raw` (read-only). Output goes to stdout; the container has
+no writable mounts beyond `/tmp` (64 MB tmpfs).
+
+(Bare-metal `python3 sweep.py` is the *dev* invocation only —
+runs on the architect's local Cowork sandbox where Docker isn't
+required. On `mikhailov.tech` the container path is mandatory
+per P3.)
 
 Expected output (markdown table written to stdout):
 
