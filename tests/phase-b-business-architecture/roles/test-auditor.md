@@ -507,6 +507,82 @@ used as a relationship verb.
 
 **Italian-strike band.** 2 ≤ score < 3.2 (one verb caught but the other missed, or the fix is vague).
 
+## AU-10 When the Auditor walks P20 against a synthetic bloat fixture, then it produces ≥ 3 bloat-pattern hits
+
+### Set expected result
+
+The P20 algorithm, run against
+[`tests/phase-h-architecture-change-management/synthetic/bloated-fixture.md`](../../phase-h-architecture-change-management/synthetic/bloated-fixture.md),
+returns hits in at least three distinct categories:
+
+- `filler-phrase` (≥ 1 hit; the fixture contains "as mentioned
+  above", "please note that", "as we have seen", "to recap", "in
+  conclusion"),
+- `orphan-header` (≥ 1 hit; the fixture has 3 stacked
+  `## Section with no content` / `## Another empty section` /
+  `## Yet another empty section` headers),
+- `repeated-title` (1 hit; the fixture restates its own H1
+  "A deliberately bloated fixture" as plain text in the body).
+
+### Arrange
+
+- **Input data.** The synth fixture md at the path above. The
+  fixture is opted out of live audit walks via the
+  `<!-- p20: deliberate-bloat-fixture -->` marker on its first
+  non-blank line; the runner bypasses the path-and-marker
+  carve-out by calling `p20_findings(text)` directly so the
+  *algorithm* is exercised even though the *walker* would skip
+  the file.
+
+- **Agent.** Same as AU-05.
+
+### Act
+
+- The runner reads the fixture text.
+- The runner calls `p20_findings(text)` (the pure algorithm,
+  no carve-outs).
+
+### Assert
+
+- **Expected.** ≥ 1 hit each in `filler-phrase`, `orphan-header`,
+  `repeated-title` categories.
+- **Real.** The list of `(category, match)` tuples the algorithm
+  returned.
+- **Verdict.** PASS if all 3 categories have ≥ 1 hit AND the
+  algorithm returns no hits when re-run on a copy of the fixture
+  whose first non-blank line is `<!-- standard: external -->`
+  (carve-out respected).
+
+---
+
+### Reward
+
+**Motivation reference.** Realises the *Outcome* "operational
+md stays low-token-density so agents read fast and act on
+signal, not filler" — rolls up to the *Architect-velocity* Goal
+(Phase A) and to the *Token-count bloat* Driver
+([phase-a/drivers.md](../../../phase-a-architecture-vision/drivers.md)).
+
+**Score components** (each 0/1):
+
+- C1. Filler-phrase category has ≥ 1 hit on the fixture.
+- C2. Orphan-header category has ≥ 1 hit on the fixture.
+- C3. Repeated-title category has 1 hit on the fixture.
+- C4. Algorithm returns no hits when fed a copy of the same
+  fixture body whose first non-blank line is the standards-
+  carve-out marker (`<!-- standard: external -->`) — i.e.,
+  the carve-out path is honoured.
+
+**Aggregate.** Sum (range 0..4).
+
+**PASS threshold.** 3.
+
+**Italian-strike band.** 3 ≤ score < 3.2 (one of the four
+checks failed but the predicate is broadly working).
+
+**Score = 4.** Ideal — the algorithm catches all three bloat
+categories AND respects the standards carve-out.
+
 ## Verdict lifecycle
 
 ```

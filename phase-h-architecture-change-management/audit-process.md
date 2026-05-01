@@ -256,6 +256,47 @@ that goals decompose into trajectories.
 may legitimately be deferred — see R-A-PTS / R-A-EB rows that
 explicitly note their blockers; those are exempt).
 
+### P20 — Token-density / no-bloat in operational md
+
+**Property.** Operational md has no obvious token-bloat patterns:
+no restate-context filler phrases ("As mentioned above", "As
+stated earlier", "As we have seen", "To recap", "It is worth
+noting that", "Please note that", "Needless to say", "In
+conclusion"), no orphan headers (a `## ` or `### ` header
+followed only by blank lines and then the next header — empty
+section), and the file's own H1 title not restated as plain text
+in the body.
+**Operational md** = files under `phase-*/`, `tests/`, `scripts/`,
+`tools/`, and lab paths whose contents drive an LLM agent's
+behaviour or describe forge-authored architecture. Excludes the
+carve-out below.
+**Signal.** For each operational md path, regex-grep the filler-
+phrase blacklist (case-insensitive); AST-scan for orphan headers;
+re-search the H1 title text in the body.
+**Carve-out.** Two carve-outs:
+
+1. *Downloaded standards* — files under `**/standards/**`,
+   `**/vendor/**`, `**/external/**`, or any md whose first
+   non-blank line is the HTML comment
+   `<!-- standard: external -->`. These are reference material,
+   not forge-authored operational text.
+2. *Synthetic test fixtures* — files under
+   `tests/**/synthetic/**`, or any md whose first non-blank
+   line is the HTML comment `<!-- p20: deliberate-bloat-fixture -->`.
+   Such files exist precisely to violate P20 so the runner can
+   test the predicate algorithm; flagging them in live walks
+   would be permanent noise.
+**Rule.** [Driver "Token-count bloat in operational md"](../phase-a-architecture-vision/drivers.md);
+realises *Architect-velocity* (every additional minute the agent
+spends re-reading filler is a minute not spent on real work) and
+*TTS* (more tokens per task = more latency).
+**Verdict.** ≥ 1 hit in operational md = `WARN` (file-level;
+should be tightened on next edit). ≥ 3 hits in a single file =
+`FAIL` (file is a bloat outlier and must be tightened in the
+same commit that introduces or edits it). Hits inside fenced
+code blocks are ignored — quoted prose is allowed to contain
+the literal phrases.
+
 ## Output format
 
 ```

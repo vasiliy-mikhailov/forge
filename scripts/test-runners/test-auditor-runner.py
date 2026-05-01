@@ -62,6 +62,130 @@ def p6_findings(text: str) -> list[tuple[str, str]]:
     return findings
 
 
+# ─────────────── P20 implementation (token-bloat in operational md) ───────────────
+
+P20_FILLER_PHRASES = [
+    'as mentioned above',
+    'as stated earlier',
+    'as we have seen',
+    'to recap',
+    'it is worth noting that',
+    'please note that',
+    'needless to say',
+    'in conclusion',
+]
+
+P20_CARVE_OUT_PATH_SEGMENTS = ('/standards/', '/vendor/', '/external/',
+                               '/synthetic/')
+P20_CARVE_OUT_MARKERS = (
+    '<!-- standard: external -->',
+    '<!-- p20: deliberate-bloat-fixture -->',
+)
+
+
+def _strip_fenced_code(text: str) -> str:
+    """Drop fenced code blocks (``` … ```) so quoted prose can contain
+    the literal patterns without tripping the algorithm."""
+    return re.sub(r'(?ms)^```.*?^```\s*$', '', text)
+
+
+def p20_findings(text: str) -> list[tuple[str, str]]:
+    """Pure P20 algorithm. Returns [(category, matched_substring), …].
+
+    No path / marker carve-outs — those are the walker's job. The
+    runner uses this directly so AU-10 exercises the algorithm.
+    """
+    findings: list[tuple[str, str]] = []
+    body = _strip_fenced_code(text)
+    # Filler-phrase scan: ignore content inside double-quoted runs
+    # ("...") and inside backtick-spans (`...`) — the author is
+    # referencing the phrase, not using it as filler. Allow the
+    # quote run to span line wraps (non-greedy, dotall).
+    body_for_filler = re.sub(r'"[^"]{0,300}?"', '', body, flags=re.DOTALL)
+    body_for_filler = re.sub(r'`[^`]{0,200}?`', '', body_for_filler,
+                             flags=re.DOTALL)
+    lower = body_for_filler.lower()
+    for phrase in P20_FILLER_PHRASES:
+        for _ in re.finditer(re.escape(phrase), lower):
+            findings.append(('filler-phrase', phrase))
+    # orphan-header scan: walk the ORIGINAL text but track whether
+    # the cursor is inside a fenced code block. Stripping the code
+    # blocks first would make legitimate `### A` followed by a
+    # ``` block ``` followed by `### B` look like adjacent orphan
+    # headers; leaving them in but ignoring header-shaped lines
+    # *inside* fences gets both right.
+    raw_lines = text.splitlines()
+    inside_fence = False
+    lines = []
+    for ln in raw_lines:
+        if re.match(r'^```', ln):
+            inside_fence = not inside_fence
+            lines.append('')  # treat fence boundary as blank for header-detection
+            continue
+        if inside_fence:
+            lines.append('<code>')  # non-blank, non-header → marks section as having content
+        else:
+            lines.append(ln)
+    # orphan-header: ## or deeper header, followed by blank line(s), then
+    # another header AT THE SAME OR SHALLOWER LEVEL (i.e. an empty
+    # section). A `## Parent` followed by `### Child` is a legitimate
+    # parent-child structure, NOT an orphan. Also: if there's a fenced
+    # code block (```) between the two headers, the section has content.
+    for i, ln in enumerate(lines):
+        m1 = re.match(r'^(#{2,})\s', ln)
+        if not m1:
+            continue
+        depth1 = len(m1.group(1))
+        j = i + 1
+        # Walk forward; an orphan is a header whose body is ONLY blank
+        # lines until the next header. Any non-blank, non-header line
+        # (paragraph, list, code fence, table, blockquote) means the
+        # section has content.
+        while j < len(lines) and not lines[j].strip():
+            j += 1
+        if j >= len(lines):
+            continue
+        m2 = re.match(r'^(#{2,})\s', lines[j])
+        if not m2:
+            continue
+        depth2 = len(m2.group(1))
+        if depth2 <= depth1:
+            findings.append(('orphan-header', ln.strip()))
+    # repeated-title: H1 text reappearing as plain text in the body
+    h1_idx = None
+    title = None
+    for i, ln in enumerate(lines):
+        m = re.match(r'^#\s+(.+?)\s*$', ln)
+        if m:
+            h1_idx = i
+            title = m.group(1).strip()
+            break
+    if title and len(title.split()) >= 2:
+        # Strip markdown link text [Title](path) and bracketed
+        # reference text — they're cross-references, not restatements.
+        after_h1_raw = '\n'.join(lines[h1_idx + 1:])
+        after_h1 = re.sub(r'\[[^\]]*\]', '', after_h1_raw)
+        for occ in re.finditer(re.escape(title), after_h1, re.IGNORECASE):
+            # exclude header lines (e.g. ## Title) from counting
+            line_start = after_h1.rfind('\n', 0, occ.start()) + 1
+            line_end = after_h1.find('\n', occ.start())
+            if line_end == -1:
+                line_end = len(after_h1)
+            line = after_h1[line_start:line_end]
+            if not line.lstrip().startswith('#'):
+                findings.append(('repeated-title', title))
+    return findings
+
+
+def p20_walker_skip(path: str, text: str) -> bool:
+    """True if a live walker should skip this file (carve-out)."""
+    norm = path.replace('\\', '/')
+    if any(seg in norm for seg in P20_CARVE_OUT_PATH_SEGMENTS):
+        return True
+    first = next((ln for ln in text.splitlines() if ln.strip()), '')
+    return first.strip() in P20_CARVE_OUT_MARKERS
+
+
 # ─────────────── helpers for inspection tests ───────────────
 
 def latest_audit_path() -> Path | None:
@@ -256,6 +380,11 @@ DECISION_FIXTURES = {
         'expect_findings': True,
         'min_findings': 2,
     },
+    'AU-10': {
+        'fixture': '(see tests/phase-h-architecture-change-management/synthetic/bloated-fixture.md; runner reads file directly)',
+        'expect_findings': True,
+        'predicate': 'P20',
+    },
 }
 
 
@@ -374,6 +503,46 @@ def score_au_09(fixture: str) -> tuple[float, float, list[str]]:
     return score, 4.0, notes
 
 
+
+def score_au_10() -> tuple[float, float, list[str]]:
+    """ADR 0015 reward function for AU-10 (P20 token-bloat synth test).
+
+    Components (each 0/1):
+      C1. p20_findings(fixture) returns ≥ 1 ('filler-phrase', _) hit.
+      C2. p20_findings(fixture) returns ≥ 1 ('orphan-header', _) hit.
+      C3. p20_findings(fixture) returns ≥ 1 ('repeated-title', _) hit.
+      C4. Walker carve-out is honoured: re-running the algorithm on a
+          copy of the fixture body whose first non-blank line is
+          `<!-- standard: external -->` would, in a live walk, be
+          skipped (p20_walker_skip returns True).
+    """
+    fixture_path = (FORGE / 'tests' / 'phase-h-architecture-change-management'
+                    / 'synthetic' / 'bloated-fixture.md')
+    if not fixture_path.exists():
+        return 0.0, 4.0, [f'fixture missing: {fixture_path.relative_to(FORGE)}']
+    text = fixture_path.read_text(encoding='utf-8')
+    findings = p20_findings(text)
+    cats = {c for c, _ in findings}
+    notes: list[str] = []
+    c1 = 1.0 if 'filler-phrase' in cats else 0.0
+    c2 = 1.0 if 'orphan-header' in cats else 0.0
+    c3 = 1.0 if 'repeated-title' in cats else 0.0
+    notes.append(f'C1=filler-phrase={int(c1)}')
+    notes.append(f'C2=orphan-header={int(c2)}')
+    notes.append(f'C3=repeated-title={int(c3)}')
+    # C4: standards carve-out — replace the marker on line 1 with the
+    # standards marker, verify p20_walker_skip would skip the file.
+    body_only = text.split('\n', 1)[1] if '\n' in text else text
+    standards_variant = '<!-- standard: external -->\n' + body_only
+    skip_under_standards = p20_walker_skip(
+        str(fixture_path).replace('/synthetic/', '/whatever/'),  # neutralise path carve-out
+        standards_variant,
+    )
+    c4 = 1.0 if skip_under_standards else 0.0
+    notes.append(f'C4=standards-carve-out-honoured={int(c4)}')
+    score = c1 + c2 + c3 + c4
+    return score, 4.0, notes
+
 def make_decision_test(test_id: str):
     spec = DECISION_FIXTURES[test_id]
 
@@ -407,6 +576,16 @@ def make_decision_test(test_id: str):
         if test_id == 'AU-09':
             score, score_max, notes = score_au_09(spec['fixture'])
             verdict = adr0015_verdict(score, score_max, threshold=2.0)
+            return Result(
+                verdict,
+                f'score={score}/{score_max}; {", ".join(notes)}',
+                score=score, score_max=score_max,
+            )
+
+        # AU-10 — token-bloat synth test, 4-component reward
+        if test_id == 'AU-10':
+            score, score_max, notes = score_au_10()
+            verdict = adr0015_verdict(score, score_max, threshold=3.0)
             return Result(
                 verdict,
                 f'score={score}/{score_max}; {", ".join(notes)}',

@@ -15,3 +15,20 @@ inline as `→ influences <Goal>`.
   recovering GPUs or rerunning failed pilots is a minute not
   spent on the real work.
   → influences **Architect-velocity** (Phase A).
+
+- Token-count bloat in operational md (low-information-density
+  prose, restated context, orphan headers, decorative repetition,
+  the file's own H1 re-stated in the body) inflates every LLM
+  read of that file, slowing the agent and diluting the signal
+  the agent is supposed to act on.
+  Carve-out: *downloaded standards* — ArchiMate spec, TOGAF
+  reference, third-party PDFs / transcripts under research-corpus
+  paths (anything under `**/standards/**`, `**/vendor/**`,
+  `**/external/**`, or any md whose first non-blank line is the
+  HTML comment `<!-- standard: external -->`). These are
+  reference material, not forge-authored operational text; they
+  are not under forge's editorial control and their token cost is
+  amortised across reads.
+  → influences **Architect-velocity** (Phase A) and **TTS** (an
+  agent that has to load more tokens per task takes longer to
+  produce the same act).
