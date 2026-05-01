@@ -16,3 +16,9 @@
 {"ts": "2026-05-01T22:28:32Z", "git_commit": "71556147b3", "runner": "test-devops-runner", "test_id": "DO-04", "verdict": "PASS", "score": 1.0, "score_max": 1.0, "threshold": 1.0, "detail": "clean"}
 {"ts": "2026-05-01T22:28:32Z", "git_commit": "71556147b3", "runner": "test-devops-runner", "test_id": "DO-05", "verdict": "PASS", "score": 1.0, "score_max": 1.0, "threshold": 1.0, "detail": "no devops:-prefixed commits (vacuous)"}
 {"ts": "2026-05-01T22:28:32Z", "git_commit": "71556147b3", "runner": "test-devops-runner", "test_id": "DO-06", "verdict": "PASS", "score": 2.0, "score_max": 2.0, "threshold": 1.0, "detail": "0 P20 hits"}
+{"ts": "2026-05-01T22:38:19Z", "git_commit": "3d256ff8a1", "runner": "test-devops-runner", "test_id": "DO-01", "verdict": "PASS", "score": 2.0, "score_max": 2.0, "threshold": 2.0, "detail": "320 non-blank lines"}
+{"ts": "2026-05-01T22:38:19Z", "git_commit": "3d256ff8a1", "runner": "test-devops-runner", "test_id": "DO-02", "verdict": "PASS", "score": 2.0, "score_max": 2.0, "threshold": 1.0, "detail": "1 dates; latest=2026-05-02 (age -1d)"}
+{"ts": "2026-05-01T22:38:19Z", "git_commit": "3d256ff8a1", "runner": "test-devops-runner", "test_id": "DO-03", "verdict": "PASS", "score": 2.0, "score_max": 2.0, "threshold": 1.0, "detail": "no governing-keyword paragraphs (vacuous)"}
+{"ts": "2026-05-01T22:38:19Z", "git_commit": "3d256ff8a1", "runner": "test-devops-runner", "test_id": "DO-04", "verdict": "PASS", "score": 1.0, "score_max": 1.0, "threshold": 1.0, "detail": "clean"}
+{"ts": "2026-05-01T22:38:19Z", "git_commit": "3d256ff8a1", "runner": "test-devops-runner", "test_id": "DO-05", "verdict": "PASS", "score": 1.0, "score_max": 1.0, "threshold": 1.0, "detail": "no devops:-prefixed commits (vacuous)"}
+{"ts": "2026-05-01T22:38:19Z", "git_commit": "3d256ff8a1", "runner": "test-devops-runner", "test_id": "DO-06", "verdict": "PASS", "score": 2.0, "score_max": 2.0, "threshold": 1.0, "detail": "0 P20 hits"}
