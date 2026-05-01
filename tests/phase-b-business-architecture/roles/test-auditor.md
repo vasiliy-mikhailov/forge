@@ -583,6 +583,73 @@ checks failed but the predicate is broadly working).
 **Score = 4.** Ideal — the algorithm catches all three bloat
 categories AND respects the standards carve-out.
 
+## AU-11 When the Auditor produces an audit, then it carries an "Aggregate scores per agentic-md unit" section with ≥ 6 canonical-unit rows
+
+### Set expected result
+
+The latest audit md under
+`phase-h-architecture-change-management/audit-YYYY-MM-DD*.md`
+contains:
+
+- An exact heading line `## Aggregate scores per agentic-md unit`,
+- Followed by a markdown table with ≥ 6 data rows,
+- Whose first cell (Unit name) covers all 6 canonical units:
+  `Auditor`, `Wiki PM`, `rl-2048 lab AGENTS.md`,
+  `wiki-bench lab AGENTS.md`, `wiki-compiler lab AGENTS.md`,
+  `wiki-ingest lab AGENTS.md`.
+
+### Arrange
+
+- **Input data.** The latest audit md (resolved by
+  `latest_audit_path()` — same helper AU-01 uses).
+
+- **Agent.** Same as AU-01 (the runner reads the audit md
+  directly; this is an Inspection-style test, not a P6
+  decision case).
+
+### Act
+
+- The runner finds the latest audit md.
+- The runner greps for the heading and the 6 canonical unit
+  names in the table's first column.
+
+### Assert
+
+- **Expected.** Heading present + 6 / 6 canonical units present
+  in the table.
+- **Real.** Set of unit names actually found.
+- **Verdict.** PASS if ≥ 6 / 6 unit names match the canonical
+  set; FAIL otherwise.
+
+---
+
+### Reward
+
+**Motivation reference.** Realises the *Outcome* "the audit
+makes the agentic-md test suite's overall health visible at a
+glance" — rolls up to the *Architect-velocity* Goal (Phase A).
+Per [ADR 0015 dec 6](../../../phase-preliminary/adr/0015-verifiable-agent-rewards.md),
+each role's aggregate score belongs in the audit.
+
+**Score components** (each 0/1):
+
+- C1. Heading `## Aggregate scores per agentic-md unit`
+  present in the latest audit.
+- C2. A markdown table follows the heading.
+- C3. The table has ≥ 6 data rows.
+- C4. All 6 canonical unit names appear in the first column.
+
+**Aggregate.** Sum (range 0..4).
+
+**PASS threshold.** 4 (all four checks must pass — the section
+is either present and well-formed, or it isn't).
+
+**Italian-strike band.** none (binary).
+
+**Score = 4.** Ideal — the architect ran
+`aggregate-scores.py` and pasted the output before authoring
+the audit.
+
 ## Verdict lifecycle
 
 ```

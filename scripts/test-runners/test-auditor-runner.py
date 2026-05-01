@@ -199,8 +199,11 @@ def p20_walker_skip(path: str, text: str) -> bool:
 
 def latest_audit_path() -> Path | None:
     """Return the most recent audit-YYYY-MM-DD.md, or None."""
+    # Match audit-YYYY-MM-DD.md AND audit-YYYY-MM-DD<suffix>.md.
+    # Same-day re-walks add a single-letter suffix (b, c, d, …) per
+    # discipline; the picker must return the latest by sort order.
     candidates = sorted(
-        PHASE_H.glob('audit-[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].md')
+        PHASE_H.glob('audit-[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]*.md')
     )
     return candidates[-1] if candidates else None
 
@@ -609,6 +612,65 @@ def make_decision_test(test_id: str):
     return runner
 
 
+def i_au_11_audit_has_aggregate_section() -> Result:
+    """AU-11: latest audit md has '## Aggregate scores per agentic-md unit'
+    section with ≥ 6 canonical-unit rows. 4-component reward."""
+    p = latest_audit_path()
+    if p is None:
+        return Result('SKIP', 'AU-01 not green', score=0.0, score_max=4.0,
+                      threshold=4.0)
+    text = p.read_text(encoding='utf-8')
+    canonical = [
+        'Auditor', 'Wiki PM',
+        'rl-2048 lab AGENTS.md', 'wiki-bench lab AGENTS.md',
+        'wiki-compiler lab AGENTS.md', 'wiki-ingest lab AGENTS.md',
+    ]
+    score = 0.0
+    notes = []
+    # C1 — heading present
+    heading_re = r'(?m)^## Aggregate scores per agentic-md unit\s*$'
+    if re.search(heading_re, text):
+        score += 1; notes.append('C1=heading=1')
+    else:
+        notes.append('C1=heading=0')
+        return Result(adr0015_verdict(score, 4.0, 4.0),
+                      f'score={score}/4.0; ' + ', '.join(notes),
+                      score=score, score_max=4.0, threshold=4.0)
+    # Extract section body
+    sec = re.search(r'(?ms)^## Aggregate scores per agentic-md unit\s*$.+?(?=\n## |\Z)', text)
+    body = sec.group(0) if sec else ''
+    # C2 — markdown table follows
+    table_lines = [ln for ln in body.splitlines()
+                   if ln.startswith('|') and not ln.startswith('|---')]
+    # First two table lines are header + separator typically; data rows = rest
+    # Filter out header row by requiring the row to NOT start with '| Unit'
+    data_rows = [ln for ln in table_lines
+                 if not ln.lstrip('|').lstrip().lower().startswith('unit')]
+    if data_rows:
+        score += 1; notes.append('C2=table=1')
+    else:
+        notes.append('C2=table=0')
+        return Result(adr0015_verdict(score, 4.0, 4.0),
+                      f'score={score}/4.0; ' + ', '.join(notes),
+                      score=score, score_max=4.0, threshold=4.0)
+    # C3 — >= 6 data rows
+    if len(data_rows) >= 6:
+        score += 1; notes.append(f'C3=rows={len(data_rows)}')
+    else:
+        notes.append(f'C3=rows={len(data_rows)}<6')
+    # C4 — canonical units present in first column
+    found = [name for name in canonical
+             if any(name in row for row in data_rows)]
+    if len(found) >= 6:
+        score += 1; notes.append(f'C4=units=6/6')
+    else:
+        missing = [n for n in canonical if n not in found]
+        notes.append(f'C4=units={len(found)}/6 missing={missing[:3]}')
+    return Result(adr0015_verdict(score, 4.0, 4.0),
+                  f'score={score}/4.0; ' + ', '.join(notes),
+                  score=score, score_max=4.0, threshold=4.0)
+
+
 # ─────────────── Registry + driver ───────────────
 
 REGISTRY = {
@@ -618,6 +680,7 @@ REGISTRY = {
     'AU-03': i_au_04_findings_carry_predicate_and_fix,
     'AU-04': i_au_05_summary_totals_match,
     'AU-04b': i_au_06_predicates_walked_line,
+    'AU-11': i_au_11_audit_has_aggregate_section,
     **{k: make_decision_test(k) for k in DECISION_FIXTURES},
 }
 

@@ -334,6 +334,34 @@ the same cadence the audit walks (today, ~5 days under active
 development; before & after each material edit to a role md or
 runner).
 
+### P22 — Aggregate scores per agentic-md unit reported in audit
+
+**Property.** Each audit md carries a section
+`## Aggregate scores per agentic-md unit` listing the latest
+per-runner / per-lab aggregate score (ADR 0015 dec 6). The table
+covers 6 units today: Auditor, Wiki PM, and each of the 4 lab
+AGENTS.md files (rl-2048, wiki-bench, wiki-compiler, wiki-ingest).
+Each row carries: unit name, cases scored / total, aggregate
+score (sum / max = normalised), band (`PASS` / `italian-strike` /
+`FAIL`), per-verdict counts.
+**Signal.** Grep the latest audit md for `^## Aggregate scores
+per agentic-md unit$`; verify a markdown table follows with
+≥ 6 data rows and ≥ 5 columns; verify the unit names are the 6
+canonical ones.
+**Helper.** The architect runs
+`python3 scripts/test-runners/aggregate-scores.py` and pastes
+the output into the audit. The helper reads
+`scripts/test-runners/.score-history/<runner>.jsonl` (one row per
+case, latest-only) — so the table reflects the most recently
+*logged* run, not necessarily the most recent dev run. Discipline
+per ADR 0015 dec 5: log scores at audit cadence.
+**Rule.** [ADR 0015 dec 6](../phase-preliminary/adr/0015-verifiable-agent-rewards.md):
+"A role's overall score is the per-case average. The Auditor
+reports each role's aggregate score in audit findings."
+**Verdict.** Missing section in latest audit = `WARN`. Section
+present but row count < 6 or unit names don't match the canonical
+list = `WARN` (drift from the agentic-md set).
+
 ## Output format
 
 ```
