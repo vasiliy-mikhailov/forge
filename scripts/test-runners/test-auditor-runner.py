@@ -26,6 +26,10 @@ from dataclasses import dataclass
 from fnmatch import fnmatch
 from pathlib import Path
 
+import sys as _sys
+_sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _score_history  # noqa: E402
+
 FORGE = Path(__file__).resolve().parents[2]
 PHASE_H = FORGE / 'phase-h-architecture-change-management'
 
@@ -207,6 +211,7 @@ class Result:
     detail: str = ''
     score: float | None = None  # ADR 0015: scalar reward; None for cases without a Reward function yet
     score_max: float | None = None
+    threshold: float | None = None  # ADR 0015 dec 5 (score-history): captured for log rows
 
 
 
@@ -233,7 +238,7 @@ def i_au_01_audit_report_exists() -> Result:
         return Result('FAIL', 'no audit-YYYY-MM-DD.md under phase-h-…',
                       score=0.0, score_max=1.0)
     return Result(adr0015_verdict(1.0, 1.0, 1.0), f'found {p.name}',
-                  score=1.0, score_max=1.0)
+                  score=1.0, score_max=1.0, threshold=1.0)
 
 
 def i_au_02_audit_report_nonempty() -> Result:
@@ -564,7 +569,7 @@ def make_decision_test(test_id: str):
             return Result(
                 verdict,
                 f'score={score}/{score_max}; {", ".join(notes)}',
-                score=score, score_max=score_max,
+                score=score, score_max=score_max, threshold=3.0,
             )
 
         # AU-08 — clean-fixture binary case, 2-component reward
@@ -574,7 +579,7 @@ def make_decision_test(test_id: str):
             return Result(
                 verdict,
                 f'score={score}/{score_max}; {", ".join(notes)}',
-                score=score, score_max=score_max,
+                score=score, score_max=score_max, threshold=2.0,
             )
 
         # AU-09 — drives + owns multi-violation, 4-component reward
@@ -584,7 +589,7 @@ def make_decision_test(test_id: str):
             return Result(
                 verdict,
                 f'score={score}/{score_max}; {", ".join(notes)}',
-                score=score, score_max=score_max,
+                score=score, score_max=score_max, threshold=2.0,
             )
 
         # AU-10 — token-bloat synth test, 4-component reward
@@ -594,7 +599,7 @@ def make_decision_test(test_id: str):
             return Result(
                 verdict,
                 f'score={score}/{score_max}; {", ".join(notes)}',
-                score=score, score_max=score_max,
+                score=score, score_max=score_max, threshold=3.0,
             )
 
         # Fallback (not expected to fire today)
@@ -618,23 +623,31 @@ REGISTRY = {
 
 
 def main() -> int:
-    pat = sys.argv[1] if len(sys.argv) > 1 else '*'
+    args = [a for a in sys.argv[1:] if not a.startswith('--')]
+    log_scores = '--log-scores' in sys.argv[1:]
+    pat = args[0] if args else '*'
     selected = [k for k in REGISTRY if fnmatch(k, pat)]
     if not selected:
         print(f'no tests match pattern {pat!r}')
         return 1
 
     counts = {'PASS': 0, 'FAIL': 0, 'SKIP': 0, 'PASS-italian-strike': 0}
+    rows = []
     for tid in selected:
         r = REGISTRY[tid]()
         counts[r.verdict] = counts.get(r.verdict, 0) + 1
         line = f'  {tid:<8} {r.verdict:<19}  {r.detail}'.rstrip()
         print(line)
+        rows.append((tid, r.verdict, r.score, r.score_max, r.threshold, r.detail))
 
     print()
     print(f'  total: PASS={counts["PASS"]}  '
           f'PASS-italian-strike={counts.get("PASS-italian-strike", 0)}  '
           f'FAIL={counts["FAIL"]}  SKIP={counts["SKIP"]}')
+
+    if log_scores:
+        path = _score_history.append_scores('test-auditor-runner', rows)
+        print(f'  logged {len(rows)} rows → {path.relative_to(Path(__file__).resolve().parents[2])}')
     return 1 if counts['FAIL'] else 0
 
 

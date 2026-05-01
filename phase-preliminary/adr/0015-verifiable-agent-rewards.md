@@ -131,11 +131,17 @@ Specifically:
    the new value this ADR adds.
 
 5. **Score history tracked, not just current.** Each runner
-   appends per-case scores to a per-role log
-   (`tests/<...>/test-<role>-scores.csv` or similar — exact
-   format TBD). Scores over time make regression visible: a
-   role whose corpus-observations.md goes from 0.95 to 0.65 is
-   regressing in quality even if PASS verdict holds.
+   appends per-case scores to a per-runner JSONL log under
+   `scripts/test-runners/.score-history/<runner>.jsonl`. Each row
+   carries `{ts, git_commit, runner, test_id, verdict, score,
+   score_max, threshold, detail}`. Logging is opt-in via the
+   `--log-scores` CLI flag — interactive dev runs do NOT pollute
+   history; the architect logs scores at the same cadence as
+   audits walk (today ~5 days) and before/after material edits.
+   Scores over time make regression visible: a role whose
+   corpus-observations.md goes from 0.95 to 0.65 is regressing in
+   quality even if PASS verdict holds. The Auditor walks regressions
+   under [P21](../../phase-h-architecture-change-management/audit-process.md).
 
 6. **Aggregate per role.** A role's overall score is the
    per-case average (or weighted average if cases have

@@ -297,6 +297,43 @@ same commit that introduces or edits it). Hits inside fenced
 code blocks are ignored — quoted prose is allowed to contain
 the literal phrases.
 
+### P21 — Score-history regression detection
+
+**Property.** No agentic-behaviour test case has regressed since
+its previous logged run. A regression is either a *verdict
+regression* (PASS → PASS-italian-strike, PASS → FAIL, or
+italian-strike → FAIL — the verdict ladder going the wrong way)
+or a *score drop* (the case's normalised score `score/score_max`
+dropped by ≥ 10% from the previous run, even if the verdict
+held).
+**Operational scope.** Walks the JSONL files under
+`scripts/test-runners/.score-history/` (one per runner). A case
+present in only one logged run cannot regress — first-run cases
+are skipped.
+**Signal.** For each runner-log file, parse rows; for each
+`test_id` with ≥ 2 rows, compare the latest to the immediately-
+previous. If verdict regressed OR score dropped ≥ 10%, emit a
+finding naming the test_id, the two rows' verdicts, and the
+score delta.
+**Rule.** [ADR 0015 dec 5](../phase-preliminary/adr/0015-verifiable-agent-rewards.md):
+"Score history tracked, not just current. Scores over time make
+regression visible: a role whose corpus-observations.md goes
+from 0.95 to 0.65 is regressing in quality even if PASS verdict
+holds."
+**Verdict.** Verdict regression (PASS → italian-strike, PASS →
+FAIL, italian-strike → FAIL) = `WARN`. Score drop ≥ 10% with
+verdict held = `INFO` (worth noting; not yet a quality
+emergency). A case dropping below its declared threshold (FAIL)
+is also caught by the runner's normal exit-code; P21 makes the
+*trend* visible.
+
+**Operational note.** Score-history rows are added only when a
+runner is invoked with `--log-scores`. Interactive dev runs do
+NOT pollute history. The architect's discipline: log scores at
+the same cadence the audit walks (today, ~5 days under active
+development; before & after each material edit to a role md or
+runner).
+
 ## Output format
 
 ```

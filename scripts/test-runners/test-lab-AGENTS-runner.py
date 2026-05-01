@@ -22,6 +22,9 @@ from dataclasses import dataclass
 from fnmatch import fnmatch
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _score_history  # noqa: E402
+
 FORGE = Path(__file__).resolve().parents[2]
 
 LABS = {
@@ -41,6 +44,7 @@ class Result:
     detail: str = ''
     score: float | None = None
     score_max: float | None = None
+    threshold: float | None = None  # ADR 0015 dec 5 (score-history)
 
 
 def adr0015_verdict(score: float, score_max: float, threshold: float) -> str:
@@ -61,7 +65,7 @@ def la_01_file_exists(lab_slug: str) -> Result:
     if p.exists():
         return Result(adr0015_verdict(1.0, 1.0, 1.0),
                       f'{p.relative_to(FORGE)}',
-                      score=1.0, score_max=1.0)
+                      score=1.0, score_max=1.0, threshold=1.0)
     return Result('FAIL', f'missing: {p.relative_to(FORGE)}',
                   score=0.0, score_max=1.0)
 
@@ -76,7 +80,7 @@ def la_02_phase_headers(lab_slug: str) -> Result:
     score = round(len(found) / 8, 3)
     return Result(adr0015_verdict(score, 1.0, 1.0),
                   f'{len(found)}/8 headers',
-                  score=score, score_max=1.0)
+                  score=score, score_max=1.0, threshold=1.0)
 
 
 def la_03_template_link(lab_slug: str) -> Result:
@@ -89,7 +93,7 @@ def la_03_template_link(lab_slug: str) -> Result:
     score = 1.0 if found else 0.0
     return Result(adr0015_verdict(score, 1.0, 1.0),
                   '' if found else 'no template cross-link',
-                  score=score, score_max=1.0)
+                  score=score, score_max=1.0, threshold=1.0)
 
 
 def la_04_phases_filled(lab_slug: str) -> Result:
@@ -109,11 +113,13 @@ def la_04_phases_filled(lab_slug: str) -> Result:
     score = round(filled / 8, 3)
     return Result(adr0015_verdict(score, 1.0, 0.75),
                   f'{filled}/8 phases filled',
-                  score=score, score_max=1.0)
+                  score=score, score_max=1.0, threshold=0.75)
 
 
 def main() -> int:
-    pat = sys.argv[1] if len(sys.argv) > 1 else '*'
+    args = [a for a in sys.argv[1:] if not a.startswith('--')]
+    log_scores = '--log-scores' in sys.argv[1:]
+    pat = args[0] if args else '*'
 
     cases: list[tuple[str, callable, str]] = []
     for short, slug in LABS.items():
@@ -134,6 +140,7 @@ def main() -> int:
         return 1
 
     counts = {'PASS': 0, 'FAIL': 0, 'SKIP': 0, 'PASS-italian-strike': 0}
+    rows = []
     for tid, fn, slug in selected:
         r = fn(slug)
         counts[r.verdict] = counts.get(r.verdict, 0) + 1
@@ -141,11 +148,15 @@ def main() -> int:
         if r.score is not None:
             score_str = f' [{r.score}/{r.score_max}]'
         print(f'  {tid:<10} {r.verdict:<19}{score_str}  {r.detail}'.rstrip())
+        rows.append((tid, r.verdict, r.score, r.score_max, r.threshold, r.detail))
 
     print()
     print(f'  total: PASS={counts["PASS"]}  '
           f'PASS-italian-strike={counts.get("PASS-italian-strike", 0)}  '
           f'FAIL={counts["FAIL"]}  SKIP={counts["SKIP"]}')
+    if log_scores:
+        path = _score_history.append_scores('test-lab-AGENTS-runner', rows)
+        print(f'  logged {len(rows)} rows -> {path.relative_to(Path(__file__).resolve().parents[2])}')
     return 1 if counts['FAIL'] else 0
 
 

@@ -32,6 +32,9 @@ from dataclasses import dataclass
 from fnmatch import fnmatch
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _score_history  # noqa: E402
+
 FORGE = Path(__file__).resolve().parents[2]
 OUT_OBS = FORGE / 'phase-b-business-architecture/products/kurpatov-wiki/corpus-observations.md'
 RAWS_ROOT = FORGE.parent / 'kurpatov-wiki-raw' / 'data' / 'Психолог-консультант'
@@ -61,6 +64,7 @@ class Result:
     detail: str = ''
     score: float | None = None
     score_max: float | None = None
+    threshold: float | None = None  # ADR 0015 dec 5 (score-history)
 
 
 def adr0015_verdict(score: float, score_max: float, threshold: float) -> str:
@@ -383,13 +387,16 @@ REGISTRY = {
 
 
 def main() -> int:
-    pat = sys.argv[1] if len(sys.argv) > 1 else '*'
+    args = [a for a in sys.argv[1:] if not a.startswith('--')]
+    log_scores = '--log-scores' in sys.argv[1:]
+    pat = args[0] if args else '*'
     selected = [k for k in REGISTRY if fnmatch(k, pat)]
     if not selected:
         print(f'no tests match pattern {pat!r}')
         return 1
 
     counts = {'PASS': 0, 'FAIL': 0, 'SKIP': 0, 'PASS-italian-strike': 0}
+    rows = []
     for tid in selected:
         r = REGISTRY[tid]()
         counts[r.verdict] = counts.get(r.verdict, 0) + 1
@@ -398,11 +405,15 @@ def main() -> int:
             score_str = f' [{r.score}/{r.score_max}]'
         line = f'  {tid:<6} {r.verdict:<19}{score_str}  {r.detail}'.rstrip()
         print(line)
+        rows.append((tid, r.verdict, r.score, r.score_max, r.threshold, r.detail))
 
     print()
     print(f'  total: PASS={counts["PASS"]}  '
           f'PASS-italian-strike={counts.get("PASS-italian-strike", 0)}  '
           f'FAIL={counts["FAIL"]}  SKIP={counts["SKIP"]}')
+    if log_scores:
+        path = _score_history.append_scores('test-wiki-pm-runner', rows)
+        print(f'  logged {len(rows)} rows -> {path.relative_to(Path(__file__).resolve().parents[2])}')
     return 1 if counts['FAIL'] else 0
 
 
