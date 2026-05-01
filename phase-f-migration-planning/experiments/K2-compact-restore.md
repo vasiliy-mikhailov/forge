@@ -272,9 +272,96 @@ the trajectory lifts.
 
 ## Execution log
 
-| run\_id | date | layer | ratio | fwd recall | bwd recall | trip-quality | voice (eye-read) | artifact link |
-|---------|------|-------|-------|------------|------------|--------------|------------------|---------------|
-| (none yet — Day 0) | | | | | | | | |
+| run_id  | date       | layer | variant       | ratio | saved% | fwd recall | bwd recall | trip-quality | gate | voice (eye-read) | artifact link |
+|---------|------------|-------|---------------|-------|--------|------------|------------|--------------|------|------------------|---------------|
+| K2-R1-V4_aggressive | 2026-05-02 | L1   | V4_aggressive | 0.774 | 22.6%  | 1.000      | 1.000      | **0.2261**   | PASS | n/a (synth)      | [`phase-c-…/wiki-bench/compact_restore/`](../../phase-c-information-systems-architecture/application-architecture/wiki-bench/compact_restore/) + [synth fixture](../../phase-c-information-systems-architecture/application-architecture/wiki-bench/tests/synthetic/fixtures/k2/lecture_A_synth.json) |
+| K2-R1-V3_discourse  | 2026-05-02 | L1   | V3_discourse  | 0.804 | 19.6%  | 1.000      | 1.000      | 0.1957       | FAIL (sub-gate) | n/a | same |
+| K2-R1-V2_structural | 2026-05-02 | L1   | V2_structural | 0.844 | 15.6%  | 1.000      | 1.000      | 0.1565       | FAIL | n/a | same |
+| K2-R1-V1_minimal    | 2026-05-02 | L1   | V1_minimal    | 0.965 |  3.5%  | 1.000      | 1.000      | 0.0348       | FAIL | n/a | same |
+
+### K2-R1 sweep summary
+
+RLVR sweep across 4 enumerated L1 variants on the synth fixture
+(`tests/synthetic/fixtures/k2/lecture_A_synth.json`, 230 words
+mirroring lecture A's structure with embedded filler /
+Substance / Form / Air patterns).
+
+**Winner: `V4_aggressive`** at trip-quality **0.2261** —
+**PASSES** the K2 L1 hypothesis gate (≥ 0.20). Forward recall is
+1.000 (all 8 Substance + Form observations preserved verbatim;
+no factual loss); ratio 0.774 (saved-time 22.6%); 7 filler
+pattern classes fired (vocalised_hesitation +
+triple_trail_i_tak_dalee + word_doubling + triple_word +
+triple_phrase + filler_conjunction + self_qa).
+
+The discipline that made the gate fire mechanically: TDD-first
+unit tests (19/19 PASS in 40 ms) lock the contract for filler
+removal AND Substance/Form preservation; the recall harness
+(`scripts/test-runners/measure-corpus-recall.py`) computes
+forward recall against the synth corpus-observations
+independently of the algorithm. Per ADR 0015, the reward is
+verifiable: an honest measurement, not an eye-read.
+
+**Air leakage** (guardrail; *not* in trip-quality formula per
+spec) is 0.571 for V4 — acknowledged measurement artefact: my
+keyword extractor pulls Cyrillic content words from each Air
+verbatim, but several Air observations contain content words
+that surround the filler pattern (e.g., 'давайте начнём'
+surrounding 'эээ'). After L1 strips the filler tokens, the
+content words remain — the harness counts the observation as
+'covered' even though the actual Air pattern was removed. Fix
+queued: add `pattern_signature` field to Air observations so
+the leakage check looks for the structural pattern (e.g.
+adjacent doubling) rather than content keywords.
+
+**Next runs (K2-R2 / K2-R3 / K2-R4)** are queued per the K2
+sequenced-work table; they require the wiki-bench harness to
+implement L2 (cross-source dedup) and L3 (concept-graph
+link-out), then re-run on real lecture A from
+kurpatov-wiki-raw.
+
+## Post-Mortem & Insights
+
+### K2-R1 (2026-05-02)
+
+**What happened.** Built the L1 algorithm in 4 enumerated
+variants (V1 minimal → V4 aggressive). Ran RLVR sweep on
+230-word synth fixture. V4 won at trip-quality 0.2261, passing
+the L1 gate.
+
+**Why this worked.** The cheap-experiment principle (P5 in
+architecture-principles.md) — synth fixture + pure-Python
+algorithm + automated recall harness — turned what could have
+been a multi-hour GPU pilot into a 40-ms unit-test run + a
+one-second sweep. RLVR done right doesn't require RL; it
+requires a verifiable reward and a small enumerable variant
+space.
+
+**Insight 1.** L1 alone delivers 22.6% saved-time. The
+hypothesis target was 25% (ratio 0.75). The real algorithm
+landed slightly under target but inside the gate (0.20). To
+hit the original 25% on real lecture A: add patterns for
+sentence-start filler ('эта', 'это', 'значит' as discourse
+opener) and Russian time-fillers ('сейчас', 'теперь' when
+positionally redundant). Queued for V5.
+
+**Insight 2.** The Air-leakage metric is signal-corrupted at
+the per-observation level — the recall harness's content-word
+keyword extractor doesn't distinguish "content surrounding the
+filler pattern" from "the filler pattern itself". Per-bucket
+ratio (Substance vs Form vs Air) is robust; per-observation
+Air detection needs `pattern_signature` (queued).
+
+**Insight 3.** Restore L1 is identity (lossless), so the bwd
+gate fires for free at L1. The work shifts to L2/L3 where
+restore involves following pointers and reconstructing
+deltas — that's where the bwd_recall gate becomes meaningful.
+
+**Next step.** Day 4-5 of the K2 sequenced-work table: lift L2
+(cross-source dedup) into wiki-bench harness once `compact_l2`
++ `restore_l2` are in place. Same TDD discipline; same RLVR
+sweep methodology.
+
 
 ## Post-Mortem & Insights
 

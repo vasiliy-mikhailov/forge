@@ -113,7 +113,7 @@ OBS_HEADER_RE = re.compile(
 )
 
 
-def parse_observations(md_path: Path = CORPUS_OBS) -> list[dict]:
+def parse_observations(md_path = None) -> list[dict]:
     """Walk the md, returning one dict per observation:
     {id, source, bucket, dimensions: [str], verbatim: str}.
 
@@ -121,6 +121,8 @@ def parse_observations(md_path: Path = CORPUS_OBS) -> list[dict]:
     Verbatim is the next blockquote (`> …`) under the observation
     header.
     """
+    md_path = md_path if md_path is not None else CORPUS_OBS
+    md_path = __import__('pathlib').Path(md_path)
     text = md_path.read_text(encoding='utf-8')
     lines = text.splitlines()
     observations = []
@@ -279,6 +281,8 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument('--source', required=True,
                         help='Source letter (A, B, C, …) from corpus-observations.md')
+    parser.add_argument('--observations', type=__import__('pathlib').Path, default=None,
+                        help='Override the default corpus-observations.md path. Used for synth fixtures.')
     parser.add_argument('--against', required=True, type=Path,
                         help='Target file to measure recall against (Compact or Restore output).')
     parser.add_argument('--bucket', default=None,
@@ -294,7 +298,7 @@ def main() -> int:
         return 1
     target_text = args.against.read_text(encoding='utf-8')
 
-    observations = parse_observations()
+    observations = parse_observations(args.observations)
     sel = [o for o in observations if o['source'] == args.source]
     if not sel:
         print(f'no observations pinned to source {args.source}', file=sys.stderr)
