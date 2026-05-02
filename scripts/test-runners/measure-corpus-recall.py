@@ -51,8 +51,23 @@ import unicodedata
 from pathlib import Path
 
 FORGE = Path(__file__).resolve().parents[2]
-CORPUS_OBS = (FORGE / 'phase-b-business-architecture' / 'products'
-              / 'kurpatov-wiki' / 'corpus-observations.md')
+# Per ADR 0018: full corpus-observations (with Cyrillic verbatims)
+# lives in the private kurpatov-wiki-wiki/metadata/. Forge's
+# phase-b-…/products/kurpatov-wiki/corpus-observations.md is a
+# schema-only stub. Default to the private path; fall back to the
+# stub for environments that don't have the private repo mounted.
+def _find_private_corpus_obs():
+    candidates = [
+        FORGE.parent / 'kurpatov-wiki-wiki' / 'metadata' / 'corpus-observations.md',
+        FORGE.parent.parent / 'repos' / 'kurpatov-wiki-wiki' / 'metadata' / 'corpus-observations.md',
+        Path.home() / 'repos' / 'kurpatov-wiki-wiki' / 'metadata' / 'corpus-observations.md',
+    ]
+    for c in candidates:
+        if c.exists():
+            return c
+    return (FORGE / 'phase-b-business-architecture' / 'products'
+            / 'kurpatov-wiki' / 'corpus-observations.md')
+CORPUS_OBS = _find_private_corpus_obs()
 
 # Russian stopwords (small list — content words have to be the
 # distinguishing signal; this just prunes function words).

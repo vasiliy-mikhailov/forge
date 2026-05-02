@@ -52,7 +52,7 @@ For each persona in
 - Provide the raw lecture (transcript + slides path).
 - The customer reads the lecture in-character, produces a pain
   ledger at
-  `phase-b-business-architecture/products/kurpatov-wiki/customer-pains/<persona-slug>/<lecture-stem>.md`.
+  `kurpatov-wiki-wiki/metadata/customer-pains/<persona-slug>/<lecture-stem>.md (private repo per ADR 0018)`.
 
 The 5 personas (today): entry-level-student,
 working-psychologist, lay-curious-reader, academic-researcher,
@@ -127,7 +127,7 @@ across all personas that originally reported it.
 ## Pain ledger format
 
 One md file per persona per lecture at
-`phase-b-business-architecture/products/kurpatov-wiki/customer-pains/<persona-slug>/<lecture-stem>.md`.
+`kurpatov-wiki-wiki/metadata/customer-pains/<persona-slug>/<lecture-stem>.md (private repo per ADR 0018)`.
 
 Format (each entry):
 

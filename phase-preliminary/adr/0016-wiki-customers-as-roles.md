@@ -81,7 +81,7 @@ attribution is buried 7 minutes in", "I had to skip 3 minutes of
 filler before reaching the actual technique", etc.), and emits
 those notes into a per-customer **pain ledger** (one md file per
 persona per lecture) under
-`phase-b-business-architecture/products/kurpatov-wiki/customer-pains/<persona>/<lecture-stem>.md`.
+`kurpatov-wiki-wiki/metadata/customer-pains/<persona>/<lecture-stem>.md` (private repo per [ADR 0018](0018-privacy-boundary-public-vs-private-repos.md) — corrected after this ADR shipped).
 
 ### 4. Wiki PM runs a customer-interview cycle
 
