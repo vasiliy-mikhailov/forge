@@ -331,6 +331,35 @@ kurpatov-wiki-raw.
 
 ## Post-Mortem & Insights
 
+### K2 architectural pivot (2026-05-02) — dedup model corrected per ADR 0016
+
+**What happened.** Architect observed: real dedup signal lives at
+the *customer experience* level, not the surface-text level. A new
+lecture says the same things as the prior transcript + slides +
+talk-itself (3 forms per source). Across lectures, Курпатов
+re-explains the same *concepts* in different words. Surface 5-gram
+dedup catches none of this — the Step 0 probe confirmed (0.02%
+across 60 raws).
+
+**ADR 0016 lands** to correct the K2 dedup model:
+
+- L1 (Air-strip)            → ✓ shipped
+- L2 (was: cross-source surface dedup) → **deleted** from spec
+- L2-new (within-source multi-form dedup, transcript + slides
+  + talk-itself, when the source corpus has all 3 forms)
+                            → BUILD when raw triples land
+- L3 (concept-graph link-out) → BUILD next (probe-validated)
+- L4 (LLM-as-judge paraphrase tolerance) → conditional on L3 not
+                                            reaching 0.50
+
+**Wiki Customer role + customer-interview cycle introduced**
+([ADR 0016](../../phase-preliminary/adr/0016-wiki-customers-as-roles.md))
+as the source of falsifiable per-persona reading-pain signal.
+K2's trip-quality target is now *per-persona*, not aggregate:
+the time-poor-reader persona's pain count drop is the headline
+K2 number; academic-researcher's must NOT regress (Pyrrhic
+compaction guard).
+
 ### K2 Step 0 (2026-05-02) — falsifier-first probe before building L2/L3
 
 **What happened.** Before writing `compact_l2`, ran a 5-minute

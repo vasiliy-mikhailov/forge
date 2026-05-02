@@ -10,11 +10,11 @@ sessions.
 
 This is the **product team** for the Kurpatov wiki — the
 broadest collaboration in forge today. Includes the
-[Architect of record](../architect.md) at the steering level
-and six execution roles: Wiki PM (requirements) + Auditor
-(conformance) + Developer (code) + DevOps (host) +
-Source-author (per-source compile) + Concept-curator (graph
-upkeep). One collaboration is enough — when only a subset of
+[Architect of record](../architect.md) at the steering level,
+six producer-side execution roles (Wiki PM, Auditor, Developer,
+DevOps, Source-author, Concept-curator), and the consumer-side
+Wiki Customer role instantiated by 5 personas (per
+[ADR 0016](../../../phase-preliminary/adr/0016-wiki-customers-as-roles.md)). One collaboration is enough — when only a subset of
 roles is needed for a task (e.g. Developer + DevOps for a K2
 run), load this file and use the role decision-rights matrix
 below to scope the work; spawning sub-collaborations for every
@@ -33,6 +33,7 @@ Five aggregated roles:
 | **DevOps**      | Operates `mikhailov.tech` (Blackwell + RTX 5090); runs containers per [P3](../../../phase-preliminary/architecture-principles.md); appends to `operations.md` `## Operational log`. | [`../devops.md`](../devops.md)                       |
 | **Source-author**   | Operational role: compiles one raw transcript into one `source.md` per activation. Filled by an OpenHands SDK agent inside the wiki-bench harness. Realises Voice preservation + Reading speed + Concept-graph quality. | [`../source-author.md`](../source-author.md) |
 | **Concept-curator** | Operational role: maintains `data/concepts/` (create on `concepts_introduced`, update on `concepts_touched`, keep `concept-index.json` consistent). Sub-Conversation spawned from source-author. Realises Concept-graph quality + Dedup correctness. | [`../concept-curator.md`](../concept-curator.md) |
+| **Wiki Customer**   | **Consumer-side** abstract role; per ADR 0016. Reads raw lectures as a specific persona; emits per-lecture pain ledger. Does NOT edit architecture, code, or wiki content. Currently 5 personas: entry-level-student, working-psychologist, lay-curious-reader, academic-researcher, time-poor-reader. | [`../wiki-customer.md`](../wiki-customer.md) + [`../customers/`](../customers/) |
 
 The team **does not** include external readers, sales, content
 authors, or any human acting as Курпатов himself — this is the
@@ -86,6 +87,9 @@ The team's decision rights are **NOT a union** — they are
 | Walk the audit predicates                       | **Auditor**                        |
 | Emit a finding (FAIL / WARN / INFO)             | **Auditor**                        |
 | Refuse to fix a finding                         | **Architect** (Auditor surfaces)  |
+| Read a raw lecture as a persona; emit pain ledger | **Wiki Customer** (one persona per activation) |
+| Cross-tabulate pain ledgers; emit R-NN with customer: source | **Wiki PM** (CI-3..5) |
+| Re-listen to verify customer pain ledger entries | **Wiki PM** (CI-4) |
 | Edit lab source code                            | **Developer**                      |
 | Compile one raw → one source.md                 | **Source-author** (per activation; bench harness commits) |
 | Create / update one concept.md (graph upkeep)   | **Concept-curator** (per activation; spawned by source-author) |

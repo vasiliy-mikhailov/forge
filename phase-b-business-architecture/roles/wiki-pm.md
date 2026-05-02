@@ -20,11 +20,24 @@ authors the *requirements that constrain* the content.
 
 ## Activates from
 
-[`../../phase-requirements-management/wiki-requirements-collection.md`](../../phase-requirements-management/wiki-requirements-collection.md)
-— the 8-step process spec (S1 sample, S2 inventory observations,
-S3 identify reading modes, S4 decompose goals, S5 walk
-scenarios, S6 reconcile info-arch, S7 emit R-NN, S8 hand to
-implementation). Loading the role = loading that file.
+Two complementary process specs:
+
+- [`../../phase-requirements-management/wiki-requirements-collection.md`](../../phase-requirements-management/wiki-requirements-collection.md)
+  — the architect-side discovery cycle (S1 sample, S2 inventory
+  observations, S3 identify reading modes, S4 decompose goals,
+  S5 walk scenarios, S6 reconcile info-arch, S7 emit R-NN, S8
+  hand to implementation).
+- [`../../phase-requirements-management/wiki-customer-interview.md`](../../phase-requirements-management/wiki-customer-interview.md)
+  — the customer-side discovery cycle, per
+  [ADR 0016](../../phase-preliminary/adr/0016-wiki-customers-as-roles.md).
+  CI-1 pick lecture, CI-2 activate each Wiki Customer persona,
+  CI-3 cross-tabulate pain ledgers, CI-4 PM re-listens, CI-5
+  emit R-NN with `customer:<persona>` Source cells, CI-6 team
+  ships, CI-7 re-walk to verify pain dropped.
+
+Loading the role = loading whichever file the activation calls
+for. The two cycles run independently (different cadences) and
+both feed catalog.md.
 
 ## Inputs
 
