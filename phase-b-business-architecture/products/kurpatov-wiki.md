@@ -115,6 +115,7 @@ Per [P7](../../phase-preliminary/architecture-principles.md):
 - **Goal**: TTS (Kurpatov reader time saved).
 - **Outcome**: K1 modules 000+001 + K2 compact-restore both
   cite this product's R-NN trajectories.
+- **Measurement source**: experiment-closure: K1 + K2 (per kurpatov-wiki-wiki source.md / concept.md counts + K2 trip-quality on real lecture A)
 - **Capability realised**: Develop wiki product line.
 - **Function**: Anchor-Kurpatov-wiki-product-content.
 - **Element**: this file.

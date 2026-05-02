@@ -108,6 +108,7 @@ Per [P7](../../../phase-preliminary/architecture-principles.md):
   audit predicates (P11, P25 queued) walk the stub and the
   private cross-link without ever loading verbatim content
   into forge artifacts.
+- **Measurement source**: corpus-walk: WP-02a, WP-02b, WP-02c (Wiki PM observation counts per bucket); private full file at kurpatov-wiki-wiki/metadata/corpus-observations.md
 - **Capability realised**: Develop wiki product line
   ([`../../capabilities/develop-wiki-product-line.md`](../../capabilities/develop-wiki-product-line.md))
   — Requirement traceability quality dimension + Architecture

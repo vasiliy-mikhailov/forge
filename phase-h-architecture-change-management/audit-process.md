@@ -417,6 +417,49 @@ satisfies P24.
 **Verdict.** Missing both = `FAIL` (file is a real motivation gap;
 must be fixed in the same commit that introduces or edits it).
 
+
+### P26 — Universal Outcome measurability (ADR 0019 enforcement)
+
+**Property.** For every motivation chain in P24's scope, the
+chain's `**Outcome**:` bullet MUST be followed by a
+`**Measurement source**:` line citing one of the formats
+defined in [ADR 0019 § Decision 1](../phase-preliminary/adr/0019-measurable-outcomes.md):
+- `runner: <stem>` — single test-runner JSONL aggregate.
+- `runner-aggregate: <stem1>, <stem2>, ...` — multiple
+  runners' mean (Capabilities aggregating realising Roles).
+- `lab-tests: <code>` — one of the 4 labs' AGENTS sets
+  (RL, WB, WC, WI).
+- `audit-predicate: P<NN>` — an audit-process predicate's
+  binary or scored verdict.
+- `catalog-row: R-<phase>-<slug>` — a catalog.md trajectory
+  row's Status / Level cell.
+- `experiment-closure: <id>` — a Phase F experiment's
+  closure verdict.
+- `corpus-walk: WP-<NN>` — a Wiki PM corpus-walk metric.
+- `customer-cycle: CI-<N>` — a customer-interview cycle
+  artifact (post-CI-1..7 run).
+- `n/a — declarative: <reason>` — informational artifact
+  (no quantitative Outcome by design).
+- `n/a — pending: <eta>` — not yet measurable; ETA + reason.
+
+**Operational scope.** The fail-closed default per
+[architecture-principles.md P7](../phase-preliminary/architecture-principles.md)
++ [ADR 0019](../phase-preliminary/adr/0019-measurable-outcomes.md).
+**Carve-outs.** Same set as P24 (transitive chains and
+opt-out marker satisfy P26 trivially; P26 only walks files
+that satisfy P24 with a chain present, not those satisfied
+via `Transitive coverage:`).
+**Signal.** Run
+`scripts/test-runners/motivation-measurability-report.py --gaps-only`;
+empty result = P26 PASS. Any GAP entry = P26 FAIL for that
+artifact.
+**Rule.** [P7](../phase-preliminary/architecture-principles.md)
++ [ADR 0019](../phase-preliminary/adr/0019-measurable-outcomes.md).
+**Verdict.** Missing `**Measurement source**:` line on a
+chain in scope = `FAIL` (file is a measurability gap; must
+be fixed in the same commit that introduces or edits the
+chain).
+
 ## Output format
 
 ```

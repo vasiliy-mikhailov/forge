@@ -104,6 +104,7 @@ Per [P7](../../phase-preliminary/architecture-principles.md):
 - **Goal**: TTS + PTS (Tarasov reader time when launched).
 - **Outcome**: when K1 closes for Kurpatov + Wiki PM walks
   Tarasov corpus, this file becomes the active product anchor.
+- **Measurement source**: n/a — pending: Tarasov product not started; opens when Wiki PM walks Tarasov corpus per S1+S2
 - **Capability realised**: Develop wiki product line.
 - **Function**: Hold-Tarasov-wiki-forward-spec.
 - **Element**: this file.

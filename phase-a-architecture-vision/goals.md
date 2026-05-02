@@ -21,6 +21,7 @@ Per [P7](../phase-preliminary/architecture-principles.md):
   action" has no metrics.
 - **Goal**: meta — this file IS the Goals catalog.
 - **Outcome**: P5 evaluable; P15 + P19 can walk Goals.
+- **Measurement source**: audit-predicate: P19 (every Goal has ≥ 1 realising R-NN trajectory)
 - **Capability realised**: Architecture knowledge management.
 - **Function**: Catalogue-Phase-A-Goals.
 - **Element**: this file (TTS, PTS, EB, Architect-velocity rows).

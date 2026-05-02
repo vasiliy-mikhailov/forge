@@ -35,6 +35,7 @@ Per [P7](../../phase-preliminary/architecture-principles.md):
 - **Outcome**: 4 forge-level Capabilities (R&D, Service
   operation, Product delivery, Architecture knowledge
   management) realised by per-product Capabilities.
+- **Measurement source**: runner-aggregate: test-auditor-runner, test-wiki-pm-runner, test-developer-runner, test-devops-runner, test-source-author-runner, test-concept-curator-runner, test-lab-AGENTS-runner (12-unit aggregate per audit AU-11 table)
 - **Capability realised**: meta — this file IS the catalog.
 - **Function**: Define-forge-level-Capabilities.
 - **Element**: this file.

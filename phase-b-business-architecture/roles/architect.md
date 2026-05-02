@@ -155,6 +155,7 @@ decision point 1:
   cleanly; the audit walks find ≤ a handful of WARN per pass;
   the Wiki PM / Developer / DevOps / Auditor roles each have a
   clear scope and don't bleed into each other's work.
+- **Measurement source**: audit-predicate: P3 (Architect surfaces only via audit findings; latest walk = 0 FAIL)
 - **Capability realised**: all four forge-level capabilities at
   the steering level.
 - **Function**: Decide-and-own-the-architecture.

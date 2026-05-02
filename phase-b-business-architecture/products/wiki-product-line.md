@@ -112,6 +112,7 @@ Per [P7](../../phase-preliminary/architecture-principles.md):
   across users).
 - **Outcome**: per-wiki product folders under
   [products/](.) cite back to this file's shared spec.
+- **Measurement source**: experiment-closure: K1 (modules 000+001 source.md count vs 44 target) + experiment-closure: K2 (compact-restore trip-quality)
 - **Capability realised**: Develop wiki product line
   ([../capabilities/develop-wiki-product-line.md](../capabilities/develop-wiki-product-line.md)).
 - **Function**: Hold-shared-wiki-product-line-spec.

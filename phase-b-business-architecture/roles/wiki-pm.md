@@ -185,6 +185,8 @@ Role:          Wiki PM (this file).
 Filled by:     Claude (Cowork session).
 ```
 
+**Measurement source**: runner: test-wiki-pm-runner (S1+S2 corpus walk + WP-NN cases)
+
 Each agentic-behaviour test in
 [`/tests/phase-b-business-architecture/roles/test-wiki-pm.md`](../../tests/phase-b-business-architecture/roles/test-wiki-pm.md)
 scores the agent's output against this chain — specifically,

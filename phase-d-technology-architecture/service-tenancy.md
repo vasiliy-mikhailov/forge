@@ -38,6 +38,7 @@ Per [P7](../phase-preliminary/architecture-principles.md):
 - **Goal**: Service operation + Architect-velocity.
 - **Outcome**: tenancy table; Caddy mux + per-Lab Make
   enforce at deploy time.
+- **Measurement source**: lab-tests: RL, WB, WC, WI (Caddy mux mutex enforced via per-lab smoke = each lab's smoke.md verdict)
 - **Capability realised**: Service operation.
 - **Function**: Define-service-tenancy-rules.
 - **Element**: this file.

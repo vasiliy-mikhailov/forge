@@ -183,6 +183,7 @@ Per [P7](../../phase-preliminary/architecture-principles.md):
 - **Goal**: EB + Architect-velocity (no GPU recovery cycles).
 - **Outcome**: 169 min sustained 27B-FP8 inference confirmed
   at 400W power-cap.
+- **Measurement source**: experiment-closure: G1 (CLOSED — 169 min sustained 27B-FP8 at 400W cap PASS per K1 v5 baseline)
 - **Capability realised**: Service operation (host stability).
 - **Function**: Find-stable-Blackwell-power-thermal-config.
 - **Element**: this file.

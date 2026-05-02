@@ -36,6 +36,7 @@ Per [P7](../../phase-preliminary/architecture-principles.md):
 - **Outcome**: OpenHands SDK runs source-author + concept-curator
   inside wiki-bench; rl-2048's notebook agents follow the same
   pattern.
+- **Measurement source**: lab-tests: WB (wiki-bench smoke + OpenHands SDK harness integrity)
 - **Capability realised**: Service operation.
 - **Function**: Orchestrate-LLM-agent-loops.
 - **Element**: this file.

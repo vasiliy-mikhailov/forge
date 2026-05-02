@@ -198,6 +198,7 @@ Per [P7](../../phase-preliminary/architecture-principles.md):
 - **Goal**: Service operation (P3 enforced).
 - **Outcome**: every Lab's compose.yml + Dockerfile follows
   this policy.
+- **Measurement source**: audit-predicate: P3 (containers-only enforcement; the policy is what P3 enforces)
 - **Capability realised**: Service operation + Architecture
   knowledge management.
 - **Function**: Enforce-containers-only-policy.

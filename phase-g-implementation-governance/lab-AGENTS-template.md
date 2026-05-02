@@ -283,6 +283,7 @@ Per [P7](../phase-preliminary/architecture-principles.md):
   reliability (P9 walks lab AGENTS.md headers).
 - **Outcome**: 4 lab AGENTS.md (rl-2048, wiki-bench,
   wiki-compiler, wiki-ingest) all present + audit-walked.
+- **Measurement source**: audit-predicate: P9 (4 lab AGENTS.md files conform to template Phase A-H structure)
 - **Capability realised**: Architecture knowledge management.
 - **Function**: Define-lab-AGENTS-md-structure.
 - **Element**: this file.

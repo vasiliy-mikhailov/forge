@@ -206,6 +206,7 @@ Per [P7](../phase-preliminary/architecture-principles.md):
   state).
 - **Outcome**: every Phase G operations procedure traces back
   to a service named here.
+- **Measurement source**: audit-predicate: P3 (containers-only) + P4 (single-server) — both currently PASS
 - **Capability realised**: Service operation
   ([../phase-b-business-architecture/capabilities/service-operation.md](../phase-b-business-architecture/capabilities/service-operation.md)).
 - **Function**: Define-host-and-service-tenancy.

@@ -127,6 +127,7 @@ Per [P7](../../phase-preliminary/architecture-principles.md):
   (per-Quality-Dimension trajectories).
 - **Outcome**: 8 Quality Dimensions catalogued; each becomes
   the Source of one or more R-NN rows.
+- **Measurement source**: runner-aggregate: test-wiki-pm-runner, test-source-author-runner, test-concept-curator-runner + lab-tests: WB, WC, WI (per-Quality-Dimension realising-Role aggregate)
 - **Capability realised**: this file IS the per-product
   Capability artifact.
 - **Function**: Define-wiki-product-line-Quality-Dimensions.

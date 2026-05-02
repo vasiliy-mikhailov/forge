@@ -24,6 +24,7 @@ Per [P7](../../phase-preliminary/architecture-principles.md):
   consistently across Labs + Roles).
 - **Outcome**: every Phase B Role's "Inputs / Outputs"
   section names data-sets that exist here.
+- **Measurement source**: n/a — declarative: data-set catalog; integrity check is P11 (cross-references resolve)
 - **Capability realised**: Architecture knowledge management.
 - **Function**: Catalogue-Data-Sets.
 - **Element**: this file.

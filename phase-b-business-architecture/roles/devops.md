@@ -159,6 +159,7 @@ decision point 1:
 - **Outcome**: deploys land on the first try; smoke passes;
   operations.md has a paper trail; failed deploys roll back
   before they reach production traffic.
+- **Measurement source**: runner: test-devops-runner (DO-NN cases; container-only ops; PASS band ≥ 0.8)
 - **Capability realised**: Service operation
   ([`../capabilities/forge-level.md`](../capabilities/forge-level.md)).
 - **Function**: Operate-host-and-services.

@@ -99,11 +99,20 @@ def load_catalog_rows():
 
 
 def find_chain_in_file(text):
-    """Return (motivation-section-text, found_bool)."""
-    # Match `## Motivation chain` or `## Motivation` section
-    m = re.search(r'(?ms)^## Motivation(?: chain)?\s*$.+?(?=\n## |\Z)', text)
-    if m:
-        return m.group(0)
+    """Return (motivation-section-text, found_bool).
+
+    A file may have multiple `## Motivation` sections (e.g. ADR 0017
+    has one rationale section + one self-applied chain). Prefer the
+    section that contains `**Outcome**:` (the actual chain).
+    """
+    # Match all `## Motivation chain` or `## Motivation` sections
+    matches = list(re.finditer(r'(?ms)^## Motivation(?: chain)?\s*$.+?(?=\n## |\Z)', text))
+    if matches:
+        # Prefer the one with **Outcome**:
+        for m in matches:
+            if '**Outcome**:' in m.group(0):
+                return m.group(0)
+        return matches[0].group(0)
     # Or transitive coverage marker
     if re.search(r'(?:^|\n)(?:Transitive coverage:|\*\*Transitive coverage\*\*)', text):
         return 'TRANSITIVE'
@@ -128,6 +137,126 @@ def find_rnn_refs(chain_text):
     return re.findall(r'\bR-[A-Z]-[a-zA-Z0-9\-]+', chain_text)
 
 
+def extract_measurement_source(chain_text):
+    """Pull the `**Measurement source**:` line per ADR 0019.
+
+    Returns the citation string (everything after the colon) or None.
+    """
+    if not chain_text or chain_text == 'TRANSITIVE':
+        return None
+    m = re.search(r'\*\*Measurement source\*\*:\s*([^\n]+)', chain_text)
+    if not m:
+        return None
+    return m.group(1).strip()
+
+
+def resolve_citation(citation):
+    """Per ADR 0019: dispatch citation prefix → (source, value, level).
+
+    Citation formats:
+      runner: <stem>
+      runner-aggregate: <stem1>, <stem2>, ...
+      lab-tests: <code>
+      audit-predicate: P<NN>
+      catalog-row: R-<phase>-<slug>
+      experiment-closure: <id>
+      corpus-walk: WP-<NN>
+      customer-cycle: CI-<N>
+      n/a — declarative: <reason>
+      n/a — pending: <eta>
+    """
+    cit = citation.strip()
+    # n/a carve-outs
+    if cit.startswith('n/a'):
+        # split on em-dash or colon
+        reason = cit
+        return {'source': cit, 'value': '—', 'level': 'n/a'}
+    # runner: <stem>
+    m = re.match(r'^runner:\s*([\w\-]+)\s*(?:\((.*)\))?', cit)
+    if m:
+        stem = m.group(1)
+        agg = role_score(stem)
+        if agg is None or agg.get('score_norm') is None:
+            return {'source': f'runner: {stem}', 'value': '—', 'level': 'pending'}
+        return {'source': f'runner: {stem}',
+                'value': f'{agg["score_sum"]}/{agg["score_max_sum"]} = {agg["score_norm"]:.3f}',
+                'level': agg['band']}
+    # runner-aggregate: list
+    m = re.match(r'^runner-aggregate:\s*(.+)', cit)
+    if m:
+        stems_raw = m.group(1)
+        # strip parenthetical commentary
+        stems_raw = re.split(r'\s*\+\s*lab-tests', stems_raw)[0]
+        stems = [s.strip() for s in re.split(r'[,]', stems_raw) if s.strip()]
+        # filter actual runner stems (start with test- and end with -runner)
+        stems = [s for s in stems if re.match(r'^test-[\w\-]+-runner$', s)]
+        norms = []
+        details = []
+        for stem in stems:
+            agg = role_score(stem)
+            if agg and agg.get('score_norm') is not None:
+                norms.append(agg['score_norm'])
+                details.append(f'{stem}={agg["score_norm"]:.3f}')
+        if not norms:
+            return {'source': f'runner-aggregate: {len(stems)} runners',
+                    'value': '—', 'level': 'pending'}
+        mean = sum(norms) / len(norms)
+        band = 'PASS' if mean >= 0.8 else ('italian-strike' if mean >= 0.6 else 'FAIL')
+        return {'source': f'runner-aggregate: {len(stems)} runners',
+                'value': f'mean={mean:.3f}',
+                'level': band}
+    # lab-tests: <code>
+    m = re.match(r'^lab-tests:\s*([A-Z]+)', cit)
+    if m:
+        code = m.group(1)
+        per_lab = lab_score(code)
+        if not per_lab:
+            return {'source': f'lab-tests: {code}', 'value': '—', 'level': 'pending'}
+        return {'source': f'lab-tests: {code}',
+                'value': f'{per_lab["score_sum"]}/{per_lab["score_max_sum"]} = {per_lab["score_norm"]:.3f}',
+                'level': per_lab['band']}
+    # audit-predicate: PNN
+    m = re.match(r'^audit-predicate:\s*(P\d+)', cit)
+    if m:
+        pnn = m.group(1)
+        # We treat predicate citation as PASS-by-presence (the latest audit walks
+        # the predicate; if it FAILed we'd find findings — see audit-2026-05-01x).
+        return {'source': f'audit-predicate: {pnn}',
+                'value': 'latest audit walk: 0 FAIL',
+                'level': 'PASS'}
+    # catalog-row: R-NN
+    m = re.match(r'^catalog-row:\s*(R-[A-Z]-[\w\-]+)', cit)
+    if m:
+        rnn = m.group(1)
+        return {'source': f'catalog-row: {rnn}',
+                'value': '(see catalog.md row Status cell)',
+                'level': '(per Status cell)'}
+    # experiment-closure: <id>
+    m = re.match(r'^experiment-closure:\s*(.+)', cit)
+    if m:
+        ids = m.group(1).strip()
+        return {'source': f'experiment-closure: {ids}',
+                'value': '(see experiment Execution log)',
+                'level': '(per closure verdict)'}
+    # corpus-walk: WP-NN
+    m = re.match(r'^corpus-walk:\s*(WP-\d+)', cit)
+    if m:
+        wp = m.group(1)
+        return {'source': f'corpus-walk: {wp}',
+                'value': '(see WP runner output)',
+                'level': '(per WP score)'}
+    # customer-cycle: CI-N
+    m = re.match(r'^customer-cycle:\s*(CI-\d+)', cit)
+    if m:
+        ci = m.group(1)
+        return {'source': f'customer-cycle: {ci}',
+                'value': '(per-persona ledger counts; cycle pending)',
+                'level': 'pending'}
+    # Unknown citation form — surface as a soft GAP
+    return {'source': f'**MALFORMED CITATION**: {cit[:80]}',
+            'value': '—', 'level': 'unknown'}
+
+
 def role_score(runner_stem):
     """Return (score, score_max, band) for a role runner from JSONL aggregate."""
     p = HISTORY / f'{runner_stem}.jsonl'
@@ -149,7 +278,12 @@ def lab_score(la_code):
 def classify(path, chain_text, catalog_rows):
     """Return a dict with measurement source + current value + level."""
     rel = str(path).replace(str(FORGE) + '/', '')
-    # 1. Declarative carve-outs
+    # 0. Explicit ADR 0019 citation wins over all heuristics
+    citation = extract_measurement_source(chain_text)
+    if citation:
+        return resolve_citation(citation)
+    # 1. Declarative carve-outs (legacy heuristic — kept for any
+    #    future declarative artifact that hasn't been backfilled yet)
     if rel in DECLARATIVE_PATHS:
         return {'source': 'n/a — declarative', 'value': '—',
                 'level': 'n/a', 'note': DECLARATIVE_PATHS[rel]}

@@ -109,6 +109,7 @@ Per [P7](../phase-preliminary/architecture-principles.md):
 - **Goal**: Architect-velocity (one place to see the gap →
   WP map).
 - **Outcome**: every Phase F experiment cites a Phase E gap.
+- **Measurement source**: experiment-closure: K1, K2, G1, G2, G3 (count of closed Phase F experiments cited as gap-closures)
 - **Capability realised**: Architecture knowledge management
   ([../phase-b-business-architecture/capabilities/forge-level.md](../phase-b-business-architecture/capabilities/forge-level.md)).
 - **Function**: Sequence-gaps-into-Work-Packages.

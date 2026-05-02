@@ -176,6 +176,7 @@ decision point 1:
 - **Outcome**: Each source.md the role ships matches the SKILL
   schema, preserves voice, marks provenance honestly, and
   passes verify_source.py without manual fix-up.
+- **Measurement source**: runner: test-source-author-runner (SA-NN cases against real wiki source.md; PASS band ≥ 0.8)
 - **Capability realised**: Service operation + Product
   delivery ([`../capabilities/forge-level.md`](../capabilities/forge-level.md));
   Voice preservation + Reading speed + Concept-graph quality

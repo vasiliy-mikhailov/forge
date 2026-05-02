@@ -31,6 +31,7 @@ Per [P7](../../phase-preliminary/architecture-principles.md):
 - **Goal**: Service operation (P3 enforced).
 - **Outcome**: docker compose per Lab; one host (P4) muxed
   by Caddy per ADR 0007.
+- **Measurement source**: audit-predicate: P3 (containers-only enforcement)
 - **Capability realised**: Service operation.
 - **Function**: Define-container-runtime-topology.
 - **Element**: this file.

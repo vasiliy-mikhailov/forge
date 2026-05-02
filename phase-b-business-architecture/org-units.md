@@ -78,6 +78,7 @@ Per [P7](../phase-preliminary/architecture-principles.md) + [P1](../phase-prelim
 - **Goal**: Architect-velocity (Phase A).
 - **Outcome**: every Phase B Role file activates from a defined
   org-unit context; conflicts resolve at the Architect.
+- **Measurement source**: n/a — declarative: org-unit boundaries are structural; no quantitative Outcome
 - **Capability realised**: Architecture knowledge management.
 - **Function**: Define-org-unit-boundaries.
 - **Element**: this file.

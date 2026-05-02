@@ -162,6 +162,7 @@ Per [P7](../../phase-preliminary/architecture-principles.md):
 - **Goal**: TTS (reader time saved on modules 000+001).
 - **Outcome**: 44 source.md + matching concept.md graph
   shipped on `kurpatov-wiki-wiki`.
+- **Measurement source**: experiment-closure: K1 (44-source target; today 2 source.md shipped; verify rate per K1 spec gates)
 - **Capability realised**: Develop wiki product line
   ([../../phase-b-business-architecture/capabilities/develop-wiki-product-line.md](../../phase-b-business-architecture/capabilities/develop-wiki-product-line.md)).
 - **Function**: Compile-modules-000+001.

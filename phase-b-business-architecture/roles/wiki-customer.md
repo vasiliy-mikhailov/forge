@@ -150,6 +150,7 @@ decision point 1 + [ADR 0016](../../phase-preliminary/adr/0016-wiki-customers-as
 - **Outcome**: Each persona's pain ledger drops over successive
   K compact runs (K2 → K3 → ...). Per-persona trip-quality
   becomes measurable.
+- **Measurement source**: customer-cycle: CI-1 (5 personas activated; CI-3..5 ledgers pending — band = pending until cycle runs against modules 000+001)
 - **Capability realised**: TTS + Reading speed + Voice
   preservation + Concept-graph quality — *as scored by the
   reader, not the architect*.

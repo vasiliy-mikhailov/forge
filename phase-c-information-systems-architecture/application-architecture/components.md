@@ -31,6 +31,7 @@ Per [P7](../../phase-preliminary/architecture-principles.md):
 - **Outcome**: 4 Labs (rl-2048, wiki-bench, wiki-compiler,
   wiki-ingest) listed; each cited from the per-product
   Capability files.
+- **Measurement source**: audit-predicate: P9 (every lab AGENTS.md has Phase A-H headers)
 - **Capability realised**: Architecture knowledge management.
 - **Function**: Catalogue-Application-Components.
 - **Element**: this file.

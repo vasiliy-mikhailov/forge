@@ -71,6 +71,7 @@ Per [P7](../phase-preliminary/architecture-principles.md):
   Phase E roadmap).
 - **Outcome**: each row below ties one Phase F experiment
   to its prerequisites + its closure trigger.
+- **Measurement source**: experiment-closure: G1 (PASS), G2 (FAIL), G3 (FAIL), K1 (in flight), K2 (in flight) — count of closed/in-flight Phase F rows
 - **Capability realised**: Architecture knowledge management.
 - **Function**: Sequence-Phase-F-experiments.
 - **Element**: this file.

@@ -20,6 +20,7 @@ Per [P7](../../phase-preliminary/architecture-principles.md):
 - **Goal**: TTS (raw.json must exist before any compaction).
 - **Outcome**: wiki-ingest faster-whisper transcribes audio
   + pushes raw.json per ADR 0005.
+- **Measurement source**: lab-tests: WI (wiki-ingest smoke + pusher container health)
 - **Capability realised**: Service operation + Product delivery.
 - **Function**: Transcribe-audio-to-raw-json.
 - **Element**: this file.

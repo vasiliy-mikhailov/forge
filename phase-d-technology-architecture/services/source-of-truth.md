@@ -30,6 +30,7 @@ Per [P7](../../phase-preliminary/architecture-principles.md):
   copy is canonical).
 - **Outcome**: each data-set declares its canonical home; ADRs
   cite this file when changing residency.
+- **Measurement source**: audit-predicate: P11 (every cross-reference resolves to its declared canonical source)
 - **Capability realised**: Architecture knowledge management.
 - **Function**: Declare-source-of-truth-per-data-set.
 - **Element**: this file.

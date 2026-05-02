@@ -93,6 +93,7 @@ Per [P7](../../phase-preliminary/architecture-principles.md):
 - **Goal**: EB + Architect-velocity (services up = no rework).
 - **Outcome**: lab containers + DevOps role + ops log all
   realise this Capability.
+- **Measurement source**: runner-aggregate: test-devops-runner + lab-tests: RL, WB, WC, WI (host + per-lab smoke health)
 - **Capability realised**: meta — Service operation per
   [forge-level.md](forge-level.md).
 - **Function**: Operate-services-reliably.

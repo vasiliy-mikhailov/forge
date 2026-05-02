@@ -424,6 +424,7 @@ Per [P7](../phase-preliminary/architecture-principles.md):
 - **Outcome**: this file is the runbook (procedural) + the
   Operational log (chronological, append-only); DevOps role
   appends to the log per audit-2026-05-01l F3.
+- **Measurement source**: runner: test-devops-runner (DO-01..06 covers operations.md format + ## Operational log hygiene)
 - **Capability realised**: Service operation.
 - **Function**: Operate-host-procedures + log-actions.
 - **Element**: this file.

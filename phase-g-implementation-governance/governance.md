@@ -120,6 +120,7 @@ Per [P7](../phase-preliminary/architecture-principles.md):
   governance.md anchor (today minimal — backfill queued).
 - **Goal**: Architect-velocity.
 - **Outcome**: (today: anchor only; full content queued).
+- **Measurement source**: n/a — declarative: governance.md is anchor only (today minimal); full content backfill queued
 - **Capability realised**: Architecture knowledge management.
 - **Function**: Define-implementation-governance.
 - **Element**: this file.

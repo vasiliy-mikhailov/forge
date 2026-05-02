@@ -224,6 +224,7 @@ Per [P7](../../phase-preliminary/architecture-principles.md):
 - **Goal**: EB (per-token cost) + voice preservation R-NN.
 - **Outcome**: G3 closed (falsified — gate-4 cross-ref
   integrity > 5/source).
+- **Measurement source**: experiment-closure: G3 (CLOSED FAIL — Gemma-4 31B failed gate-4 cross-ref integrity)
 - **Capability realised**: R&D (model evaluation).
 - **Function**: Test-Gemma-4-31B-cross-ref-integrity.
 - **Element**: this file.

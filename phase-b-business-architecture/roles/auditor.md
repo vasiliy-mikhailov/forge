@@ -140,6 +140,8 @@ Role:          Auditor (this file).
 Filled by:     Claude (Cowork session).
 ```
 
+**Measurement source**: runner: test-auditor-runner (per-test-case aggregate; PASS band ≥ 0.8)
+
 Each agentic-behaviour test in
 [`/tests/phase-b-business-architecture/roles/test-auditor.md`](../../tests/phase-b-business-architecture/roles/test-auditor.md)
 scores the agent's output against this chain — specifically,

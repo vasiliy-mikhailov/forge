@@ -35,6 +35,7 @@ Per [P7](../../phase-preliminary/architecture-principles.md):
 - **Goal**: Architect-velocity (cheap retrieval).
 - **Outcome**: e5-base embedding + per-pilot retrieval index
   (R-D-retrieval-cost trajectory).
+- **Measurement source**: catalog-row: R-D-retrieval-cost (e5-base reload cost trajectory)
 - **Capability realised**: Service operation + R&D.
 - **Function**: Retrieve-by-vector-similarity.
 - **Element**: this file.

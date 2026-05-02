@@ -200,6 +200,7 @@ Per [P7](../../phase-preliminary/architecture-principles.md):
   K1 lesson; ADR 0011).
 - **Goal**: Service operation (no silent skips).
 - **Outcome**: NFC normalisation policy; tests assert it.
+- **Measurement source**: audit-predicate: P11 (cross-platform path integrity per ADR 0011)
 - **Capability realised**: Service operation.
 - **Function**: Enforce-NFC-cross-platform-paths.
 - **Element**: this file.

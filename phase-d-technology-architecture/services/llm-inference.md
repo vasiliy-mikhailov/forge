@@ -37,6 +37,7 @@ Per [P7](../../phase-preliminary/architecture-principles.md):
 - **Goal**: TTS + EB.
 - **Outcome**: wiki-compiler vLLM serves Qwen3.6-27B-FP8 on the
   Blackwell GPU; OpenAI-compatible.
+- **Measurement source**: lab-tests: WC (wiki-compiler smoke + AGENTS Phase A-H integrity)
 - **Capability realised**: Service operation
   ([../../phase-b-business-architecture/capabilities/service-operation.md](../../phase-b-business-architecture/capabilities/service-operation.md)).
 - **Function**: Serve-LLM-inference.

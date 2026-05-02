@@ -158,6 +158,7 @@ decision point 1:
 - **Goal**: Architect-velocity (Phase A).
 - **Outcome**: lab code matches its spec; tests pass; reward
   functions return numbers the audit can compare.
+- **Measurement source**: runner: test-developer-runner (DV-NN cases; TDD discipline; PASS band ≥ 0.8)
 - **Capability realised**: Service operation + R&D
   ([`../capabilities/forge-level.md`](../capabilities/forge-level.md)).
 - **Function**: Implement-feature-against-spec.

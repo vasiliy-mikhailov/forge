@@ -183,6 +183,7 @@ decision point 1:
   with the source(s) that introduced or touched it; cross-
   references are bidirectional; no duplicate slugs sneak in;
   concept-index.json round-trips correctly.
+- **Measurement source**: runner: test-concept-curator-runner (CC-NN cases against real concept.md graph; PASS band ≥ 0.8)
 - **Capability realised**: Service operation
   ([`../capabilities/forge-level.md`](../capabilities/forge-level.md));
   Concept-graph quality + Dedup correctness

@@ -205,6 +205,7 @@ Per [P7](../../phase-preliminary/architecture-principles.md):
 - **Goal**: EB (faster pilot = lower GPU-hours).
 - **Outcome**: G2 closed (MoE swap falsified at architect's
   acceptance gate).
+- **Measurement source**: experiment-closure: G2 (CLOSED FAIL — MoE swap rejected at architect gate)
 - **Capability realised**: R&D (model evaluation).
 - **Function**: Test-MoE-vs-dense-throughput.
 - **Element**: this file.

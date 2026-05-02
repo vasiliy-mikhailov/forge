@@ -169,6 +169,7 @@ decision point 1, applied to a collaboration:
   Auditor walks the result — without context-switch costs at
   the role boundaries (the collab loads all five activations
   at once).
+- **Measurement source**: runner-aggregate: test-wiki-pm-runner, test-auditor-runner, test-developer-runner, test-devops-runner, test-source-author-runner, test-concept-curator-runner (member roles' aggregate)
 - **Capability realised**: all four forge-level capabilities,
   jointly, end-to-end.
 - **Function**: Operate-the-Kurpatov-wiki-product-team.

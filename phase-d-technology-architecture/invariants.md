@@ -36,6 +36,7 @@ Per [P7](../phase-preliminary/architecture-principles.md):
 - **Goal**: Service operation.
 - **Outcome**: invariants enumerated; any new Lab proposal
   must show how it preserves them.
+- **Measurement source**: audit-predicate: P3 + P4 (Phase D invariants = the principles the audit walks)
 - **Capability realised**: Service operation + Architecture
   knowledge management.
 - **Function**: Hold-Phase-D-invariants.
