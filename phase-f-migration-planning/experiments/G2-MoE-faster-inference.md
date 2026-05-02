@@ -195,3 +195,16 @@ Once those land, re-test the MoE component swap.
   dimension on top of the Level-1-stability foundation G1 closed.
 - Pilot v5 baseline metrics (the comparison target):
   `phase-c-information-systems-architecture/application-architecture/wiki-bench/docs/STATE-OF-THE-LAB.md`.
+
+
+## Motivation chain
+
+Per [P7](../../phase-preliminary/architecture-principles.md):
+
+- **Driver**: 27B-dense decode throughput limits pilot wall-clock.
+- **Goal**: EB (faster pilot = lower GPU-hours).
+- **Outcome**: G2 closed (MoE swap falsified at architect's
+  acceptance gate).
+- **Capability realised**: R&D (model evaluation).
+- **Function**: Test-MoE-vs-dense-throughput.
+- **Element**: this file.

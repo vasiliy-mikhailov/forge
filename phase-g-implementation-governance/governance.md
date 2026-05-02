@@ -110,3 +110,16 @@ Phase G section, not here. Examples:
   decisions).
 - [`../phase-preliminary/`](../phase-preliminary/) — the
   meta-decisions this phase enforces.
+
+
+## Motivation chain
+
+Per [P7](../phase-preliminary/architecture-principles.md):
+
+- **Driver**: Phase G is the governance layer; needs a
+  governance.md anchor (today minimal — backfill queued).
+- **Goal**: Architect-velocity.
+- **Outcome**: (today: anchor only; full content queued).
+- **Capability realised**: Architecture knowledge management.
+- **Function**: Define-implementation-governance.
+- **Element**: this file.

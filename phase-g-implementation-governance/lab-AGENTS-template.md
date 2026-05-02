@@ -271,3 +271,18 @@ forge-level Phase H is the source of truth.>
 - **Numbering is per scope.** Lab ADRs number from 0001 within
   the lab; forge-level ADRs number from 0001 across all forge
   phases (the existing 0001-0009 series).
+
+
+## Motivation chain
+
+Per [P7](../phase-preliminary/architecture-principles.md):
+
+- **Driver**: every lab AGENTS.md must follow the same
+  Phase A-H structure; the template enforces uniformity.
+- **Goal**: Architect-velocity (lab onboarding) + audit
+  reliability (P9 walks lab AGENTS.md headers).
+- **Outcome**: 4 lab AGENTS.md (rl-2048, wiki-bench,
+  wiki-compiler, wiki-ingest) all present + audit-walked.
+- **Capability realised**: Architecture knowledge management.
+- **Function**: Define-lab-AGENTS-md-structure.
+- **Element**: this file.

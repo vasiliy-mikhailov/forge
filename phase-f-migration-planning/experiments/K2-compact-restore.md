@@ -618,3 +618,19 @@ sweep methodology.
 
 (empty — to be filled after K2-R3 lands or after a falsifying
 gate fires.)
+
+
+## Motivation chain
+
+Per [P7](../../phase-preliminary/architecture-principles.md):
+
+- **Driver**: 88-min lecture forces reader pain (per K2-R3
+  Post-Mortem + ADR 0016 customer ledgers); compact algorithm
+  reduces tokens.
+- **Goal**: TTS (per-persona).
+- **Outcome**: trip-quality ≥ 0.50 measured per persona;
+  R-B-compact-restore Level 1 → Level 2.
+- **Capability realised**: Develop wiki product line
+  (Reading speed + Concept-graph quality dimensions).
+- **Function**: Compact-and-restore-lecture-A.
+- **Element**: this file.

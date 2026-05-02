@@ -76,3 +76,9 @@ at `customer-pains/academic-researcher/<lecture-stem>.md`.
   has to spend extra time to verify.
 - `mild` — minor formatting issue (citation in body rather
   than footnote); researcher proceeds.
+
+
+**Transitive coverage** (per ADR 0013 dec 9 + ADR 0017):
+motivation chain inherited from the abstract
+[Wiki Customer role](../wiki-customer.md). Per-persona
+content is reading-mode + pain signature for PhD researchers.

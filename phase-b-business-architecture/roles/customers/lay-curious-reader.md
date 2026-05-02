@@ -70,3 +70,10 @@ at `customer-pains/lay-curious-reader/<lecture-stem>.md`.
   takeaway 24h later.
 - `mild` — reader finished, has 1-2 takeaways, would
   recommend the wiki to a friend.
+
+
+**Transitive coverage** (per ADR 0013 dec 9 + ADR 0017):
+motivation chain inherited from the abstract
+[Wiki Customer role](../wiki-customer.md). Per-persona
+content is reading-mode + pain signature for educated
+laypersons.

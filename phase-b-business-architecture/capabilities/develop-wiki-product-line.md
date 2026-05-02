@@ -115,3 +115,19 @@ rather than a per-product one.
   [`../../phase-preliminary/architecture-method.md`](../../phase-preliminary/architecture-method.md).
 - Active experiment specs:
   [`../../phase-f-migration-planning/experiments/`](../../phase-f-migration-planning/experiments/).
+
+
+## Motivation chain
+
+Per [P7](../../phase-preliminary/architecture-principles.md):
+
+- **Driver**: wiki product needs Quality Dimensions to
+  anchor R-NN trajectories.
+- **Goal**: TTS (reader time saved) + Architect-velocity
+  (per-Quality-Dimension trajectories).
+- **Outcome**: 8 Quality Dimensions catalogued; each becomes
+  the Source of one or more R-NN rows.
+- **Capability realised**: this file IS the per-product
+  Capability artifact.
+- **Function**: Define-wiki-product-line-Quality-Dimensions.
+- **Element**: this file.

@@ -454,3 +454,15 @@ The Wiki PM role stopped here per T-WP-01 instructions. Output:
   prompt/grader has been modified.
 
 S3–S7 are queued; they consume the observations above by ID.
+
+
+## Motivation chain
+
+Per [P7](../../../phase-preliminary/architecture-principles.md) — transitive coverage:
+
+**Transitive coverage** (per ADR 0013 dec 9): this file is the
+working evidence of the [Wiki PM role](../../roles/wiki-pm.md)'s
+S1 + S2 corpus walk per
+[wiki-requirements-collection.md](../../../phase-requirements-management/wiki-requirements-collection.md).
+Motivation chain inherited from the Wiki PM role file. R-NN
+rows that cite OBS-A-NNN trace back to this evidence.

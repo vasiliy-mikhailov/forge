@@ -412,3 +412,18 @@ Newest entries above oldest.
   DO-02 (dated entries) + DO-03 (every governing-keyword
   paragraph cites an ADR or R-NN). Pre-existing runbook content
   stays untouched.
+
+
+## Motivation chain
+
+Per [P7](../phase-preliminary/architecture-principles.md):
+
+- **Driver**: services on a single host (P4) need a runbook +
+  a chronological log.
+- **Goal**: Architect-velocity (ops actions logged + reversible).
+- **Outcome**: this file is the runbook (procedural) + the
+  Operational log (chronological, append-only); DevOps role
+  appends to the log per audit-2026-05-01l F3.
+- **Capability realised**: Service operation.
+- **Function**: Operate-host-procedures + log-actions.
+- **Element**: this file.

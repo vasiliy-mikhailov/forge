@@ -214,3 +214,16 @@ the Gemma component swap.
 - Pilot v7 experiment branch:
   `experiment/D8-pilot-2026-04-28-gemma-4-31b-fp8` on
   `kurpatov-wiki-wiki`.
+
+
+## Motivation chain
+
+Per [P7](../../phase-preliminary/architecture-principles.md):
+
+- **Driver**: Gemma-4 31B as a candidate model swap.
+- **Goal**: EB (per-token cost) + voice preservation R-NN.
+- **Outcome**: G3 closed (falsified — gate-4 cross-ref
+  integrity > 5/source).
+- **Capability realised**: R&D (model evaluation).
+- **Function**: Test-Gemma-4-31B-cross-ref-integrity.
+- **Element**: this file.

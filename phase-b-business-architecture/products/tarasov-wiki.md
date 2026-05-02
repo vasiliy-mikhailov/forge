@@ -92,3 +92,18 @@ needed:
 
 Per-capability detail will move into wiki-bench's
 `STATE-OF-THE-LAB.md` once a Tarasov pilot launches.
+
+
+## Motivation chain
+
+Per [P7](../../phase-preliminary/architecture-principles.md):
+
+- **Driver**: Tarasov-wiki is the second-planned wiki product
+  per [wiki-product-line.md](wiki-product-line.md); needs its
+  forward-looking artifact.
+- **Goal**: TTS + PTS (Tarasov reader time when launched).
+- **Outcome**: when K1 closes for Kurpatov + Wiki PM walks
+  Tarasov corpus, this file becomes the active product anchor.
+- **Capability realised**: Develop wiki product line.
+- **Function**: Hold-Tarasov-wiki-forward-spec.
+- **Element**: this file.

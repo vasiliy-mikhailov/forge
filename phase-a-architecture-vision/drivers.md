@@ -32,3 +32,17 @@ inline as `→ influences <Goal>`.
   → influences **Architect-velocity** (Phase A) and **TTS** (an
   agent that has to load more tokens per task takes longer to
   produce the same act).
+
+
+## Motivation chain
+
+Per [P7](../phase-preliminary/architecture-principles.md):
+
+- **Driver**: meta — this file IS the Drivers catalog. P18
+  walks each Driver → Goal arrow.
+- **Goal**: TTS + Architect-velocity (Phase A).
+- **Outcome**: every Phase B / D requirement (R-NN) traces
+  to a Driver via P15.
+- **Capability realised**: Architecture knowledge management.
+- **Function**: Catalogue-Phase-A-Drivers.
+- **Element**: this file.

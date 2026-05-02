@@ -134,6 +134,38 @@ LLM tokenizer that emits NFC, with no normalisation in between. P6
 forbids the silent skip; ADR 0011 fixes the cross-platform hazard
 that produced it.
 
+## P7 — Universal motivation traceability
+
+Every architecture element (regardless of TOGAF phase, ArchiMate
+layer, or ArchiMate aspect) MUST cite a motivation chain
+(Driver → Goal → Outcome → Capability → Function → Role /
+Component / Process) OR be transitively covered per
+[ADR 0013 dec 9](adr/0013-md-as-source-code-tdd.md) with the
+abstract / parent named explicitly.
+
+Default = required. Opt-out = transitive carve-out with
+documented rationale citing the abstract artifact whose chain it
+inherits. Detail in
+[ADR 0017](adr/0017-motivation-spans-all-layers.md).
+
+**Why this is a load-bearing rule.** ArchiMate (§6) treats
+**Motivation as an Aspect** that spans every Layer (Strategy,
+Business, Application, Technology, Physical, Implementation &
+Migration). Forge's pre-2026-05-02 enforcement was piecemeal:
+P14 covers role files; P15 covers catalog rows; P17 covers test
+cases; P18 + P19 cover Driver / Goal chain. New artifact types
+(Phase D files, Phase G procedures, Python scripts, new ADRs)
+silently lacked motivation traceability until the audit caught
+them — at which point yet another retroactive predicate got
+bolted on. P7 makes the default fail-closed: a new artifact
+type without a chain (and without a transitive carve-out) is a
+P24 FAIL on the next audit walk.
+
+**Verification**. P24 in
+[`../phase-h-architecture-change-management/audit-process.md`](../phase-h-architecture-change-management/audit-process.md)
+walks every md under `phase-*/` and verifies the chain section
+is present (or a transitive-coverage line is).
+
 ## How principles are applied
 
 - A new technology service (Phase D) that requires host-Python
@@ -153,14 +185,36 @@ that produced it.
 - A pipeline whose default behaviour is "skip the failing item and
   keep going" violates P6 — the default must be fail-fast, with
   continue-on-fail an explicit, manifest-producing opt-in.
+- A new ADR / Phase D architecture file / Phase G procedure /
+  experiment spec that lacks a `## Motivation chain` section AND
+  lacks a `Transitive coverage:` line citing its abstract
+  violates P7 — P24 surfaces it as FAIL on the next audit walk.
 
-## Why these six
+## Why these seven
 
 P1 and P4 reflect the lived constraints of a home-lab single-
-architect setup; P2, P3, P5, and P6 are *deliberate* choices that
+architect setup; P2, P3, P5, P6 are *deliberate* choices that
 could in principle be relaxed but have proven to be the load-bearing
 rules that keep the working tree honest and the architect's hours
-spent on capability advances rather than on rework.
+spent on capability advances rather than on rework. P7 (added
+2026-05-02 per [ADR 0017](adr/0017-motivation-spans-all-layers.md))
+is the meta-rule that prevents motivation traceability from
+leaking out as new artifact types appear.
 
 The principles are the answer to the question "what would I be
 willing to throw away first?" — and the answer is: not these.
+
+
+## Motivation chain
+
+Per P7 (the principle this file holds):
+
+- **Driver**: forge needs explicit architecture principles to
+  prevent decision drift across architect-sessions.
+- **Goal**: Architect-velocity (principles are the meta-rule
+  that keeps every per-phase decision consistent).
+- **Outcome**: 7 Principles (P1..P7); each new architectural
+  decision is checked against them.
+- **Capability realised**: Architecture knowledge management.
+- **Function**: Hold-the-7-load-bearing-principles.
+- **Element**: this file.

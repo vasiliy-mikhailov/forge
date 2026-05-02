@@ -22,3 +22,19 @@ Level 2) lives in:
 - [`service-operation.md`](service-operation.md) — current detail.
 - (R&D, Product delivery, Architecture knowledge mgmt — populate
   when their next trajectory step is opened in Phase F.)
+
+
+## Motivation chain
+
+Per [P7](../../phase-preliminary/architecture-principles.md):
+
+- **Driver**: ArchiMate Strategy layer requires top-level
+  Capabilities to anchor lower-level Functions; without them,
+  Phase B Roles have nowhere to point.
+- **Goal**: Architect-velocity (Phase A).
+- **Outcome**: 4 forge-level Capabilities (R&D, Service
+  operation, Product delivery, Architecture knowledge
+  management) realised by per-product Capabilities.
+- **Capability realised**: meta — this file IS the catalog.
+- **Function**: Define-forge-level-Capabilities.
+- **Element**: this file.

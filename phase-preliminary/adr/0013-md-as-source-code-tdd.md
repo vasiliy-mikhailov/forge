@@ -234,3 +234,18 @@ Concretely:
 - [Wiki-bench ADR 0013](../../phase-c-information-systems-architecture/application-architecture/wiki-bench/docs/adr/0013-python-coordinator-decomposition.md)
   — the regression-driven motivation for several of the early
   failures cited in Context.
+
+
+## Motivation chain
+
+Per [P7](../architecture-principles.md) — backfit:
+
+- **Driver**: md files drive runtime LLM behaviour; without
+  TDD discipline, behaviour drift goes undetected.
+- **Goal**: Architect-velocity (test-first ⇒ regressions land
+  with the diff that introduces them, not weeks later).
+- **Outcome**: every md driving runtime has a `tests/<path>/`
+  test md; transitive coverage carve-out (dec 9) keeps the
+  spec honest without N-fold duplication.
+- **Capability realised**: Architecture knowledge management.
+- **Function**: Drive-runtime-md-via-TDD.

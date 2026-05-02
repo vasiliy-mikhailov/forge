@@ -151,3 +151,18 @@ If falsified, the first signal is *which* gate triggered:
   `experiment/D8-pilot-2026-04-27-qwen3.6-27b-fp8` on
   `kurpatov-wiki-wiki`, tagged
   `canonical/qwen3.6-27b-fp8/module-005/2026-04-27`.
+
+
+## Motivation chain
+
+Per [P7](../../phase-preliminary/architecture-principles.md):
+
+- **Driver**: K1 is the first end-to-end production run of
+  the wiki-bench harness on real Kurpatov modules.
+- **Goal**: TTS (reader time saved on modules 000+001).
+- **Outcome**: 44 source.md + matching concept.md graph
+  shipped on `kurpatov-wiki-wiki`.
+- **Capability realised**: Develop wiki product line
+  ([../../phase-b-business-architecture/capabilities/develop-wiki-product-line.md](../../phase-b-business-architecture/capabilities/develop-wiki-product-line.md)).
+- **Function**: Compile-modules-000+001.
+- **Element**: this file.

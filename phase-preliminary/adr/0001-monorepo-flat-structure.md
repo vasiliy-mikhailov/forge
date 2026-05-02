@@ -47,3 +47,15 @@ forge/
   is high.
 - **Separate repos.** Atomicity of cross-service contract changes
   (`.env`, compose, network) is lost.
+
+
+## Motivation
+
+Per [P7](../architecture-principles.md) — backfit:
+
+- **Driver**: forge tree shape decides every navigation +
+  search cost; a flat monorepo (one top-level for all phases)
+  keeps the architect's loop fast.
+- **Goal**: Architect-velocity.
+- **Outcome**: every Phase has its own top-level subdirectory;
+  no nested "src/" wrapper.

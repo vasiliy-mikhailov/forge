@@ -290,3 +290,15 @@ ArchiMate-tagged the next time they're meaningfully edited.
   (md is source code; TDD applies). Together with this ADR,
   forge has both *what to write* (ArchiMate 4 vocabulary) and
   *how to verify it* (md TDD).
+
+
+## Motivation
+
+Per [P7](../architecture-principles.md) — backfit:
+
+- **Driver**: TOGAF alone gives phases but no element-typing
+  vocabulary; ArchiMate fills the gap.
+- **Goal**: Architect-velocity (typed elements eliminate
+  vocab disputes); audit reliability (P6 enforces vocab).
+- **Outcome**: Roles, Capabilities, Drivers, Goals, etc. are
+  named ArchiMate constructs; the audit walks vocabulary.

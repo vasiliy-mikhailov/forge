@@ -67,3 +67,17 @@ In TOGAF terms, *capability* (what forge can do) and *organization
 unit* (who does it) are independent. Each lab's own AGENTS.md
 Phase B holds the *lab-scoped* capability subset (with quality
 dimensions appropriate to that lab's domain).
+
+
+## Motivation chain
+
+Per [P7](../phase-preliminary/architecture-principles.md) + [P1](../phase-preliminary/architecture-principles.md):
+
+- **Driver**: forge needs an explicit org-units split (architect
+  vs labs vs roles) to prevent role bleed.
+- **Goal**: Architect-velocity (Phase A).
+- **Outcome**: every Phase B Role file activates from a defined
+  org-unit context; conflicts resolve at the Architect.
+- **Capability realised**: Architecture knowledge management.
+- **Function**: Define-org-unit-boundaries.
+- **Element**: this file.

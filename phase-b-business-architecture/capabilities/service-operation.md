@@ -82,3 +82,18 @@ three landing — see
   [`../../phase-preliminary/architecture-method.md`](../../phase-preliminary/architecture-method.md).
 - Active experiment specs:
   [`../../phase-f-migration-planning/experiments/`](../../phase-f-migration-planning/experiments/).
+
+
+## Motivation chain
+
+Per [P7](../../phase-preliminary/architecture-principles.md):
+
+- **Driver**: Service operation is one of the 4 forge-level
+  Capabilities; this file is its deep-dive.
+- **Goal**: EB + Architect-velocity (services up = no rework).
+- **Outcome**: lab containers + DevOps role + ops log all
+  realise this Capability.
+- **Capability realised**: meta — Service operation per
+  [forge-level.md](forge-level.md).
+- **Function**: Operate-services-reliably.
+- **Element**: this file.

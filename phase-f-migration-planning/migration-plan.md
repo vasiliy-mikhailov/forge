@@ -59,3 +59,18 @@ chronological.
   [`experiments/G1-blackwell-stability.md`](experiments/G1-blackwell-stability.md),
   [`experiments/G2-MoE-faster-inference.md`](experiments/G2-MoE-faster-inference.md),
   [`experiments/G3-gemma-4-31b.md`](experiments/G3-gemma-4-31b.md).
+
+
+## Motivation chain
+
+Per [P7](../phase-preliminary/architecture-principles.md):
+
+- **Driver**: Phase F's TOGAF-canonical deliverable is the
+  Implementation and Migration Plan; this file IS that.
+- **Goal**: Architect-velocity (sequenced execution per
+  Phase E roadmap).
+- **Outcome**: each row below ties one Phase F experiment
+  to its prerequisites + its closure trigger.
+- **Capability realised**: Architecture knowledge management.
+- **Function**: Sequence-Phase-F-experiments.
+- **Element**: this file.

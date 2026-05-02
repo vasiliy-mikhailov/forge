@@ -100,3 +100,20 @@ the meta-constraints that decide which trajectories are valid:
 
 Phase F migration plans MUST cite the principles they affect, and
 explicitly justify any near-violation.
+
+
+## Motivation chain
+
+Per [P7](architecture-principles.md):
+
+- **Driver**: forge needs a chosen architecture method
+  (TOGAF + ArchiMate per ADR 0014); without an explicit
+  method, every per-phase decision re-invents the wheel.
+- **Goal**: Architect-velocity (one method, one trajectory
+  rule, one delete-on-promotion convention).
+- **Outcome**: trajectory model + delete-on-promotion are
+  forge's load-bearing rules; audit P2 + P7 walk them.
+- **Capability realised**: Architecture knowledge management
+  ([../phase-b-business-architecture/capabilities/forge-level.md](../phase-b-business-architecture/capabilities/forge-level.md)).
+- **Function**: Define-the-architecture-method.
+- **Element**: this file.

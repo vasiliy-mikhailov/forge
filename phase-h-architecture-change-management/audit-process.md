@@ -379,6 +379,62 @@ reports each role's aggregate score in audit findings."
 present but row count < 6 or unit names don't match the canonical
 list = `WARN` (drift from the agentic-md set).
 
+### P24 — Universal motivation-chain coverage (P7 enforcement)
+
+**Property.** Every md artifact under `phase-a/`, `phase-b/`,
+`phase-c/`, `phase-d/`, `phase-e/`, `phase-f/`, `phase-g/`,
+and `phase-preliminary/` (excluding the carve-outs below)
+contains either:
+- a `## Motivation chain` section per [ADR 0015 dec 1](../phase-preliminary/adr/0015-verifiable-agent-rewards.md)
+  + [ADR 0017](../phase-preliminary/adr/0017-motivation-spans-all-layers.md), OR
+- a `Transitive coverage:` reference (anywhere in the file)
+  per [ADR 0013 dec 9](../phase-preliminary/adr/0013-md-as-source-code-tdd.md)
+  naming the abstract / parent artifact whose chain it inherits.
+**Operational scope.** The fail-closed default per
+[architecture-principles.md P7](../phase-preliminary/architecture-principles.md).
+**Carve-outs.** Excluded by file pattern (no chain required):
+- `**/README.md` (navigation aids; no architecture content).
+- `**/<lab>/.agents/skills/**` (lab-internal OpenHands skill
+  scaffolding; motivation lives in the lab's AGENTS.md).
+- `**/_template.md`, `**/CLAUDE.md` (template / Claude-specific).
+- `**/AGENTS.md`, `**/SPEC.md`, `**/smoke.md`, `**/backlog.md`,
+  `**/STATE-OF-THE-LAB.md`, `**/H-Q*.md`, `**/launch*.md`,
+  `**/SKILL*.md` (lab-internal docs; motivation transitive to
+  the lab's parent — to be backfit per ADR 0017 follow-up #1).
+- `**/tests/synthetic/fixtures/**` (test fixture data).
+- `<lab>/docs/adr/**` and `<lab>/docs/experiments/**` (per-lab
+  ADRs + experiments; transitive to forge-level ADRs +
+  Phase F experiments — backfit per ADR 0017 follow-up #2).
+- `phase-c-information-systems-architecture/application-architecture/components.md`,
+  `phase-c-…/data-architecture/data-sets.md` — Phase C catalog
+  files; backfit per ADR 0017 follow-up #3.
+- `phase-d/services/**` and `phase-d/{service-tenancy,
+  invariants}.md` — Phase D detail files; backfit per
+  ADR 0017 follow-up #4.
+- `phase-g/policies/**`, `phase-g/governance.md` — Phase G
+  detail files; backfit per ADR 0017 follow-up #5.
+- `phase-preliminary/{archimate-language,
+  archimate-vocabulary, framework-tailoring,
+  architecture-team, architecture-repository}.md` —
+  metamodel reference files; backfit per ADR 0017 follow-up #6.
+- `phase-preliminary/adr/00{01,09,13,14,15,16}-*.md` — pre-P7
+  ADRs; backfit (add `## Motivation` section) per ADR 0017
+  follow-up #7. ADRs from 0017+ MUST have the section.
+- `phase-c-…/wiki-bench/compact_restore/k2_r2_README.md`,
+  `phase-c-…/wiki-bench/tests/synthetic/fixtures/k2/synth-corpus-observations.md`
+  — derived/synthetic K2 docs; transitive to K2 spec.
+- Files whose first non-blank line is the HTML comment
+  `<!-- p24: motivation-out-of-scope -->` (per-file opt-out
+  with explicit marker; mirrors P20's standards-carve-out
+  pattern).
+**Signal.** For each in-scope md path, regex-grep for
+`^## Motivation chain` OR `(?:^|\n)Transitive coverage:`. Either
+satisfies P24.
+**Rule.** [P7](../phase-preliminary/architecture-principles.md)
++ [ADR 0017](../phase-preliminary/adr/0017-motivation-spans-all-layers.md).
+**Verdict.** Missing both = `FAIL` (file is a real motivation gap;
+must be fixed in the same commit that introduces or edits it).
+
 ## Output format
 
 ```

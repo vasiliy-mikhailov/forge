@@ -76,3 +76,10 @@ Same as `entry-level-student.md` — Cowork session loaded with
   filtering signal from noise.
 - `mild` — minor friction; clinician would still recommend
   the lecture to peers.
+
+
+**Transitive coverage** (per ADR 0013 dec 9 + ADR 0017):
+motivation chain inherited from the abstract
+[Wiki Customer role](../wiki-customer.md). Per-persona
+content is reading-mode + pain signature for licensed
+clinicians.

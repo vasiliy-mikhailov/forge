@@ -71,3 +71,13 @@ per the format in `wiki-customer-interview.md`.
   (undefined load-bearing term, broken forward-reference).
 - `moderate` — student can proceed but with reduced retention.
 - `mild` — student notices but doesn't lose the thread.
+
+
+**Transitive coverage** (per [ADR 0013 dec 9](../../../phase-preliminary/adr/0013-md-as-source-code-tdd.md)
++ [ADR 0017](../../../phase-preliminary/adr/0017-motivation-spans-all-layers.md)):
+motivation chain inherited from the abstract
+[Wiki Customer role](../wiki-customer.md). This persona file
+documents reading-mode + pain signature + severity calibration
+specific to entry-level psychology students; the Driver / Goal
+/ Outcome / Capability / Function chain is uniform across all
+5 personas and lives in the abstract.

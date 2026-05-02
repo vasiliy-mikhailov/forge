@@ -10,3 +10,17 @@ Motivation-layer; quantified in Phase H trajectories.
   (GPU-hours + storage + architect-hours at shadow rate).
 - **Architect-velocity.** Capability advances per architect-hour.
   Cross-cuts every other goal — speed of forge's own improvement.
+
+
+## Motivation chain
+
+Per [P7](../phase-preliminary/architecture-principles.md):
+
+- **Driver**: every action choice must be evaluated against
+  named Goals (P5); without a Goals catalog, "metric-driven
+  action" has no metrics.
+- **Goal**: meta — this file IS the Goals catalog.
+- **Outcome**: P5 evaluable; P15 + P19 can walk Goals.
+- **Capability realised**: Architecture knowledge management.
+- **Function**: Catalogue-Phase-A-Goals.
+- **Element**: this file (TTS, PTS, EB, Architect-velocity rows).

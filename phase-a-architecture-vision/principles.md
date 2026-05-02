@@ -16,3 +16,19 @@ ADM iteration's vision). Forge's vision has been stable since
 2026-04-25 and no Phase-A-scoped principles apply today. If the
 Architecture Vision is re-opened (new product, new domain), this
 is where iteration-specific principles would land.
+
+
+## Motivation chain
+
+Per [P7](../phase-preliminary/architecture-principles.md):
+
+- **Driver**: Phase A allows iteration-scoped principles; this
+  file holds them (or notes their absence).
+- **Goal**: Architect-velocity — narrow scope keeps the file
+  honest.
+- **Outcome**: P14 walks (transitive — covered by parent
+  meta-principle file).
+- **Capability realised**: Architecture knowledge management.
+- **Function**: Hold-Phase-A-iteration-principles.
+- **Element**: this file (today empty — Vision stable since
+  2026-04-25 per the file's own note).

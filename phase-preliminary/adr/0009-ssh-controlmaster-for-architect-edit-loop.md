@@ -145,3 +145,13 @@ restart loop completed in ~5 s wall instead of ~12–15 s pre-fix.
   surfaced the cost): G3 Gemma-4-31B-it bench
   (`phase-f-migration-planning/experiments/G3-gemma-4-31b.md` —
   in flight at time of this ADR).
+
+
+## Motivation
+
+Per [P7](../architecture-principles.md) — backfit:
+
+- **Driver**: re-establishing SSH per architect command is
+  high-latency; ControlMaster amortises the handshake.
+- **Goal**: Architect-velocity.
+- **Outcome**: DevOps role multiplexes SSH per ADR 0009.

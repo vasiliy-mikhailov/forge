@@ -209,3 +209,15 @@ fix → implementation team."
   ledger entries + cross-tabulates per CI-3.
 - Audit predicate P23: "every new R-NN row triggered by customer
   pain cites the persona slug in its Source cell".
+
+
+## Motivation
+
+Per [P7](../architecture-principles.md) — backfit:
+
+- **Driver**: K2 Step 0 falsified architect-emitted L2
+  hypothesis; without customer-driven signal, R-NN reflects
+  intuition not pain.
+- **Goal**: TTS at per-segment granularity.
+- **Outcome**: 5 personas + Wiki Customer abstract role +
+  CI-1..7 cycle. R-NN rows can cite `customer:<persona>`.

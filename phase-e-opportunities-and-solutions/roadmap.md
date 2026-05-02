@@ -97,3 +97,19 @@ each pilot is cheap enough to run repeatedly).
 
 Items 1-3 are the next three Phase F experiments to open. Sequence
 in [`../phase-f-migration-planning/migration-plan.md`](../phase-f-migration-planning/migration-plan.md).
+
+
+## Motivation chain
+
+Per [P7](../phase-preliminary/architecture-principles.md):
+
+- **Driver**: Phase E maps gaps (current → target Plateau)
+  to Work Packages; without an explicit roadmap, the gap → WP
+  mapping is implicit.
+- **Goal**: Architect-velocity (one place to see the gap →
+  WP map).
+- **Outcome**: every Phase F experiment cites a Phase E gap.
+- **Capability realised**: Architecture knowledge management
+  ([../phase-b-business-architecture/capabilities/forge-level.md](../phase-b-business-architecture/capabilities/forge-level.md)).
+- **Function**: Sequence-gaps-into-Work-Packages.
+- **Element**: this file.

@@ -99,3 +99,20 @@ cadence) live in the per-product files
   on this line.
 - [`../../phase-c-information-systems-architecture/application-architecture/`](../../phase-c-information-systems-architecture/application-architecture/)
   — the `wiki-*` labs that physically realise the capability.
+
+
+## Motivation chain
+
+Per [P7](../../phase-preliminary/architecture-principles.md):
+
+- **Driver**: forge ships multiple wiki products (Kurpatov,
+  Tarasov, future). The product-line file holds shared
+  characteristics + per-wiki branches.
+- **Goal**: TTS (reader time saved per use) + PTS (cumulative
+  across users).
+- **Outcome**: per-wiki product folders under
+  [products/](.) cite back to this file's shared spec.
+- **Capability realised**: Develop wiki product line
+  ([../capabilities/develop-wiki-product-line.md](../capabilities/develop-wiki-product-line.md)).
+- **Function**: Hold-shared-wiki-product-line-spec.
+- **Element**: this file.

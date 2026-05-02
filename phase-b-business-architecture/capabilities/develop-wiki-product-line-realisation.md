@@ -326,3 +326,20 @@ trajectories are chasing.
 - LLM-as-judge for paraphrase tolerance (L4 conditional).
 - Per-persona runner (CU-NN cases) — Wiki Customer aggregate
   remains transitive until shipped.
+
+
+## Motivation chain
+
+Per [P7](../../phase-preliminary/architecture-principles.md):
+
+- **Driver**: a synthesis artifact unifies the per-phase
+  fragments and makes the Capability's realisation grep-able
+  end-to-end.
+- **Goal**: Architect-velocity (one entry-point to navigate
+  the whole stack).
+- **Outcome**: AU-11 + P22 walk the synthesis; future Cowork
+  sessions load this file as the single anchor.
+- **Capability realised**: Architecture knowledge management
+  ([forge-level.md](forge-level.md)).
+- **Function**: Synthesise-the-Capability-realisation.
+- **Element**: this file.

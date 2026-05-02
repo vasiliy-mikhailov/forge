@@ -193,3 +193,20 @@ in every case.
 - Two labs' caddies up at once → host port conflict; the second one
   fails to bind. Smoke dispatcher catches this:
   `make smoke` exits 1 with a "broken mutex" message.
+
+
+## Motivation chain
+
+Per [P7](../phase-preliminary/architecture-principles.md):
+
+- **Driver**: single-host deployment (P4) needs an explicit
+  Phase D anchor naming the host + its services + their
+  tenancy.
+- **Goal**: Architect-velocity (one place to look up host
+  state).
+- **Outcome**: every Phase G operations procedure traces back
+  to a service named here.
+- **Capability realised**: Service operation
+  ([../phase-b-business-architecture/capabilities/service-operation.md](../phase-b-business-architecture/capabilities/service-operation.md)).
+- **Function**: Define-host-and-service-tenancy.
+- **Element**: this file.

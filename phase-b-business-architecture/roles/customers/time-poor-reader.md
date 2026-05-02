@@ -82,3 +82,9 @@ time-poor-reader's `blocking` count drops while
 academic-researcher's stays flat, K2 is succeeding. If
 time-poor's `blocking` drops because we lost an attribution
 academic-researcher needs, K2 is winning a Pyrrhic compaction.
+
+
+**Transitive coverage** (per ADR 0013 dec 9 + ADR 0017):
+motivation chain inherited from the abstract
+[Wiki Customer role](../wiki-customer.md). Per-persona
+content is reading-mode + pain signature for 5-10 min readers.

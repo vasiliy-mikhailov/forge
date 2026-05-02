@@ -136,3 +136,15 @@ ADR 0005 didn't anticipate, and SPEC.md is the up-to-date how-to.
   parser/reasoning section), `inference/docker-compose.yml`
   (image, KV cache, parsers, reasoning, YaRN), `.env.example`
   (default model, max-model-len, key generation hint).
+
+
+## Motivation
+
+Per [P7](../../phase-preliminary/architecture-principles.md) — backfit:
+
+- **Driver**: 2026-04-25 inference-deploy session needed an
+  ADR-recorded play-by-play to prevent re-deriving its
+  decisions.
+- **Goal**: Architect-velocity (no re-derivation).
+- **Outcome**: deploy decisions captured + cross-linked from
+  Phase F migration-plan.

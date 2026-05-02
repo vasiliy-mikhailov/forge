@@ -104,3 +104,17 @@ Per-capability trajectories live in
 [`../../phase-c-information-systems-architecture/application-architecture/wiki-bench/docs/STATE-OF-THE-LAB.md`](../../phase-c-information-systems-architecture/application-architecture/wiki-bench/docs/STATE-OF-THE-LAB.md).
 Headline next step: scale the same pilot driver to 200+ sources
 without quality regression — including without voice regression.
+
+
+## Motivation chain
+
+Per [P7](../../phase-preliminary/architecture-principles.md):
+
+- **Driver**: Kurpatov-wiki is the first product on the wiki
+  product line; needs its product-page artifact.
+- **Goal**: TTS (Kurpatov reader time saved).
+- **Outcome**: K1 modules 000+001 + K2 compact-restore both
+  cite this product's R-NN trajectories.
+- **Capability realised**: Develop wiki product line.
+- **Function**: Anchor-Kurpatov-wiki-product-content.
+- **Element**: this file.

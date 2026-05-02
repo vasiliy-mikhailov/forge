@@ -22,3 +22,21 @@
   [`wiki-customer-interview.md`](../phase-requirements-management/wiki-customer-interview.md)
   CI-1..7 cycle. Practical-Time-Saved is now measurable per
   segment, not just in aggregate.
+
+
+## Motivation chain
+
+Per [P7](../phase-preliminary/architecture-principles.md) +
+[ADR 0016](../phase-preliminary/adr/0016-wiki-customers-as-roles.md):
+
+- **Driver**: without typed stakeholders, the Wiki PM emits
+  R-NN on architect intuition rather than on segment-specific
+  reader pain (audit-2026-05-01p F1.b).
+- **Goal**: TTS at per-segment granularity (Phase A).
+- **Outcome**: 5 customer personas formalised; Wiki PM runs
+  CI-1..7 cycle against them; per-persona pain ledgers feed
+  R-NN emission.
+- **Capability realised**: Develop wiki product line
+  ([develop-wiki-product-line.md](../phase-b-business-architecture/capabilities/develop-wiki-product-line.md)).
+- **Function**: Catalogue-Stakeholders-and-Concerns.
+- **Element**: this file.

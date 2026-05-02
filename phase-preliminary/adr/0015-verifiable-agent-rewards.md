@@ -274,3 +274,17 @@ commit; the change pattern is the same.
   domain (policy training instead of role evaluation).
 - ArchiMate 4 Specification §6.4.2 (Outcome) — the typed
   element this ADR makes the test reward measure against.
+
+
+## Motivation chain
+
+Per [P7](../architecture-principles.md) — backfit:
+
+- **Driver**: agentic-md tests need verifiable rewards (RLVR);
+  without them, "test passes" is eye-read judgement.
+- **Goal**: Architect-velocity; audit reliability.
+- **Outcome**: every test case has a Reward function (P17);
+  per-runner JSONL score history (dec 5); per-Role aggregate
+  table (dec 6).
+- **Capability realised**: Architecture knowledge management.
+- **Function**: Verifiable-rewards-for-agentic-tests.

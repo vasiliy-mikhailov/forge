@@ -172,3 +172,17 @@ containers.
 
 Outcome: G1 closes with H1 as the canonical fix. Settings codified
 in `/etc/systemd/system/nvidia-power-limit.service`.
+
+
+## Motivation chain
+
+Per [P7](../../phase-preliminary/architecture-principles.md):
+
+- **Driver**: Blackwell GPU UVM crashes mid-pilot (3 confirmed
+  before G1 closed).
+- **Goal**: EB + Architect-velocity (no GPU recovery cycles).
+- **Outcome**: 169 min sustained 27B-FP8 inference confirmed
+  at 400W power-cap.
+- **Capability realised**: Service operation (host stability).
+- **Function**: Find-stable-Blackwell-power-thermal-config.
+- **Element**: this file.
