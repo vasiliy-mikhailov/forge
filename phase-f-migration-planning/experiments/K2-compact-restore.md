@@ -630,6 +630,7 @@ Per [P7](../../phase-preliminary/architecture-principles.md):
 - **Goal**: TTS (per-persona).
 - **Outcome**: trip-quality ≥ 0.50 measured per persona;
   R-B-compact-restore Level 1 → Level 2.
+- **Measurement source**: experiment-closure: K2 (L1 shipped 2.7% saved-time real-A; L2 falsified 0.02%; L3 probe-validated 21.6%)
 - **Capability realised**: Develop wiki product line
   (Reading speed + Concept-graph quality dimensions).
 - **Function**: Compact-and-restore-lecture-A.

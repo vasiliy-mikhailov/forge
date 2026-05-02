@@ -393,6 +393,7 @@ Per [P7](../../../../phase-preliminary/architecture-principles.md):
   Lab finds the Phase context here; lab-local docs (SPEC.md,
   smoke.md, backlog, STATE-OF-THE-LAB) are transitively covered
   by this file's chain.
+- **Measurement source**: lab-tests: WB (8 phase-section headers + lab-AGENTS-runner band)
 - **Capability realised**: R&D + Product delivery + Architecture knowledge management
   ([forge-level.md](../../../../phase-b-business-architecture/capabilities/forge-level.md)).
 - **Function**: Anchor-wiki-bench-lab-context.

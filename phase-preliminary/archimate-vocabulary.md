@@ -262,6 +262,7 @@ Per [P7](architecture-principles.md):
 - **Goal**: Audit reliability (P6, P14, P24 reference this).
 - **Outcome**: typed elements catalogued; new artifact types
   inherit vocab discipline.
+- **Measurement source**: n/a — declarative: ArchiMate 4 vocabulary catalog (typed-element reference; consumed by P14)
 - **Capability realised**: Architecture knowledge management.
 - **Function**: Hold-forge-typed-vocabulary.
 - **Element**: this file.

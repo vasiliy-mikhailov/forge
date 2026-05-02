@@ -113,6 +113,7 @@ Per [P7](architecture-principles.md):
   rule, one delete-on-promotion convention).
 - **Outcome**: trajectory model + delete-on-promotion are
   forge's load-bearing rules; audit P2 + P7 walk them.
+- **Measurement source**: n/a — declarative: trajectory model + delete-on-promotion (consumed by P2 + P7)
 - **Capability realised**: Architecture knowledge management
   ([../phase-b-business-architecture/capabilities/forge-level.md](../phase-b-business-architecture/capabilities/forge-level.md)).
 - **Function**: Define-the-architecture-method.

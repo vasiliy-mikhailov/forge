@@ -36,6 +36,7 @@ Per [P7](../phase-preliminary/architecture-principles.md) +
 - **Outcome**: 5 customer personas formalised; Wiki PM runs
   CI-1..7 cycle against them; per-persona pain ledgers feed
   R-NN emission.
+- **Measurement source**: n/a — declarative: stakeholder roster (5 customer personas formalised in roles/customers/; abstract Wiki Customer in roles/wiki-customer.md)
 - **Capability realised**: Develop wiki product line
   ([develop-wiki-product-line.md](../phase-b-business-architecture/capabilities/develop-wiki-product-line.md)).
 - **Function**: Catalogue-Stakeholders-and-Concerns.

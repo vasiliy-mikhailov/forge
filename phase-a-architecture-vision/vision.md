@@ -19,6 +19,7 @@ Per [P7](../phase-preliminary/architecture-principles.md):
   goes undetected.
 - **Goal**: Architect-velocity (Phase A).
 - **Outcome**: a stable Vision the audit can grep for changes.
+- **Measurement source**: audit-predicate: P14 (Vision drift = grep delta in audit walks; latest = stable)
 - **Capability realised**: Architecture knowledge management
   ([forge-level.md](../phase-b-business-architecture/capabilities/forge-level.md)).
 - **Function**: Document-the-architecture-vision.

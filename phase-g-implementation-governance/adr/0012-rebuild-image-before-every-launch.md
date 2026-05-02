@@ -126,3 +126,4 @@ Per [P7](../../phase-preliminary/architecture-principles.md) — backfit:
 - **Goal**: Architect-velocity (no stale-image debugging).
 - **Outcome**: lab Make targets `make <lab>` rebuild image
   before every launch.
+- **Measurement source**: audit-predicate: P3 (rebuild discipline = no stale image cache)

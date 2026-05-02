@@ -104,3 +104,4 @@ Per [P7](../../phase-preliminary/architecture-principles.md) — backfit:
 - **Goal**: Service operation + R&D.
 - **Outcome**: per-lab containers (compiler, ingest, bench)
   share the inference endpoint per ADR 0001-vllm-public.
+- **Measurement source**: audit-predicate: P4 (single-server tenancy; vLLM + sglang on Blackwell)

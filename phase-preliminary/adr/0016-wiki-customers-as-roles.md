@@ -221,3 +221,4 @@ Per [P7](../architecture-principles.md) — backfit:
 - **Goal**: TTS at per-segment granularity.
 - **Outcome**: 5 personas + Wiki Customer abstract role +
   CI-1..7 cycle. R-NN rows can cite `customer:<persona>`.
+- **Measurement source**: customer-cycle: CI-1 (5 personas activated; CI-3..5 cycle pending)

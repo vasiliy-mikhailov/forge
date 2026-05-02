@@ -276,71 +276,25 @@ def lab_score(la_code):
 
 
 def classify(path, chain_text, catalog_rows):
-    """Return a dict with measurement source + current value + level."""
+    """Return a dict with measurement source + current value + level.
+
+    Per ADR 0019 § Decision 1: every chain MUST carry an explicit
+    **Measurement source**: line. No path heuristics — they masked
+    gaps (caught in audit-2026-05-01y).
+    """
     rel = str(path).replace(str(FORGE) + '/', '')
-    # 0. Explicit ADR 0019 citation wins over all heuristics
-    citation = extract_measurement_source(chain_text)
-    if citation:
-        return resolve_citation(citation)
-    # 1. Declarative carve-outs (legacy heuristic — kept for any
-    #    future declarative artifact that hasn't been backfilled yet)
-    if rel in DECLARATIVE_PATHS:
-        return {'source': 'n/a — declarative', 'value': '—',
-                'level': 'n/a', 'note': DECLARATIVE_PATHS[rel]}
-    # 2. Role files
-    if rel in ROLE_RUNNER_BY_PATH:
-        runner = ROLE_RUNNER_BY_PATH[rel]
-        agg = role_score(runner)
-        if agg is None or agg['score_norm'] is None:
-            return {'source': f'{runner}', 'value': '—', 'level': 'pending'}
-        return {'source': runner,
-                'value': f'{agg["score_sum"]}/{agg["score_max_sum"]} = {agg["score_norm"]:.3f}',
-                'level': agg['band']}
-    # 3. Lab AGENTS.md
-    if rel in LAB_AGENTS_BY_PATH:
-        la_code = LAB_AGENTS_BY_PATH[rel]
-        per_lab = lab_score(la_code.split('-')[1])
-        if not per_lab:
-            return {'source': f'{LAB_RUNNER}', 'value': '—', 'level': 'pending'}
-        return {'source': f'{LAB_RUNNER} (lab {la_code})',
-                'value': f'{per_lab["score_sum"]}/{per_lab["score_max_sum"]} = {per_lab["score_norm"]:.3f}',
-                'level': per_lab['band']}
-    # 4. Persona files (transitive)
-    if 'roles/customers/' in rel:
-        return {'source': 'transitive (Wiki Customer abstract)',
-                'value': '—', 'level': 'n/a (transitive)'}
-    # 5. Chain cites R-NN row(s)?
-    if chain_text and chain_text != 'TRANSITIVE':
-        rnns = find_rnn_refs(chain_text)
-        if rnns:
-            existing = [r for r in rnns if r in catalog_rows]
-            if existing:
-                rows = [catalog_rows[r] for r in existing]
-                statuses = [r['status'] for r in rows]
-                return {'source': f'R-NN: {", ".join(existing)}',
-                        'value': f'Status: {", ".join(statuses)}',
-                        'level': '1 (most R-NN today)'}
-    # 6. Architect role — transitive to audit-process
-    if 'roles/architect.md' in rel:
-        return {'source': 'transitive (audit-process predicates P3/P7/P10/P14/P15/P18/P19)',
-                'value': 'audit walks: 0 FAIL on latest', 'level': 'PASS'}
-    # 7. Wiki Customer abstract role
-    if rel.endswith('roles/wiki-customer.md'):
-        return {'source': 'transitive (CI-3..5 customer-interview cycle)',
-                'value': 'cycle pending — no ledgers yet',
-                'level': 'pending'}
-    # 8. ADRs
-    if '/adr/' in rel:
-        return {'source': 'audit predicate (P3/P7/P10/P14)',
-                'value': 'P24 walk: in-scope = chain present',
-                'level': 'PASS (chain present)'}
-    # 9. Transitive coverage explicitly declared
+    # 0. Transitive — chain inherited from parent
     if chain_text == 'TRANSITIVE':
         return {'source': 'transitive (parent artifact)',
                 'value': '—', 'level': 'inherited'}
-    # 10. GAP — has chain but no measurable source
-    return {'source': '**GAP** — no measurement source cited',
+    # 1. Explicit ADR 0019 citation
+    citation = extract_measurement_source(chain_text)
+    if citation:
+        return resolve_citation(citation)
+    # 2. No citation — GAP. Caller surfaces it.
+    return {'source': '**GAP** — no **Measurement source**: line cited (ADR 0019)',
             'value': '—', 'level': 'unknown'}
+
 
 
 def render_md(rows, gaps_only=False):

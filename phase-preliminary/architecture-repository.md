@@ -145,6 +145,7 @@ Per [P7](architecture-principles.md):
   live in this monorepo).
 - **Goal**: Architect-velocity (no path-hunting).
 - **Outcome**: TOGAF component → forge path table.
+- **Measurement source**: n/a — declarative: TOGAF component → forge path table (consumed by P14)
 - **Capability realised**: Architecture knowledge management.
 - **Function**: Map-TOGAF-Repository-to-forge-paths.
 - **Element**: this file.

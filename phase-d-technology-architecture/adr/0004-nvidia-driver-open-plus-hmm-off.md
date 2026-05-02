@@ -127,3 +127,4 @@ Per [P7](../../phase-preliminary/architecture-principles.md) — backfit:
 - **Goal**: Service operation (sustained GPU stability).
 - **Outcome**: open driver + HMM off; G1's 169-min sustained
   pilot validated.
+- **Measurement source**: audit-predicate: P4 (single-server invariant; nvidia-smi smoke check)

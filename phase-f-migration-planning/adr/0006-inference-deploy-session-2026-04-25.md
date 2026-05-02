@@ -148,3 +148,4 @@ Per [P7](../../phase-preliminary/architecture-principles.md) — backfit:
 - **Goal**: Architect-velocity (no re-derivation).
 - **Outcome**: deploy decisions captured + cross-linked from
   Phase F migration-plan.
+- **Measurement source**: experiment-closure: G2 (MoE faster-inference experiment closure)

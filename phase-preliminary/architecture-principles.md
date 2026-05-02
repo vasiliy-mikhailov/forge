@@ -215,6 +215,7 @@ Per P7 (the principle this file holds):
   that keeps every per-phase decision consistent).
 - **Outcome**: 7 Principles (P1..P7); each new architectural
   decision is checked against them.
+- **Measurement source**: audit-predicate: P7 (universal motivation traceability; meta-principle file enumerating P1..P7)
 - **Capability realised**: Architecture knowledge management.
 - **Function**: Hold-the-7-load-bearing-principles.
 - **Element**: this file.

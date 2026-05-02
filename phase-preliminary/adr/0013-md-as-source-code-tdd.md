@@ -247,5 +247,6 @@ Per [P7](../architecture-principles.md) — backfit:
 - **Outcome**: every md driving runtime has a `tests/<path>/`
   test md; transitive coverage carve-out (dec 9) keeps the
   spec honest without N-fold duplication.
+- **Measurement source**: audit-predicate: P14 (every md driving runtime has tests/<path>/ test md; P14 walks)
 - **Capability realised**: Architecture knowledge management.
 - **Function**: Drive-runtime-md-via-TDD.

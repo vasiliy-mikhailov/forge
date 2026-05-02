@@ -182,6 +182,7 @@ chain:
   artifact types inherit motivation discipline by default; no
   more retroactive bolt-on predicates for motivation
   traceability.
+- **Measurement source**: audit-predicate: P24 (universal motivation-chain coverage; latest walk = 0 FAIL)
 - **Capability realised**: Architecture knowledge management
   ([`../../phase-b-business-architecture/capabilities/forge-level.md`](../../phase-b-business-architecture/capabilities/forge-level.md))
   — the meta-capability of keeping forge's architecture

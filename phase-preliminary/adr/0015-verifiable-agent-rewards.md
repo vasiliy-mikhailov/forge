@@ -286,5 +286,6 @@ Per [P7](../architecture-principles.md) — backfit:
 - **Outcome**: every test case has a Reward function (P17);
   per-runner JSONL score history (dec 5); per-Role aggregate
   table (dec 6).
+- **Measurement source**: audit-predicate: P14 + P22 (every test md has Reward section; per-agentic-md aggregate scores reported)
 - **Capability realised**: Architecture knowledge management.
 - **Function**: Verifiable-rewards-for-agentic-tests.

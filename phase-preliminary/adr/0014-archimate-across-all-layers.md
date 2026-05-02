@@ -302,3 +302,4 @@ Per [P7](../architecture-principles.md) — backfit:
   vocab disputes); audit reliability (P6 enforces vocab).
 - **Outcome**: Roles, Capabilities, Drivers, Goals, etc. are
   named ArchiMate constructs; the audit walks vocabulary.
+- **Measurement source**: audit-predicate: P14 (ArchiMate spans all layers; consumed by P14 + P7)

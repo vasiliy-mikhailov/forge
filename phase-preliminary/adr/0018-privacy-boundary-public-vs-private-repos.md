@@ -25,6 +25,7 @@ Per [P7](../architecture-principles.md):
   the private `kurpatov-wiki-wiki` repo (alongside the curated source.md + concept.md outputs); forge contains only
   the **architecture metamodel** (schema, structure,
   cross-references, predicates).
+- **Measurement source**: audit-predicate: P25 (queued — Cyrillic-excerpt scan)
 
 ## Context
 

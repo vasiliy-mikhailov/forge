@@ -86,6 +86,7 @@ Per [P7](architecture-principles.md):
   this project's scope).
 - **Outcome**: per-phase scope declarations; what we use, what
   we don't.
+- **Measurement source**: n/a — declarative: per-phase scope declarations (what we use, what we do not; consumed by P14)
 - **Capability realised**: Architecture knowledge management.
 - **Function**: Tailor-TOGAF-ArchiMate-to-forge.
 - **Element**: this file.

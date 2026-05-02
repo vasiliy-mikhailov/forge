@@ -57,6 +57,7 @@ Per [P7](architecture-principles.md):
 - **Goal**: Architect-velocity (no implicit roles).
 - **Outcome**: roles + actors enumerated; org-units.md cross-
   references this.
+- **Measurement source**: n/a — declarative: roles + actors enumeration (org-units in Phase B carries the live activation pointer)
 - **Capability realised**: Architecture knowledge management.
 - **Function**: Define-the-architecture-team.
 - **Element**: this file.

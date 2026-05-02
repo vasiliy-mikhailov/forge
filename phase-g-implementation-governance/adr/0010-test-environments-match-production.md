@@ -163,3 +163,4 @@ Per [P7](../../phase-preliminary/architecture-principles.md) — backfit:
 - **Goal**: Architect-velocity (synth tests catch real bugs).
 - **Outcome**: test environments declare production-fidelity
   axes (filesystem, locale, Python version, write timing).
+- **Measurement source**: audit-predicate: P3 (containers-only test env)

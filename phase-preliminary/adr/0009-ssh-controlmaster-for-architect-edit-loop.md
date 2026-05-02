@@ -155,3 +155,4 @@ Per [P7](../architecture-principles.md) — backfit:
   high-latency; ControlMaster amortises the handshake.
 - **Goal**: Architect-velocity.
 - **Outcome**: DevOps role multiplexes SSH per ADR 0009.
+- **Measurement source**: audit-predicate: P3 (architect-edit-loop conformance)

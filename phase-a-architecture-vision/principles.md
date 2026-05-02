@@ -28,6 +28,7 @@ Per [P7](../phase-preliminary/architecture-principles.md):
   honest.
 - **Outcome**: P14 walks (transitive — covered by parent
   meta-principle file).
+- **Measurement source**: n/a — declarative: iteration-scoped principles registry (today empty; populated by ADR-emitting predicates as P-NN principles land)
 - **Capability realised**: Architecture knowledge management.
 - **Function**: Hold-Phase-A-iteration-principles.
 - **Element**: this file (today empty — Vision stable since
