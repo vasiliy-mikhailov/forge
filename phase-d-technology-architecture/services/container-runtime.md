@@ -20,3 +20,17 @@
 
 - [`../../phase-g-implementation-governance/policies/containers.md`](../../phase-g-implementation-governance/policies/containers.md)
   — the forge-wide containers-only execution rule.
+
+
+## Motivation chain
+
+Per [P7](../../phase-preliminary/architecture-principles.md):
+
+- **Driver**: P3 (containers-only) requires a docker compose
+  topology; the runtime spec lives here.
+- **Goal**: Service operation (P3 enforced).
+- **Outcome**: docker compose per Lab; one host (P4) muxed
+  by Caddy per ADR 0007.
+- **Capability realised**: Service operation.
+- **Function**: Define-container-runtime-topology.
+- **Element**: this file.

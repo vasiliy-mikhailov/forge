@@ -103,3 +103,8 @@ back to basic auth via caddy as before.
   better used for `kurpatov-wiki` (its current assignment) or kept idle.
 - **Stack basic auth on top of API key.** Breaks OpenAI SDKs; rejected
   for ergonomics.
+
+
+**Transitive coverage** (per [ADR 0013 dec 9](../../../../phase-preliminary/adr/0013-md-as-source-code-tdd.md)
++ [ADR 0017](../../../../phase-preliminary/adr/0017-motivation-spans-all-layers.md)):
+motivation chain inherited from the lab's AGENTS.md.

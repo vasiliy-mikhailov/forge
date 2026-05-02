@@ -353,3 +353,8 @@ See also: `docs/adr/0001` through `0009`,
 `notebooks/_extract_html.py`,
 `notebooks/_extract_pdf.py`,
 `notebooks/migrate_vault_hierarchy.py`.
+
+
+**Transitive coverage** (per [ADR 0013 dec 9](../../../../phase-preliminary/adr/0013-md-as-source-code-tdd.md)
++ [ADR 0017](../../../../phase-preliminary/adr/0017-motivation-spans-all-layers.md)):
+motivation chain inherited from the lab's AGENTS.md.

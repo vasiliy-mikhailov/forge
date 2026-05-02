@@ -163,3 +163,24 @@ git history per Phase H.
 - G1 experiment (closed):
   [`forge/phase-f-migration-planning/experiments/G1-blackwell-stability.md`](../../../phase-f-migration-planning/experiments/G1-blackwell-stability.md).
 - Power-limit unit: `/etc/systemd/system/nvidia-power-limit.service`.
+
+
+## Motivation chain
+
+Per [P7](../../../../phase-preliminary/architecture-principles.md):
+
+- **Driver**: this Lab realises forge-level Capabilities for the
+  *LLM inference* domain; without an AGENTS.md driving the agent
+  context, a Cowork session loaded against this lab has no
+  Phase A-H scaffolding to anchor on.
+- **Goal**: Architect-velocity (one entry-point file per Lab) +
+  audit reliability (P9 walks lab AGENTS.md headers for the 8
+  Phase A-H sections).
+- **Outcome**: every architect / agent session loaded for this
+  Lab finds the Phase context here; lab-local docs (SPEC.md,
+  smoke.md, backlog, STATE-OF-THE-LAB) are transitively covered
+  by this file's chain.
+- **Capability realised**: Service operation + R&D
+  ([forge-level.md](../../../../phase-b-business-architecture/capabilities/forge-level.md)).
+- **Function**: Anchor-wiki-compiler-lab-context.
+- **Element**: this AGENTS.md.

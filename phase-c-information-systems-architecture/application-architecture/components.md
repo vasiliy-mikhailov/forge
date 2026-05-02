@@ -18,3 +18,19 @@ infrastructure serves every wiki product. Adding a new wiki
 product (e.g. for a new author/corpus) requires only a new pair of
 `<author>-wiki-{raw,wiki}` GitHub repos plus per-pilot env config;
 no component change needed.
+
+
+## Motivation chain
+
+Per [P7](../../phase-preliminary/architecture-principles.md):
+
+- **Driver**: forge needs an Application Components catalog to
+  enumerate the Labs as ArchiMate Application Components.
+- **Goal**: Architect-velocity (one place to look up which
+  Lab is which).
+- **Outcome**: 4 Labs (rl-2048, wiki-bench, wiki-compiler,
+  wiki-ingest) listed; each cited from the per-product
+  Capability files.
+- **Capability realised**: Architecture knowledge management.
+- **Function**: Catalogue-Application-Components.
+- **Element**: this file.

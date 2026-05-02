@@ -23,3 +23,19 @@
   `conv.send_message(master_for_all_sources)` followed by single
   `conv.run()` is the anti-pattern. Bench's
   `orchestrator/run-d8-pilot.py` is the canonical realisation.
+
+
+## Motivation chain
+
+Per [P7](../../phase-preliminary/architecture-principles.md):
+
+- **Driver**: every agentic pipeline (compile, curate, K-cycle)
+  needs an OpenHands SDK orchestrator.
+- **Goal**: Architect-velocity (one orchestrator-per-lab,
+  reusable across experiments).
+- **Outcome**: OpenHands SDK runs source-author + concept-curator
+  inside wiki-bench; rl-2048's notebook agents follow the same
+  pattern.
+- **Capability realised**: Service operation.
+- **Function**: Orchestrate-LLM-agent-loops.
+- **Element**: this file.

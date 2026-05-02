@@ -145,3 +145,15 @@ serving configuration:
   for batch metadata): rejected — adds two-file-must-stay-in-sync
   problem. Encoding both layers in one yaml with compiler ignoring
   `bench_*` fields is simpler.
+
+
+## Motivation
+
+Per [P7](../../phase-preliminary/architecture-principles.md) — backfit:
+
+- **Driver**: model swaps (G2, G3, future) need a single
+  source-of-truth registry.
+- **Goal**: Architect-velocity (G* experiments cite the
+  registry instead of re-deriving model paths).
+- **Outcome**: configs/models.yml in wiki-compiler is the
+  registry; ADRs cite this file for any model change.

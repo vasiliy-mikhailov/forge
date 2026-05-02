@@ -93,3 +93,14 @@ new `${STORAGE_ROOT}` subdir.
   experiments to 32 GB; not worth the tradeoff. The mutex is cheap.
 - **Add caddy basic auth on top of vLLM API key.** Breaks OpenAI SDKs
   for ergonomics no one wants. Rejected.
+
+
+## Motivation
+
+Per [P7](../../phase-preliminary/architecture-principles.md) — backfit:
+
+- **Driver**: forge needs a coherent inference-subsystem
+  topology spanning vLLM + agent orchestration + retrieval.
+- **Goal**: Service operation + R&D.
+- **Outcome**: per-lab containers (compiler, ingest, bench)
+  share the inference endpoint per ADR 0001-vllm-public.

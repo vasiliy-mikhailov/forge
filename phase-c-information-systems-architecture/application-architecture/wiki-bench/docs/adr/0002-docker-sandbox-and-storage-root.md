@@ -134,3 +134,8 @@ so we can see correlations across runs.
 High. To revert to direct binary execution: drop the Dockerfile,
 restore the v3 `run.sh` from git history. The tradeoff would be
 re-exposing the host home directory.
+
+
+**Transitive coverage** (per [ADR 0013 dec 9](../../../../phase-preliminary/adr/0013-md-as-source-code-tdd.md)
++ [ADR 0017](../../../../phase-preliminary/adr/0017-motivation-spans-all-layers.md)):
+motivation chain inherited from the lab's AGENTS.md.

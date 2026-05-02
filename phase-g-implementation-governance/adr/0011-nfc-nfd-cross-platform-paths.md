@@ -157,3 +157,14 @@ this ADR serves — silent NFC/NFD failures violate P6 because they
 cause silent skips in compiled artifacts. ADR 0011 is the concrete
 implementation contract that makes P6 enforceable for cross-platform
 data.
+
+
+## Motivation
+
+Per [P7](../../phase-preliminary/architecture-principles.md) — backfit:
+
+- **Driver**: K1 silent-skip — macOS NFD vs LLM NFC mismatch
+  (P6 violation).
+- **Goal**: Service operation (P6 enforced).
+- **Outcome**: NFC normalisation at every cross-platform
+  boundary; per phase-g-…/policies/cross-platform-paths.md.

@@ -172,3 +172,15 @@ caches — model weights are read-only public artifacts.
 - CLAUDE.md, README.md, phase-d-technology-architecture/architecture.md updated.
 - `wiki-bench` repo content imported under
   `phase-c-information-systems-architecture/application-architecture/wiki-bench/` (separate commit / subtree).
+
+
+## Motivation
+
+Per [P7](../../phase-preliminary/architecture-principles.md) — backfit:
+
+- **Driver**: original `labs/` dir conflated multi-tenant
+  Caddy + per-Lab compose; broke P4 mutex on :80/:443.
+- **Goal**: Service operation (clean per-Lab tenancy).
+- **Outcome**: each Lab self-contained under
+  phase-c-…/application-architecture/<lab>/; Caddy mux per
+  Lab.

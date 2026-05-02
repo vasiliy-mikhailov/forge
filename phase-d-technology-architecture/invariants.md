@@ -24,3 +24,19 @@ dimensions**, not to components. Replacing a component (e.g.
 vLLM 0.19.1 → 0.20) is just the next step on the same trajectory;
 "Was vLLM 0.19.1" annotations do not stay in the working tree —
 git remembers.
+
+
+## Motivation chain
+
+Per [P7](../phase-preliminary/architecture-principles.md):
+
+- **Driver**: P3 + P4 + ADR 0007 imply invariants that any
+  Phase D change must preserve (single host, containers-only,
+  Caddy mux mutex, etc.).
+- **Goal**: Service operation.
+- **Outcome**: invariants enumerated; any new Lab proposal
+  must show how it preserves them.
+- **Capability realised**: Service operation + Architecture
+  knowledge management.
+- **Function**: Hold-Phase-D-invariants.
+- **Element**: this file.

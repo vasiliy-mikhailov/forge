@@ -74,3 +74,18 @@ The pieces of TOGAF that are about *organizational ceremony*
 architect scale. The pieces that are about *vocabulary and
 layering* are the bulk of TOGAF's actual value here, and that is
 what we adopt.
+
+
+## Motivation chain
+
+Per [P7](architecture-principles.md):
+
+- **Driver**: TOGAF + ArchiMate is the chosen method (ADR 0014);
+  the per-phase usage rules are tailored for forge.
+- **Goal**: Architect-velocity (one method, tailored for
+  this project's scope).
+- **Outcome**: per-phase scope declarations; what we use, what
+  we don't.
+- **Capability realised**: Architecture knowledge management.
+- **Function**: Tailor-TOGAF-ArchiMate-to-forge.
+- **Element**: this file.

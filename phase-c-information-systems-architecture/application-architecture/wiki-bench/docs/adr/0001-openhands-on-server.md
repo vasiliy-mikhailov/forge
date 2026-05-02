@@ -109,3 +109,8 @@ Considered: add a `bench-runner/` subsystem to forge alongside
 High. Removing this repo is a single `rm -rf`. Forking back to
 laptop-side Hermes is no harder than pasting the launch prompt
 into Hermes again — though we wouldn't want to.
+
+
+**Transitive coverage** (per [ADR 0013 dec 9](../../../../phase-preliminary/adr/0013-md-as-source-code-tdd.md)
++ [ADR 0017](../../../../phase-preliminary/adr/0017-motivation-spans-all-layers.md)):
+motivation chain inherited from the lab's AGENTS.md.

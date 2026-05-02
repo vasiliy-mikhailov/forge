@@ -185,3 +185,8 @@ DPI drops from 300 (tesseract sweet spot) to 200 (Qwen's patch grid
 sweet spot — higher doesn't help).
 
 The `--force-ocr` CLI flag is renamed to `--force-vlm` for clarity.
+
+
+**Transitive coverage** (per [ADR 0013 dec 9](../../../../phase-preliminary/adr/0013-md-as-source-code-tdd.md)
++ [ADR 0017](../../../../phase-preliminary/adr/0017-motivation-spans-all-layers.md)):
+motivation chain inherited from the lab's AGENTS.md.

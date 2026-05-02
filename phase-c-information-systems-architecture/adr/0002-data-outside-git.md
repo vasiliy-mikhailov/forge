@@ -49,3 +49,15 @@ exception concerns a different repo entirely. A symmetric
   Caddyfile, or Dockerfile.
 - If CI ever appears, it will not have access to `.env`, and tests must
   either work without secrets or use `.env.ci`.
+
+
+## Motivation
+
+Per [P7](../../phase-preliminary/architecture-principles.md) — backfit:
+
+- **Driver**: raw.json files are large + machine-generated;
+  storing them in forge proper would inflate the repo.
+- **Goal**: Architect-velocity (forge stays small + fast).
+- **Outcome**: raw.json lives in `kurpatov-wiki-raw` sibling
+  repo per ADR 0002 + ADR 0005; forge references but doesn't
+  hold the data.

@@ -9,3 +9,17 @@
   lectures transcribed end-to-end. Output is the `raw.json`
   whisper-segment shape consumed downstream.
   L2: stable; not on the active trajectory.
+
+
+## Motivation chain
+
+Per [P7](../../phase-preliminary/architecture-principles.md):
+
+- **Driver**: audio-to-text transcription is the entry
+  point of the wiki pipeline.
+- **Goal**: TTS (raw.json must exist before any compaction).
+- **Outcome**: wiki-ingest faster-whisper transcribes audio
+  + pushes raw.json per ADR 0005.
+- **Capability realised**: Service operation + Product delivery.
+- **Function**: Transcribe-audio-to-raw-json.
+- **Element**: this file.

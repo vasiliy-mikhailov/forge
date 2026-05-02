@@ -60,3 +60,8 @@ Atomic write via `<stem>.tmp/raw.json` → `rename(<stem>.tmp → <stem>)`.
 - **Database.** Adds another component with its own backup story. Defer
   until volume/queries justify it. Migration will be straightforward —
   bulk-load every raw.json into the DB.
+
+
+**Transitive coverage** (per [ADR 0013 dec 9](../../../../phase-preliminary/adr/0013-md-as-source-code-tdd.md)
++ [ADR 0017](../../../../phase-preliminary/adr/0017-motivation-spans-all-layers.md)):
+motivation chain inherited from the lab's AGENTS.md.

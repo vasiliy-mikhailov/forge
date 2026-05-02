@@ -509,3 +509,8 @@ the Mac.
   Russian. The concept slugs are English (kebab-case). The article
   prose is whichever language reads best for the concept — the
   playbook captures how to resolve ambiguity.
+
+
+**Transitive coverage** (per [ADR 0013 dec 9](../../../../phase-preliminary/adr/0013-md-as-source-code-tdd.md)
++ [ADR 0017](../../../../phase-preliminary/adr/0017-motivation-spans-all-layers.md)):
+motivation chain inherited from the lab's AGENTS.md.

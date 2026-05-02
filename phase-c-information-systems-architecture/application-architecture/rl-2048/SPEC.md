@@ -87,3 +87,8 @@ versions of vllm / unsloth / transformers.
   this same stack or a separate image? Decide when we get to that task.
 - The tracked notebook has outputs baked in — worth running `nbstripout`
   before committing updates, so diffs stay readable.
+
+
+**Transitive coverage** (per [ADR 0013 dec 9](../../../../phase-preliminary/adr/0013-md-as-source-code-tdd.md)
++ [ADR 0017](../../../../phase-preliminary/adr/0017-motivation-spans-all-layers.md)):
+motivation chain inherited from the lab's AGENTS.md.

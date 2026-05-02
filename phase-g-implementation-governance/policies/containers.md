@@ -186,3 +186,19 @@ post-mortem-tagged spike artifact is explicitly out of scope.
 - `wiki-bench/AGENTS.md` "Forge-wide invariant" section —
   lab-level mirror of this policy
 - `outputs/D8-pilot-results.md` — first run that prompted this audit
+
+
+## Motivation chain
+
+Per [P7](../../phase-preliminary/architecture-principles.md):
+
+- **Driver**: P3 (containers-only) needs an enforcement
+  policy — what counts as a container, which images allowed,
+  rebuild discipline.
+- **Goal**: Service operation (P3 enforced).
+- **Outcome**: every Lab's compose.yml + Dockerfile follows
+  this policy.
+- **Capability realised**: Service operation + Architecture
+  knowledge management.
+- **Function**: Enforce-containers-only-policy.
+- **Element**: this file.

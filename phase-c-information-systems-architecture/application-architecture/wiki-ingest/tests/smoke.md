@@ -150,3 +150,8 @@ this check has a stable heartbeat.
 - `vault/raw/.git`'s remote URL = `kurpatov-wiki-raw`; not asserted today.
 - `proxy-net` membership of each container; not asserted today
   (caught indirectly by HTTP checks).
+
+
+**Transitive coverage** (per [ADR 0013 dec 9](../../../../phase-preliminary/adr/0013-md-as-source-code-tdd.md)
++ [ADR 0017](../../../../phase-preliminary/adr/0017-motivation-spans-all-layers.md)):
+motivation chain inherited from the lab's AGENTS.md.

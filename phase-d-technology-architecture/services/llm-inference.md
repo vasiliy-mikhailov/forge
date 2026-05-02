@@ -26,3 +26,18 @@
 - [`adr/0008-model-registry-single-source-of-truth.md`](../adr/0008-model-registry-single-source-of-truth.md)
 - Closed experiment `phase-f-migration-planning/experiments/G1-blackwell-stability.md` (stability dim L1).
 - Closed experiment `phase-f-migration-planning/experiments/G2-MoE-faster-inference.md` (throughput dim — falsified).
+
+
+## Motivation chain
+
+Per [P7](../../phase-preliminary/architecture-principles.md):
+
+- **Driver**: every wiki-compile pipeline needs a long-running
+  LLM inference endpoint.
+- **Goal**: TTS + EB.
+- **Outcome**: wiki-compiler vLLM serves Qwen3.6-27B-FP8 on the
+  Blackwell GPU; OpenAI-compatible.
+- **Capability realised**: Service operation
+  ([../../phase-b-business-architecture/capabilities/service-operation.md](../../phase-b-business-architecture/capabilities/service-operation.md)).
+- **Function**: Serve-LLM-inference.
+- **Element**: this file.

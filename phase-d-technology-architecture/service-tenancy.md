@@ -27,3 +27,17 @@ lab-local.)
 Specific version pins live in `Dockerfile`s and `.env` files;
 specific *decisions* about why those versions/components were
 picked live in lab ADRs.
+
+
+## Motivation chain
+
+Per [P7](../phase-preliminary/architecture-principles.md):
+
+- **Driver**: P4 single-server requires explicit tenancy rules
+  (which Lab claims :80/:443 + GPU at any time).
+- **Goal**: Service operation + Architect-velocity.
+- **Outcome**: tenancy table; Caddy mux + per-Lab Make
+  enforce at deploy time.
+- **Capability realised**: Service operation.
+- **Function**: Define-service-tenancy-rules.
+- **Element**: this file.

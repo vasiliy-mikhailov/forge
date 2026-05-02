@@ -45,3 +45,18 @@ Re-open the Preliminary Phase if:
 
 None of these is true today. Until one becomes true, the team
 section is "one architect; no boards."
+
+
+## Motivation chain
+
+Per [P7](architecture-principles.md):
+
+- **Driver**: P1 (single architect of record) needs a
+  team-composition declaration (today: one architect, several
+  LLM-agent-filled roles).
+- **Goal**: Architect-velocity (no implicit roles).
+- **Outcome**: roles + actors enumerated; org-units.md cross-
+  references this.
+- **Capability realised**: Architecture knowledge management.
+- **Function**: Define-the-architecture-team.
+- **Element**: this file.

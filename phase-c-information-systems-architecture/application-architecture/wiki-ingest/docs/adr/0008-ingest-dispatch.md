@@ -288,3 +288,8 @@ pass above handles partial work from any of them uniformly.
 Tested: dropped `000/003` while `005/*` was in flight, daemon log
 shows `000/003` processed next. Batch script run on a mixed pending
 set produces output timestamps in slug order (not grouped by type).
+
+
+**Transitive coverage** (per [ADR 0013 dec 9](../../../../phase-preliminary/adr/0013-md-as-source-code-tdd.md)
++ [ADR 0017](../../../../phase-preliminary/adr/0017-motivation-spans-all-layers.md)):
+motivation chain inherited from the lab's AGENTS.md.

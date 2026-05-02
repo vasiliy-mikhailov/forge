@@ -170,3 +170,8 @@ None planned. The capability works.
 - Canonical module 005 compilation:
   `kurpatov-wiki-wiki:canonical/qwen3.6-27b-fp8/module-005/2026-04-27`
   (tag on `skill-v2`, merge commit `3fd8b18`).
+
+
+**Transitive coverage** (per [ADR 0013 dec 9](../../../../phase-preliminary/adr/0013-md-as-source-code-tdd.md)
++ [ADR 0017](../../../../phase-preliminary/adr/0017-motivation-spans-all-layers.md)):
+motivation chain inherited from the lab's AGENTS.md.

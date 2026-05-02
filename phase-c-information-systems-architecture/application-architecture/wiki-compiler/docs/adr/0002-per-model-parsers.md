@@ -126,3 +126,8 @@ extracts the call. They're independent layers.
 - **Pick the most lenient parser globally.** No such parser
   exists; `qwen3_xml` will produce nonsense on Llama tool calls and
   vice versa.
+
+
+**Transitive coverage** (per [ADR 0013 dec 9](../../../../phase-preliminary/adr/0013-md-as-source-code-tdd.md)
++ [ADR 0017](../../../../phase-preliminary/adr/0017-motivation-spans-all-layers.md)):
+motivation chain inherited from the lab's AGENTS.md.

@@ -109,3 +109,8 @@ One-off script; keep it — useful as a template if we migrate again.
   same result.
 - **Lecture identifier (uuid/hash of `source_path`) as the folder name.**
   Clean, but painful for me to eyeball.
+
+
+**Transitive coverage** (per [ADR 0013 dec 9](../../../../phase-preliminary/adr/0013-md-as-source-code-tdd.md)
++ [ADR 0017](../../../../phase-preliminary/adr/0017-motivation-spans-all-layers.md)):
+motivation chain inherited from the lab's AGENTS.md.

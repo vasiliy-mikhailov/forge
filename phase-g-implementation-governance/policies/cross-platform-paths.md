@@ -189,3 +189,17 @@ if __name__ == "__main__":
   unchanged.
 
 The only downside is migrating existing macOS-origin data once.
+
+
+## Motivation chain
+
+Per [P7](../../phase-preliminary/architecture-principles.md):
+
+- **Driver**: P6 (completeness over availability) silent-skip
+  bug surfaced from macOS-NFD vs LLM-NFC mismatch (per
+  K1 lesson; ADR 0011).
+- **Goal**: Service operation (no silent skips).
+- **Outcome**: NFC normalisation policy; tests assert it.
+- **Capability realised**: Service operation.
+- **Function**: Enforce-NFC-cross-platform-paths.
+- **Element**: this file.

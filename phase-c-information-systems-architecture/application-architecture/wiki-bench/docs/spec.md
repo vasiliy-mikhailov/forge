@@ -311,3 +311,8 @@ D — отлично, мы выиграли дёшево. Если все про
 | 0.3 | 2026-04-25 | AI-lab format: Context+North Star / Backlog / Design / Evals / Execution / Post-Mortem; tiers T1..T4                                                     |
 | 0.4 | 2026-04-25 | split: backlog → backlog.md; spec.md → методология; детальный спек активной гипотезы → experiments/<id>.md                                              |
 | 0.5 | 2026-04-25 | добавлено §1 «What we're improving» — skill как главный артефакт под улучшением; §8 категории гипотез по «где живёт изменение»; D помечен как THE BET   |
+
+
+**Transitive coverage** (per [ADR 0013 dec 9](../../../../phase-preliminary/adr/0013-md-as-source-code-tdd.md)
++ [ADR 0017](../../../../phase-preliminary/adr/0017-motivation-spans-all-layers.md)):
+motivation chain inherited from the lab's AGENTS.md.

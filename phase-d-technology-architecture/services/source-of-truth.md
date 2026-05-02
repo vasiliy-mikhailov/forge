@@ -17,3 +17,19 @@
   baselines, `experiment/<id>-<date>-<served>` for skill v2
   experiments, `canonical/...` tags for promoted modules.
   Stale experiment branches purged before re-running same id.
+
+
+## Motivation chain
+
+Per [P7](../../phase-preliminary/architecture-principles.md):
+
+- **Driver**: forge has multiple sources of state (git, vault,
+  GitHub repos); needs an explicit source-of-truth declaration
+  per data-set.
+- **Goal**: Architect-velocity (one place to look up which
+  copy is canonical).
+- **Outcome**: each data-set declares its canonical home; ADRs
+  cite this file when changing residency.
+- **Capability realised**: Architecture knowledge management.
+- **Function**: Declare-source-of-truth-per-data-set.
+- **Element**: this file.

@@ -398,3 +398,8 @@ Owner: claude-agent (you) + vasiliy.mikhailov@gmail.com (review).
 - multilingual-e5-base — https://huggingface.co/intfloat/multilingual-e5-base
 - sqlite-vss — https://github.com/asg017/sqlite-vss
 - "Lost in the Middle" — Liu et al. 2023, NAACL 2024 (long-context recall)
+
+
+**Transitive coverage** (per [ADR 0013 dec 9](../../../../phase-preliminary/adr/0013-md-as-source-code-tdd.md)
++ [ADR 0017](../../../../phase-preliminary/adr/0017-motivation-spans-all-layers.md)):
+motivation chain inherited from the lab's AGENTS.md.

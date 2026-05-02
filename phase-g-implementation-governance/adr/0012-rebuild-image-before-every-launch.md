@@ -115,3 +115,14 @@ was always the principle; this ADR is the enforcement step. Every
 launch goes through the same image-build path, so the architectural
 contract "the image is the runtime" cannot be silently violated by a
 helpful bind mount.
+
+
+## Motivation
+
+Per [P7](../../phase-preliminary/architecture-principles.md) — backfit:
+
+- **Driver**: stale container images caused architect-time
+  regressions (K1 first run).
+- **Goal**: Architect-velocity (no stale-image debugging).
+- **Outcome**: lab Make targets `make <lab>` rebuild image
+  before every launch.

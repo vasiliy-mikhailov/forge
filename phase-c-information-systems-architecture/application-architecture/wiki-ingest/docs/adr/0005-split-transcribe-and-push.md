@@ -209,3 +209,8 @@ via `-c` flags. No mutable git config is written into the mounted
   until convenient.
 - Consider signing commits once the pusher is no longer
   experimental.
+
+
+**Transitive coverage** (per [ADR 0013 dec 9](../../../../phase-preliminary/adr/0013-md-as-source-code-tdd.md)
++ [ADR 0017](../../../../phase-preliminary/adr/0017-motivation-spans-all-layers.md)):
+motivation chain inherited from the lab's AGENTS.md.

@@ -397,32 +397,14 @@ contains either:
 - `**/<lab>/.agents/skills/**` (lab-internal OpenHands skill
   scaffolding; motivation lives in the lab's AGENTS.md).
 - `**/_template.md`, `**/CLAUDE.md` (template / Claude-specific).
-- `**/AGENTS.md`, `**/SPEC.md`, `**/smoke.md`, `**/backlog.md`,
-  `**/STATE-OF-THE-LAB.md`, `**/H-Q*.md`, `**/launch*.md`,
-  `**/SKILL*.md` (lab-internal docs; motivation transitive to
-  the lab's parent — to be backfit per ADR 0017 follow-up #1).
-- `**/tests/synthetic/fixtures/**` (test fixture data).
-- `<lab>/docs/adr/**` and `<lab>/docs/experiments/**` (per-lab
-  ADRs + experiments; transitive to forge-level ADRs +
-  Phase F experiments — backfit per ADR 0017 follow-up #2).
-- `phase-c-information-systems-architecture/application-architecture/components.md`,
-  `phase-c-…/data-architecture/data-sets.md` — Phase C catalog
-  files; backfit per ADR 0017 follow-up #3.
-- `phase-d/services/**` and `phase-d/{service-tenancy,
-  invariants}.md` — Phase D detail files; backfit per
-  ADR 0017 follow-up #4.
-- `phase-g/policies/**`, `phase-g/governance.md` — Phase G
-  detail files; backfit per ADR 0017 follow-up #5.
-- `phase-preliminary/{archimate-language,
-  archimate-vocabulary, framework-tailoring,
-  architecture-team, architecture-repository}.md` —
-  metamodel reference files; backfit per ADR 0017 follow-up #6.
-- `phase-preliminary/adr/00{01,09,13,14,15,16}-*.md` — pre-P7
-  ADRs; backfit (add `## Motivation` section) per ADR 0017
-  follow-up #7. ADRs from 0017+ MUST have the section.
-- `phase-c-…/wiki-bench/compact_restore/k2_r2_README.md`,
+- `**/tests/synthetic/fixtures/**` (test fixture data;
+  transitive to the lab's tests/synthetic/* test files).
+- `phase-c-…/wiki-bench/compact_restore/k2_r2_README.md` and
   `phase-c-…/wiki-bench/tests/synthetic/fixtures/k2/synth-corpus-observations.md`
-  — derived/synthetic K2 docs; transitive to K2 spec.
+  — derived / synthetic K2 docs; transitive to K2 spec.
+
+(All previously-carved-out patterns from ADR 0017 follow-ups
+#1–#6 are now backfilled — see audit-2026-05-01u commit.)
 - Files whose first non-blank line is the HTML comment
   `<!-- p24: motivation-out-of-scope -->` (per-file opt-out
   with explicit marker; mirrors P20's standards-carve-out

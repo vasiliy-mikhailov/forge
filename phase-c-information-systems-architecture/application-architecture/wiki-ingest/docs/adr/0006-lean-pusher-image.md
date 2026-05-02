@@ -130,3 +130,8 @@ in `Dockerfile.pusher` trips both assertions.
   0005 follow-up, blocked on task #7), reuse
   `forge-kurpatov-wiki-pusher:latest` — it's the same shape of
   daemon.
+
+
+**Transitive coverage** (per [ADR 0013 dec 9](../../../../phase-preliminary/adr/0013-md-as-source-code-tdd.md)
++ [ADR 0017](../../../../phase-preliminary/adr/0017-motivation-spans-all-layers.md)):
+motivation chain inherited from the lab's AGENTS.md.

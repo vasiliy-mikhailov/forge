@@ -134,3 +134,17 @@ containers, while moving git paths only requires a doc update.
 - [`../phase-g-implementation-governance/lab-AGENTS-template.md`](../phase-g-implementation-governance/lab-AGENTS-template.md)
   — the canonical per-lab Phase A-H template (Reference Library
   artefact).
+
+
+## Motivation chain
+
+Per [P7](architecture-principles.md):
+
+- **Driver**: TOGAF Architecture Repository needs a forge-
+  specific layout (where does each TOGAF metamodel component
+  live in this monorepo).
+- **Goal**: Architect-velocity (no path-hunting).
+- **Outcome**: TOGAF component → forge path table.
+- **Capability realised**: Architecture knowledge management.
+- **Function**: Map-TOGAF-Repository-to-forge-paths.
+- **Element**: this file.

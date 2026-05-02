@@ -116,3 +116,14 @@ Check in order:
 - **Leaving UVM alone.** Multi-GPU flows crashed, see Context.
 - **Moving to one of the `-server` driver variants.** Target scenario is a
   workstation, not a headless server; `*-server` variants weren't tested.
+
+
+## Motivation
+
+Per [P7](../../phase-preliminary/architecture-principles.md) — backfit:
+
+- **Driver**: nvidia driver mode + HMM setting affects GPU
+  stability under sustained 27B inference (G1 finding).
+- **Goal**: Service operation (sustained GPU stability).
+- **Outcome**: open driver + HMM off; G1's 169-min sustained
+  pilot validated.

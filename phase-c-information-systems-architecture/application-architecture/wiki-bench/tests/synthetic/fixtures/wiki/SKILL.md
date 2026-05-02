@@ -124,3 +124,8 @@ git -c user.email=synth@test.local -c user.name=synth commit -m "source: <src-st
 ## Begin
 
 Start with source 001. Announce each step out loud before doing it.
+
+
+**Transitive coverage** (per [ADR 0013 dec 9](../../../../phase-preliminary/adr/0013-md-as-source-code-tdd.md)
++ [ADR 0017](../../../../phase-preliminary/adr/0017-motivation-spans-all-layers.md)):
+motivation chain inherited from the lab's AGENTS.md.

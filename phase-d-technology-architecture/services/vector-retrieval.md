@@ -24,3 +24,17 @@
 ## Cross-references
 
 - [`../../phase-c-information-systems-architecture/application-architecture/wiki-bench/docs/adr/0010-retrieval-augmented-dedup.md`](../../phase-c-information-systems-architecture/application-architecture/wiki-bench/docs/adr/0010-retrieval-augmented-dedup.md)
+
+
+## Motivation chain
+
+Per [P7](../../phase-preliminary/architecture-principles.md):
+
+- **Driver**: source-author + concept-curator need vector
+  retrieval to detect REPEATED claims + concept-graph proximity.
+- **Goal**: Architect-velocity (cheap retrieval).
+- **Outcome**: e5-base embedding + per-pilot retrieval index
+  (R-D-retrieval-cost trajectory).
+- **Capability realised**: Service operation + R&D.
+- **Function**: Retrieve-by-vector-similarity.
+- **Element**: this file.

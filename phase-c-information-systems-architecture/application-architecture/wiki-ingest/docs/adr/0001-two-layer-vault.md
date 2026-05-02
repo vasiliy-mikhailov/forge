@@ -57,3 +57,8 @@ Rules:
 - Three layers (raw / clean / wiki), where "clean" is a normalized text
   without timings. Might appear later, but YAGNI for now — LLMs are fine
   directly on `segments[].text`.
+
+
+**Transitive coverage** (per [ADR 0013 dec 9](../../../../phase-preliminary/adr/0013-md-as-source-code-tdd.md)
++ [ADR 0017](../../../../phase-preliminary/adr/0017-motivation-spans-all-layers.md)):
+motivation chain inherited from the lab's AGENTS.md.

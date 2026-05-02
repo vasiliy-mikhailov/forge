@@ -494,3 +494,8 @@ TPS x1.5–2.0 → быстрее цикл, больше experiment-cells в д�
 | A1  | max_completion_tokens cap в OpenHands LLMConfig                                       | refuted 2026-04-25 косвенно через A8: default max_completion_tokens хватает, корень в `max_model_len`, не в output cap.                                              |
 | —   | gpt-oss-120b как dense baseline                                                       | skip: gpt-oss-120b — это MoE, не dense                                                                                                                                |
 | —   | Qwen3.6-82B / Nemotron-5 125B                                                         | skip: не существуют на HF (проверено через API search)                                                                                                                |
+
+
+**Transitive coverage** (per [ADR 0013 dec 9](../../../../phase-preliminary/adr/0013-md-as-source-code-tdd.md)
++ [ADR 0017](../../../../phase-preliminary/adr/0017-motivation-spans-all-layers.md)):
+motivation chain inherited from the lab's AGENTS.md.

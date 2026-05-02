@@ -151,3 +151,15 @@ ink.
   the agent → file_editor → verify_source path end-to-end).
   Tracked in
   [`../../phase-requirements-management/catalog.md`](../../phase-requirements-management/catalog.md).
+
+
+## Motivation
+
+Per [P7](../../phase-preliminary/architecture-principles.md) — backfit:
+
+- **Driver**: K1 silent-skip bug surfaced because synthetic
+  tests didn't match production filesystem semantics
+  (NFC/NFD).
+- **Goal**: Architect-velocity (synth tests catch real bugs).
+- **Outcome**: test environments declare production-fidelity
+  axes (filesystem, locale, Python version, write timing).

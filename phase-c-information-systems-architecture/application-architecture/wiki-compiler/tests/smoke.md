@@ -88,3 +88,8 @@ key, the model loaded successfully.
   starts returning a stale model list while the engine is wedged,
   smoke would still pass. Adding a real prompt round-trip would close
   that gap.
+
+
+**Transitive coverage** (per [ADR 0013 dec 9](../../../../phase-preliminary/adr/0013-md-as-source-code-tdd.md)
++ [ADR 0017](../../../../phase-preliminary/adr/0017-motivation-spans-all-layers.md)):
+motivation chain inherited from the lab's AGENTS.md.

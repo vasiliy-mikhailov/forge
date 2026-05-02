@@ -11,3 +11,19 @@
 
 Per-product detailed shapes live in their lab's
 `STATE-OF-THE-LAB.md`.
+
+
+## Motivation chain
+
+Per [P7](../../phase-preliminary/architecture-principles.md):
+
+- **Driver**: forge needs a Data Sets catalog (raw.json,
+  source.md, concept.md, etc.) at the Phase C data-
+  architecture layer.
+- **Goal**: Architect-velocity (data-set names cited
+  consistently across Labs + Roles).
+- **Outcome**: every Phase B Role's "Inputs / Outputs"
+  section names data-sets that exist here.
+- **Capability realised**: Architecture knowledge management.
+- **Function**: Catalogue-Data-Sets.
+- **Element**: this file.

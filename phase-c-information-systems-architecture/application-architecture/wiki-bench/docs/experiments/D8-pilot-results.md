@@ -301,3 +301,8 @@ This order minimizes risk:
 - `outputs/AGENTS.md` — both invariants documented in lab memory
 - `outputs/openhands-sdk-orchestration.md` — both invariants documented in skill
 - **`outputs/D8-pilot-results.md`** — this document
+
+
+**Transitive coverage** (per [ADR 0013 dec 9](../../../../phase-preliminary/adr/0013-md-as-source-code-tdd.md)
++ [ADR 0017](../../../../phase-preliminary/adr/0017-motivation-spans-all-layers.md)):
+motivation chain inherited from the lab's AGENTS.md.

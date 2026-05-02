@@ -250,3 +250,18 @@ wiki-compiler Application Component is realized by vLLM
 - ArchiMate® 4 Specification (offline copy at
   a local PDF kept at `adr/archimate-4-spec.pdf` (gitignored — Open Group spec is "Evaluation Copy, not for redistribution"; download from https://publications.opengroup.org/standards/archimate)),
   §§ 4-7 + 12 are the most relevant.
+
+
+## Motivation chain
+
+Per [P7](architecture-principles.md):
+
+- **Driver**: ADR 0014 adopted ArchiMate; the project needs
+  a forge-typed vocabulary catalog (which spec elements are
+  in scope, with examples).
+- **Goal**: Audit reliability (P6, P14, P24 reference this).
+- **Outcome**: typed elements catalogued; new artifact types
+  inherit vocab discipline.
+- **Capability realised**: Architecture knowledge management.
+- **Function**: Hold-forge-typed-vocabulary.
+- **Element**: this file.
