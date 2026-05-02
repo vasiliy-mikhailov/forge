@@ -236,16 +236,16 @@ Concretely:
   failures cited in Context.
 
 
-## Measurable motivation chain (OKRs)
+## Measurable motivation chain
 Per [P7](../architecture-principles.md) — backfit:
 
 - **Driver**: md files drive runtime LLM behaviour; without
   TDD discipline, behaviour drift goes undetected.
-- **Goal**: Architect-velocity (test-first ⇒ regressions land
-  with the diff that introduces them, not weeks later).
+- **Goal**: Quality (KR: pre_prod_share ≥ 0.95).
 - **Outcome**: every md driving runtime has a `tests/<path>/`
   test md; transitive coverage carve-out (dec 9) keeps the
   spec honest without N-fold duplication.
 - **Measurement source**: audit-predicate: P14 (every md driving runtime has tests/<path>/ test md; P14 walks)
+- **Contribution**: ADR enforces a discipline that prevents one bug class; contributes to Quality KR via reduced incidents.
 - **Capability realised**: Architecture knowledge management.
 - **Function**: Drive-runtime-md-via-TDD.

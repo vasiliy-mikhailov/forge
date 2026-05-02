@@ -95,19 +95,19 @@ and must not appear in the public tree. The split keeps:
   classifications) **private** — sits with the curated
   source.md / concept.md outputs in `kurpatov-wiki-wiki`.
 
-## Measurable motivation chain (OKRs)
+## Measurable motivation chain
 Per [P7](../../../phase-preliminary/architecture-principles.md):
 
 - **Driver**: forge needs an in-tree schema reference for
   S3–S7 to cite OBS-X-NNN by ID without exposing content
   (per ADR 0018 privacy boundary).
-- **Goal**: Architect-velocity (one place to look up the
-  schema) + IP protection (no excerpts in public).
+- **Goal**: Quality (KR: pre_prod_share ≥ 0.95).
 - **Outcome**: this stub holds schema + cross-link to private;
   audit predicates (P11, P25 queued) walk the stub and the
   private cross-link without ever loading verbatim content
   into forge artifacts.
 - **Measurement source**: corpus-walk: WP-02a, WP-02b, WP-02c (Wiki PM observation counts per bucket); private full file at kurpatov-wiki-wiki/metadata/corpus-observations.md
+- **Contribution**: corpus-walk: WP-NN observation count — contributes to Quality KR by surfacing pre-publish wiki bugs.
 - **Capability realised**: Develop wiki product line
   ([`../../capabilities/develop-wiki-product-line.md`](../../capabilities/develop-wiki-product-line.md))
   — Requirement traceability quality dimension + Architecture

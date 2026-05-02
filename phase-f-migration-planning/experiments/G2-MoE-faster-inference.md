@@ -197,14 +197,15 @@ Once those land, re-test the MoE component swap.
   `phase-c-information-systems-architecture/application-architecture/wiki-bench/docs/STATE-OF-THE-LAB.md`.
 
 
-## Measurable motivation chain (OKRs)
+## Measurable motivation chain
 Per [P7](../../phase-preliminary/architecture-principles.md):
 
 - **Driver**: 27B-dense decode throughput limits pilot wall-clock.
-- **Goal**: EB (faster pilot = lower GPU-hours).
+- **Goal**: Quality (KR: pre_prod_share ≥ 0.95).
 - **Outcome**: G2 closed (MoE swap falsified at architect's
   acceptance gate).
 - **Measurement source**: experiment-closure: G2 (CLOSED FAIL — MoE swap rejected at architect gate)
+- **Contribution**: experiment-closure: G2-MoE-faster-inference — platform stability experiment; PASS reduces one infra-incident class; contributes to Quality KR.
 - **Capability realised**: R&D (model evaluation).
 - **Function**: Test-MoE-vs-dense-throughput.
 - **Element**: this file.

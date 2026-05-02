@@ -19,17 +19,17 @@
   Stale experiment branches purged before re-running same id.
 
 
-## Measurable motivation chain (OKRs)
+## Measurable motivation chain
 Per [P7](../../phase-preliminary/architecture-principles.md):
 
 - **Driver**: forge has multiple sources of state (git, vault,
   GitHub repos); needs an explicit source-of-truth declaration
   per data-set.
-- **Goal**: Architect-velocity (one place to look up which
-  copy is canonical).
+- **Goal**: Quality (KR: pre_prod_share ≥ 0.95).
 - **Outcome**: each data-set declares its canonical home; ADRs
   cite this file when changing residency.
 - **Measurement source**: audit-predicate: P11 (every cross-reference resolves to its declared canonical source)
+- **Contribution**: audit-predicate enforcement — each PASS prevents one infrastructure-domain incident class; contributes to Quality KR pre_prod_share.
 - **Capability realised**: Architecture knowledge management.
 - **Function**: Declare-source-of-truth-per-data-set.
 - **Element**: this file.

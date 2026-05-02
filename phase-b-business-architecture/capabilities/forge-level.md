@@ -24,17 +24,18 @@ Level 2) lives in:
   when their next trajectory step is opened in Phase F.)
 
 
-## Measurable motivation chain (OKRs)
+## Measurable motivation chain
 Per [P7](../../phase-preliminary/architecture-principles.md):
 
 - **Driver**: ArchiMate Strategy layer requires top-level
   Capabilities to anchor lower-level Functions; without them,
   Phase B Roles have nowhere to point.
-- **Goal**: Architect-velocity (Phase A).
+- **Goal**: Quality (KR: pre_prod_share ≥ 0.95).
 - **Outcome**: 4 forge-level Capabilities (R&D, Service
   operation, Product delivery, Architecture knowledge
   management) realised by per-product Capabilities.
 - **Measurement source**: runner-aggregate: test-auditor-runner, test-wiki-pm-runner, test-developer-runner, test-devops-runner, test-source-author-runner, test-concept-curator-runner, test-lab-AGENTS-runner (12-unit aggregate per audit AU-11 table)
+- **Contribution**: runner-aggregate of realising-Role runners — Capability health = mean of role pass rates; contributes to Quality KR via aggregated pre-prod bug-catch.
 - **Capability realised**: meta — this file IS the catalog.
 - **Function**: Define-forge-level-Capabilities.
 - **Element**: this file.

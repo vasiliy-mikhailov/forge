@@ -102,17 +102,17 @@ Phase F migration plans MUST cite the principles they affect, and
 explicitly justify any near-violation.
 
 
-## Measurable motivation chain (OKRs)
+## Measurable motivation chain
 Per [P7](architecture-principles.md):
 
 - **Driver**: forge needs a chosen architecture method
   (TOGAF + ArchiMate per ADR 0014); without an explicit
   method, every per-phase decision re-invents the wheel.
-- **Goal**: Architect-velocity (one method, one trajectory
-  rule, one delete-on-promotion convention).
+- **Goal**: Architect-velocity (KR: ≤ 20 execution failures / 30-day).
 - **Outcome**: trajectory model + delete-on-promotion are
   forge's load-bearing rules; audit P2 + P7 walk them.
 - **Measurement source**: n/a — declarative: trajectory model + delete-on-promotion (consumed by P2 + P7)
+- **Contribution**: declarative metamodel reference; contributes to A-V KR by enabling agent navigation without architect intervention.
 - **Capability realised**: Architecture knowledge management
   ([../phase-b-business-architecture/capabilities/forge-level.md](../phase-b-business-architecture/capabilities/forge-level.md)).
 - **Function**: Define-the-architecture-method.

@@ -74,7 +74,7 @@ def list_md_artifacts():
 
 def find_chain(text):
     """Find the **Outcome**:-bearing motivation chain (if any)."""
-    matches = list(re.finditer(r'(?ms)^## Measurable motivation chain \(OKRs\)\s*$.+?(?=\n## |\Z)', text))
+    matches = list(re.finditer(r'(?ms)^## Measurable motivation chain\s*$.+?(?=\n## |\Z)', text))
     if matches:
         for m in matches:
             if '**Outcome**:' in m.group(0):

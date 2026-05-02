@@ -273,16 +273,16 @@ forge-level Phase H is the source of truth.>
   phases (the existing 0001-0009 series).
 
 
-## Measurable motivation chain (OKRs)
+## Measurable motivation chain
 Per [P7](../phase-preliminary/architecture-principles.md):
 
 - **Driver**: every lab AGENTS.md must follow the same
   Phase A-H structure; the template enforces uniformity.
-- **Goal**: Architect-velocity (lab onboarding) + audit
-  reliability (P9 walks lab AGENTS.md headers).
+- **Goal**: Quality (KR: pre_prod_share ≥ 0.95).
 - **Outcome**: 4 lab AGENTS.md (rl-2048, wiki-bench,
   wiki-compiler, wiki-ingest) all present + audit-walked.
 - **Measurement source**: audit-predicate: P9 (4 lab AGENTS.md files conform to template Phase A-H structure)
+- **Contribution**: P3-family enforcement reduces deploy/runtime incidents; contributes to Quality KR pre_prod_share.
 - **Capability realised**: Architecture knowledge management.
 - **Function**: Define-lab-AGENTS-md-structure.
 - **Element**: this file.

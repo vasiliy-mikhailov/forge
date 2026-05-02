@@ -158,7 +158,7 @@ def predicate_p29_walk():
                 continue
             text = p.read_text(encoding='utf-8')
             chain_matches = list(re.finditer(
-                r'(?ms)^## Measurable motivation chain \(OKRs\)\s*$.+?(?=\n## |\Z)',
+                r'(?ms)^## Measurable motivation chain\s*$.+?(?=\n## |\Z)',
                 text))
             if not chain_matches:
                 continue
@@ -199,11 +199,42 @@ def predicate_p29_walk():
     return failures
 
 
+
+def predicate_p30_walk():
+    """Per ADR 0025: every chain MUST have **Contribution**: bullet."""
+    SCOPED = ['phase-a-architecture-vision', 'phase-b-business-architecture',
+              'phase-c-information-systems-architecture',
+              'phase-d-technology-architecture',
+              'phase-e-opportunities-and-solutions',
+              'phase-f-migration-planning',
+              'phase-g-implementation-governance',
+              'phase-preliminary']
+    failures = []
+    for d in SCOPED:
+        full_d = FORGE / d
+        if not full_d.exists():
+            continue
+        for p in full_d.rglob('*.md'):
+            if p.name in ('README.md', '_template.md', 'CLAUDE.md'):
+                continue
+            text = p.read_text(encoding='utf-8')
+            chain_matches = list(re.finditer(
+                r'(?ms)^## Measurable motivation chain\s*$.+?(?=\n## |\Z)', text))
+            chain = None
+            for cm in chain_matches:
+                if '**Outcome**:' in cm.group(0):
+                    chain = cm.group(0); break
+            if not chain:
+                continue
+            if '**Contribution**:' not in chain:
+                failures.append({'path': str(p.relative_to(FORGE))})
+    return failures
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--window', type=int, default=30)
     ap.add_argument('--json', action='store_true')
-    ap.add_argument('--predicate', choices=['P29'])
+    ap.add_argument('--predicate', choices=['P29', 'P30'])
     args = ap.parse_args()
 
     if args.predicate == 'P29':
@@ -216,6 +247,16 @@ def main():
                 print(f'  FAIL  {f["path"]}')
                 print(f'        reason: {f["reason"]}')
                 print(f'        cited:  {f["cited"]}')
+        sys.exit(1 if failures else 0)
+
+    if args.predicate == 'P30':
+        failures = predicate_p30_walk()
+        if args.json:
+            print(json.dumps(failures, ensure_ascii=False, indent=2))
+        else:
+            print(f'P30 walk: {len(failures)} chain(s) need **Contribution**: bullet')
+            for f in failures:
+                print(f'  FAIL  {f["path"]}')
         sys.exit(1 if failures else 0)
 
     rows = goals_report(args.window)

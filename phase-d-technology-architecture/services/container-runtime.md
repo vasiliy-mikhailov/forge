@@ -22,15 +22,16 @@
   — the forge-wide containers-only execution rule.
 
 
-## Measurable motivation chain (OKRs)
+## Measurable motivation chain
 Per [P7](../../phase-preliminary/architecture-principles.md):
 
 - **Driver**: P3 (containers-only) requires a docker compose
   topology; the runtime spec lives here.
-- **Goal**: Quality (KR: pre_prod_share ≥ 0.95). Realises Service-operation Capability (P3 enforced).
+- **Goal**: Quality (KR: pre_prod_share ≥ 0.95).
 - **Outcome**: docker compose per Lab; one host (P4) muxed
   by Caddy per ADR 0007.
 - **Measurement source**: audit-predicate: P3 (containers-only enforcement)
+- **Contribution**: audit-predicate enforcement — each PASS prevents one infrastructure-domain incident class; contributes to Quality KR pre_prod_share.
 - **Capability realised**: Service operation.
 - **Function**: Define-container-runtime-topology.
 - **Element**: this file.

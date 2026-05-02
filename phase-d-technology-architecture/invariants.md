@@ -26,16 +26,17 @@ vLLM 0.19.1 → 0.20) is just the next step on the same trajectory;
 git remembers.
 
 
-## Measurable motivation chain (OKRs)
+## Measurable motivation chain
 Per [P7](../phase-preliminary/architecture-principles.md):
 
 - **Driver**: P3 + P4 + ADR 0007 imply invariants that any
   Phase D change must preserve (single host, containers-only,
   Caddy mux mutex, etc.).
-- **Goal**: Quality (KR: pre_prod_share ≥ 0.95). Realises Service-operation Capability.
+- **Goal**: Quality (KR: pre_prod_share ≥ 0.95).
 - **Outcome**: invariants enumerated; any new Lab proposal
   must show how it preserves them.
 - **Measurement source**: audit-predicate: P3 + P4 (Phase D invariants = the principles the audit walks)
+- **Contribution**: audit-predicate enforcement — each PASS prevents one infrastructure-domain incident class; contributes to Quality KR pre_prod_share.
 - **Capability realised**: Service operation + Architecture
   knowledge management.
 - **Function**: Hold-Phase-D-invariants.

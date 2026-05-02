@@ -106,15 +106,16 @@ Headline next step: scale the same pilot driver to 200+ sources
 without quality regression — including without voice regression.
 
 
-## Measurable motivation chain (OKRs)
+## Measurable motivation chain
 Per [P7](../../phase-preliminary/architecture-principles.md):
 
 - **Driver**: Kurpatov-wiki is the first product on the wiki
   product line; needs its product-page artifact.
-- **Goal**: TTS (Kurpatov reader time saved).
+- **Goal**: TTS (KR: tts_share ≥ 0.30 per-use).
 - **Outcome**: K1 modules 000+001 + K2 compact-restore both
   cite this product's R-NN trajectories.
 - **Measurement source**: experiment-closure: K1 + K2 (per kurpatov-wiki-wiki source.md / concept.md counts + K2 trip-quality on real lecture A)
+- **Contribution**: product TTS share — pending TTS harness (CI-1..7 cycle); when measured, per-source tts_share contributes to TTS KR rollup mean. K1 v2 published 44 sources at 71min wall; per-reader savings TBD.
 - **Capability realised**: Develop wiki product line.
 - **Function**: Anchor-Kurpatov-wiki-product-content.
 - **Element**: this file.

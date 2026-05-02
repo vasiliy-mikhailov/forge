@@ -117,16 +117,16 @@ rather than a per-product one.
   [`../../phase-f-migration-planning/experiments/`](../../phase-f-migration-planning/experiments/).
 
 
-## Measurable motivation chain (OKRs)
+## Measurable motivation chain
 Per [P7](../../phase-preliminary/architecture-principles.md):
 
 - **Driver**: wiki product needs Quality Dimensions to
   anchor R-NN trajectories.
-- **Goal**: TTS (reader time saved) + Architect-velocity
-  (per-Quality-Dimension trajectories).
+- **Goal**: Quality (KR: pre_prod_share ≥ 0.95).
 - **Outcome**: 8 Quality Dimensions catalogued; each becomes
   the Source of one or more R-NN rows.
 - **Measurement source**: runner-aggregate: test-wiki-pm-runner, test-source-author-runner, test-concept-curator-runner + lab-tests: WB, WC, WI (per-Quality-Dimension realising-Role aggregate)
+- **Contribution**: runner-aggregate of realising-Role runners — Capability health = mean of role pass rates; contributes to Quality KR via aggregated pre-prod bug-catch.
 - **Capability realised**: this file IS the per-product
   Capability artifact.
 - **Function**: Define-wiki-product-line-Quality-Dimensions.

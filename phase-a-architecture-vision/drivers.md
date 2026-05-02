@@ -34,15 +34,16 @@ inline as `→ influences <Goal>`.
   produce the same act).
 
 
-## Measurable motivation chain (OKRs)
+## Measurable motivation chain
 Per [P7](../phase-preliminary/architecture-principles.md):
 
 - **Driver**: meta — this file IS the Drivers catalog. P18
   walks each Driver → Goal arrow.
-- **Goal**: TTS + Architect-velocity (Phase A).
+- **Goal**: Architect-velocity (KR: ≤ 20 execution failures / 30-day).
 - **Outcome**: every Phase B / D requirement (R-NN) traces
   to a Driver via P15.
 - **Measurement source**: audit-predicate: P18 (every Driver → influences ≥ 1 Goal)
+- **Contribution**: declarative Phase A artifact; contributes to A-V KR by anchoring downstream cascade.
 - **Capability realised**: Architecture knowledge management.
 - **Function**: Catalogue-Phase-A-Drivers.
 - **Element**: this file.

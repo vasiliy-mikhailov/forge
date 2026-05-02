@@ -161,30 +161,19 @@ no separate test md exists at the process-spec mirror path.
 When the process spec changes and the role's outputs regress,
 the role's test catches it.
 
-## Measurable motivation chain (OKRs)
+## Measurable motivation chain
 Per [ADR 0015](../../phase-preliminary/adr/0015-verifiable-agent-rewards.md),
-every role declares its measurable motivation chain (OKRs) in ArchiMate 4 terms.
+every role declares its measurable motivation chain in ArchiMate 4 terms.
 
-```
-Driver:        Time spent consuming information from Russian
-               psychology lectures (Kurpatov: ~60-90 min each,
-               ~200 in catalog) → influences TTS.
-Goal:          TTS — Theoretical Time Saved (Phase A);
-               Architect-velocity (cross-cutting).
-Outcome:       Every implementation choice in the wiki product
-               line cites a requirement; orphan rules do not
-               accumulate; quality regressions trace to a
-               named requirement, not 'the model is bad'.
-Capability:    Develop wiki product line — Requirement
-               traceability dimension
-               (capabilities/develop-wiki-product-line.md).
-Function:      wiki-requirements-collection.md walk
-               (Steps S1-S8).
-Role:          Wiki PM (this file).
-Filled by:     Claude (Cowork session).
-```
-
+- **Driver**: Time spent consuming information from Russian psychology lectures (Kurpatov: ~60-90 min each, ~200 in catalog) → influences TTS.
+- **Goal**: Quality (KR: pre_prod_share ≥ 0.95).
+- **Outcome**: Every implementation choice in the wiki product line cites a requirement; orphan rules do not accumulate; quality regressions trace to a named requirement, not 'the model is bad'.
+- **Capability**: Develop wiki product line — Requirement traceability dimension (capabilities/develop-wiki-product-line.md).
+- **Function**: wiki-requirements-collection.md walk (Steps S1-S8).
+- **Role**: Wiki PM (this file).
+- **Filled by**: Claude (Cowork session).
 **Measurement source**: runner: test-wiki-pm-runner (S1+S2 corpus walk + WP-NN cases)
+- **Contribution**: runner: test-wiki-pm-runner pass rate (33.0/33.0 = 1.000) — each PASS reduces a pre-prod corpus-walk bug class; aggregate contributes to Quality KR pre_prod_share via wiki-side pre-publish bug-catch.
 
 Each agentic-behaviour test in
 [`/tests/phase-b-business-architecture/roles/test-wiki-pm.md`](../../tests/phase-b-business-architecture/roles/test-wiki-pm.md)

@@ -24,16 +24,14 @@ cites exactly one of {TTS, PTS, EB, Architect-velocity, Quality}; the
 artifact's `**Measurement source**:` value is the per-artifact KR
 contributing to the named Goal's system-level KR.
 
-## Measurable motivation chain (OKRs)
+## Measurable motivation chain
 
 Per [P7](../phase-preliminary/architecture-principles.md):
 
 - **Driver**: every action choice must be evaluated against named
   Goals (P5); without a Goals catalog with numerical targets,
   "metric-driven action" has no metrics.
-- **Goal**: Architect-velocity → KR: ≥ 50 corrective actions / 30-day
-  rolling (this file IS the goals catalog the corrective-action count
-  reads from).
+- **Goal**: Architect-velocity (KR: ≤ 20 execution failures / 30-day).
 - **Outcome**: every artifact's chain has a named Goal that traces to
   this file; this file has a numerical KR per Goal; `goals-report.py`
   computes current values; the next architect-velocity walk is one
@@ -41,6 +39,7 @@ Per [P7](../phase-preliminary/architecture-principles.md):
 - **Measurement source**: audit-predicate: P19 (every Goal has ≥ 1
   realising R-NN trajectory) + P29 (every Goal has Target line; every
   chain cites a named Goal — per ADR 0023).
+- **Contribution**: declarative Phase A artifact; contributes to A-V KR by anchoring downstream cascade.
 - **Capability realised**: Architecture knowledge management.
 - **Function**: Catalogue-Phase-A-Goals-with-Targets.
 - **Element**: this file (5 Goal rows with Target + Window + How

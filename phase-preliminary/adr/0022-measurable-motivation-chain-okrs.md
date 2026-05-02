@@ -1,31 +1,28 @@
-# ADR 0022 — Measurable motivation chain (OKRs) renamed to "Measurable motivation chain (OKRs)"
+# ADR 0022 — Measurable motivation chain renamed to "Measurable motivation chain"
 
 ## Status
 
 Accepted (2026-05-02). Active.
 
-## Measurable motivation chain (OKRs)
+## Measurable motivation chain
 Per [P7](../architecture-principles.md):
 
 - **Driver**: post-ADR-0019 + ADR-0021, every chain in forge has both
   an Outcome (the prose end-result) AND a Measurement source (the
   formula + current value). That's literally the OKR shape — `O =
   Outcome`, `KR = Measurement source value`. The section name
-  `## Measurable motivation chain (OKRs)` undersells what the section IS now: it reads
+  `## Measurable motivation chain` undersells what the section IS now: it reads
   like loose narrative when it's actually a structured OKR per
   artifact. Fresh contributors and LLM agents loading forge as
   context lose the OKR-recognition signal.
-- **Goal**: Architect-velocity (the section name should advertise
-  what's measurable about it) + Audit-reliability (`grep -r
-  "Measurable motivation chain (OKRs)"` returns the strict P26-conformant
-  set; today's `grep -r "Measurable motivation chain (OKRs)"` would also catch
-  conversational mentions).
+- **Goal**: Quality (KR: pre_prod_share ≥ 0.95).
 - **Outcome**: every chain section across forge renamed to `##
-  Measurable motivation chain (OKRs)`; section name now declares
+  Measurable motivation chain`; section name now declares
   the structural contract (Outcome + Measurement source = O + KR);
   P14 / P24 / P26 / P28 updated to walk the new name.
 - **Measurement source**: audit-predicate: P24 (universal motivation-
   chain coverage; latest walk = 0 FAIL after this commit's sweep).
+- **Contribution**: ADR enforces a discipline that prevents one bug class; contributes to Quality KR via reduced incidents.
 - **Capability realised**: Architecture knowledge management
   ([`../../phase-b-business-architecture/capabilities/forge-level.md`](../../phase-b-business-architecture/capabilities/forge-level.md)).
 - **Function**: Rename-section-to-advertise-OKR-structure.
@@ -48,9 +45,9 @@ The chain section as it exists today is one OKR per artifact:
 - O₂ = Outcome (specific end-state for this artifact)
 - KR = Measurement source value (the metric the audit reads)
 
-Calling it `## Measurable motivation chain (OKRs)` is technically correct (the chain
+Calling it `## Measurable motivation chain` is technically correct (the chain
 IS in the Motivation aspect per ArchiMate § 6) but undersells the
-measurability discipline. `## Measurable motivation chain (OKRs)`
+measurability discipline. `## Measurable motivation chain`
 keeps the ArchiMate-aspect framing AND signals the OKR structure
 to anyone who knows that vocabulary.
 
@@ -58,11 +55,11 @@ to anyone who knows that vocabulary.
 
 ### 1. Section heading renamed everywhere
 
-All 60 files with `## Measurable motivation chain (OKRs)` and all 17 ADRs with
+All 60 files with `## Measurable motivation chain` and all 17 ADRs with
 `## Motivation` are renamed to:
 
 ```
-## Measurable motivation chain (OKRs)
+## Measurable motivation chain
 ```
 
 Carve-out: `## Motivation Domain` in
@@ -81,7 +78,7 @@ heading. P24's signal becomes:
 (?:^|\n)Transitive coverage:
 ```
 
-The old `^## Measurable motivation chain (OKRs)` and bare `^## Motivation` patterns
+The old `^## Measurable motivation chain` and bare `^## Motivation` patterns
 are removed (no backward-compat, per delete-on-promotion).
 
 ### 3. Tooling updated in same commit
@@ -93,9 +90,9 @@ chain regexes updated. Re-run after sweep: 0 P26 gaps + 0 P28 fails
 
 ### 4. Body-text references swept
 
-Every prose mention of "Measurable motivation chain (OKRs)" / "measurable motivation chain (OKRs)" in
+Every prose mention of "Measurable motivation chain" / "measurable motivation chain" in
 audit findings, ADRs, READMEs, runner docstrings is rewritten to
-"Measurable motivation chain (OKRs)" or "OKR chain" (where context
+"Measurable motivation chain" or "OKR chain" (where context
 allows the shorter form). Audit md files for prior walks
 (2026-04-30 → 2026-05-01y) are NOT rewritten — they're historical
 record per the audit-cycle's append-only invariant.
@@ -104,12 +101,12 @@ record per the audit-cycle's append-only invariant.
 
 ADR 0017 § Decision 3 ("ADR template gains required Motivation
 section") is amended via this ADR's Decision 5: future ADRs (0023+)
-use `## Measurable motivation chain (OKRs)` directly, not
+use `## Measurable motivation chain` directly, not
 `## Motivation`.
 
 ### 6. ADR 0019's table heading update
 
-ADR 0019's § Decision 1 references "every measurable motivation chain (OKRs) Outcome
+ADR 0019's § Decision 1 references "every measurable motivation chain Outcome
 cites a measurement source" — wording stays (the chain IS the
 motivation; only the section heading changes). The table itself
 (citation types) is untouched.
@@ -134,19 +131,19 @@ motivation; only the section heading changes). The table itself
 
 ## Invariants
 
-- A new artifact landing in forge using `## Measurable motivation chain (OKRs)` or
-  `## Motivation` (instead of `## Measurable motivation chain (OKRs)
+- A new artifact landing in forge using `## Measurable motivation chain` or
+  `## Motivation` (instead of `## Measurable motivation chain
   (OKRs)`) is a P24 FAIL on the next audit walk.
 - The carve-out for `## Motivation Domain` (ArchiMate spec section
   reference) is preserved by the strict-regex pattern; no opt-in
   needed.
-- Future ADRs (0023+) MUST use `## Measurable motivation chain (OKRs)
+- Future ADRs (0023+) MUST use `## Measurable motivation chain
   (OKRs)` per the ADR-0017-Decision-3 amendment in this ADR's
   Decision 5.
 
 ## Alternatives considered
 
-- **Add an `## OKR` subsection inside `## Measurable motivation chain (OKRs)`**
+- **Add an `## OKR` subsection inside `## Measurable motivation chain`**
   (keep both names). Rejected: redundancy violates delete-on-promotion;
   the section IS the OKR — name it that.
 - **Rename to `## OKRs` only** (drop "Motivation" entirely).

@@ -4,7 +4,7 @@
 
 Accepted (2026-05-02). Active.
 
-## Measurable motivation chain (OKRs)
+## Measurable motivation chain
 Per [P7](../architecture-principles.md):
 
 - **Driver**: forge is a public GitHub repo
@@ -16,15 +16,14 @@ Per [P7](../architecture-principles.md):
   `phase-b-business-architecture/products/kurpatov-wiki/corpus-observations.md`
   with **30 Cyrillic verbatim quotes** from Kurpatov lectures —
   IP leakage to public repo.
-- **Goal**: Quality (KR: pre_prod_share ≥ 0.95) + EB (KR: unit_economics ≥ 1.0). IP-boundary protects future EB; commit discipline contributes to Quality. Specifically: protect commercial IP boundary while keeping
-  forge's architecture metamodel (Roles, Predicates, Audits,
-  ADRs) fully public + reusable for other architects.
+- **Goal**: Quality (KR: pre_prod_share ≥ 0.95).
 - **Outcome**: every artifact containing Kurpatov-content
   excerpts (verbatims, paraphrases, segment text) lives in
   the private `kurpatov-wiki-wiki` repo (alongside the curated source.md + concept.md outputs); forge contains only
   the **architecture metamodel** (schema, structure,
   cross-references, predicates).
 - **Measurement source**: audit-predicate: P25 (queued — Cyrillic-excerpt scan)
+- **Contribution**: ADR enforces a discipline that prevents one bug class; contributes to Quality KR via reduced incidents.
 
 ## Context
 

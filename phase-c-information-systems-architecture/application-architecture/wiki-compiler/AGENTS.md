@@ -165,21 +165,20 @@ git history per Phase H.
 - Power-limit unit: `/etc/systemd/system/nvidia-power-limit.service`.
 
 
-## Measurable motivation chain (OKRs)
+## Measurable motivation chain
 Per [P7](../../../../phase-preliminary/architecture-principles.md):
 
 - **Driver**: this Lab realises forge-level Capabilities for the
   *LLM inference* domain; without an AGENTS.md driving the agent
   context, a Cowork session loaded against this lab has no
   Phase A-H scaffolding to anchor on.
-- **Goal**: Architect-velocity (one entry-point file per Lab) +
-  audit reliability (P9 walks lab AGENTS.md headers for the 8
-  Phase A-H sections).
+- **Goal**: Quality (KR: pre_prod_share ≥ 0.95).
 - **Outcome**: every architect / agent session loaded for this
   Lab finds the Phase context here; lab-local docs (SPEC.md,
   smoke.md, backlog, STATE-OF-THE-LAB) are transitively covered
   by this file's chain.
 - **Measurement source**: lab-tests: WC (8 phase-section headers + lab-AGENTS-runner band)
+- **Contribution**: lab-tests: WC smoke pass rate (4/4 = 1.000) — each lab-AGENTS PASS prevents one prod-outage class for the wiki-compiler lab; contributes to Quality KR via reduced incidents.
 - **Capability realised**: Service operation + R&D
   ([forge-level.md](../../../../phase-b-business-architecture/capabilities/forge-level.md)).
 - **Function**: Anchor-wiki-compiler-lab-context.

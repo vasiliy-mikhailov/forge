@@ -679,17 +679,14 @@ xrefs), and one part of "thin" was the ruler being broken.*
 
 ---
 
-## Measurable motivation chain (OKRs)
+## Measurable motivation chain
 Per [P7](../phase-preliminary/architecture-principles.md):
 
 - **Driver**: production incidents compound; pre-prod catches don't.
   An incident that ships consumes architect-velocity on debugging,
   blocks downstream lab work, and leaves a "what went wrong" gap in
   the corpus that the next reader has to reconstruct.
-- **Goal**: Quality (see
-  [`../phase-a-architecture-vision/goals.md`](../phase-a-architecture-vision/goals.md))
-  — measured by `pre_prod_share = pre_prod_catches / (pre_prod_catches + incidents)`,
-  rolling 30-day window. Higher = better.
+- **Goal**: Quality (KR: pre_prod_share ≥ 0.95).
 - **Outcome**: every production incident lands here as a story; every
   story produces a `*Taken: ...*` line pointing at the ADR / test /
   policy that prevents the recurrence; the next incident of the same
@@ -698,6 +695,7 @@ Per [P7](../phase-preliminary/architecture-principles.md):
   the incidents-side ledger; audit FAIL/WARN findings are the
   pre-prod-catches side; `scripts/test-runners/quality-report.py`
   computes the share).
+- **Contribution**: quality-ledger: pre_prod_share (this file IS the incidents-side of the metric).
 - **Capability realised**: Service operation
   ([`../phase-b-business-architecture/capabilities/service-operation.md`](../phase-b-business-architecture/capabilities/service-operation.md))
   — operational discipline keeps lab uptime + corpus integrity high.

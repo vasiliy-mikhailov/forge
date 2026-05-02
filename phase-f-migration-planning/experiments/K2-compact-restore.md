@@ -620,16 +620,17 @@ sweep methodology.
 gate fires.)
 
 
-## Measurable motivation chain (OKRs)
+## Measurable motivation chain
 Per [P7](../../phase-preliminary/architecture-principles.md):
 
 - **Driver**: 88-min lecture forces reader pain (per K2-R3
   Post-Mortem + ADR 0016 customer ledgers); compact algorithm
   reduces tokens.
-- **Goal**: TTS (per-persona).
+- **Goal**: TTS (KR: tts_share ≥ 0.30 per-use).
 - **Outcome**: trip-quality ≥ 0.50 measured per persona;
   R-B-compact-restore Level 1 → Level 2.
 - **Measurement source**: experiment-closure: K2 (L1 shipped 2.7% saved-time real-A; L2 falsified 0.02%; L3 probe-validated 21.6%)
+- **Contribution**: experiment-closure: K2 → L1 ships 0.027 saved-time on real-A; L3 probe 0.216 projected; contributes 0.027 (current) → 0.243 (projected if L1+L3 stack) toward TTS KR (target 0.30; gap 0.057 if L3 lands).
 - **Capability realised**: Develop wiki product line
   (Reading speed + Concept-graph quality dimensions).
 - **Function**: Compact-and-restore-lecture-A.

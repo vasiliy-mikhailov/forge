@@ -76,16 +76,16 @@ layering* are the bulk of TOGAF's actual value here, and that is
 what we adopt.
 
 
-## Measurable motivation chain (OKRs)
+## Measurable motivation chain
 Per [P7](architecture-principles.md):
 
 - **Driver**: TOGAF + ArchiMate is the chosen method (ADR 0014);
   the per-phase usage rules are tailored for forge.
-- **Goal**: Architect-velocity (one method, tailored for
-  this project's scope).
+- **Goal**: Architect-velocity (KR: ≤ 20 execution failures / 30-day).
 - **Outcome**: per-phase scope declarations; what we use, what
   we don't.
 - **Measurement source**: n/a — declarative: per-phase scope declarations (what we use, what we do not; consumed by P14)
+- **Contribution**: declarative metamodel reference; contributes to A-V KR by enabling agent navigation without architect intervention.
 - **Capability realised**: Architecture knowledge management.
 - **Function**: Tailor-TOGAF-ArchiMate-to-forge.
 - **Element**: this file.

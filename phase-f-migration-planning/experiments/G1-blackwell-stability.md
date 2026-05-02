@@ -174,15 +174,16 @@ Outcome: G1 closes with H1 as the canonical fix. Settings codified
 in `/etc/systemd/system/nvidia-power-limit.service`.
 
 
-## Measurable motivation chain (OKRs)
+## Measurable motivation chain
 Per [P7](../../phase-preliminary/architecture-principles.md):
 
 - **Driver**: Blackwell GPU UVM crashes mid-pilot (3 confirmed
   before G1 closed).
-- **Goal**: EB + Architect-velocity (no GPU recovery cycles).
+- **Goal**: Quality (KR: pre_prod_share ≥ 0.95).
 - **Outcome**: 169 min sustained 27B-FP8 inference confirmed
   at 400W power-cap.
 - **Measurement source**: experiment-closure: G1 (CLOSED — 169 min sustained 27B-FP8 at 400W cap PASS per K1 v5 baseline)
+- **Contribution**: experiment-closure: G1-blackwell-stability — platform stability experiment; PASS reduces one infra-incident class; contributes to Quality KR.
 - **Capability realised**: Service operation (host stability).
 - **Function**: Find-stable-Blackwell-power-thermal-config.
 - **Element**: this file.

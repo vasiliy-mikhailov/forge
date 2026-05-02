@@ -94,16 +94,17 @@ Per-capability detail will move into wiki-bench's
 `STATE-OF-THE-LAB.md` once a Tarasov pilot launches.
 
 
-## Measurable motivation chain (OKRs)
+## Measurable motivation chain
 Per [P7](../../phase-preliminary/architecture-principles.md):
 
 - **Driver**: Tarasov-wiki is the second-planned wiki product
   per [wiki-product-line.md](wiki-product-line.md); needs its
   forward-looking artifact.
-- **Goal**: TTS + PTS (Tarasov reader time when launched).
+- **Goal**: TTS (KR: tts_share ≥ 0.30 per-use).
 - **Outcome**: when K1 closes for Kurpatov + Wiki PM walks
   Tarasov corpus, this file becomes the active product anchor.
 - **Measurement source**: n/a — pending: Tarasov product not started; opens when Wiki PM walks Tarasov corpus per S1+S2
+- **Contribution**: pending — product not started; opens when Wiki PM walks Tarasov corpus.
 - **Capability realised**: Develop wiki product line.
 - **Function**: Hold-Tarasov-wiki-forward-spec.
 - **Element**: this file.

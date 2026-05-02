@@ -195,17 +195,17 @@ in every case.
   `make smoke` exits 1 with a "broken mutex" message.
 
 
-## Measurable motivation chain (OKRs)
+## Measurable motivation chain
 Per [P7](../phase-preliminary/architecture-principles.md):
 
 - **Driver**: single-host deployment (P4) needs an explicit
   Phase D anchor naming the host + its services + their
   tenancy.
-- **Goal**: Architect-velocity (one place to look up host
-  state).
+- **Goal**: Quality (KR: pre_prod_share ≥ 0.95).
 - **Outcome**: every Phase G operations procedure traces back
   to a service named here.
 - **Measurement source**: audit-predicate: P3 (containers-only) + P4 (single-server) — both currently PASS
+- **Contribution**: audit-predicate enforcement — each PASS prevents one infrastructure-domain incident class; contributes to Quality KR pre_prod_share.
 - **Capability realised**: Service operation
   ([../phase-b-business-architecture/capabilities/service-operation.md](../phase-b-business-architecture/capabilities/service-operation.md)).
 - **Function**: Define-host-and-service-tenancy.

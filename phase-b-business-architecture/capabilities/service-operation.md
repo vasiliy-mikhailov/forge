@@ -84,15 +84,16 @@ three landing — see
   [`../../phase-f-migration-planning/experiments/`](../../phase-f-migration-planning/experiments/).
 
 
-## Measurable motivation chain (OKRs)
+## Measurable motivation chain
 Per [P7](../../phase-preliminary/architecture-principles.md):
 
 - **Driver**: Service operation is one of the 4 forge-level
   Capabilities; this file is its deep-dive.
-- **Goal**: EB + Architect-velocity (services up = no rework).
+- **Goal**: Quality (KR: pre_prod_share ≥ 0.95).
 - **Outcome**: lab containers + DevOps role + ops log all
   realise this Capability.
 - **Measurement source**: runner-aggregate: test-devops-runner + lab-tests: RL, WB, WC, WI (host + per-lab smoke health)
+- **Contribution**: runner-aggregate of realising-Role runners — Capability health = mean of role pass rates; contributes to Quality KR via aggregated pre-prod bug-catch.
 - **Capability realised**: meta — Service operation per
   [forge-level.md](forge-level.md).
 - **Function**: Operate-services-reliably.

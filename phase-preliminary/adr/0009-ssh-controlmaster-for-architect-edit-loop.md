@@ -147,11 +147,12 @@ restart loop completed in ~5 s wall instead of ~12–15 s pre-fix.
   in flight at time of this ADR).
 
 
-## Measurable motivation chain (OKRs)
+## Measurable motivation chain
 Per [P7](../architecture-principles.md) — backfit:
 
 - **Driver**: re-establishing SSH per architect command is
   high-latency; ControlMaster amortises the handshake.
-- **Goal**: Architect-velocity.
+- **Goal**: Quality (KR: pre_prod_share ≥ 0.95).
 - **Outcome**: DevOps role multiplexes SSH per ADR 0009.
 - **Measurement source**: audit-predicate: P3 (architect-edit-loop conformance)
+- **Contribution**: ADR enforces a discipline that prevents one bug class; contributes to Quality KR via reduced incidents.

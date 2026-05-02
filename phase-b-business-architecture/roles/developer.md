@@ -146,7 +146,7 @@ discipline rules.
 Coverage target: every output category enumerated under
 "Outputs" above is asserted by ≥ 1 test case.
 
-## Measurable motivation chain (OKRs)
+## Measurable motivation chain
 Per [ADR 0015](../../phase-preliminary/adr/0015-verifiable-agent-rewards.md)
 decision point 1:
 
@@ -154,10 +154,11 @@ decision point 1:
   spends writing production code is a minute not designing the
   next experiment) + R&D throughput (more falsifiable hypotheses
   closed per week).
-- **Goal**: Architect-velocity (Phase A).
+- **Goal**: Quality (KR: pre_prod_share ≥ 0.95).
 - **Outcome**: lab code matches its spec; tests pass; reward
   functions return numbers the audit can compare.
 - **Measurement source**: runner: test-developer-runner (DV-NN cases; TDD discipline; PASS band ≥ 0.8)
+- **Contribution**: runner: test-developer-runner pass rate (per-test-case aggregate); each PASS reduces a pre-prod bug class for the developer role; aggregate contributes to Quality KR pre_prod_share via the audit catch-rate side of the formula.
 - **Capability realised**: Service operation + R&D
   ([`../capabilities/forge-level.md`](../capabilities/forge-level.md)).
 - **Function**: Implement-feature-against-spec.

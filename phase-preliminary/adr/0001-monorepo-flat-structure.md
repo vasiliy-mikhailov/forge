@@ -49,13 +49,14 @@ forge/
   (`.env`, compose, network) is lost.
 
 
-## Measurable motivation chain (OKRs)
+## Measurable motivation chain
 Per [P7](../architecture-principles.md) — backfit:
 
 - **Driver**: forge tree shape decides every navigation +
   search cost; a flat monorepo (one top-level for all phases)
   keeps the architect's loop fast.
-- **Goal**: Architect-velocity.
+- **Goal**: Quality (KR: pre_prod_share ≥ 0.95).
 - **Outcome**: every Phase has its own top-level subdirectory;
   no nested "src/" wrapper.
 - **Measurement source**: quality-ledger: pre_prod_share (per ADR 0021)
+- **Contribution**: ADR enforces a discipline that prevents one bug class; contributes to Quality KR via reduced incidents.

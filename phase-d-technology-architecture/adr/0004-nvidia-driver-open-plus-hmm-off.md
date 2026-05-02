@@ -118,12 +118,13 @@ Check in order:
   workstation, not a headless server; `*-server` variants weren't tested.
 
 
-## Measurable motivation chain (OKRs)
+## Measurable motivation chain
 Per [P7](../../phase-preliminary/architecture-principles.md) — backfit:
 
 - **Driver**: nvidia driver mode + HMM setting affects GPU
   stability under sustained 27B inference (G1 finding).
-- **Goal**: Quality (KR: pre_prod_share ≥ 0.95). Realises Service-operation Capability (sustained GPU stability).
+- **Goal**: Quality (KR: pre_prod_share ≥ 0.95).
 - **Outcome**: open driver + HMM off; G1's 169-min sustained
   pilot validated.
 - **Measurement source**: audit-predicate: P4 (single-server invariant; nvidia-smi smoke check)
+- **Contribution**: audit-predicate enforcement — each PASS prevents one infrastructure-domain incident class; contributes to Quality KR pre_prod_share.

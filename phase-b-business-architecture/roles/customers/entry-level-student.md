@@ -75,7 +75,7 @@ per the format in `wiki-customer-interview.md`.
 
 **Transitive coverage** (per [ADR 0013 dec 9](../../../phase-preliminary/adr/0013-md-as-source-code-tdd.md)
 + [ADR 0017](../../../phase-preliminary/adr/0017-motivation-spans-all-layers.md)):
-measurable motivation chain (OKRs) inherited from the abstract
+measurable motivation chain inherited from the abstract
 [Wiki Customer role](../wiki-customer.md). This persona file
 documents reading-mode + pain signature + severity calibration
 specific to entry-level psychology students; the Driver / Goal

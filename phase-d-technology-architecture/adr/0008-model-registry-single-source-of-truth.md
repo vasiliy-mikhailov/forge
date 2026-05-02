@@ -147,13 +147,13 @@ serving configuration:
   `bench_*` fields is simpler.
 
 
-## Measurable motivation chain (OKRs)
+## Measurable motivation chain
 Per [P7](../../phase-preliminary/architecture-principles.md) — backfit:
 
 - **Driver**: model swaps (G2, G3, future) need a single
   source-of-truth registry.
-- **Goal**: Architect-velocity (G* experiments cite the
-  registry instead of re-deriving model paths).
+- **Goal**: Quality (KR: pre_prod_share ≥ 0.95).
 - **Outcome**: configs/models.yml in wiki-compiler is the
   registry; ADRs cite this file for any model change.
 - **Measurement source**: quality-ledger: pre_prod_share (per ADR 0021)
+- **Contribution**: audit-predicate enforcement — each PASS prevents one infrastructure-domain incident class; contributes to Quality KR pre_prod_share.

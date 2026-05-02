@@ -61,16 +61,16 @@ chronological.
   [`experiments/G3-gemma-4-31b.md`](experiments/G3-gemma-4-31b.md).
 
 
-## Measurable motivation chain (OKRs)
+## Measurable motivation chain
 Per [P7](../phase-preliminary/architecture-principles.md):
 
 - **Driver**: Phase F's TOGAF-canonical deliverable is the
   Implementation and Migration Plan; this file IS that.
-- **Goal**: Architect-velocity (sequenced execution per
-  Phase E roadmap).
+- **Goal**: Quality (KR: pre_prod_share ≥ 0.95).
 - **Outcome**: each row below ties one Phase F experiment
   to its prerequisites + its closure trigger.
 - **Measurement source**: experiment-closure: G1 (PASS), G2 (FAIL), G3 (FAIL), K1 (in flight), K2 (in flight) — count of closed/in-flight Phase F rows
+- **Contribution**: migration discipline reduces deploy-incident class; contributes to Quality KR.
 - **Capability realised**: Architecture knowledge management.
 - **Function**: Sequence-Phase-F-experiments.
 - **Element**: this file.

@@ -112,14 +112,15 @@ Phase G section, not here. Examples:
   meta-decisions this phase enforces.
 
 
-## Measurable motivation chain (OKRs)
+## Measurable motivation chain
 Per [P7](../phase-preliminary/architecture-principles.md):
 
 - **Driver**: Phase G is the governance layer; needs a
   governance.md anchor (today minimal — backfill queued).
-- **Goal**: Architect-velocity.
+- **Goal**: Quality (KR: pre_prod_share ≥ 0.95).
 - **Outcome**: (today: anchor only; full content queued).
 - **Measurement source**: n/a — declarative: governance.md is anchor only (today minimal); full content backfill queued
+- **Contribution**: P3-family enforcement reduces deploy/runtime incidents; contributes to Quality KR pre_prod_share.
 - **Capability realised**: Architecture knowledge management.
 - **Function**: Define-implementation-governance.
 - **Element**: this file.

@@ -99,16 +99,16 @@ Items 1-3 are the next three Phase F experiments to open. Sequence
 in [`../phase-f-migration-planning/migration-plan.md`](../phase-f-migration-planning/migration-plan.md).
 
 
-## Measurable motivation chain (OKRs)
+## Measurable motivation chain
 Per [P7](../phase-preliminary/architecture-principles.md):
 
 - **Driver**: Phase E maps gaps (current → target Plateau)
   to Work Packages; without an explicit roadmap, the gap → WP
   mapping is implicit.
-- **Goal**: Architect-velocity (one place to see the gap →
-  WP map).
+- **Goal**: Quality (KR: pre_prod_share ≥ 0.95).
 - **Outcome**: every Phase F experiment cites a Phase E gap.
 - **Measurement source**: experiment-closure: K1, K2, G1, G2, G3 (count of closed Phase F experiments cited as gap-closures)
+- **Contribution**: experiment-closure: K1, K2, G1, G2, G3 — closed experiments add disciplines that reduce incident classes; contributes to Quality KR.
 - **Capability realised**: Architecture knowledge management
   ([../phase-b-business-architecture/capabilities/forge-level.md](../phase-b-business-architecture/capabilities/forge-level.md)).
 - **Function**: Sequence-gaps-into-Work-Packages.

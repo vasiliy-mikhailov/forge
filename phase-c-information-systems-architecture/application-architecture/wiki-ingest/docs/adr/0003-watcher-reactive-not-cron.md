@@ -87,4 +87,4 @@ HTML extraction joined; see the 2026-04-20 amendment above and
 
 **Transitive coverage** (per [ADR 0013 dec 9](../../../../phase-preliminary/adr/0013-md-as-source-code-tdd.md)
 + [ADR 0017](../../../../phase-preliminary/adr/0017-motivation-spans-all-layers.md)):
-measurable motivation chain (OKRs) inherited from the lab's AGENTS.md.
+measurable motivation chain inherited from the lab's AGENTS.md.

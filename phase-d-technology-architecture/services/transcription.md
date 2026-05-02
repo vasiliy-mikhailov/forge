@@ -11,15 +11,16 @@
   L2: stable; not on the active trajectory.
 
 
-## Measurable motivation chain (OKRs)
+## Measurable motivation chain
 Per [P7](../../phase-preliminary/architecture-principles.md):
 
 - **Driver**: audio-to-text transcription is the entry
   point of the wiki pipeline.
-- **Goal**: TTS (raw.json must exist before any compaction).
+- **Goal**: Quality (KR: pre_prod_share ≥ 0.95).
 - **Outcome**: wiki-ingest faster-whisper transcribes audio
   + pushes raw.json per ADR 0005.
 - **Measurement source**: lab-tests: WI (wiki-ingest smoke + pusher container health)
+- **Contribution**: audit-predicate enforcement — each PASS prevents one infrastructure-domain incident class; contributes to Quality KR pre_prod_share.
 - **Capability realised**: Service operation + Product delivery.
 - **Function**: Transcribe-audio-to-raw-json.
 - **Element**: this file.

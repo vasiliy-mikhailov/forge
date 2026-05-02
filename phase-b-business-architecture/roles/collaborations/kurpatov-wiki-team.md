@@ -150,7 +150,7 @@ role's tests already cover its slice:
 Aggregate scores per role land in the audit's
 `## Aggregate scores per agentic-md unit` table (P22 + AU-11).
 
-## Measurable motivation chain (OKRs)
+## Measurable motivation chain
 Per [ADR 0015](../../../phase-preliminary/adr/0015-verifiable-agent-rewards.md)
 decision point 1, applied to a collaboration:
 
@@ -161,7 +161,7 @@ decision point 1, applied to a collaboration:
   cost). The collab model lets one session perform the team's
   behaviour, with the decision-rights matrix above keeping the
   partition honest.
-- **Goal**: Architect-velocity (Phase A) + R&D throughput.
+- **Goal**: Quality (KR: pre_prod_share ≥ 0.95).
 - **Outcome**: One Cowork session can complete an end-to-end
   product cycle for the Kurpatov wiki — Wiki PM identifies the
   R-NN gap, Architect approves, Developer ships, DevOps deploys,
@@ -169,6 +169,7 @@ decision point 1, applied to a collaboration:
   the role boundaries (the collab loads all five activations
   at once).
 - **Measurement source**: runner-aggregate: test-wiki-pm-runner, test-auditor-runner, test-developer-runner, test-devops-runner, test-source-author-runner, test-concept-curator-runner (member roles' aggregate)
+- **Contribution**: runner-aggregate of 6 team-role runners — collaboration health = mean of role pass rates; contributes to Quality KR via aggregated pre-prod bug-catch.
 - **Capability realised**: all four forge-level capabilities,
   jointly, end-to-end.
 - **Function**: Operate-the-Kurpatov-wiki-product-team.

@@ -153,13 +153,14 @@ ink.
   [`../../phase-requirements-management/catalog.md`](../../phase-requirements-management/catalog.md).
 
 
-## Measurable motivation chain (OKRs)
+## Measurable motivation chain
 Per [P7](../../phase-preliminary/architecture-principles.md) — backfit:
 
 - **Driver**: K1 silent-skip bug surfaced because synthetic
   tests didn't match production filesystem semantics
   (NFC/NFD).
-- **Goal**: Architect-velocity (synth tests catch real bugs).
+- **Goal**: Quality (KR: pre_prod_share ≥ 0.95).
 - **Outcome**: test environments declare production-fidelity
   axes (filesystem, locale, Python version, write timing).
 - **Measurement source**: quality-ledger: pre_prod_share (per ADR 0021)
+- **Contribution**: P3-family enforcement reduces deploy/runtime incidents; contributes to Quality KR pre_prod_share.

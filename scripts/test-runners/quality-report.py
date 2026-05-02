@@ -165,7 +165,7 @@ def predicate_p28_walk():
             if p.name in ('README.md', '_template.md', 'CLAUDE.md'):
                 continue
             text = p.read_text(encoding='utf-8')
-            chain_m = re.search(r'(?ms)^## Measurable motivation chain \(OKRs\)\s*$.+?(?=\n## |\Z)', text)
+            chain_m = re.search(r'(?ms)^## Measurable motivation chain\s*$.+?(?=\n## |\Z)', text)
             if not chain_m:
                 continue
             chain = chain_m.group(0)

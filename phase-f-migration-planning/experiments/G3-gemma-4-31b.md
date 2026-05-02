@@ -216,14 +216,15 @@ the Gemma component swap.
   `kurpatov-wiki-wiki`.
 
 
-## Measurable motivation chain (OKRs)
+## Measurable motivation chain
 Per [P7](../../phase-preliminary/architecture-principles.md):
 
 - **Driver**: Gemma-4 31B as a candidate model swap.
-- **Goal**: EB (per-token cost) + voice preservation R-NN.
+- **Goal**: Quality (KR: pre_prod_share ≥ 0.95).
 - **Outcome**: G3 closed (falsified — gate-4 cross-ref
   integrity > 5/source).
 - **Measurement source**: experiment-closure: G3 (CLOSED FAIL — Gemma-4 31B failed gate-4 cross-ref integrity)
+- **Contribution**: experiment-closure: G3-gemma-4-31b — platform stability experiment; PASS reduces one infra-incident class; contributes to Quality KR.
 - **Capability realised**: R&D (model evaluation).
 - **Function**: Test-Gemma-4-31B-cross-ref-integrity.
 - **Element**: this file.

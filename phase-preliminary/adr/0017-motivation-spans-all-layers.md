@@ -4,18 +4,18 @@
 
 Accepted (2026-05-02). Active.
 
-## Measurable motivation chain (OKRs)
+## Measurable motivation chain
 Per [ADR 0015](0015-verifiable-agent-rewards.md) decision point 1
 + [ADR 0016](0016-wiki-customers-as-roles.md) + the Phase H
 audit cycle, forge has accumulated a working motivation
 discipline:
 
-- **P14** — role files have a `## Measurable motivation chain (OKRs)` section.
+- **P14** — role files have a `## Measurable motivation chain` section.
 - **P15** — catalog rows cite Goal / Driver / closure in the Source cell.
 - **P17** — test cases have a `### Reward` section.
 - **P18** — Drivers `→ influences <Goal>` annotations.
 - **P19** — Goals have ≥ 1 realising R-NN trajectory.
-- **ADR 0015 dec 1** — measurable motivation chain (OKRs) required per role.
+- **ADR 0015 dec 1** — measurable motivation chain required per role.
 - **ADR 0016** — extended to consumer-side roles (Wiki Customer + 5 personas).
 
 Each predicate was added retroactively when the audit caught a
@@ -56,7 +56,7 @@ Add **P7** to
 
 > **P7 — Universal motivation traceability.** Every architecture
 > element (regardless of TOGAF phase, ArchiMate layer, or
-> ArchiMate aspect) MUST cite a measurable motivation chain (OKRs) (Driver → Goal
+> ArchiMate aspect) MUST cite a measurable motivation chain (Driver → Goal
 > → Outcome → Capability → Function → Role / Component /
 > Process) OR be transitively covered per ADR 0013 dec 9 with
 > the abstract / parent named explicitly. Default = required;
@@ -69,7 +69,7 @@ Add **P7** to
 > `phase-e/`, `phase-f/`, `phase-g/`, `phase-preliminary/`
 > (excluding READMEs, lab-internal scaffolding under
 > `<lab>/.agents/`, and the carve-outs documented in P14):
-> file contains either `## Measurable motivation chain (OKRs)` section OR a
+> file contains either `## Measurable motivation chain` section OR a
 > `Transitive coverage:` reference naming the parent artifact
 > whose chain it inherits.
 
@@ -87,7 +87,7 @@ naked landing (no chain in `develop-wiki-product-line.md`,
 `wiki-product-line.md`, `phase-d/architecture.md`,
 `lab-AGENTS-template.md`, `phase-e/*.md`, `operations.md`
 header sections, the 6 existing ADRs). All ten get a
-Measurable motivation chain (OKRs) in the same commit so P24 lands clean.
+Measurable motivation chain in the same commit so P24 lands clean.
 
 ### 5. Aspect-aware layer mapping recorded
 
@@ -112,7 +112,7 @@ are Technology, not Physical).
 
 The Motivation column in the matrix is satisfied by the chain
 in EACH non-Motivation cell — i.e., every artifact under any
-phase has its own `## Measurable motivation chain (OKRs)` (P24) AND every
+phase has its own `## Measurable motivation chain` (P24) AND every
 catalog-row (R-NN), Driver, Goal, Reward already cited in the
 prior P14–P19 predicates.
 
@@ -126,7 +126,7 @@ prior P14–P19 predicates.
   inherit the discipline by default.
 - **Plus**: ArchiMate-faithful — Motivation is treated as an
   aspect, not as a property of specific element types.
-- **Minus**: more prose per artifact (the measurable motivation chain (OKRs) is
+- **Minus**: more prose per artifact (the measurable motivation chain is
   ~10 lines per file). Mitigated by the transitive-coverage
   carve-out for instance/sub-artifacts with shared chains.
 - **Minus**: P24 false-positives possible when an artifact
@@ -136,7 +136,7 @@ prior P14–P19 predicates.
 
 ## Invariants
 
-- A new artifact type added to forge without a measurable motivation chain (OKRs)
+- A new artifact type added to forge without a measurable motivation chain
   AND without a documented transitive-coverage rationale is a
   P24 FAIL on the next audit walk.
 - The carve-out list inside P24 is single-source-of-truth for
@@ -158,14 +158,14 @@ prior P14–P19 predicates.
   Rejected: P24 would FAIL on landing for the 6 existing ADRs;
   fixing-as-we-go is no different from the per-type bolt-on
   pattern this ADR is correcting.
-- **Make Measurable motivation chain (OKRs) a per-file YAML frontmatter
+- **Make Measurable motivation chain a per-file YAML frontmatter
   field instead of a prose section.** Considered. Rejected:
   YAML loses the narrative context that makes a chain
   understandable; prose with a strict heading + bullet
   structure (current shape) is more readable + still grep-able
   for P24's mechanical check.
 
-## Measurable motivation chain (OKRs)
+## Measurable motivation chain
 Per the principle this ADR introduces, this ADR cites its own
 chain:
 
@@ -173,12 +173,13 @@ chain:
   spends bolting on a retroactive predicate is a minute not
   spent on the next experiment) + audit reliability (a
   fail-open enforcement model leaks gaps).
-- **Goal**: Architect-velocity (KR: ≥ 50 corrective actions / 30-day). Audit reliability rolls up to corrective-actions throughput.
+- **Goal**: Quality (KR: pre_prod_share ≥ 0.95).
 - **Outcome**: P24 walks clean post-this-commit; future
   artifact types inherit motivation discipline by default; no
   more retroactive bolt-on predicates for motivation
   traceability.
 - **Measurement source**: audit-predicate: P24 (universal motivation-chain coverage; latest walk = 0 FAIL)
+- **Contribution**: ADR enforces a discipline that prevents one bug class; contributes to Quality KR via reduced incidents.
 - **Capability realised**: Architecture knowledge management
   ([`../../phase-b-business-architecture/capabilities/forge-level.md`](../../phase-b-business-architecture/capabilities/forge-level.md))
   — the meta-capability of keeping forge's architecture

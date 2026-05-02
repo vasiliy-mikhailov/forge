@@ -129,7 +129,7 @@ dec 9). The Architect's outputs are evaluated by the Auditor:
 - ADR rule conformance is P3 (containers-only), P7 (no
   Superseded by), P10 (ADR numbering monotonicity).
 - Architecture-file consistency is P14, P15, P18, P19
-  (measurable motivation chain (OKRs)).
+  (measurable motivation chain).
 - Trajectory discipline is P2, P19.
 The test md exists as a placeholder for the day the auditor
 needs case-level decomposition (today the predicate-level
@@ -140,7 +140,7 @@ predicates listed above are the architect's behaviour test
 suite; `audit-process.md` is exclusively activated by the
 Auditor walking against the architect's outputs.
 
-## Measurable motivation chain (OKRs)
+## Measurable motivation chain
 Per [ADR 0015](../../phase-preliminary/adr/0015-verifiable-agent-rewards.md)
 decision point 1:
 
@@ -148,13 +148,13 @@ decision point 1:
   fastest decision path; committees are slower) +
   decision-quality (one well-informed decision-maker beats N
   partially-informed ones for the same wall-clock).
-- **Goal**: Architect-velocity (Phase A) — the meta-Goal that
-  the architect's own role realises.
+- **Goal**: Architect-velocity (KR: ≤ 20 execution failures / 30-day).
 - **Outcome**: ADRs land on the first try; trajectories close
   cleanly; the audit walks find ≤ a handful of WARN per pass;
   the Wiki PM / Developer / DevOps / Auditor roles each have a
   clear scope and don't bleed into each other's work.
 - **Measurement source**: audit-predicate: P3 (Architect surfaces only via audit findings; latest walk = 0 FAIL)
+- **Contribution**: transitive (audit-process predicates P3/P7/P10/P14/P15/P18/P19/P24/P26/P28/P29) — every PASS predicate prevents one execution-failure class; current = all PASS.
 - **Capability realised**: all four forge-level capabilities at
   the steering level.
 - **Function**: Decide-and-own-the-architecture.

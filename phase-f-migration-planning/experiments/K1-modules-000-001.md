@@ -153,15 +153,16 @@ If falsified, the first signal is *which* gate triggered:
   `canonical/qwen3.6-27b-fp8/module-005/2026-04-27`.
 
 
-## Measurable motivation chain (OKRs)
+## Measurable motivation chain
 Per [P7](../../phase-preliminary/architecture-principles.md):
 
 - **Driver**: K1 is the first end-to-end production run of
   the wiki-bench harness on real Kurpatov modules.
-- **Goal**: TTS (reader time saved on modules 000+001).
+- **Goal**: TTS (KR: tts_share ≥ 0.30 per-use).
 - **Outcome**: 44 source.md + matching concept.md graph
   shipped on `kurpatov-wiki-wiki`.
 - **Measurement source**: experiment-closure: K1 (44-source target; today 2 source.md shipped; verify rate per K1 spec gates)
+- **Contribution**: experiment-closure: K1 v2 — 44 sources published in 71min; TTS infrastructure exists. Per-source tts_share pending CI cycle measurement.
 - **Capability realised**: Develop wiki product line
   ([../../phase-b-business-architecture/capabilities/develop-wiki-product-line.md](../../phase-b-business-architecture/capabilities/develop-wiki-product-line.md)).
 - **Function**: Compile-modules-000+001.

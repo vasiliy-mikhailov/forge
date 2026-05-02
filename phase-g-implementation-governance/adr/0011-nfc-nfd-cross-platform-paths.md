@@ -159,12 +159,13 @@ implementation contract that makes P6 enforceable for cross-platform
 data.
 
 
-## Measurable motivation chain (OKRs)
+## Measurable motivation chain
 Per [P7](../../phase-preliminary/architecture-principles.md) — backfit:
 
 - **Driver**: K1 silent-skip — macOS NFD vs LLM NFC mismatch
   (P6 violation).
-- **Goal**: Quality (KR: pre_prod_share ≥ 0.95). Realises Service-operation Capability.
+- **Goal**: Quality (KR: pre_prod_share ≥ 0.95).
 - **Outcome**: NFC normalisation at every cross-platform
   boundary; per phase-g-…/policies/cross-platform-paths.md.
 - **Measurement source**: quality-ledger: pre_prod_share (per ADR 0021)
+- **Contribution**: P3-family enforcement reduces deploy/runtime incidents; contributes to Quality KR pre_prod_share.

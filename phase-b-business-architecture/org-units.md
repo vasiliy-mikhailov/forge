@@ -69,15 +69,16 @@ Phase B holds the *lab-scoped* capability subset (with quality
 dimensions appropriate to that lab's domain).
 
 
-## Measurable motivation chain (OKRs)
+## Measurable motivation chain
 Per [P7](../phase-preliminary/architecture-principles.md) + [P1](../phase-preliminary/architecture-principles.md):
 
 - **Driver**: forge needs an explicit org-units split (architect
   vs labs vs roles) to prevent role bleed.
-- **Goal**: Architect-velocity (Phase A).
+- **Goal**: Architect-velocity (KR: ≤ 20 execution failures / 30-day).
 - **Outcome**: every Phase B Role file activates from a defined
   org-unit context; conflicts resolve at the Architect.
 - **Measurement source**: n/a — declarative: org-unit boundaries are structural; no quantitative Outcome
+- **Contribution**: declarative org-unit roster — contributes to A-V KR by anchoring Phase B Role activation cascade.
 - **Capability realised**: Architecture knowledge management.
 - **Function**: Define-org-unit-boundaries.
 - **Element**: this file.

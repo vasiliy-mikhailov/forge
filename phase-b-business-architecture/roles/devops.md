@@ -145,7 +145,7 @@ Assert shape with a Reward function per [ADR 0015](../../phase-preliminary/adr/0
 is exclusively activated by DevOps; the test-devops.md cases
 transitively cover the operations.md format and discipline.
 
-## Measurable motivation chain (OKRs)
+## Measurable motivation chain
 Per [ADR 0015](../../phase-preliminary/adr/0015-verifiable-agent-rewards.md)
 decision point 1:
 
@@ -153,12 +153,12 @@ decision point 1:
   spends restarting a container is a minute not on architecture)
   + service-operation reliability (services that crash silently
   destroy the value of correct code).
-- **Goal**: Architect-velocity + EB (Phase A) — host time is GPU
-  hours; idle host while waiting for a deploy is EB cost.
+- **Goal**: Quality (KR: pre_prod_share ≥ 0.95).
 - **Outcome**: deploys land on the first try; smoke passes;
   operations.md has a paper trail; failed deploys roll back
   before they reach production traffic.
 - **Measurement source**: runner: test-devops-runner (DO-NN cases; container-only ops; PASS band ≥ 0.8)
+- **Contribution**: runner: test-devops-runner pass rate (per-test-case aggregate); each PASS reduces a pre-prod bug class for the devops role; aggregate contributes to Quality KR pre_prod_share via the audit catch-rate side of the formula.
 - **Capability realised**: Service operation
   ([`../capabilities/forge-level.md`](../capabilities/forge-level.md)).
 - **Function**: Operate-host-and-services.

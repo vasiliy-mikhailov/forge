@@ -25,17 +25,17 @@
   `orchestrator/run-d8-pilot.py` is the canonical realisation.
 
 
-## Measurable motivation chain (OKRs)
+## Measurable motivation chain
 Per [P7](../../phase-preliminary/architecture-principles.md):
 
 - **Driver**: every agentic pipeline (compile, curate, K-cycle)
   needs an OpenHands SDK orchestrator.
-- **Goal**: Architect-velocity (one orchestrator-per-lab,
-  reusable across experiments).
+- **Goal**: Quality (KR: pre_prod_share ≥ 0.95).
 - **Outcome**: OpenHands SDK runs source-author + concept-curator
   inside wiki-bench; rl-2048's notebook agents follow the same
   pattern.
 - **Measurement source**: lab-tests: WB (wiki-bench smoke + OpenHands SDK harness integrity)
+- **Contribution**: audit-predicate enforcement — each PASS prevents one infrastructure-domain incident class; contributes to Quality KR pre_prod_share.
 - **Capability realised**: Service operation.
 - **Function**: Orchestrate-LLM-agent-loops.
 - **Element**: this file.

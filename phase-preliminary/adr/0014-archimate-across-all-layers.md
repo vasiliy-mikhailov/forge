@@ -292,13 +292,13 @@ ArchiMate-tagged the next time they're meaningfully edited.
   *how to verify it* (md TDD).
 
 
-## Measurable motivation chain (OKRs)
+## Measurable motivation chain
 Per [P7](../architecture-principles.md) — backfit:
 
 - **Driver**: TOGAF alone gives phases but no element-typing
   vocabulary; ArchiMate fills the gap.
-- **Goal**: Architect-velocity (typed elements eliminate
-  vocab disputes); audit reliability (P6 enforces vocab).
+- **Goal**: Quality (KR: pre_prod_share ≥ 0.95).
 - **Outcome**: Roles, Capabilities, Drivers, Goals, etc. are
   named ArchiMate constructs; the audit walks vocabulary.
 - **Measurement source**: audit-predicate: P14 (ArchiMate spans all layers; consumed by P14 + P7)
+- **Contribution**: ADR enforces a discipline that prevents one bug class; contributes to Quality KR via reduced incidents.

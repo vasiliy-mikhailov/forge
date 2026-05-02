@@ -414,16 +414,17 @@ Newest entries above oldest.
   stays untouched.
 
 
-## Measurable motivation chain (OKRs)
+## Measurable motivation chain
 Per [P7](../phase-preliminary/architecture-principles.md):
 
 - **Driver**: services on a single host (P4) need a runbook +
   a chronological log.
-- **Goal**: Architect-velocity (ops actions logged + reversible).
+- **Goal**: Quality (KR: pre_prod_share ≥ 0.95).
 - **Outcome**: this file is the runbook (procedural) + the
   Operational log (chronological, append-only); DevOps role
   appends to the log per audit-2026-05-01l F3.
 - **Measurement source**: runner: test-devops-runner (DO-01..06 covers operations.md format + ## Operational log hygiene)
+- **Contribution**: P3-family enforcement reduces deploy/runtime incidents; contributes to Quality KR pre_prod_share.
 - **Capability realised**: Service operation.
 - **Function**: Operate-host-procedures + log-actions.
 - **Element**: this file.

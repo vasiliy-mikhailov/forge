@@ -85,6 +85,6 @@ academic-researcher needs, K2 is winning a Pyrrhic compaction.
 
 
 **Transitive coverage** (per ADR 0013 dec 9 + ADR 0017):
-measurable motivation chain (OKRs) inherited from the abstract
+measurable motivation chain inherited from the abstract
 [Wiki Customer role](../wiki-customer.md). Per-persona
 content is reading-mode + pain signature for 5-10 min readers.

@@ -28,15 +28,16 @@
 - Closed experiment `phase-f-migration-planning/experiments/G2-MoE-faster-inference.md` (throughput dim — falsified).
 
 
-## Measurable motivation chain (OKRs)
+## Measurable motivation chain
 Per [P7](../../phase-preliminary/architecture-principles.md):
 
 - **Driver**: every wiki-compile pipeline needs a long-running
   LLM inference endpoint.
-- **Goal**: TTS + EB.
+- **Goal**: Quality (KR: pre_prod_share ≥ 0.95).
 - **Outcome**: wiki-compiler vLLM serves Qwen3.6-27B-FP8 on the
   Blackwell GPU; OpenAI-compatible.
 - **Measurement source**: lab-tests: WC (wiki-compiler smoke + AGENTS Phase A-H integrity)
+- **Contribution**: audit-predicate enforcement — each PASS prevents one infrastructure-domain incident class; contributes to Quality KR pre_prod_share.
 - **Capability realised**: Service operation
   ([../../phase-b-business-architecture/capabilities/service-operation.md](../../phase-b-business-architecture/capabilities/service-operation.md)).
 - **Function**: Serve-LLM-inference.

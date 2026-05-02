@@ -44,7 +44,7 @@ segment pain catalogue.
 A new role lives at
 [`phase-b-business-architecture/roles/wiki-customer.md`](../../phase-b-business-architecture/roles/wiki-customer.md)
 — *generic* customer role description (purpose, activation,
-inputs, outputs, decision rights, tests, measurable motivation chain (OKRs)). The
+inputs, outputs, decision rights, tests, measurable motivation chain). The
 role is **consumer-side**, distinct from the producer-side roles
 (Architect / Wiki PM / Auditor / Developer / DevOps / Source-
 author / Concept-curator) which already exist.
@@ -64,7 +64,7 @@ holds one persona file per segment. The initial five:
 
 Each persona file follows the established Phase B role template
 (Purpose / Activates from / Inputs / Outputs / Decision rights /
-Escalates to / Capabilities / Tests / Measurable motivation chain (OKRs)).
+Escalates to / Capabilities / Tests / Measurable motivation chain).
 
 ### 3. Customers consume raw lectures via OpenHands
 
@@ -211,13 +211,14 @@ fix → implementation team."
   pain cites the persona slug in its Source cell".
 
 
-## Measurable motivation chain (OKRs)
+## Measurable motivation chain
 Per [P7](../architecture-principles.md) — backfit:
 
 - **Driver**: K2 Step 0 falsified architect-emitted L2
   hypothesis; without customer-driven signal, R-NN reflects
   intuition not pain.
-- **Goal**: TTS at per-segment granularity.
+- **Goal**: Quality (KR: pre_prod_share ≥ 0.95).
 - **Outcome**: 5 personas + Wiki Customer abstract role +
   CI-1..7 cycle. R-NN rows can cite `customer:<persona>`.
 - **Measurement source**: customer-cycle: CI-1 (5 personas activated; CI-3..5 cycle pending)
+- **Contribution**: ADR enforces a discipline that prevents one bug class; contributes to Quality KR via reduced incidents.

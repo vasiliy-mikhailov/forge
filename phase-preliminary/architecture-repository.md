@@ -136,15 +136,16 @@ containers, while moving git paths only requires a doc update.
   artefact).
 
 
-## Measurable motivation chain (OKRs)
+## Measurable motivation chain
 Per [P7](architecture-principles.md):
 
 - **Driver**: TOGAF Architecture Repository needs a forge-
   specific layout (where does each TOGAF metamodel component
   live in this monorepo).
-- **Goal**: Architect-velocity (no path-hunting).
+- **Goal**: Architect-velocity (KR: ≤ 20 execution failures / 30-day).
 - **Outcome**: TOGAF component → forge path table.
 - **Measurement source**: n/a — declarative: TOGAF component → forge path table (consumed by P14)
+- **Contribution**: declarative metamodel reference; contributes to A-V KR by enabling agent navigation without architect intervention.
 - **Capability realised**: Architecture knowledge management.
 - **Function**: Map-TOGAF-Repository-to-forge-paths.
 - **Element**: this file.

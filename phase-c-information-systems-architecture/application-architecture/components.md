@@ -20,17 +20,17 @@ product (e.g. for a new author/corpus) requires only a new pair of
 no component change needed.
 
 
-## Measurable motivation chain (OKRs)
+## Measurable motivation chain
 Per [P7](../../phase-preliminary/architecture-principles.md):
 
 - **Driver**: forge needs an Application Components catalog to
   enumerate the Labs as ArchiMate Application Components.
-- **Goal**: Architect-velocity (one place to look up which
-  Lab is which).
+- **Goal**: Quality (KR: pre_prod_share ≥ 0.95).
 - **Outcome**: 4 Labs (rl-2048, wiki-bench, wiki-compiler,
   wiki-ingest) listed; each cited from the per-product
   Capability files.
 - **Measurement source**: audit-predicate: P9 (every lab AGENTS.md has Phase A-H headers)
+- **Contribution**: audit-predicate: P9 lab-AGENTS coverage — each lab catalogued reduces unknown-state risk; contributes to Quality KR.
 - **Capability realised**: Architecture knowledge management.
 - **Function**: Catalogue-Application-Components.
 - **Element**: this file.

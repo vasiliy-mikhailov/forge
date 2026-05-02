@@ -128,7 +128,7 @@ call → ADR amendment landing the new target.
 ### 6. ADR 0022's section-rename amended
 
 ADR 0022's body says "every chain section across forge renamed to
-`## Measurable motivation chain (OKRs)`; section name now declares
+`## Measurable motivation chain`; section name now declares
 the structural contract (Outcome + Measurement source = O + KR)." This
 ADR (0023) completes that promise: the KR side now exists at top-level
 goals.md AND per-artifact chains cascade to it. The structural contract

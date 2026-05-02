@@ -138,18 +138,19 @@ Transitive coverage today: the Wiki PM's CI-3 cross-tabulation
 walks every customer ledger; missing or malformed ledgers fail
 the Wiki PM's WP-NN coverage measurement on the next walk.
 
-## Measurable motivation chain (OKRs)
+## Measurable motivation chain
 Per [ADR 0015](../../phase-preliminary/adr/0015-verifiable-agent-rewards.md)
 decision point 1 + [ADR 0016](../../phase-preliminary/adr/0016-wiki-customers-as-roles.md):
 
 - **Driver**: K2 Step 0 falsified the architect-emitted L2
   hypothesis. Without customer-driven pain signal, R-NN rows
   reflect architect intuition, not reader experience.
-- **Goal**: TTS at per-segment granularity (Phase A).
+- **Goal**: Quality (KR: pre_prod_share ≥ 0.95).
 - **Outcome**: Each persona's pain ledger drops over successive
   K compact runs (K2 → K3 → ...). Per-persona trip-quality
   becomes measurable.
 - **Measurement source**: customer-cycle: CI-1 (5 personas activated; CI-3..5 ledgers pending — band = pending until cycle runs against modules 000+001)
+- **Contribution**: customer-cycle: CI-1..7 PASS rate (5 personas activated; cycle pending) — when cycle runs, pain-ledger throughput per persona feeds Quality KR via the Quality dimensions catalog.
 - **Capability realised**: TTS + Reading speed + Voice
   preservation + Concept-graph quality — *as scored by the
   reader, not the architect*.

@@ -4,7 +4,7 @@
 
 Accepted (2026-05-02). Active.
 
-## Measurable motivation chain (OKRs)
+## Measurable motivation chain
 Per [P7](../architecture-principles.md):
 
 - **Driver**: audit-2026-05-01y's contribution-report surfaced 6 ADRs
@@ -14,15 +14,15 @@ Per [P7](../architecture-principles.md):
   They had nothing to anchor to in the motivation layer because **Quality
   was not a named Goal**. Same root cause as pre-P7: discipline enforced
   piecemeal (each ADR knew it was about quality; the layer didn't).
-- **Goal**: Quality (this ADR's addition; named in goals.md alongside
-  TTS / PTS / EB / Architect-velocity).
+- **Goal**: Quality (KR: pre_prod_share ≥ 0.95).
 - **Outcome**: every quality-affecting artifact cites a Quality
-  measurable motivation chain (OKRs); the Quality metric is computed; the soft-orphan
+  measurable motivation chain; the Quality metric is computed; the soft-orphan
   ADR set has a real anchor; the next quality decision lands with the
   citation built-in.
 - **Measurement source**: quality-ledger: pre_prod_share (this ADR
   bootstraps the metric; quality-report.py computes it; first walk
   shows the actual share at this commit).
+- **Contribution**: ADR enforces a discipline that prevents one bug class; contributes to Quality KR via reduced incidents.
 - **Capability realised**: Architecture knowledge management
   ([`../../phase-b-business-architecture/capabilities/forge-level.md`](../../phase-b-business-architecture/capabilities/forge-level.md)).
 - **Function**: Add-Quality-to-motivation-layer.

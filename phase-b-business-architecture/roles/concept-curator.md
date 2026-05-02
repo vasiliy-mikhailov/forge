@@ -168,7 +168,7 @@ number, not transitive `n/a`. Today: 6.98/8.0 = 0.873 PASS
 asymmetry surfaces as italian-strike, an honest signal the
 graph needs back-link curation).
 
-## Measurable motivation chain (OKRs)
+## Measurable motivation chain
 Per [ADR 0015](../../phase-preliminary/adr/0015-verifiable-agent-rewards.md)
 decision point 1:
 
@@ -177,12 +177,13 @@ decision point 1:
   of re-reading definitions across 5 sources) + R&D throughput
   (the concept graph IS the wiki's mental model — every
   cross-source claim verification depends on it).
-- **Goal**: TTS + Architect-velocity (Phase A).
+- **Goal**: Quality (KR: pre_prod_share ≥ 0.95).
 - **Outcome**: Each concept.md the role ships is consistent
   with the source(s) that introduced or touched it; cross-
   references are bidirectional; no duplicate slugs sneak in;
   concept-index.json round-trips correctly.
 - **Measurement source**: runner: test-concept-curator-runner (CC-NN cases against real concept.md graph; PASS band ≥ 0.8)
+- **Contribution**: runner: test-concept-curator-runner pass rate (per-test-case aggregate); each PASS reduces a pre-prod bug class for the concept-curator role; aggregate contributes to Quality KR pre_prod_share via the audit catch-rate side of the formula.
 - **Capability realised**: Service operation
   ([`../capabilities/forge-level.md`](../capabilities/forge-level.md));
   Concept-graph quality + Dedup correctness

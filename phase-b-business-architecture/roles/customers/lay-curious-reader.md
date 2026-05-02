@@ -73,7 +73,7 @@ at `customer-pains/lay-curious-reader/<lecture-stem>.md`.
 
 
 **Transitive coverage** (per ADR 0013 dec 9 + ADR 0017):
-measurable motivation chain (OKRs) inherited from the abstract
+measurable motivation chain inherited from the abstract
 [Wiki Customer role](../wiki-customer.md). Per-persona
 content is reading-mode + pain signature for educated
 laypersons.

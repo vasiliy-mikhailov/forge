@@ -1,14 +1,14 @@
-# ADR 0019 — Every measurable motivation chain (OKRs) Outcome cites a measurement source
+# ADR 0019 — Every measurable motivation chain Outcome cites a measurement source
 
 ## Status
 
 Accepted (2026-05-02). Active.
 
-## Measurable motivation chain (OKRs)
+## Measurable motivation chain
 Per [P7](../architecture-principles.md):
 
 - **Driver**: post-2026-05-01u + 2026-05-01w sweeps, every
-  in-scope artifact in forge has a `## Measurable motivation chain (OKRs)`
+  in-scope artifact in forge has a `## Measurable motivation chain`
   section. But running
   `scripts/test-runners/motivation-measurability-report.py`
   surfaced **34 of 116 artifacts have prose Outcomes with no
@@ -17,10 +17,8 @@ Per [P7](../architecture-principles.md):
   same root cause as pre-P7: enforcement was piecemeal (Roles
   via test runners; tests via Reward functions; R-NN via
   catalog Status), no first principle universalised it.
-- **Goal**: Architect-velocity (one-line lookup of any
-  artifact's current Level) + audit reliability (the audit
-  walks the report; regressions become diff-able).
-- **Outcome**: every measurable motivation chain (OKRs) Outcome cites a
+- **Goal**: Quality (KR: pre_prod_share ≥ 0.95).
+- **Outcome**: every measurable motivation chain Outcome cites a
   **measurement source** in a strict format the report
   parses; the report is GENERATED (no per-artifact authoring
   of "current level" prose); P26 fails-closed on missing
@@ -29,6 +27,7 @@ Per [P7](../architecture-principles.md):
   this ADR adds; walks every chain via
   `motivation-measurability-report.py --gaps-only`; empty
   result = PASS). Post-commit: 0 GAPs.
+- **Contribution**: ADR enforces a discipline that prevents one bug class; contributes to Quality KR via reduced incidents.
 - **Capability realised**: Architecture knowledge management
   ([../../phase-b-business-architecture/capabilities/forge-level.md](../../phase-b-business-architecture/capabilities/forge-level.md)).
 - **Function**: Universalise-Outcome-measurability.
@@ -37,7 +36,7 @@ Per [P7](../architecture-principles.md):
 
 ### 1. Standard measurement-source citation format
 
-Every `## Measurable motivation chain (OKRs)` (or `## Motivation`) section adds
+Every `## Measurable motivation chain` (or `## Motivation`) section adds
 a new line directly after the `**Outcome**:` bullet:
 
 ```
@@ -72,7 +71,7 @@ Add **P26** to
 [`audit-process.md`](../../phase-h-architecture-change-management/audit-process.md):
 
 > **P26 — Universal Outcome measurability.** For every
-> measurable motivation chain (OKRs) (matched by P24's scope), the chain's
+> measurable motivation chain (matched by P24's scope), the chain's
 > Outcome MUST be followed by a `**Measurement source**:`
 > line citing one of the formats in ADR 0019 decision 1.
 > Missing citation = `FAIL`.
@@ -132,7 +131,7 @@ first; ADR 0019 itself includes it (per § Motivation above).
 
 ## Invariants
 
-- A new measurable motivation chain (OKRs) landing in forge without a
+- A new measurable motivation chain landing in forge without a
   `**Measurement source**:` line is a P26 FAIL on the next
   audit walk.
 - Citation format changes require an ADR amendment; tooling

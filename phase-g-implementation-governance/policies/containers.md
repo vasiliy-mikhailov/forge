@@ -188,16 +188,17 @@ post-mortem-tagged spike artifact is explicitly out of scope.
 - `outputs/D8-pilot-results.md` — first run that prompted this audit
 
 
-## Measurable motivation chain (OKRs)
+## Measurable motivation chain
 Per [P7](../../phase-preliminary/architecture-principles.md):
 
 - **Driver**: P3 (containers-only) needs an enforcement
   policy — what counts as a container, which images allowed,
   rebuild discipline.
-- **Goal**: Quality (KR: pre_prod_share ≥ 0.95). Realises Service-operation Capability.
+- **Goal**: Quality (KR: pre_prod_share ≥ 0.95).
 - **Outcome**: every Lab's compose.yml + Dockerfile follows
   this policy.
 - **Measurement source**: audit-predicate: P3 (containers-only enforcement; the policy is what P3 enforces)
+- **Contribution**: P3-family enforcement reduces deploy/runtime incidents; contributes to Quality KR pre_prod_share.
 - **Capability realised**: Service operation + Architecture
   knowledge management.
 - **Function**: Enforce-containers-only-policy.

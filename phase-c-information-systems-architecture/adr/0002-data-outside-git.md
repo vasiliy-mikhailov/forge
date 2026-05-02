@@ -51,13 +51,14 @@ exception concerns a different repo entirely. A symmetric
   either work without secrets or use `.env.ci`.
 
 
-## Measurable motivation chain (OKRs)
+## Measurable motivation chain
 Per [P7](../../phase-preliminary/architecture-principles.md) — backfit:
 
 - **Driver**: raw.json files are large + machine-generated;
   storing them in forge proper would inflate the repo.
-- **Goal**: Architect-velocity (forge stays small + fast).
+- **Goal**: Quality (KR: pre_prod_share ≥ 0.95).
 - **Outcome**: raw.json lives in `kurpatov-wiki-raw` sibling
   repo per ADR 0002 + ADR 0005; forge references but doesn't
   hold the data.
 - **Measurement source**: quality-ledger: pre_prod_share (per ADR 0021)
+- **Contribution**: P3 enforcement (no large blobs in git tree) — reduces data-corruption + clone-failure incident class; contributes to Quality KR.

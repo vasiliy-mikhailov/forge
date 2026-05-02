@@ -18,16 +18,16 @@ Architecture Vision is re-opened (new product, new domain), this
 is where iteration-specific principles would land.
 
 
-## Measurable motivation chain (OKRs)
+## Measurable motivation chain
 Per [P7](../phase-preliminary/architecture-principles.md):
 
 - **Driver**: Phase A allows iteration-scoped principles; this
   file holds them (or notes their absence).
-- **Goal**: Architect-velocity — narrow scope keeps the file
-  honest.
+- **Goal**: Architect-velocity (KR: ≤ 20 execution failures / 30-day).
 - **Outcome**: P14 walks (transitive — covered by parent
   meta-principle file).
 - **Measurement source**: n/a — declarative: iteration-scoped principles registry (today empty; populated by ADR-emitting predicates as P-NN principles land)
+- **Contribution**: declarative Phase A artifact; contributes to A-V KR by anchoring downstream cascade.
 - **Capability realised**: Architecture knowledge management.
 - **Function**: Hold-Phase-A-iteration-principles.
 - **Element**: this file (today empty — Vision stable since

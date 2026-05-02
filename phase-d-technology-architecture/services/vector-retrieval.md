@@ -26,15 +26,16 @@
 - [`../../phase-c-information-systems-architecture/application-architecture/wiki-bench/docs/adr/0010-retrieval-augmented-dedup.md`](../../phase-c-information-systems-architecture/application-architecture/wiki-bench/docs/adr/0010-retrieval-augmented-dedup.md)
 
 
-## Measurable motivation chain (OKRs)
+## Measurable motivation chain
 Per [P7](../../phase-preliminary/architecture-principles.md):
 
 - **Driver**: source-author + concept-curator need vector
   retrieval to detect REPEATED claims + concept-graph proximity.
-- **Goal**: Architect-velocity (cheap retrieval).
+- **Goal**: Quality (KR: pre_prod_share ≥ 0.95).
 - **Outcome**: e5-base embedding + per-pilot retrieval index
   (R-D-retrieval-cost trajectory).
 - **Measurement source**: catalog-row: R-D-retrieval-cost (e5-base reload cost trajectory)
+- **Contribution**: audit-predicate enforcement — each PASS prevents one infrastructure-domain incident class; contributes to Quality KR pre_prod_share.
 - **Capability realised**: Service operation + R&D.
 - **Function**: Retrieve-by-vector-similarity.
 - **Element**: this file.

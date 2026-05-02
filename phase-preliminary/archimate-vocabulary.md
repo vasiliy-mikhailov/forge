@@ -252,16 +252,17 @@ wiki-compiler Application Component is realized by vLLM
   §§ 4-7 + 12 are the most relevant.
 
 
-## Measurable motivation chain (OKRs)
+## Measurable motivation chain
 Per [P7](architecture-principles.md):
 
 - **Driver**: ADR 0014 adopted ArchiMate; the project needs
   a forge-typed vocabulary catalog (which spec elements are
   in scope, with examples).
-- **Goal**: Architect-velocity (KR: ≥ 50 corrective actions / 30-day). Audit reliability is a means; named-Goal cascade requires citing the system-level Goal (audit-reliability rolls into corrective-actions throughput).
+- **Goal**: Architect-velocity (KR: ≤ 20 execution failures / 30-day).
 - **Outcome**: typed elements catalogued; new artifact types
   inherit vocab discipline.
 - **Measurement source**: n/a — declarative: ArchiMate 4 vocabulary catalog (typed-element reference; consumed by P14)
+- **Contribution**: declarative metamodel reference; contributes to A-V KR by enabling agent navigation without architect intervention.
 - **Capability realised**: Architecture knowledge management.
 - **Function**: Hold-forge-typed-vocabulary.
 - **Element**: this file.

@@ -163,7 +163,7 @@ appears in the audit table with a real number, not transitive
 the production source.md is missing the `language` frontmatter
 field the template requires).
 
-## Measurable motivation chain (OKRs)
+## Measurable motivation chain
 Per [ADR 0015](../../phase-preliminary/adr/0015-verifiable-agent-rewards.md)
 decision point 1:
 
@@ -171,11 +171,12 @@ decision point 1:
   88-min lecture-watching time) + R&D throughput (every
   compiled source is a data point for the SKILL's quality
   measurements).
-- **Goal**: TTS + Architect-velocity (Phase A).
+- **Goal**: Quality (KR: pre_prod_share ≥ 0.95).
 - **Outcome**: Each source.md the role ships matches the SKILL
   schema, preserves voice, marks provenance honestly, and
   passes verify_source.py without manual fix-up.
 - **Measurement source**: runner: test-source-author-runner (SA-NN cases against real wiki source.md; PASS band ≥ 0.8)
+- **Contribution**: runner: test-source-author-runner pass rate (per-test-case aggregate); each PASS reduces a pre-prod bug class for the source-author role; aggregate contributes to Quality KR pre_prod_share via the audit catch-rate side of the formula.
 - **Capability realised**: Service operation + Product
   delivery ([`../capabilities/forge-level.md`](../capabilities/forge-level.md));
   Voice preservation + Reading speed + Concept-graph quality

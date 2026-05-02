@@ -47,16 +47,17 @@ None of these is true today. Until one becomes true, the team
 section is "one architect; no boards."
 
 
-## Measurable motivation chain (OKRs)
+## Measurable motivation chain
 Per [P7](architecture-principles.md):
 
 - **Driver**: P1 (single architect of record) needs a
   team-composition declaration (today: one architect, several
   LLM-agent-filled roles).
-- **Goal**: Architect-velocity (no implicit roles).
+- **Goal**: Architect-velocity (KR: ≤ 20 execution failures / 30-day).
 - **Outcome**: roles + actors enumerated; org-units.md cross-
   references this.
 - **Measurement source**: n/a — declarative: roles + actors enumeration (org-units in Phase B carries the live activation pointer)
+- **Contribution**: declarative metamodel reference; contributes to A-V KR by enabling agent navigation without architect intervention.
 - **Capability realised**: Architecture knowledge management.
 - **Function**: Define-the-architecture-team.
 - **Element**: this file.

@@ -117,29 +117,19 @@ separate test md exists at the process-spec mirror path.
 When the process spec changes and the Auditor's audit
 outputs regress, this role's tests catch it.
 
-## Measurable motivation chain (OKRs)
+## Measurable motivation chain
 Per [ADR 0015](../../phase-preliminary/adr/0015-verifiable-agent-rewards.md),
-every role declares its measurable motivation chain (OKRs) in ArchiMate 4 terms.
+every role declares its measurable motivation chain in ArchiMate 4 terms.
 
-```
-Driver:        Architecture inconsistencies left in the working
-               tree compound; downstream agents inherit them and
-               waste architect time chasing regressions whose root
-               cause is a stale rule.
-Goal:          Architect-velocity (Phase A) — capability advances
-               per architect-hour stay high as the corpus grows.
-Outcome:       Architecture inconsistencies are surfaced before
-               they propagate (measurable: count of stale items
-               in the working tree per audit; trend over time).
-Capability:    Architecture Knowledge Management — single source
-               of truth + TOGAF-style doc threading dimensions
-               (capabilities/forge-level.md).
-Function:      audit-process.md walk against the working tree.
-Role:          Auditor (this file).
-Filled by:     Claude (Cowork session).
-```
-
-**Measurement source**: runner: test-auditor-runner (per-test-case aggregate; PASS band ≥ 0.8)
+- **Driver**: Architecture inconsistencies left in the working tree compound; downstream agents inherit them and waste architect time chasing regressions whose root cause is a stale rule.
+- **Goal**: Quality (KR: pre_prod_share ≥ 0.95).
+- **Outcome**: Architecture inconsistencies are surfaced before they propagate (measurable: count of stale items in the working tree per audit; trend over time).
+- **Measurement source**: runner: test-auditor-runner (per-test-case aggregate; PASS band ≥ 0.8)
+- **Contribution**: runner: test-auditor-runner pass rate (35.0/38.0 = 0.921) — each PASS reduces a pre-prod bug class for the auditor role; aggregate contributes to Quality KR pre_prod_share via the audit catch-rate side of the formula.
+- **Capability realised**: Architecture Knowledge Management — single source of truth + TOGAF-style doc threading dimensions ([../capabilities/forge-level.md](../capabilities/forge-level.md)).
+- **Function**: audit-process.md walk against the working tree.
+- **Role**: Auditor (this file).
+- **Filled by**: Claude (Cowork session).
 
 Each agentic-behaviour test in
 [`/tests/phase-b-business-architecture/roles/test-auditor.md`](../../tests/phase-b-business-architecture/roles/test-auditor.md)

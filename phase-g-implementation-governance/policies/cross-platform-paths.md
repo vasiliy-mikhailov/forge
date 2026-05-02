@@ -191,15 +191,16 @@ if __name__ == "__main__":
 The only downside is migrating existing macOS-origin data once.
 
 
-## Measurable motivation chain (OKRs)
+## Measurable motivation chain
 Per [P7](../../phase-preliminary/architecture-principles.md):
 
 - **Driver**: P6 (completeness over availability) silent-skip
   bug surfaced from macOS-NFD vs LLM-NFC mismatch (per
   K1 lesson; ADR 0011).
-- **Goal**: Quality (KR: pre_prod_share ≥ 0.95). Realises Service-operation Capability.
+- **Goal**: Quality (KR: pre_prod_share ≥ 0.95).
 - **Outcome**: NFC normalisation policy; tests assert it.
 - **Measurement source**: quality-ledger: pre_prod_share (NFC/NFD discipline; postmortem "Six errors, one letter" 2026-04-29; per ADR 0021)
+- **Contribution**: P3-family enforcement reduces deploy/runtime incidents; contributes to Quality KR pre_prod_share.
 - **Capability realised**: Service operation.
 - **Function**: Enforce-NFC-cross-platform-paths.
 - **Element**: this file.

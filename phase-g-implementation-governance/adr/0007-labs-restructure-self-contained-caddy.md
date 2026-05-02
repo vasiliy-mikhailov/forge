@@ -174,13 +174,14 @@ caches — model weights are read-only public artifacts.
   `phase-c-information-systems-architecture/application-architecture/wiki-bench/` (separate commit / subtree).
 
 
-## Measurable motivation chain (OKRs)
+## Measurable motivation chain
 Per [P7](../../phase-preliminary/architecture-principles.md) — backfit:
 
 - **Driver**: original `labs/` dir conflated multi-tenant
   Caddy + per-Lab compose; broke P4 mutex on :80/:443.
-- **Goal**: Quality (KR: pre_prod_share ≥ 0.95). Realises Service-operation Capability (clean per-Lab tenancy).
+- **Goal**: Quality (KR: pre_prod_share ≥ 0.95).
 - **Outcome**: each Lab self-contained under
   phase-c-…/application-architecture/<lab>/; Caddy mux per
   Lab.
 - **Measurement source**: quality-ledger: pre_prod_share (per ADR 0021)
+- **Contribution**: P3-family enforcement reduces deploy/runtime incidents; contributes to Quality KR pre_prod_share.

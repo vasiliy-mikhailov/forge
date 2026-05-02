@@ -29,15 +29,16 @@ specific *decisions* about why those versions/components were
 picked live in lab ADRs.
 
 
-## Measurable motivation chain (OKRs)
+## Measurable motivation chain
 Per [P7](../phase-preliminary/architecture-principles.md):
 
 - **Driver**: P4 single-server requires explicit tenancy rules
   (which Lab claims :80/:443 + GPU at any time).
-- **Goal**: Service operation + Architect-velocity.
+- **Goal**: Quality (KR: pre_prod_share ≥ 0.95).
 - **Outcome**: tenancy table; Caddy mux + per-Lab Make
   enforce at deploy time.
 - **Measurement source**: lab-tests: RL, WB, WC, WI (Caddy mux mutex enforced via per-lab smoke = each lab's smoke.md verdict)
+- **Contribution**: audit-predicate enforcement — each PASS prevents one infrastructure-domain incident class; contributes to Quality KR pre_prod_share.
 - **Capability realised**: Service operation.
 - **Function**: Define-service-tenancy-rules.
 - **Element**: this file.
