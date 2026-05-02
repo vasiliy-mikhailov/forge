@@ -39,43 +39,39 @@ NAMED_GOALS = {'TTS', 'PTS', 'EB', 'Architect-velocity', 'Quality'}
 AUDIT_RE = re.compile(r'^audit-(\d{4}-\d{2}-\d{2})([a-z]?)\.md$')
 
 
-def count_corrective_actions(window_days):
-    """Architect-velocity KR: *Taken:* lines (postmortems) + closed
-    FAIL/WARN findings (audits) within window."""
-    today = date.today()
-    since = today - timedelta(days=window_days)
+def count_architect_interventions(window_days):
+    """Architect-velocity KR (per ADR 0024): count of architect interventions
+    in window. LOWER = BETTER. Intervention = commit message starting with
+    'ADR ' OR containing 'architect call' / 'per architect' / 'architect-deferred'.
+
+    Honest caveat: in chat-driven workflow today, most commits trace to an
+    architect prompt even if the message doesn't say so. The metric
+    structurally undermeasures until commit-provenance tagging lands
+    (per ADR 0024 follow-up #1)."""
+    import subprocess
+    try:
+        log = subprocess.run(
+            ['git', '-C', str(FORGE), 'log',
+             f'--since={window_days} days ago', '--pretty=format:%s'],
+            capture_output=True, text=True, check=True).stdout
+    except Exception:
+        return None
+    if not log.strip():
+        return 0
+    # Per ADR 0024 (revised 2026-05-02): architecture changes (ADR landings)
+    # are NOT execution failures — the architect changing architecture is
+    # the architect's job. Only count architect-call markers when the
+    # commit is NOT primarily an ADR landing.
+    intervention_pat = re.compile(r'architect call|per architect|architect-deferred',
+                                  re.IGNORECASE)
+    adr_pat = re.compile(r'^ADR \d')
     count = 0
-    # Postmortems: count *Taken: ...* italicised lines
-    if POSTMORTEMS.exists():
-        text = POSTMORTEMS.read_text(encoding='utf-8')
-        # Walk by day heading; count *Taken:* lines per day; sum within window
-        day_chunks = re.split(r'(?m)^## (\d{4}-\d{2}-\d{2})\s*$', text)
-        for i in range(1, len(day_chunks), 2):
-            try:
-                d = datetime.strptime(day_chunks[i], '%Y-%m-%d').date()
-            except ValueError:
-                continue
-            if d < since:
-                continue
-            body = day_chunks[i + 1] if i + 1 < len(day_chunks) else ''
-            count += len(re.findall(r'\*Taken:', body))
-    # Audits: count FAIL + WARN findings closed in audits within window
-    for p in sorted(AUDITS_DIR.glob('audit-*.md')):
-        m = AUDIT_RE.match(p.name)
-        if not m:
+    for line in log.split('\n'):
+        if not intervention_pat.search(line):
             continue
-        try:
-            d = datetime.strptime(m.group(1), '%Y-%m-%d').date()
-        except ValueError:
-            continue
-        if d < since:
-            continue
-        text = p.read_text(encoding='utf-8')
-        # Count FAIL + WARN finding sections; each closed finding is a corrective action
-        for sec in re.split(r'(?m)^## ', text):
-            first = sec.split('\n', 1)[0]
-            if 'verdict FAIL' in first or 'verdict WARN' in first:
-                count += len(re.findall(r'(?m)^### F\d+\.', sec))
+        if adr_pat.search(line):
+            continue  # architecture change, not execution failure
+        count += 1
     return count
 
 
@@ -104,25 +100,41 @@ def band_for(metric, current, target):
 
 def goals_report(window):
     quality = quality_share()
-    actions = count_corrective_actions(window)
+    interventions = count_architect_interventions(window)
     rows = [
         {'goal': 'TTS', 'kr': 'tts_share ≥ 0.30', 'target': 0.30,
-         'current': None, 'note': 'pending TTS harness (CI cycle)'},
+         'current': None, 'lower_better': False,
+         'note': 'pending TTS harness (CI cycle)'},
         {'goal': 'PTS', 'kr': 'pts_share ≥ 0.30', 'target': 0.30,
-         'current': None, 'note': 'pending cohort engagement telemetry'},
+         'current': None, 'lower_better': False,
+         'note': 'pending cohort engagement telemetry'},
         {'goal': 'EB', 'kr': 'unit_economics ≥ 1.0', 'target': 1.0,
-         'current': None, 'note': 'pending eb-report.py'},
+         'current': None, 'lower_better': False,
+         'note': 'pending eb-report.py'},
         {'goal': 'Architect-velocity',
-         'kr': f'≥ 50 corrective actions / {window}-day rolling',
-         'target': 50,
-         'current': actions,
-         'note': f'{actions} actions in last {window} days'},
+         'kr': f'≤ 20 architect interventions / {window}-day rolling',
+         'target': 20,
+         'current': interventions,
+         'lower_better': True,
+         'note': f'{interventions} interventions in last {window} days (commit-message detection; reality higher)'},
         {'goal': 'Quality', 'kr': 'pre_prod_share ≥ 0.95', 'target': 0.95,
          'current': quality,
+         'lower_better': False,
          'note': f'{quality:.3f} (365-day window)' if quality is not None else 'n/a'},
     ]
     for r in rows:
-        r['band'] = band_for(r['goal'], r['current'], r['target'])
+        if r['current'] is None:
+            r['band'] = 'pending'
+        elif r['lower_better']:
+            # Lower better: PASS if current ≤ target; italian if ≤ 1.5x; FAIL otherwise
+            if r['current'] <= r['target']:
+                r['band'] = 'PASS'
+            elif r['current'] <= 1.5 * r['target']:
+                r['band'] = 'italian-strike'
+            else:
+                r['band'] = 'FAIL'
+        else:
+            r['band'] = band_for(r['goal'], r['current'], r['target'])
     return rows
 
 
