@@ -145,8 +145,7 @@ Assert shape with a Reward function per [ADR 0015](../../phase-preliminary/adr/0
 is exclusively activated by DevOps; the test-devops.md cases
 transitively cover the operations.md format and discipline.
 
-## Motivation chain
-
+## Measurable motivation chain (OKRs)
 Per [ADR 0015](../../phase-preliminary/adr/0015-verifiable-agent-rewards.md)
 decision point 1:
 

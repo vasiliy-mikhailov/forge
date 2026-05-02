@@ -378,8 +378,7 @@ forge/phase-c-information-systems-architecture/application-architecture/wiki-ben
   ADR 0008 — single source of truth).
 
 
-## Motivation chain
-
+## Measurable motivation chain (OKRs)
 Per [P7](../../../../phase-preliminary/architecture-principles.md):
 
 - **Driver**: this Lab realises forge-level Capabilities for the

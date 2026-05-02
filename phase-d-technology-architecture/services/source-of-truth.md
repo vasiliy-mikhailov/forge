@@ -19,8 +19,7 @@
   Stale experiment branches purged before re-running same id.
 
 
-## Motivation chain
-
+## Measurable motivation chain (OKRs)
 Per [P7](../../phase-preliminary/architecture-principles.md):
 
 - **Driver**: forge has multiple sources of state (git, vault,

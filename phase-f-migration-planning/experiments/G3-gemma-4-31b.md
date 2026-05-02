@@ -216,8 +216,7 @@ the Gemma component swap.
   `kurpatov-wiki-wiki`.
 
 
-## Motivation chain
-
+## Measurable motivation chain (OKRs)
 Per [P7](../../phase-preliminary/architecture-principles.md):
 
 - **Driver**: Gemma-4 31B as a candidate model swap.

@@ -146,8 +146,7 @@ git history per Phase H.
   lab now instead of at forge top-level.
 
 
-## Motivation chain
-
+## Measurable motivation chain (OKRs)
 Per [P7](../../../../phase-preliminary/architecture-principles.md):
 
 - **Driver**: this Lab realises forge-level Capabilities for the

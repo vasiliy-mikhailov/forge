@@ -47,8 +47,7 @@ None of these is true today. Until one becomes true, the team
 section is "one architect; no boards."
 
 
-## Motivation chain
-
+## Measurable motivation chain (OKRs)
 Per [P7](architecture-principles.md):
 
 - **Driver**: P1 (single architect of record) needs a

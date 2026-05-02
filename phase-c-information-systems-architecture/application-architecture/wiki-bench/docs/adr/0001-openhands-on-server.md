@@ -113,4 +113,4 @@ into Hermes again — though we wouldn't want to.
 
 **Transitive coverage** (per [ADR 0013 dec 9](../../../../phase-preliminary/adr/0013-md-as-source-code-tdd.md)
 + [ADR 0017](../../../../phase-preliminary/adr/0017-motivation-spans-all-layers.md)):
-motivation chain inherited from the lab's AGENTS.md.
+measurable motivation chain (OKRs) inherited from the lab's AGENTS.md.

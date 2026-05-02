@@ -147,8 +147,7 @@ serving configuration:
   `bench_*` fields is simpler.
 
 
-## Motivation
-
+## Measurable motivation chain (OKRs)
 Per [P7](../../phase-preliminary/architecture-principles.md) — backfit:
 
 - **Driver**: model swaps (G2, G3, future) need a single

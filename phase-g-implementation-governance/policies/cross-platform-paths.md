@@ -191,8 +191,7 @@ if __name__ == "__main__":
 The only downside is migrating existing macOS-origin data once.
 
 
-## Motivation chain
-
+## Measurable motivation chain (OKRs)
 Per [P7](../../phase-preliminary/architecture-principles.md):
 
 - **Driver**: P6 (completeness over availability) silent-skip

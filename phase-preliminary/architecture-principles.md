@@ -137,7 +137,7 @@ that produced it.
 ## P7 — Universal motivation traceability
 
 Every architecture element (regardless of TOGAF phase, ArchiMate
-layer, or ArchiMate aspect) MUST cite a motivation chain
+layer, or ArchiMate aspect) MUST cite a measurable motivation chain (OKRs)
 (Driver → Goal → Outcome → Capability → Function → Role /
 Component / Process) OR be transitively covered per
 [ADR 0013 dec 9](adr/0013-md-as-source-code-tdd.md) with the
@@ -186,7 +186,7 @@ is present (or a transitive-coverage line is).
   keep going" violates P6 — the default must be fail-fast, with
   continue-on-fail an explicit, manifest-producing opt-in.
 - A new ADR / Phase D architecture file / Phase G procedure /
-  experiment spec that lacks a `## Motivation chain` section AND
+  experiment spec that lacks a `## Measurable motivation chain (OKRs)` section AND
   lacks a `Transitive coverage:` line citing its abstract
   violates P7 — P24 surfaces it as FAIL on the next audit walk.
 
@@ -205,8 +205,7 @@ The principles are the answer to the question "what would I be
 willing to throw away first?" — and the answer is: not these.
 
 
-## Motivation chain
-
+## Measurable motivation chain (OKRs)
 Per P7 (the principle this file holds):
 
 - **Driver**: forge needs explicit architecture principles to

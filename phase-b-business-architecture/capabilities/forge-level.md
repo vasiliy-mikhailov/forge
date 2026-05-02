@@ -24,8 +24,7 @@ Level 2) lives in:
   when their next trajectory step is opened in Phase F.)
 
 
-## Motivation chain
-
+## Measurable motivation chain (OKRs)
 Per [P7](../../phase-preliminary/architecture-principles.md):
 
 - **Driver**: ArchiMate Strategy layer requires top-level

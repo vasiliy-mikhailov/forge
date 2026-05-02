@@ -28,8 +28,7 @@
 - Closed experiment `phase-f-migration-planning/experiments/G2-MoE-faster-inference.md` (throughput dim — falsified).
 
 
-## Motivation chain
-
+## Measurable motivation chain (OKRs)
 Per [P7](../../phase-preliminary/architecture-principles.md):
 
 - **Driver**: every wiki-compile pipeline needs a long-running

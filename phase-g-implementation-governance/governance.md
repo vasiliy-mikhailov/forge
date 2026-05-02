@@ -112,8 +112,7 @@ Phase G section, not here. Examples:
   meta-decisions this phase enforces.
 
 
-## Motivation chain
-
+## Measurable motivation chain (OKRs)
 Per [P7](../phase-preliminary/architecture-principles.md):
 
 - **Driver**: Phase G is the governance layer; needs a

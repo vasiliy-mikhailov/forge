@@ -414,8 +414,7 @@ Newest entries above oldest.
   stays untouched.
 
 
-## Motivation chain
-
+## Measurable motivation chain (OKRs)
 Per [P7](../phase-preliminary/architecture-principles.md):
 
 - **Driver**: services on a single host (P4) need a runbook +

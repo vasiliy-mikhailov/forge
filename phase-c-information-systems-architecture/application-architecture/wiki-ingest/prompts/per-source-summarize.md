@@ -190,7 +190,7 @@ load-bearing. Skip the section entirely if there's nothing to say.
 
 
 **Transitive coverage** (per ADR 0013 dec 9 + ADR 0017):
-motivation chain inherited from
+measurable motivation chain (OKRs) inherited from
 [wiki-ingest AGENTS.md](../AGENTS.md). This prompt is the
 SKILL contract source-author follows; its motivation lives at
 the lab level.

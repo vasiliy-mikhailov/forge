@@ -117,8 +117,7 @@ rather than a per-product one.
   [`../../phase-f-migration-planning/experiments/`](../../phase-f-migration-planning/experiments/).
 
 
-## Motivation chain
-
+## Measurable motivation chain (OKRs)
 Per [P7](../../phase-preliminary/architecture-principles.md):
 
 - **Driver**: wiki product needs Quality Dimensions to

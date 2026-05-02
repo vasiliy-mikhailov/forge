@@ -118,8 +118,7 @@ Check in order:
   workstation, not a headless server; `*-server` variants weren't tested.
 
 
-## Motivation
-
+## Measurable motivation chain (OKRs)
 Per [P7](../../phase-preliminary/architecture-principles.md) — backfit:
 
 - **Driver**: nvidia driver mode + HMM setting affects GPU

@@ -18,8 +18,7 @@ Architecture Vision is re-opened (new product, new domain), this
 is where iteration-specific principles would land.
 
 
-## Motivation chain
-
+## Measurable motivation chain (OKRs)
 Per [P7](../phase-preliminary/architecture-principles.md):
 
 - **Driver**: Phase A allows iteration-scoped principles; this

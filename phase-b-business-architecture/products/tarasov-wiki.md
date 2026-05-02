@@ -94,8 +94,7 @@ Per-capability detail will move into wiki-bench's
 `STATE-OF-THE-LAB.md` once a Tarasov pilot launches.
 
 
-## Motivation chain
-
+## Measurable motivation chain (OKRs)
 Per [P7](../../phase-preliminary/architecture-principles.md):
 
 - **Driver**: Tarasov-wiki is the second-planned wiki product

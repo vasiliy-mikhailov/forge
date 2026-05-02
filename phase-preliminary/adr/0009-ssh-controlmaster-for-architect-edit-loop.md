@@ -147,8 +147,7 @@ restart loop completed in ~5 s wall instead of ~12–15 s pre-fix.
   in flight at time of this ADR).
 
 
-## Motivation
-
+## Measurable motivation chain (OKRs)
 Per [P7](../architecture-principles.md) — backfit:
 
 - **Driver**: re-establishing SSH per architect command is

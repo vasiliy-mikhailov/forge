@@ -102,8 +102,7 @@ Phase F migration plans MUST cite the principles they affect, and
 explicitly justify any near-violation.
 
 
-## Motivation chain
-
+## Measurable motivation chain (OKRs)
 Per [P7](architecture-principles.md):
 
 - **Driver**: forge needs a chosen architecture method

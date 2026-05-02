@@ -188,8 +188,7 @@ post-mortem-tagged spike artifact is explicitly out of scope.
 - `outputs/D8-pilot-results.md` — first run that prompted this audit
 
 
-## Motivation chain
-
+## Measurable motivation chain (OKRs)
 Per [P7](../../phase-preliminary/architecture-principles.md):
 
 - **Driver**: P3 (containers-only) needs an enforcement

@@ -153,8 +153,7 @@ If falsified, the first signal is *which* gate triggered:
   `canonical/qwen3.6-27b-fp8/module-005/2026-04-27`.
 
 
-## Motivation chain
-
+## Measurable motivation chain (OKRs)
 Per [P7](../../phase-preliminary/architecture-principles.md):
 
 - **Driver**: K1 is the first end-to-end production run of

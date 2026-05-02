@@ -174,8 +174,7 @@ Outcome: G1 closes with H1 as the canonical fix. Settings codified
 in `/etc/systemd/system/nvidia-power-limit.service`.
 
 
-## Motivation chain
-
+## Measurable motivation chain (OKRs)
 Per [P7](../../phase-preliminary/architecture-principles.md):
 
 - **Driver**: Blackwell GPU UVM crashes mid-pilot (3 confirmed

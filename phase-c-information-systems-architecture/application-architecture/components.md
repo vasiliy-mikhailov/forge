@@ -20,8 +20,7 @@ product (e.g. for a new author/corpus) requires only a new pair of
 no component change needed.
 
 
-## Motivation chain
-
+## Measurable motivation chain (OKRs)
 Per [P7](../../phase-preliminary/architecture-principles.md):
 
 - **Driver**: forge needs an Application Components catalog to

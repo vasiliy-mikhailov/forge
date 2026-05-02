@@ -138,8 +138,7 @@ ADR 0005 didn't anticipate, and SPEC.md is the up-to-date how-to.
   (default model, max-model-len, key generation hint).
 
 
-## Motivation
-
+## Measurable motivation chain (OKRs)
 Per [P7](../../phase-preliminary/architecture-principles.md) — backfit:
 
 - **Driver**: 2026-04-25 inference-deploy session needed an

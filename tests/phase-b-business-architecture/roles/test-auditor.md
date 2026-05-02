@@ -30,7 +30,7 @@ how the runner achieves verification.
 
 [ADR 0015](../../../phase-preliminary/adr/0015-verifiable-agent-rewards.md)
 extends each case with a `### Reward` section that scores the
-agent's output against the role's Motivation chain. Verdict
+agent's output against the role's Measurable motivation chain (OKRs). Verdict
 ladder: `PENDING` → `FAIL` (score < threshold) → `PASS-italian-strike` (threshold ≤ score < 0.8 × max) → `PASS` (score ≥ 0.8 × max). The italian-strike state surfaces agents that technically conform while producing thin work.
 
 ## Cases

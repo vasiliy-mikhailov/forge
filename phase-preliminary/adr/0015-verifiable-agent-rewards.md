@@ -71,7 +71,7 @@ chain.**
 
 Specifically:
 
-1. **Motivation chain stated in the role md.** Every role file
+1. **Measurable motivation chain (OKRs) stated in the role md.** Every role file
    under `phase-b-business-architecture/roles/` must state the
    chain it serves, in ArchiMate 4 terms:
 
@@ -83,7 +83,7 @@ Specifically:
 
    A role's tests grant rewards measuring how much each test
    case advances the **Outcome** the role's Function realizes.
-   New role files include this chain in a `## Motivation chain`
+   New role files include this chain in a `## Measurable motivation chain (OKRs)`
    section; existing role files are amended on next edit.
 
 2. **Reward function per test case.** Each AAA case in a test md
@@ -103,7 +103,7 @@ Specifically:
      threshold ≤ score < 0.8 × max). Surfacing this band is the
      anti-italian-strike signal.
    - **Motivation reference** — which Outcome the score
-     measures (cite the role's motivation chain).
+     measures (cite the role's measurable motivation chain (OKRs)).
 
 3. **Verifiable = mechanical.** Reward functions must be
    computable from the real result without LLM judgement
@@ -164,7 +164,7 @@ Specifically:
   PASS band; runners surface the score; audits report it. The
   failure mode the user named has a name and a metric.
 - *Motivation gets typed traceability.* Each role's tests cite
-  the Motivation chain (Driver → Goal → Outcome → Capability →
+  the Measurable motivation chain (OKRs) (Driver → Goal → Outcome → Capability →
   Function → Role). A future contributor can read any test and
   know which Phase A goal it serves.
 - *Regression detection at the agent layer.* Per-role score
@@ -252,7 +252,7 @@ vague. The runner emits this state explicitly.
   emits scores alongside PASS/FAIL/SKIP and surfaces the
   italian-strike band.
 - (Sibling commit) `phase-b-business-architecture/roles/auditor.md`
-  + `wiki-pm.md` gain a `## Motivation chain` section citing the
+  + `wiki-pm.md` gain a `## Measurable motivation chain (OKRs)` section citing the
   Driver → Goal → Outcome → Capability → Function → Role chain.
 
 WP-NN cases and the Wiki PM runner are amended in a follow-up
@@ -264,7 +264,7 @@ commit; the change pattern is the same.
   TDD applies. ADR 0015 extends "TDD applies" to "TDD with
   rewards applies."
 - [ADR 0014](0014-archimate-across-all-layers.md) — ArchiMate 4
-  vocabulary. The Motivation chain referenced in §1 of this
+  vocabulary. The Measurable motivation chain (OKRs) referenced in §1 of this
   decision uses the verbs and element types defined there.
 - [`../archimate-language.md`](../archimate-language.md) — the
   Motivation domain (§6) with definitions of Driver, Goal,
@@ -276,8 +276,7 @@ commit; the change pattern is the same.
   element this ADR makes the test reward measure against.
 
 
-## Motivation chain
-
+## Measurable motivation chain (OKRs)
 Per [P7](../architecture-principles.md) — backfit:
 
 - **Driver**: agentic-md tests need verifiable rewards (RLVR);

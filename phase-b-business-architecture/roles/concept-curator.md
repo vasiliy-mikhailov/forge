@@ -168,8 +168,7 @@ number, not transitive `n/a`. Today: 6.98/8.0 = 0.873 PASS
 asymmetry surfaces as italian-strike, an honest signal the
 graph needs back-link curation).
 
-## Motivation chain
-
+## Measurable motivation chain (OKRs)
 Per [ADR 0015](../../phase-preliminary/adr/0015-verifiable-agent-rewards.md)
 decision point 1:
 

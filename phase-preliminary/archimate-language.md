@@ -1,6 +1,6 @@
 # ArchiMate 4 — language description
 
-**Transitive coverage** (per ADR 0013 dec 9 + ADR 0017): this file is a forge-independent ArchiMate 4 language reference (spec §6 + §7 + §8 + §9). Motivation chain inherited from [`archimate-vocabulary.md`](archimate-vocabulary.md) (the consumer-facing typed-element catalog that every Phase artifact cites). Measurement source on the parent: `n/a — declarative`.
+**Transitive coverage** (per ADR 0013 dec 9 + ADR 0017): this file is a forge-independent ArchiMate 4 language reference (spec §6 + §7 + §8 + §9). Measurable motivation chain (OKRs) inherited from [`archimate-vocabulary.md`](archimate-vocabulary.md) (the consumer-facing typed-element catalog that every Phase artifact cites). Measurement source on the parent: `n/a — declarative`.
 
 A reference for the ArchiMate® 4 modeling language as standardised
 by The Open Group. This file describes the language itself —

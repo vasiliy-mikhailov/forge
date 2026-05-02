@@ -51,8 +51,7 @@ exception concerns a different repo entirely. A symmetric
   either work without secrets or use `.env.ci`.
 
 
-## Motivation
-
+## Measurable motivation chain (OKRs)
 Per [P7](../../phase-preliminary/architecture-principles.md) — backfit:
 
 - **Driver**: raw.json files are large + machine-generated;

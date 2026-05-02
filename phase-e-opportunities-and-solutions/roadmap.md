@@ -99,8 +99,7 @@ Items 1-3 are the next three Phase F experiments to open. Sequence
 in [`../phase-f-migration-planning/migration-plan.md`](../phase-f-migration-planning/migration-plan.md).
 
 
-## Motivation chain
-
+## Measurable motivation chain (OKRs)
 Per [P7](../phase-preliminary/architecture-principles.md):
 
 - **Driver**: Phase E maps gaps (current → target Plateau)

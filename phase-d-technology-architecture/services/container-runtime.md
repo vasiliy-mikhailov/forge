@@ -22,8 +22,7 @@
   — the forge-wide containers-only execution rule.
 
 
-## Motivation chain
-
+## Measurable motivation chain (OKRs)
 Per [P7](../../phase-preliminary/architecture-principles.md):
 
 - **Driver**: P3 (containers-only) requires a docker compose

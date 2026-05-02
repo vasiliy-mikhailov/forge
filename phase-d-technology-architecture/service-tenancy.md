@@ -29,8 +29,7 @@ specific *decisions* about why those versions/components were
 picked live in lab ADRs.
 
 
-## Motivation chain
-
+## Measurable motivation chain (OKRs)
 Per [P7](../phase-preliminary/architecture-principles.md):
 
 - **Driver**: P4 single-server requires explicit tenancy rules

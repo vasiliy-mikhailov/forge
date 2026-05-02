@@ -236,8 +236,7 @@ Concretely:
   failures cited in Context.
 
 
-## Motivation chain
-
+## Measurable motivation chain (OKRs)
 Per [P7](../architecture-principles.md) — backfit:
 
 - **Driver**: md files drive runtime LLM behaviour; without

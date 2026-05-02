@@ -197,8 +197,7 @@ Once those land, re-test the MoE component swap.
   `phase-c-information-systems-architecture/application-architecture/wiki-bench/docs/STATE-OF-THE-LAB.md`.
 
 
-## Motivation chain
-
+## Measurable motivation chain (OKRs)
 Per [P7](../../phase-preliminary/architecture-principles.md):
 
 - **Driver**: 27B-dense decode throughput limits pilot wall-clock.

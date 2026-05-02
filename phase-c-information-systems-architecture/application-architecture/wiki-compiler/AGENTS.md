@@ -165,8 +165,7 @@ git history per Phase H.
 - Power-limit unit: `/etc/systemd/system/nvidia-power-limit.service`.
 
 
-## Motivation chain
-
+## Measurable motivation chain (OKRs)
 Per [P7](../../../../phase-preliminary/architecture-principles.md):
 
 - **Driver**: this Lab realises forge-level Capabilities for the

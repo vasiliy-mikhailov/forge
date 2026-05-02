@@ -49,8 +49,7 @@ forge/
   (`.env`, compose, network) is lost.
 
 
-## Motivation
-
+## Measurable motivation chain (OKRs)
 Per [P7](../architecture-principles.md) — backfit:
 
 - **Driver**: forge tree shape decides every navigation +

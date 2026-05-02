@@ -679,8 +679,7 @@ xrefs), and one part of "thin" was the ruler being broken.*
 
 ---
 
-## Motivation chain
-
+## Measurable motivation chain (OKRs)
 Per [P7](../phase-preliminary/architecture-principles.md):
 
 - **Driver**: production incidents compound; pre-prod catches don't.

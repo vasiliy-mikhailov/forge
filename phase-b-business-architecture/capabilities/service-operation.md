@@ -84,8 +84,7 @@ three landing — see
   [`../../phase-f-migration-planning/experiments/`](../../phase-f-migration-planning/experiments/).
 
 
-## Motivation chain
-
+## Measurable motivation chain (OKRs)
 Per [P7](../../phase-preliminary/architecture-principles.md):
 
 - **Driver**: Service operation is one of the 4 forge-level

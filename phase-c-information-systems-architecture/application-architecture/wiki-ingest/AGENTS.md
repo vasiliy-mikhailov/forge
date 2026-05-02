@@ -172,8 +172,7 @@ git history per Phase H.
 - Schema is documented in `SPEC.md` of this lab.
 
 
-## Motivation chain
-
+## Measurable motivation chain (OKRs)
 Per [P7](../../../../phase-preliminary/architecture-principles.md):
 
 - **Driver**: this Lab realises forge-level Capabilities for the

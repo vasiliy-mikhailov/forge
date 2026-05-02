@@ -146,8 +146,7 @@ discipline rules.
 Coverage target: every output category enumerated under
 "Outputs" above is asserted by ≥ 1 test case.
 
-## Motivation chain
-
+## Measurable motivation chain (OKRs)
 Per [ADR 0015](../../phase-preliminary/adr/0015-verifiable-agent-rewards.md)
 decision point 1:
 

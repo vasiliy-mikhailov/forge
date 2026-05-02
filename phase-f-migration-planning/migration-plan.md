@@ -61,8 +61,7 @@ chronological.
   [`experiments/G3-gemma-4-31b.md`](experiments/G3-gemma-4-31b.md).
 
 
-## Motivation chain
-
+## Measurable motivation chain (OKRs)
 Per [P7](../phase-preliminary/architecture-principles.md):
 
 - **Driver**: Phase F's TOGAF-canonical deliverable is the

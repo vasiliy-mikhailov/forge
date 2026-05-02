@@ -69,8 +69,7 @@ Phase B holds the *lab-scoped* capability subset (with quality
 dimensions appropriate to that lab's domain).
 
 
-## Motivation chain
-
+## Measurable motivation chain (OKRs)
 Per [P7](../phase-preliminary/architecture-principles.md) + [P1](../phase-preliminary/architecture-principles.md):
 
 - **Driver**: forge needs an explicit org-units split (architect

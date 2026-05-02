@@ -26,8 +26,7 @@ vLLM 0.19.1 → 0.20) is just the next step on the same trajectory;
 git remembers.
 
 
-## Motivation chain
-
+## Measurable motivation chain (OKRs)
 Per [P7](../phase-preliminary/architecture-principles.md):
 
 - **Driver**: P3 + P4 + ADR 0007 imply invariants that any

@@ -273,8 +273,7 @@ forge-level Phase H is the source of truth.>
   phases (the existing 0001-0009 series).
 
 
-## Motivation chain
-
+## Measurable motivation chain (OKRs)
 Per [P7](../phase-preliminary/architecture-principles.md):
 
 - **Driver**: every lab AGENTS.md must follow the same

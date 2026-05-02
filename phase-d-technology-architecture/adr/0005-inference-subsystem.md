@@ -95,8 +95,7 @@ new `${STORAGE_ROOT}` subdir.
   for ergonomics no one wants. Rejected.
 
 
-## Motivation
-
+## Measurable motivation chain (OKRs)
 Per [P7](../../phase-preliminary/architecture-principles.md) — backfit:
 
 - **Driver**: forge needs a coherent inference-subsystem

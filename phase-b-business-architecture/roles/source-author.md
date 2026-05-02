@@ -163,8 +163,7 @@ appears in the audit table with a real number, not transitive
 the production source.md is missing the `language` frontmatter
 field the template requires).
 
-## Motivation chain
-
+## Measurable motivation chain (OKRs)
 Per [ADR 0015](../../phase-preliminary/adr/0015-verifiable-agent-rewards.md)
 decision point 1:
 

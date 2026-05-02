@@ -10,8 +10,7 @@ cognitive work — both consuming information and writing/optimizing
 programs.
 
 
-## Motivation chain
-
+## Measurable motivation chain (OKRs)
 Per [P7](../phase-preliminary/architecture-principles.md):
 
 - **Driver**: forge has no shared memory across architect-sessions

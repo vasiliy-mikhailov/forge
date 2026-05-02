@@ -159,8 +159,7 @@ implementation contract that makes P6 enforceable for cross-platform
 data.
 
 
-## Motivation
-
+## Measurable motivation chain (OKRs)
 Per [P7](../../phase-preliminary/architecture-principles.md) — backfit:
 
 - **Driver**: K1 silent-skip — macOS NFD vs LLM NFC mismatch

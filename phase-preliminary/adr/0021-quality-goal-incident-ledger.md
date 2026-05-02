@@ -4,8 +4,7 @@
 
 Accepted (2026-05-02). Active.
 
-## Motivation
-
+## Measurable motivation chain (OKRs)
 Per [P7](../architecture-principles.md):
 
 - **Driver**: audit-2026-05-01y's contribution-report surfaced 6 ADRs
@@ -18,7 +17,7 @@ Per [P7](../architecture-principles.md):
 - **Goal**: Quality (this ADR's addition; named in goals.md alongside
   TTS / PTS / EB / Architect-velocity).
 - **Outcome**: every quality-affecting artifact cites a Quality
-  motivation chain; the Quality metric is computed; the soft-orphan
+  measurable motivation chain (OKRs); the Quality metric is computed; the soft-orphan
   ADR set has a real anchor; the next quality decision lands with the
   citation built-in.
 - **Measurement source**: quality-ledger: pre_prod_share (this ADR

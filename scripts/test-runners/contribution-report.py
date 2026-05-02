@@ -74,7 +74,7 @@ def list_md_artifacts():
 
 def find_chain(text):
     """Find the **Outcome**:-bearing motivation chain (if any)."""
-    matches = list(re.finditer(r'(?ms)^## Motivation(?: chain)?\s*$.+?(?=\n## |\Z)', text))
+    matches = list(re.finditer(r'(?ms)^## Measurable motivation chain \(OKRs\)\s*$.+?(?=\n## |\Z)', text))
     if matches:
         for m in matches:
             if '**Outcome**:' in m.group(0):
@@ -108,7 +108,8 @@ def citation_band(citation):
             return 'NA-pending'
         return 'NA-other'
     for prefix in ('runner:', 'runner-aggregate:', 'lab-tests:', 'audit-predicate:',
-                   'catalog-row:', 'experiment-closure:', 'corpus-walk:', 'customer-cycle:'):
+                   'catalog-row:', 'experiment-closure:', 'corpus-walk:', 'customer-cycle:',
+                   'quality-ledger:'):
         if cit.startswith(prefix):
             return 'Live'
     return 'Unknown'

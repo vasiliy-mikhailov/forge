@@ -106,8 +106,7 @@ Headline next step: scale the same pilot driver to 200+ sources
 without quality regression — including without voice regression.
 
 
-## Motivation chain
-
+## Measurable motivation chain (OKRs)
 Per [P7](../../phase-preliminary/architecture-principles.md):
 
 - **Driver**: Kurpatov-wiki is the first product on the wiki

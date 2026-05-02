@@ -153,8 +153,7 @@ ink.
   [`../../phase-requirements-management/catalog.md`](../../phase-requirements-management/catalog.md).
 
 
-## Motivation
-
+## Measurable motivation chain (OKRs)
 Per [P7](../../phase-preliminary/architecture-principles.md) — backfit:
 
 - **Driver**: K1 silent-skip bug surfaced because synthetic

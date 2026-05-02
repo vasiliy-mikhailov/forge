@@ -20,8 +20,7 @@ Motivation-layer; quantified in Phase H trajectories.
   more than absolute value. Per ADR 0021.
 
 
-## Motivation chain
-
+## Measurable motivation chain (OKRs)
 Per [P7](../phase-preliminary/architecture-principles.md):
 
 - **Driver**: every action choice must be evaluated against

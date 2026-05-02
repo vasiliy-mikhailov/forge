@@ -117,10 +117,9 @@ separate test md exists at the process-spec mirror path.
 When the process spec changes and the Auditor's audit
 outputs regress, this role's tests catch it.
 
-## Motivation chain
-
+## Measurable motivation chain (OKRs)
 Per [ADR 0015](../../phase-preliminary/adr/0015-verifiable-agent-rewards.md),
-every role declares its motivation chain in ArchiMate 4 terms.
+every role declares its measurable motivation chain (OKRs) in ArchiMate 4 terms.
 
 ```
 Driver:        Architecture inconsistencies left in the working

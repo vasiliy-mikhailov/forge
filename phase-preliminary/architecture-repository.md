@@ -136,8 +136,7 @@ containers, while moving git paths only requires a doc update.
   artefact).
 
 
-## Motivation chain
-
+## Measurable motivation chain (OKRs)
 Per [P7](architecture-principles.md):
 
 - **Driver**: TOGAF Architecture Repository needs a forge-

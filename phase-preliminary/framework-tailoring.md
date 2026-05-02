@@ -76,8 +76,7 @@ layering* are the bulk of TOGAF's actual value here, and that is
 what we adopt.
 
 
-## Motivation chain
-
+## Measurable motivation chain (OKRs)
 Per [P7](architecture-principles.md):
 
 - **Driver**: TOGAF + ArchiMate is the chosen method (ADR 0014);

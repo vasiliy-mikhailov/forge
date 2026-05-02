@@ -150,8 +150,7 @@ role's tests already cover its slice:
 Aggregate scores per role land in the audit's
 `## Aggregate scores per agentic-md unit` table (P22 + AU-11).
 
-## Motivation chain
-
+## Measurable motivation chain (OKRs)
 Per [ADR 0015](../../../phase-preliminary/adr/0015-verifiable-agent-rewards.md)
 decision point 1, applied to a collaboration:
 

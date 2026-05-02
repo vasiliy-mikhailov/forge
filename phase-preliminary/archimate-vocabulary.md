@@ -252,8 +252,7 @@ wiki-compiler Application Component is realized by vLLM
   §§ 4-7 + 12 are the most relevant.
 
 
-## Motivation chain
-
+## Measurable motivation chain (OKRs)
 Per [P7](architecture-principles.md):
 
 - **Driver**: ADR 0014 adopted ArchiMate; the project needs

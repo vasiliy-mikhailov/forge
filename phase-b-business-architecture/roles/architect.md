@@ -129,7 +129,7 @@ dec 9). The Architect's outputs are evaluated by the Auditor:
 - ADR rule conformance is P3 (containers-only), P7 (no
   Superseded by), P10 (ADR numbering monotonicity).
 - Architecture-file consistency is P14, P15, P18, P19
-  (motivation chain).
+  (measurable motivation chain (OKRs)).
 - Trajectory discipline is P2, P19.
 The test md exists as a placeholder for the day the auditor
 needs case-level decomposition (today the predicate-level
@@ -140,8 +140,7 @@ predicates listed above are the architect's behaviour test
 suite; `audit-process.md` is exclusively activated by the
 Auditor walking against the architect's outputs.
 
-## Motivation chain
-
+## Measurable motivation chain (OKRs)
 Per [ADR 0015](../../phase-preliminary/adr/0015-verifiable-agent-rewards.md)
 decision point 1:
 

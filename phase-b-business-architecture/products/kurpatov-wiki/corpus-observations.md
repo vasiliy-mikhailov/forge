@@ -95,8 +95,7 @@ and must not appear in the public tree. The split keeps:
   classifications) **private** — sits with the curated
   source.md / concept.md outputs in `kurpatov-wiki-wiki`.
 
-## Motivation chain
-
+## Measurable motivation chain (OKRs)
 Per [P7](../../../phase-preliminary/architecture-principles.md):
 
 - **Driver**: forge needs an in-tree schema reference for

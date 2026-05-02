@@ -24,8 +24,7 @@
   segment, not just in aggregate.
 
 
-## Motivation chain
-
+## Measurable motivation chain (OKRs)
 Per [P7](../phase-preliminary/architecture-principles.md) +
 [ADR 0016](../phase-preliminary/adr/0016-wiki-customers-as-roles.md):
 

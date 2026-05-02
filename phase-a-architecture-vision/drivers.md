@@ -34,8 +34,7 @@ inline as `→ influences <Goal>`.
   produce the same act).
 
 
-## Motivation chain
-
+## Measurable motivation chain (OKRs)
 Per [P7](../phase-preliminary/architecture-principles.md):
 
 - **Driver**: meta — this file IS the Drivers catalog. P18

@@ -174,8 +174,7 @@ caches — model weights are read-only public artifacts.
   `phase-c-information-systems-architecture/application-architecture/wiki-bench/` (separate commit / subtree).
 
 
-## Motivation
-
+## Measurable motivation chain (OKRs)
 Per [P7](../../phase-preliminary/architecture-principles.md) — backfit:
 
 - **Driver**: original `labs/` dir conflated multi-tenant

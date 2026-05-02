@@ -101,8 +101,7 @@ cadence) live in the per-product files
   — the `wiki-*` labs that physically realise the capability.
 
 
-## Motivation chain
-
+## Measurable motivation chain (OKRs)
 Per [P7](../../phase-preliminary/architecture-principles.md):
 
 - **Driver**: forge ships multiple wiki products (Kurpatov,

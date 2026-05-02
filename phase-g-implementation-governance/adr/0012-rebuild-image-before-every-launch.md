@@ -117,8 +117,7 @@ contract "the image is the runtime" cannot be silently violated by a
 helpful bind mount.
 
 
-## Motivation
-
+## Measurable motivation chain (OKRs)
 Per [P7](../../phase-preliminary/architecture-principles.md) — backfit:
 
 - **Driver**: stale container images caused architect-time

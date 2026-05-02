@@ -13,8 +13,7 @@ Per-product detailed shapes live in their lab's
 `STATE-OF-THE-LAB.md`.
 
 
-## Motivation chain
-
+## Measurable motivation chain (OKRs)
 Per [P7](../../phase-preliminary/architecture-principles.md):
 
 - **Driver**: forge needs a Data Sets catalog (raw.json,

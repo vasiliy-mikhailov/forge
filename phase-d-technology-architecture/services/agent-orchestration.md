@@ -25,8 +25,7 @@
   `orchestrator/run-d8-pilot.py` is the canonical realisation.
 
 
-## Motivation chain
-
+## Measurable motivation chain (OKRs)
 Per [P7](../../phase-preliminary/architecture-principles.md):
 
 - **Driver**: every agentic pipeline (compile, curate, K-cycle)

@@ -620,8 +620,7 @@ sweep methodology.
 gate fires.)
 
 
-## Motivation chain
-
+## Measurable motivation chain (OKRs)
 Per [P7](../../phase-preliminary/architecture-principles.md):
 
 - **Driver**: 88-min lecture forces reader pain (per K2-R3

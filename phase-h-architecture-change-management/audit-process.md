@@ -171,12 +171,12 @@ last edit.
 **Verdict.** Stale status (test file says GREEN but verifier
 returns FAIL) = `FAIL`; missing status = `WARN`.
 
-### P14 — Motivation chain present in role files
+### P14 — Measurable motivation chain (OKRs) present in role files
 
 **Property.** Every role file under
 `phase-b-business-architecture/roles/` (excluding README.md
 and the `customers/` and `collaborations/` subdirectories)
-declares a `## Motivation chain` section per ADR 0015 decision
+declares a `## Measurable motivation chain (OKRs)` section per ADR 0015 decision
 point 1, citing the Driver → Goal → Outcome → Capability →
 Function → Role chain it serves.
 
@@ -185,16 +185,16 @@ per ADR 0013 dec 9, NOT per-file motivation chains:
 
 - `roles/customers/` — persona instances filling the abstract
   Wiki Customer role per ADR 0016. The abstract role
-  (`wiki-customer.md`) carries the motivation chain; per-
+  (`wiki-customer.md`) carries the measurable motivation chain (OKRs); per-
   persona files document reading mode + pain signature +
-  severity calibration. Motivation chain is uniform across
+  severity calibration. Measurable motivation chain (OKRs) is uniform across
   personas (read-as-persona, report-pain) and lives in the
   abstract.
 - `roles/collaborations/` — ArchiMate Business Collaborations
   per ADR 0016 + the Kurpatov-wiki-team collab. The
-  collaboration's motivation chain composes the chains of its
+  collaboration's measurable motivation chain (OKRs) composes the chains of its
   member roles; no separate chain required.
-**Signal.** For each role md, grep for `^## Motivation chain`.
+**Signal.** For each role md, grep for `^## Measurable motivation chain (OKRs)`.
 **Rule.** [ADR 0015](../phase-preliminary/adr/0015-verifiable-agent-rewards.md)
 decision point 1.
 **Verdict.** Missing section = `WARN` (newly required; existing
@@ -211,7 +211,7 @@ closure (e.g. "G3 close-out").
 **Signal.** Parse the Source cell of each row; check substring
 match against the Phase A goal/driver names.
 **Rule.** Architecture-method requirement-traceability +
-ArchiMate Motivation chain (Driver → Goal → Requirement).
+ArchiMate Measurable motivation chain (OKRs) (Driver → Goal → Requirement).
 **Verdict.** Source cell empty or unrelated to the chain =
 `WARN`.
 
@@ -265,7 +265,7 @@ whose Source cell cites that Goal — i.e., the Goal is being
 worked on, not aspirational-orphan.
 **Signal.** Parse Goal names from goals.md; for each, search
 catalog.md Source cells for the Goal name.
-**Rule.** ArchiMate Motivation chain (Goal → realized by →
+**Rule.** ArchiMate Measurable motivation chain (OKRs) (Goal → realized by →
 Capability trajectory) + architecture-method requirement
 that goals decompose into trajectories.
 **Verdict.** Goal with no realising trajectory = `WARN` (a Goal
@@ -385,7 +385,7 @@ list = `WARN` (drift from the agentic-md set).
 `phase-c/`, `phase-d/`, `phase-e/`, `phase-f/`, `phase-g/`,
 and `phase-preliminary/` (excluding the carve-outs below)
 contains either:
-- a `## Motivation chain` section per [ADR 0015 dec 1](../phase-preliminary/adr/0015-verifiable-agent-rewards.md)
+- a `## Measurable motivation chain (OKRs)` section per [ADR 0015 dec 1](../phase-preliminary/adr/0015-verifiable-agent-rewards.md)
   + [ADR 0017](../phase-preliminary/adr/0017-motivation-spans-all-layers.md), OR
 - a `Transitive coverage:` reference (anywhere in the file)
   per [ADR 0013 dec 9](../phase-preliminary/adr/0013-md-as-source-code-tdd.md)
@@ -410,7 +410,7 @@ contains either:
   with explicit marker; mirrors P20's standards-carve-out
   pattern).
 **Signal.** For each in-scope md path, regex-grep for
-`^## Motivation chain` OR `(?:^|\n)Transitive coverage:`. Either
+`^## Measurable motivation chain (OKRs)` OR `(?:^|\n)Transitive coverage:`. Either
 satisfies P24.
 **Rule.** [P7](../phase-preliminary/architecture-principles.md)
 + [ADR 0017](../phase-preliminary/adr/0017-motivation-spans-all-layers.md).
@@ -420,7 +420,7 @@ must be fixed in the same commit that introduces or edits it).
 
 ### P26 — Universal Outcome measurability (ADR 0019 enforcement)
 
-**Property.** For every motivation chain in P24's scope, the
+**Property.** For every measurable motivation chain (OKRs) in P24's scope, the
 chain's `**Outcome**:` bullet MUST be followed by a
 `**Measurement source**:` line citing one of the formats
 defined in [ADR 0019 § Decision 1](../phase-preliminary/adr/0019-measurable-outcomes.md):

@@ -26,8 +26,7 @@
 - [`../../phase-c-information-systems-architecture/application-architecture/wiki-bench/docs/adr/0010-retrieval-augmented-dedup.md`](../../phase-c-information-systems-architecture/application-architecture/wiki-bench/docs/adr/0010-retrieval-augmented-dedup.md)
 
 
-## Motivation chain
-
+## Measurable motivation chain (OKRs)
 Per [P7](../../phase-preliminary/architecture-principles.md):
 
 - **Driver**: source-author + concept-curator need vector

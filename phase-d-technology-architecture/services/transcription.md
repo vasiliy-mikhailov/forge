@@ -11,8 +11,7 @@
   L2: stable; not on the active trajectory.
 
 
-## Motivation chain
-
+## Measurable motivation chain (OKRs)
 Per [P7](../../phase-preliminary/architecture-principles.md):
 
 - **Driver**: audio-to-text transcription is the entry

@@ -195,8 +195,7 @@ in every case.
   `make smoke` exits 1 with a "broken mutex" message.
 
 
-## Motivation chain
-
+## Measurable motivation chain (OKRs)
 Per [P7](../phase-preliminary/architecture-principles.md):
 
 - **Driver**: single-host deployment (P4) needs an explicit

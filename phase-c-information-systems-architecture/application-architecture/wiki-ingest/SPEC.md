@@ -357,4 +357,4 @@ See also: `docs/adr/0001` through `0009`,
 
 **Transitive coverage** (per [ADR 0013 dec 9](../../../../phase-preliminary/adr/0013-md-as-source-code-tdd.md)
 + [ADR 0017](../../../../phase-preliminary/adr/0017-motivation-spans-all-layers.md)):
-motivation chain inherited from the lab's AGENTS.md.
+measurable motivation chain (OKRs) inherited from the lab's AGENTS.md.

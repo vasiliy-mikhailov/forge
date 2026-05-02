@@ -4,8 +4,7 @@
 
 Accepted (2026-05-02). Active.
 
-## Motivation
-
+## Measurable motivation chain (OKRs)
 Per [P7](../architecture-principles.md):
 
 - **Driver**: forge is a public GitHub repo

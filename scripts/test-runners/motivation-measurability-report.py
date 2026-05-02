@@ -106,7 +106,7 @@ def find_chain_in_file(text):
     section that contains `**Outcome**:` (the actual chain).
     """
     # Match all `## Motivation chain` or `## Motivation` sections
-    matches = list(re.finditer(r'(?ms)^## Motivation(?: chain)?\s*$.+?(?=\n## |\Z)', text))
+    matches = list(re.finditer(r'(?ms)^## Measurable motivation chain \(OKRs\)\s*$.+?(?=\n## |\Z)', text))
     if matches:
         # Prefer the one with **Outcome**:
         for m in matches:

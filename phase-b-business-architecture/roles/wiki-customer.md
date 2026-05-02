@@ -138,8 +138,7 @@ Transitive coverage today: the Wiki PM's CI-3 cross-tabulation
 walks every customer ledger; missing or malformed ledgers fail
 the Wiki PM's WP-NN coverage measurement on the next walk.
 
-## Motivation chain
-
+## Measurable motivation chain (OKRs)
 Per [ADR 0015](../../phase-preliminary/adr/0015-verifiable-agent-rewards.md)
 decision point 1 + [ADR 0016](../../phase-preliminary/adr/0016-wiki-customers-as-roles.md):
 

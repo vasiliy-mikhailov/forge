@@ -292,8 +292,7 @@ ArchiMate-tagged the next time they're meaningfully edited.
   *how to verify it* (md TDD).
 
 
-## Motivation
-
+## Measurable motivation chain (OKRs)
 Per [P7](../architecture-principles.md) — backfit:
 
 - **Driver**: TOGAF alone gives phases but no element-typing
