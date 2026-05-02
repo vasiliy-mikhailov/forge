@@ -69,6 +69,20 @@ def gather() -> list[dict]:
     concept_curator = sh.aggregate_per_runner(HISTORY / 'test-concept-curator-runner.jsonl')
     concept_curator['unit'] = 'Concept-curator'
     rows.append(concept_curator)
+    # Wiki Customer — abstract role with 5 personas (entry-level-
+    # student, working-psychologist, lay-curious-reader, academic-
+    # researcher, time-poor-reader). Per-persona runner queued (CU-NN
+    # cases). Today: transitive coverage by the customer-interview
+    # cycle's CI-3 cross-tabulation + the Wiki PM WP-15+ row that will
+    # check pain-ledger → R-NN traceability.
+    rows.append({
+        'unit': 'Wiki Customer (5 personas)',
+        'n_cases_total': 0, 'n_cases_scored': 0,
+        'score_sum': 0.0, 'score_max_sum': 0.0,
+        'score_norm': None,
+        'band': 'transitive (customer-interview cycle CI-3..5)',
+        'pass_count': 0, 'italian_strike_count': 0, 'fail_count': 0,
+    })
     per_lab = sh.aggregate_per_lab(HISTORY / 'test-lab-AGENTS-runner.jsonl')
     for code in ['RL', 'WB', 'WC', 'WI']:
         if code in per_lab:

@@ -174,10 +174,26 @@ returns FAIL) = `FAIL`; missing status = `WARN`.
 ### P14 — Motivation chain present in role files
 
 **Property.** Every role file under
-`phase-b-business-architecture/roles/` (excluding README.md)
+`phase-b-business-architecture/roles/` (excluding README.md
+and the `customers/` and `collaborations/` subdirectories)
 declares a `## Motivation chain` section per ADR 0015 decision
 point 1, citing the Driver → Goal → Outcome → Capability →
 Function → Role chain it serves.
+
+**Carve-outs.** Two subdirectories carry transitive coverage
+per ADR 0013 dec 9, NOT per-file motivation chains:
+
+- `roles/customers/` — persona instances filling the abstract
+  Wiki Customer role per ADR 0016. The abstract role
+  (`wiki-customer.md`) carries the motivation chain; per-
+  persona files document reading mode + pain signature +
+  severity calibration. Motivation chain is uniform across
+  personas (read-as-persona, report-pain) and lives in the
+  abstract.
+- `roles/collaborations/` — ArchiMate Business Collaborations
+  per ADR 0016 + the Kurpatov-wiki-team collab. The
+  collaboration's motivation chain composes the chains of its
+  member roles; no separate chain required.
 **Signal.** For each role md, grep for `^## Motivation chain`.
 **Rule.** [ADR 0015](../phase-preliminary/adr/0015-verifiable-agent-rewards.md)
 decision point 1.
@@ -339,16 +355,16 @@ runner).
 **Property.** Each audit md carries a section
 `## Aggregate scores per agentic-md unit` listing the latest
 per-runner / per-lab aggregate score (ADR 0015 dec 6). The table
-covers 11 units today: Architect, Auditor, Wiki PM, Developer,
-DevOps, Source-author, Concept-curator, and each of the 4
-lab AGENTS.md files (rl-2048, wiki-bench, wiki-compiler, wiki-ingest).
+covers 12 units today: Architect, Auditor, Wiki PM, Developer,
+DevOps, Source-author, Concept-curator, Wiki Customer, and
+each of the 4 lab AGENTS.md files (rl-2048, wiki-bench, wiki-compiler, wiki-ingest).
 Each row carries: unit name, cases scored / total, aggregate
 score (sum / max = normalised), band (`PASS` / `italian-strike` /
 `FAIL`), per-verdict counts.
 **Signal.** Grep the latest audit md for `^## Aggregate scores
 per agentic-md unit$`; verify a markdown table follows with
-≥ 11 data rows and ≥ 5 columns; verify the unit names are the
-11 canonical ones.
+≥ 12 data rows and ≥ 5 columns; verify the unit names are the
+12 canonical ones.
 **Helper.** The architect runs
 `python3 scripts/test-runners/aggregate-scores.py` and pastes
 the output into the audit. The helper reads
