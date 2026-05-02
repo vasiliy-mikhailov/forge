@@ -27,7 +27,7 @@ Per [P7](../../phase-preliminary/architecture-principles.md):
 
 - **Driver**: P3 (containers-only) requires a docker compose
   topology; the runtime spec lives here.
-- **Goal**: Service operation (P3 enforced).
+- **Goal**: Quality (KR: pre_prod_share ≥ 0.95). Realises Service-operation Capability (P3 enforced).
 - **Outcome**: docker compose per Lab; one host (P4) muxed
   by Caddy per ADR 0007.
 - **Measurement source**: audit-predicate: P3 (containers-only enforcement)

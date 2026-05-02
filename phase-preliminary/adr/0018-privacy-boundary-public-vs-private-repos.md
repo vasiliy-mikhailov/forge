@@ -16,7 +16,7 @@ Per [P7](../architecture-principles.md):
   `phase-b-business-architecture/products/kurpatov-wiki/corpus-observations.md`
   with **30 Cyrillic verbatim quotes** from Kurpatov lectures —
   IP leakage to public repo.
-- **Goal**: protect commercial IP boundary while keeping
+- **Goal**: Quality (KR: pre_prod_share ≥ 0.95) + EB (KR: unit_economics ≥ 1.0). IP-boundary protects future EB; commit discipline contributes to Quality. Specifically: protect commercial IP boundary while keeping
   forge's architecture metamodel (Roles, Predicates, Audits,
   ADRs) fully public + reusable for other architects.
 - **Outcome**: every artifact containing Kurpatov-content

@@ -164,7 +164,7 @@ Per [P7](../../phase-preliminary/architecture-principles.md) — backfit:
 
 - **Driver**: K1 silent-skip — macOS NFD vs LLM NFC mismatch
   (P6 violation).
-- **Goal**: Service operation (P6 enforced).
+- **Goal**: Quality (KR: pre_prod_share ≥ 0.95). Realises Service-operation Capability.
 - **Outcome**: NFC normalisation at every cross-platform
   boundary; per phase-g-…/policies/cross-platform-paths.md.
 - **Measurement source**: quality-ledger: pre_prod_share (per ADR 0021)

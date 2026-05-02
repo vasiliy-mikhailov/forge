@@ -32,7 +32,7 @@ Per [P7](../phase-preliminary/architecture-principles.md):
 - **Driver**: P3 + P4 + ADR 0007 imply invariants that any
   Phase D change must preserve (single host, containers-only,
   Caddy mux mutex, etc.).
-- **Goal**: Service operation.
+- **Goal**: Quality (KR: pre_prod_share ≥ 0.95). Realises Service-operation Capability.
 - **Outcome**: invariants enumerated; any new Lab proposal
   must show how it preserves them.
 - **Measurement source**: audit-predicate: P3 + P4 (Phase D invariants = the principles the audit walks)

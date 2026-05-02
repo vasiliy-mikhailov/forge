@@ -487,6 +487,27 @@ walks every chain whose Outcome contains a quality-trigger phrase
 **Verdict.** Trigger phrase present in Outcome AND no
 `quality-ledger:` citation = `FAIL`.
 
+
+### P29 — OKR cascade integrity (ADR 0023 enforcement)
+
+**Property.** (a) Every Goal row in `phase-a/goals.md` MUST have
+Target / Window / How-measured cells filled (Current MAY be
+`n/a — pending`). (b) Every per-artifact `**Goal**:` bullet in a
+[`## Measurable motivation chain (OKRs)`](../phase-preliminary/adr/0022-measurable-motivation-chain-okrs.md)
+section MUST cite exactly one of the 5 named Goals
+(TTS, PTS, EB, Architect-velocity, Quality) per
+[ADR 0023](../phase-preliminary/adr/0023-okr-cascade-numerical-targets.md).
+**Operational scope.** Same as P24 + P26 + P28.
+**Carve-outs.** Same set as P24 / P26 / P28.
+**Signal.** Run
+`python3 scripts/test-runners/goals-report.py --predicate P29`;
+empty result = PASS.
+**Rule.** [P7](../phase-preliminary/architecture-principles.md)
++ [ADR 0023](../phase-preliminary/adr/0023-okr-cascade-numerical-targets.md).
+**Verdict.** Goal row missing Target/Window/How-measured = `FAIL`.
+Per-artifact `**Goal**:` bullet without one of the 5 named Goals
+= `FAIL`.
+
 ## Output format
 
 ```

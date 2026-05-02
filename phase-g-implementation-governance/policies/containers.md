@@ -194,7 +194,7 @@ Per [P7](../../phase-preliminary/architecture-principles.md):
 - **Driver**: P3 (containers-only) needs an enforcement
   policy — what counts as a container, which images allowed,
   rebuild discipline.
-- **Goal**: Service operation (P3 enforced).
+- **Goal**: Quality (KR: pre_prod_share ≥ 0.95). Realises Service-operation Capability.
 - **Outcome**: every Lab's compose.yml + Dockerfile follows
   this policy.
 - **Measurement source**: audit-predicate: P3 (containers-only enforcement; the policy is what P3 enforces)

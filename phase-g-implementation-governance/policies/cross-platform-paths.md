@@ -197,7 +197,7 @@ Per [P7](../../phase-preliminary/architecture-principles.md):
 - **Driver**: P6 (completeness over availability) silent-skip
   bug surfaced from macOS-NFD vs LLM-NFC mismatch (per
   K1 lesson; ADR 0011).
-- **Goal**: Service operation (no silent skips).
+- **Goal**: Quality (KR: pre_prod_share ≥ 0.95). Realises Service-operation Capability.
 - **Outcome**: NFC normalisation policy; tests assert it.
 - **Measurement source**: quality-ledger: pre_prod_share (NFC/NFD discipline; postmortem "Six errors, one letter" 2026-04-29; per ADR 0021)
 - **Capability realised**: Service operation.

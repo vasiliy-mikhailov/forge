@@ -173,9 +173,7 @@ chain:
   spends bolting on a retroactive predicate is a minute not
   spent on the next experiment) + audit reliability (a
   fail-open enforcement model leaks gaps).
-- **Goal**: Architect-velocity (Phase A); Audit reliability
-  (transitive — the audit-process predicates ARE forge's
-  reliability mechanism).
+- **Goal**: Architect-velocity (KR: ≥ 50 corrective actions / 30-day). Audit reliability rolls up to corrective-actions throughput.
 - **Outcome**: P24 walks clean post-this-commit; future
   artifact types inherit motivation discipline by default; no
   more retroactive bolt-on predicates for motivation

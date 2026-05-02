@@ -179,7 +179,7 @@ Per [P7](../../phase-preliminary/architecture-principles.md) — backfit:
 
 - **Driver**: original `labs/` dir conflated multi-tenant
   Caddy + per-Lab compose; broke P4 mutex on :80/:443.
-- **Goal**: Service operation (clean per-Lab tenancy).
+- **Goal**: Quality (KR: pre_prod_share ≥ 0.95). Realises Service-operation Capability (clean per-Lab tenancy).
 - **Outcome**: each Lab self-contained under
   phase-c-…/application-architecture/<lab>/; Caddy mux per
   Lab.

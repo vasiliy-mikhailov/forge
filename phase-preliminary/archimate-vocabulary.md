@@ -258,7 +258,7 @@ Per [P7](architecture-principles.md):
 - **Driver**: ADR 0014 adopted ArchiMate; the project needs
   a forge-typed vocabulary catalog (which spec elements are
   in scope, with examples).
-- **Goal**: Audit reliability (P6, P14, P24 reference this).
+- **Goal**: Architect-velocity (KR: ≥ 50 corrective actions / 30-day). Audit reliability is a means; named-Goal cascade requires citing the system-level Goal (audit-reliability rolls into corrective-actions throughput).
 - **Outcome**: typed elements catalogued; new artifact types
   inherit vocab discipline.
 - **Measurement source**: n/a — declarative: ArchiMate 4 vocabulary catalog (typed-element reference; consumed by P14)

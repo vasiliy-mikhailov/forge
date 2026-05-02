@@ -100,7 +100,7 @@ Per [P7](../../phase-preliminary/architecture-principles.md) — backfit:
 
 - **Driver**: forge needs a coherent inference-subsystem
   topology spanning vLLM + agent orchestration + retrieval.
-- **Goal**: Service operation + R&D.
+- **Goal**: Quality (KR: pre_prod_share ≥ 0.95) + Architect-velocity (KR: ≥ 50 corrective actions / 30-day). Realises Service-operation + R&D Capabilities.
 - **Outcome**: per-lab containers (compiler, ingest, bench)
   share the inference endpoint per ADR 0001-vllm-public.
 - **Measurement source**: quality-ledger: pre_prod_share (per ADR 0021)

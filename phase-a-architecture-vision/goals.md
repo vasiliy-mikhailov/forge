@@ -1,34 +1,47 @@
 # Goals
 
-Motivation-layer; quantified in Phase H trajectories.
+Motivation-layer per ArchiMate § 6.4.1; quantified as OKRs per ADR 0023.
+Each Goal carries an Objective (qualitative direction) + Key Result
+(numerical target with window). Every per-artifact chain's `**Goal**:`
+bullet MUST cite one of these 5 named Goals; `**Measurement source**:`
+value is the per-artifact KR contributing to the named Goal's KR.
 
-- **TTS — Theoretical Time Saved.** Minutes saved per use,
-  conditional on the product's quality dimensions holding.
-- **PTS — Practical Time Saved.** Cumulative minutes saved across
-  all users (= TTS × users × engagement).
-- **EB — Economic Balance.** Revenue minus operational cost
-  (GPU-hours + storage + architect-hours at shadow rate).
-- **Architect-velocity.** Capability advances per architect-hour.
-  Cross-cuts every other goal — speed of forge's own improvement.
-- **Quality.** `pre_prod_share = pre_prod_catches / (pre_prod_catches +
-  incidents)`, rolling 30-day window. Pre-prod catches = audit FAIL/WARN
-  findings + test-runner failures pre-deploy. Incidents = entries in
-  [`../phase-g-implementation-governance/postmortems.md`](../phase-g-implementation-governance/postmortems.md).
-  Drives quality-assurance decisions (test-env-matches-prod,
-  rebuild-before-launch, containers-only, completeness-over-availability,
-  cheap-experiment, NFC/NFD discipline). Higher = better; trend matters
-  more than absolute value. Per ADR 0021.
+| Goal | Objective (O) | Key Result (KR) | Window | How measured | Current |
+|------|---------------|-----------------|--------|--------------|---------|
+| **TTS** — Theoretical Time Saved | A reader extracts the same understanding from the wiki in less time than from the source lecture | `tts_share = (source_duration − wiki_read_time) / source_duration ≥ 0.30` | per-use, rolling 30-day mean | TBD harness: timed wiki-read sessions × persona vs. lecture duration; pending CI-1..7 cycle output | n/a — pending first cohort |
+| **PTS** — Practical Time Saved | TTS savings actually realised across the user cohort, not just theoretical | `pts_share = (Σ tts_share × engagement) / theoretical_max ≥ 0.30` (engagement = % of cohort that completes ≥ 1 wiki read per source) | rolling 30-day | TBD — needs CI cycle telemetry; today no users yet | n/a — pending cohort |
+| **EB** — Economic Balance | Per-unit unit economics positive: revenue/cost ratio ≥ 1.0 (product self-sustains at scale, not just architect's hobby budget) | `unit_economics = revenue_per_published_source / cost_per_published_source ≥ 1.0` (cost = GPU-hours × electricity rate + storage + architect-time × shadow rate; revenue = theoretical pricing × engagement) | rolling 30-day | `scripts/test-runners/eb-report.py` (queued; today computed manually from K1 v2 wall-time × electricity + architect log) | n/a — pending eb-report.py |
+| **Architect-velocity** | The system corrects itself when surfaced a problem; corrective actions land at a sustained rate | `corrective_actions ≥ 50 / 30-day rolling` (corrective = `*Taken:*` line in postmortems + closed FAIL/WARN audit finding + R-NN row closure) | rolling 30-day | `scripts/test-runners/goals-report.py` walks postmortems + audits + catalog | TBD on first goals-report.py run |
+| **Quality** | Bugs are caught before they reach the lab; pre-prod gate works | `pre_prod_share = pre_prod_catches / (pre_prod_catches + incidents) ≥ 0.95` | rolling 30-day | `scripts/test-runners/quality-report.py` (per ADR 0021) | **0.667** (28/42, 365-day; 30-day window n/a until enough audit walks) |
 
+Initial targets are **conservative starting positions**, not final — per
+ADR 0023 § Decision 5 they ratchet up after the first month of stable
+measurement. Current values come from `goals-report.py` (queued); KRs
+are recomputed at every audit walk.
+
+The 5 Goals form the OKR cascade: every per-artifact `**Goal**:` bullet
+cites exactly one of {TTS, PTS, EB, Architect-velocity, Quality}; the
+artifact's `**Measurement source**:` value is the per-artifact KR
+contributing to the named Goal's system-level KR.
 
 ## Measurable motivation chain (OKRs)
+
 Per [P7](../phase-preliminary/architecture-principles.md):
 
-- **Driver**: every action choice must be evaluated against
-  named Goals (P5); without a Goals catalog, "metric-driven
-  action" has no metrics.
-- **Goal**: meta — this file IS the Goals catalog.
-- **Outcome**: P5 evaluable; P15 + P19 can walk Goals.
-- **Measurement source**: audit-predicate: P19 (every Goal has ≥ 1 realising R-NN trajectory)
+- **Driver**: every action choice must be evaluated against named
+  Goals (P5); without a Goals catalog with numerical targets,
+  "metric-driven action" has no metrics.
+- **Goal**: Architect-velocity → KR: ≥ 50 corrective actions / 30-day
+  rolling (this file IS the goals catalog the corrective-action count
+  reads from).
+- **Outcome**: every artifact's chain has a named Goal that traces to
+  this file; this file has a numerical KR per Goal; `goals-report.py`
+  computes current values; the next architect-velocity walk is one
+  command away.
+- **Measurement source**: audit-predicate: P19 (every Goal has ≥ 1
+  realising R-NN trajectory) + P29 (every Goal has Target line; every
+  chain cites a named Goal — per ADR 0023).
 - **Capability realised**: Architecture knowledge management.
-- **Function**: Catalogue-Phase-A-Goals.
-- **Element**: this file (TTS, PTS, EB, Architect-velocity rows).
+- **Function**: Catalogue-Phase-A-Goals-with-Targets.
+- **Element**: this file (5 Goal rows with Target + Window + How
+  measured + Current cells).

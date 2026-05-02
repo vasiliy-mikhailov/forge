@@ -123,7 +123,7 @@ Per [P7](../../phase-preliminary/architecture-principles.md) — backfit:
 
 - **Driver**: nvidia driver mode + HMM setting affects GPU
   stability under sustained 27B inference (G1 finding).
-- **Goal**: Service operation (sustained GPU stability).
+- **Goal**: Quality (KR: pre_prod_share ≥ 0.95). Realises Service-operation Capability (sustained GPU stability).
 - **Outcome**: open driver + HMM off; G1's 169-min sustained
   pilot validated.
 - **Measurement source**: audit-predicate: P4 (single-server invariant; nvidia-smi smoke check)
