@@ -59,4 +59,4 @@ Per [P7](../architecture-principles.md) — backfit:
 - **Goal**: Architect-velocity.
 - **Outcome**: every Phase has its own top-level subdirectory;
   no nested "src/" wrapper.
-- **Measurement source**: audit-predicate: P3 (single-repo flat layout)
+- **Measurement source**: quality-ledger: pre_prod_share (per ADR 0021)

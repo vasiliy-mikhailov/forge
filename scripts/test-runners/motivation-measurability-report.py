@@ -252,6 +252,36 @@ def resolve_citation(citation):
         return {'source': f'customer-cycle: {ci}',
                 'value': '(per-persona ledger counts; cycle pending)',
                 'level': 'pending'}
+    # quality-ledger: <metric> (per ADR 0021)
+    m = re.match(r'^quality-ledger:\s*(\w+)', cit)
+    if m:
+        metric = m.group(1)
+        # Defer to quality-report.py for value lookup
+        try:
+            import subprocess, json as _json
+            res = subprocess.run(['python3', str(Path(__file__).parent / 'quality-report.py'),
+                                  '--json', '--window', '365'],
+                                 capture_output=True, text=True, check=True, cwd=str(FORGE))
+            data = _json.loads(res.stdout)
+            if metric == 'pre_prod_share':
+                share = data['rolling']['pre_prod_share']
+                pre = data['rolling']['pre_prod_catches']
+                inc = data['rolling']['incidents']
+                return {'source': f'quality-ledger: pre_prod_share',
+                        'value': f'{pre}/{pre+inc} = {share:.3f}' if share is not None else 'n/a',
+                        'level': 'PASS' if (share or 0) >= 0.8 else ('italian-strike' if (share or 0) >= 0.6 else 'FAIL')}
+            elif metric == 'incident_count':
+                inc = data['rolling']['incidents']
+                return {'source': f'quality-ledger: incident_count',
+                        'value': f'{inc} incidents (rolling)',
+                        'level': 'PASS' if inc <= 3 else 'WARN'}
+        except Exception:
+            return {'source': f'quality-ledger: {metric}',
+                    'value': '(quality-report.py unavailable)',
+                    'level': 'pending'}
+        return {'source': f'quality-ledger: {metric}',
+                'value': '(unknown metric)',
+                'level': 'unknown'}
     # Unknown citation form — surface as a soft GAP
     return {'source': f'**MALFORMED CITATION**: {cit[:80]}',
             'value': '—', 'level': 'unknown'}

@@ -168,4 +168,4 @@ Per [P7](../../phase-preliminary/architecture-principles.md) — backfit:
 - **Goal**: Service operation (P6 enforced).
 - **Outcome**: NFC normalisation at every cross-platform
   boundary; per phase-g-…/policies/cross-platform-paths.md.
-- **Measurement source**: audit-predicate: P3 (cross-platform path normalisation)
+- **Measurement source**: quality-ledger: pre_prod_share (per ADR 0021)

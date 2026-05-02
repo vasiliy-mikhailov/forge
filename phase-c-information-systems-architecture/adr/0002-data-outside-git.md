@@ -61,4 +61,4 @@ Per [P7](../../phase-preliminary/architecture-principles.md) — backfit:
 - **Outcome**: raw.json lives in `kurpatov-wiki-raw` sibling
   repo per ADR 0002 + ADR 0005; forge references but doesn't
   hold the data.
-- **Measurement source**: audit-predicate: P3 (containers-only; no large blobs in git tree)
+- **Measurement source**: quality-ledger: pre_prod_share (per ADR 0021)

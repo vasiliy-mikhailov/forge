@@ -184,4 +184,4 @@ Per [P7](../../phase-preliminary/architecture-principles.md) — backfit:
 - **Outcome**: each Lab self-contained under
   phase-c-…/application-architecture/<lab>/; Caddy mux per
   Lab.
-- **Measurement source**: audit-predicate: P9 (lab-AGENTS-runner walks 8 phase headers across 4 labs)
+- **Measurement source**: quality-ledger: pre_prod_share (per ADR 0021)

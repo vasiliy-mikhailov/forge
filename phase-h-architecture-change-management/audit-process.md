@@ -460,6 +460,33 @@ chain in scope = `FAIL` (file is a measurability gap; must
 be fixed in the same commit that introduces or edits the
 chain).
 
+
+### P27 — (reserved — contribution-band coverage; queued per ADR 0020 follow-ups)
+
+### P28 — Quality-affecting decisions cite Quality goal (ADR 0021 enforcement)
+
+**Property.** An ADR or artifact whose Outcome reduces a class of
+production failures (test-env-matches-prod, rebuild-before-launch,
+single-source-of-truth, container isolation, completeness-over-availability,
+NFC/NFD discipline, monorepo, data-outside-git, cheap-experiment, etc.)
+MUST cite `quality-ledger: <metric>` in its `**Measurement source**:`
+line per [ADR 0021](../phase-preliminary/adr/0021-quality-goal-incident-ledger.md).
+**Operational scope.** All in-scope artifacts per P24 + P26.
+**Carve-outs.** Same set as P24 / P26.
+**Signal.** Run
+`python3 scripts/test-runners/quality-report.py --predicate P28`;
+walks every chain whose Outcome contains a quality-trigger phrase
+(`fewer\s+production` / `match\s+production` / `rebuild\s+before` /
+`stale\s+image` / `single\s+source\s+of\s+truth` /
+`completeness\s+over` / `cheap\s+experiment` /
+`data\s+outside\s+git` / `monorepo` / `NFC` / `NFD` /
+`cross-platform` / `silent\s+skip`) and verifies
+`quality-ledger:` is cited.
+**Rule.** [P7](../phase-preliminary/architecture-principles.md)
++ [ADR 0021](../phase-preliminary/adr/0021-quality-goal-incident-ledger.md).
+**Verdict.** Trigger phrase present in Outcome AND no
+`quality-ledger:` citation = `FAIL`.
+
 ## Output format
 
 ```

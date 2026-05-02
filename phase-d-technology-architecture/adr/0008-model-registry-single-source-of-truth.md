@@ -157,4 +157,4 @@ Per [P7](../../phase-preliminary/architecture-principles.md) — backfit:
   registry instead of re-deriving model paths).
 - **Outcome**: configs/models.yml in wiki-compiler is the
   registry; ADRs cite this file for any model change.
-- **Measurement source**: audit-predicate: P3 (single source of truth; lab-tests: WB / WC / WI mount the same registry)
+- **Measurement source**: quality-ledger: pre_prod_share (per ADR 0021)

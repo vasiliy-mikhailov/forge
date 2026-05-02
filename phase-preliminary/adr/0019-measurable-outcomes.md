@@ -59,6 +59,7 @@ Where `<citation>` is one of:
 | `corpus-walk: WP-<NN>` | A Wiki PM corpus-walk metric (S1/S2 counts) | WP runner output |
 | `customer-cycle: CI-<N>` | A customer-interview cycle artifact (post-CI-1..7 run) | per-persona ledger counts |
 | `n/a — declarative: <reason>` | The artifact is informational (no quantitative Outcome) | n/a (carve-out) |
+| `quality-ledger: <metric>` | Reads incident count from postmortems.md `***`-entries + pre-prod-catch count from audit FAIL/WARN findings (ADR 0021) | `quality-report.py` output |
 | `n/a — pending: <eta>` | Not yet measurable; ETA + reason cited | n/a |
 
 The report walks every chain and the tooling resolves the

@@ -10,6 +10,14 @@ Motivation-layer; quantified in Phase H trajectories.
   (GPU-hours + storage + architect-hours at shadow rate).
 - **Architect-velocity.** Capability advances per architect-hour.
   Cross-cuts every other goal — speed of forge's own improvement.
+- **Quality.** `pre_prod_share = pre_prod_catches / (pre_prod_catches +
+  incidents)`, rolling 30-day window. Pre-prod catches = audit FAIL/WARN
+  findings + test-runner failures pre-deploy. Incidents = entries in
+  [`../phase-g-implementation-governance/postmortems.md`](../phase-g-implementation-governance/postmortems.md).
+  Drives quality-assurance decisions (test-env-matches-prod,
+  rebuild-before-launch, containers-only, completeness-over-availability,
+  cheap-experiment, NFC/NFD discipline). Higher = better; trend matters
+  more than absolute value. Per ADR 0021.
 
 
 ## Motivation chain
