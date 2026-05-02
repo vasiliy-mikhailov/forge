@@ -331,6 +331,91 @@ kurpatov-wiki-raw.
 
 ## Post-Mortem & Insights
 
+### K2 Step 0 (2026-05-02) — falsifier-first probe before building L2/L3
+
+**What happened.** Before writing `compact_l2`, ran a 5-minute
+falsifier probe (`compact_restore/probe_overlap.py`) measuring
+whether L2 (cross-source surface dedup) and L3 (concept-graph
+link-out) had real signal to extract on the actual corpus —
+not on a hand-crafted synthetic fixture. Lesson from K2-R1 →
+K2-R2 (synth PASS 0.2261, real FAIL 0.0116): pytest-green
+doesn't equal real-data-works; every K2 layer beyond L1 needs
+a real-corpus signal probe before any algorithm code.
+
+**L2 result.** 5-gram shingle overlap of lecture A vs each of
+the 60 other raw transcripts in `kurpatov-wiki-raw`:
+
+```
+best A∩B/|A| = 0.0002 (0.02%)
+mean A∩B/|A| = 0.0000
+→ L2 decision: STOP — no signal to extract
+```
+
+Курпатов paraphrases on the fly. He may discuss the same topic
+across lectures, but his exact 5-word sequences essentially
+never repeat. Surface-shingle L2 cannot compress lecture A
+against the prior raw corpus. **Skip L2.** This is not a
+bug-hunt the algorithm can fix — it's a property of the
+input corpus.
+
+**L3 result.** 21.6% of the 51 concept-graph names appear by
+name in lecture A's raw transcript:
+
+```
+✓ basic-biological-needs    "Базовые биологические потребности"
+✓ consciousness             "Сознание"
+✓ dynamic-stereotypes       "Динамические стереотипы"
+✓ internal-conflict         "Внутренний конфликт"
+✓ internal-tribe            "Внутренняя стая"
+✓ limbic-system             "Лимбическая система"
+✓ neuroses                  "Неврозы"
+✓ sexual-instinct           "Половой инстинкт"
+✓ social-instinct           "Социальный инстинкт"
+✓ subconscious              "Подсознание"
+✓ unconscious               "Бессознательное"
+
+→ L3 decision: GO — build L3
+```
+
+11 real, contextually-meaningful hits. Each is a place where
+L3 can replace a definition-paragraph with a `[concept-name]
+(concept-link)` link-stub. Rough estimate: each definition
+~30-80 tokens, link-stub ~5 tokens, ~25-75 tokens saved per
+hit × 11 hits = **~275-825 tokens saved out of 9963**. That's
+**2.8-8.3% additional saved-time on top of L1's V5 2.7% =
+combined L1+L3 estimate 5.5-11%**.
+
+Trip-quality estimate (assuming OBS-A-001 cap stays):
+forward recall 0.909 × (1 - ratio 0.92 to 0.89) = **0.073 to
+0.099**. Still below the 0.20 L1 gate but **3-4× the V5-only
+0.0243 result**. If the SA-01 corpus-observations re-walk
+lifts forward recall to 1.000, trip-quality estimate becomes
+**0.08 to 0.11** — close to but still below 0.20.
+
+**Pivot** (architect call landed via measurement):
+
+The K2 spec's L1+L2+L3 sequencing was: L1 Air-strip → L2
+cross-source dedup → L3 concept-graph link-out. The Step 0
+probe falsifies the spec's L2 hypothesis on this corpus.
+Revised sequencing:
+
+  - L1 (Air-strip)            → ✓ shipped, V5 wins 2.7%
+  - L2 (cross-source dedup)   → SKIP (probe: 0.02% best signal)
+  - L3 (concept-graph link-out) → BUILD next (probe: 21.6% hit)
+
+The K2 spec's Variant table + Trip-quality table are revised
+in this commit to reflect the L1+L3 sequence (no L2). The
+0.50 trip-quality target is preserved as the long-term gate
+but the L1+L3-only estimate (0.08-0.11) is now the next
+honest milestone — significantly below 0.50, so additional
+work beyond L1+L3 (likely LLM-as-judge for paraphrase
+tolerance) is required to hit the original target.
+
+**Cost of the probe**: 5 minutes. **Cost saved**: ~1 hour of
+L2 algorithm work that real data was always going to falsify.
+Falsifier-first is now the default Step 0 for every future K2
+layer per the K2 sequenced-work table.
+
 ### K2-R3 (2026-05-02) — V5_discourse_markers vs V1..V4 on real lecture A
 
 **What happened.** Authored V5_discourse_markers per K2-R2's
