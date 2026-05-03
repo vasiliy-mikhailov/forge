@@ -76,13 +76,29 @@ The boundary is enforced by **repo membership**:
   - Paraphrases of Kurpatov claims that would let a reader
     reconstruct material content.
   - Pain ledger entries citing specific lecture passages.
+  - **Customer assessments of the wiki product** (extended
+    2026-05-02 per architect call): per-lecture pain ledgers,
+    cumulative `__knowledge.md` files, CI-3 customer-observation
+    content (severity tallies, distribution-character descriptions,
+    bucket-content enumerations with examples), CI-4 named
+    problem statements (P-N with severity / evidence / recommended
+    action), would_skip_share aggregates by lecture / persona,
+    factual-error candidate logs, ethics-violation tallies,
+    pedagogy/practice mismatch findings. These constitute critique
+    of a commercial product (Kurpatov's course); they are
+    customer-derived assessments, not architecture metamodel.
 - forge (PUBLIC) MAY contain:
-  - Schema declarations (observation IDs, bucket names,
-    dimension catalog, persona definitions).
+  - Schema declarations (observation IDs, bucket NAMES (without
+    in-bucket-content examples that paraphrase corpus),
+    dimension catalog, persona definitions, ID conventions,
+    persona-letter mappings).
   - Cross-reference paths to private content.
-  - R-NN trajectory rows (R-NN names + Source / Quality dim
-    cells; the Level 1 / Level 2 cells must be sanitised
-    if they would contain excerpts).
+  - Walk metadata (date, scope, methodology used) — but NOT
+    counts of pains / observations / verdicts.
+  - R-NN trajectory rows (R-NN names + `customer:<persona>`
+    Source-cell tags + Quality dimension cells; Level 1 / Level 2
+    cells must be sanitised — describe action class, not
+    assessment evidence).
   - Synthetic content the architect explicitly authored
     (clearly marked as synth — `lecture_A_synth.json`,
     `synth-corpus-observations.md`).
@@ -142,6 +158,38 @@ in forge IF:
   is under `/tests/synthetic/fixtures/`.
 - Content is the architect's own authoring (not paraphrased
   from real corpus).
+
+### 7. customer-observations.md and customer-problems.md split (NEW 2026-05-02)
+
+Same pattern as corpus-observations.md (per § Decision 2):
+
+- **forge (public)**:
+  `phase-b-business-architecture/products/kurpatov-wiki/customer-observations.md`
+  retained as a **schema-only stub**: persona-letter mapping
+  (M/A/L/T/W → slugs), CO-NN ID convention, bucket-NAMES catalog
+  (Pipeline / Form / Concept / Substance) without in-bucket-content
+  examples, quality-dimension cross-references. NO observation
+  counts (those imply pain volume = assessment). NO skip-share
+  aggregates. NO bucket-content enumerations citing specific
+  finding classes (e.g. "factual-error candidates").
+
+- **forge (public)**:
+  `phase-b-business-architecture/products/kurpatov-wiki/customer-problems.md`
+  retained as a **schema-only stub**: severity-coding table
+  (CRITICAL / HIGH / MEDIUM definitions), affected-persona
+  shorthand, recommended-action mapping schema. NO P-N problem
+  statements. NO problem-content. Cross-link to private full file.
+
+- **kurpatov-wiki-wiki (private)**: NEW
+  `metadata/customer-observations.md` (already landed in CI-3) and
+  NEW `metadata/customer-problems.md` carry the full assessment
+  content — per-CO observation classifications + per-lecture
+  pain references + P-N problem statements + severity assignments
+  + evidence-by-CO-NN + closure-measurement specifics.
+
+CI-5 R-NN trajectory rows in forge `catalog.md` MUST cite CO-NN
+and P-N IDs (which resolve to private full content) rather than
+inline assessment text in their Level 1 / Level 2 cells.
 
 ## Consequences
 
