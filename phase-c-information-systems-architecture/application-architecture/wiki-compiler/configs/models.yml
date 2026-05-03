@@ -44,11 +44,11 @@ models:
     served_name: qwen3.6-27b-fp8
     quantization: fp8
     kv_cache_dtype: fp8
-    max_model_len: 131072
+    max_model_len: 262144
     rope_scaling:
       rope_type: yarn
-      factor: 4.0
-      original_max_position_embeddings: 32768
+      factor: 1.0
+      original_max_position_embeddings: 262144
     tool_call_parser: qwen3_xml
     reasoning_parser: qwen3
     chat_template_kwargs:
@@ -59,8 +59,13 @@ models:
     bench_skip: false
     notes: |
       Verified live via A8 (2026-04-25). Current default; passes T3
-      end-to-end on skill v1 with 128K context. T4 quality below
-      Opus baseline (16 vs 59 concepts), see bench grade results.
+      end-to-end on skill v1. T4 quality below Opus baseline (16 vs 59
+      concepts), see bench grade results.
+      2026-05-03: max_model_len bumped 131072 → 262144 to use native
+      256K context (model card: max_position_embeddings=262144, no
+      rope_scaling required). YaRN block kept as a no-op
+      (factor=1.0, original_max==max_model_len) per models.yml schema
+      convention for native-context models.
 
   - id: qwen3.5-27b-fp8
     hf: Qwen/Qwen3.5-27B-FP8
