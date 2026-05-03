@@ -527,6 +527,30 @@ empty result = PASS.
 **Verdict.** Chain present without `**Contribution**:` bullet
 = `FAIL`.
 
+
+### P31 — Product-discovery decision artifacts cite approach (ADR 0027 enforcement)
+
+**Property.** Any per-product instance under
+[`phase-b-business-architecture/products/<product>/{discovery,solution,validation,pivot-or-persevere}/`](../phase-b-business-architecture/processes/)
+or under
+[`phase-d-technology-architecture/wardley-maps/`](../phase-d-technology-architecture/wardley-maps/)
+MUST cite at least one tool from
+[`phase-preliminary/product-development-approach.md`](../phase-preliminary/product-development-approach.md)
+by section number (e.g. "per § 1" or "per § 4").
+**Operational scope.** Applies only to per-product instance files in the
+named directories. Schema templates (the `*-template.md` files in
+`phase-b-business-architecture/processes/`) are exempt — they ARE the
+schema definitions, not instances of them.
+**Carve-outs.** Same set as P24 / P26 / P29 / P30.
+**Signal.** Run
+`python3 scripts/test-runners/goals-report.py --predicate P31`
+(walker queued — not yet implemented; until then, P31 walks via manual
+audit grep). Empty result = PASS.
+**Rule.** [P7](../phase-preliminary/architecture-principles.md)
++ [ADR 0027](../phase-preliminary/adr/0027-product-development-approach.md).
+**Verdict.** Per-product instance file in scope without approach
+citation = `FAIL`. Methodology drift detected.
+
 ## Output format
 
 ```

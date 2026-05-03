@@ -201,6 +201,20 @@ fix → implementation team."
   scaffolding now; real-reader replacement when the wiki ships
   modules 000+001 in full per K1.
 
+## Amendment 2026-05-02 — Cycle renamed; positioned inside Discovery stage
+
+Per [ADR 0027](0027-product-development-approach.md): forge's product-development approach is now explicitly Maurya-base + Wardley/JTBD/Torres-OST complements. The customer-interview cycle defined in this ADR is, on honest re-reading, NOT a customer-interview cycle in Maurya's sense — it is a **simulated-reading walk + PM-solo synthesis** producing breadth-coverage pain ledgers without back-and-forth dialogue.
+
+**Rename**: the cycle is now referred to as the **"customer-walk cycle"** in all forward-going documentation. Steps CI-1..7 retain their numbering for backward compatibility; future audit walks will rename in-place per delete-on-promotion when the next major amendment lands.
+
+**Positioning**: the customer-walk cycle is one tool used during the Discovery stage of forge's product-development cycle (per [`phase-preliminary/product-development-approach.md`](../product-development-approach.md) and [`phase-b-business-architecture/processes/discovery/`](../../phase-b-business-architecture/processes/discovery/)). It is NOT the entire Discovery stage. Discovery uses BOTH:
+- The customer-walk cycle (this ADR) for breadth coverage (every persona reads every lecture; simulated; produces N × 44 ledgers).
+- Problem interviews (per [Discovery README](../../phase-b-business-architecture/processes/discovery/README.md) + [problem-interview-protocol.md](../../phase-b-business-architecture/processes/discovery/problem-interview-protocol.md)) for depth (PM probes specific hypotheses through multi-turn dialogue with persona-agents; produces 5-15 transcripts per cycle).
+
+**File rename queued** (not in this commit): `wiki-customer-interview.md` → `wiki-customer-walk.md`. Delete-on-promotion applies once the rename happens.
+
+**Forward references**: any new artifact citing "customer-interview cycle" should cite "customer-walk cycle" + cross-link to ADR 0027 § 1 for the customer-development discipline overview.
+
 ## Follow-ups
 
 - Per-persona test md (CU-NN cases per persona) so each
