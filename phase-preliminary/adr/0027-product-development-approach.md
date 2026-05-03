@@ -64,6 +64,19 @@ Existing artifacts that previously didn't reference the customer-development dis
 
 Without this wiring, the customer-development discipline floats; with it, the discipline is part of the architecture.
 
+
+### 8. Language-primary policy: customer-interview surface uses the customer's native language (NEW 2026-05-02)
+
+Per architect call: customer-interview scripts and transcripts use the **customer's native language as primary**, not English. For kurpatov-wiki specifically:
+- All 5 personas are Russian-speaking (Marina + Антон-PM are bilingual; Аня + Антон-designer + Анна work primarily in Russian).
+- The Курпатов corpus is Russian.
+- Therefore: scripts in `kurpatov-wiki-wiki/metadata/customer-interview-scripts/` are written in Russian; transcripts in `kurpatov-wiki-wiki/metadata/customer-interview-transcripts/` are Russian-primary with English code-switch only for technical terms where Russian is less precise (e.g. RCT, evidence-base, primary-source attribution).
+- Schema labels (`**Severity**`, `**Affected personas**`, etc.) remain English because audit-cycle tooling parses them.
+
+This rule generalises: a future product targeting English-speaking customers would have English-primary interview surface; a future product targeting French-speaking customers would have French-primary; etc. The customer's native language is non-negotiable for interviews; the architect's working language can differ.
+
+The original 2026-05-02 morning interviews were run in English (mistake caught by architect call same day). Russian re-run produced the same verdicts (3 REFINED, 2 REFUTED) — validates that the methodology is robust to language choice, AND that the original run was a wasted hour of Cowork compute that the language-primary policy prevents in future.
+
 ## Consequences
 
 - **Plus**: forge's discipline stays simple. TOGAF + ArchiMate + RLVR + OKR cascade + customer-interview-protocol + JTBD-in-personas. No parallel methodology layer.

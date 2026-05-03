@@ -2,6 +2,12 @@
 
 How to actually run a problem interview. Companion to [the script template](./customer-interview-script-template.md). Per [`product-development-approach.md` § 1](../phase-preliminary/product-development-approach.md).
 
+
+## Language-primary policy
+
+Per [ADR 0027 § 8](../phase-preliminary/adr/0027-product-development-approach.md): customer-interview scripts and transcripts use the **customer's native language as primary**. For Russian-speaking customer segments (kurpatov-wiki), scripts and transcripts are Russian; for English-speaking segments (future products), English-primary; etc. Schema labels (forge-system-tooling-parsed) stay in their canonical English form. The interviewer (Wiki PM) reads/writes in the customer's language during the interview itself.
+
+
 ## Setup (before the interview)
 
 1. Persona file loaded (per agent activation, per [ADR 0016 § Activation](../phase-preliminary/adr/0016-wiki-customers-as-roles.md)).
