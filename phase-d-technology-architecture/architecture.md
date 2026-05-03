@@ -73,16 +73,19 @@ Bench (`phase-c-information-systems-architecture/application-architecture/wiki-b
 container per `make bench` invocation. It has no caddy, attaches to
 docker `bridge`, and reaches the compiler over the public TLS endpoint.
 
-## Lab inventory
+## Lab + mode inventory
 
-| Lab                                | Containers (per-lab caddy + workers)                                                                                                                  | GPU                                  | Caddy hosts                          |
-| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ | ------------------------------------ |
-| `phase-c-information-systems-architecture/application-architecture/wiki-compiler/`     | `kurpatov-wiki-compiler-caddy`, `vllm-inference`                                                                                                      | `INFERENCE_GPU_UUID` (Blackwell)     | `${INFERENCE_DOMAIN}`                 |
-| `phase-c-information-systems-architecture/application-architecture/wiki-ingest/`       | `kurpatov-wiki-ingest-caddy`, `jupyter-kurpatov-wiki`, `kurpatov-ingest`, `kurpatov-wiki-raw-pusher`                                                   | `KURPATOV_WIKI_GPU_UUID` (5090)      | `${JUPYTER_KURPATOV_WIKI_DOMAIN}`     |
-| `phase-c-information-systems-architecture/application-architecture/wiki-bench/`        | one-shot `bench-<run_id>`                                                                                                                             | none (CPU only)                      | none                                 |
-| `phase-c-information-systems-architecture/application-architecture/rl-2048/`                    | `rl-2048-caddy`, `jupyter-rl-2048`, `mlflow`                                                                                                          | `RL_2048_GPU_UUID` (Blackwell)       | `${MLFLOW_DOMAIN}`, `${JUPYTER_RL_2048_DOMAIN}` |
+Forge has two kinds of operating units: **labs** (full self-contained directories with caddy + compose + SPEC + AGENTS.md) and **non-lab modes** (lighter operating capabilities — see [ADR 0028](../phase-preliminary/adr/0028-inference-mode.md) and [`phase-c-…/operating-modes/README.md`](../phase-c-information-systems-architecture/operating-modes/README.md)). Both ship a `make <name>` target and are enumerated in the top-level `Makefile`'s `LABS` and `MODES` lists respectively.
 
-## GPU ↔ lab mapping
+| Kind | Path                                | Containers (per-lab/-mode caddy + workers)                                                                                                            | GPU                                  | Caddy hosts                          |
+| ---- | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ | ------------------------------------ |
+| Lab  | `phase-c-…/application-architecture/wiki-compiler/`     | `kurpatov-wiki-compiler-caddy`, `vllm-inference`                                                                                                      | `INFERENCE_GPU_UUID` (Blackwell)     | `${INFERENCE_DOMAIN}`                 |
+| Lab  | `phase-c-…/application-architecture/wiki-ingest/`       | `kurpatov-wiki-ingest-caddy`, `jupyter-kurpatov-wiki`, `kurpatov-ingest`, `kurpatov-wiki-raw-pusher`                                                   | `KURPATOV_WIKI_GPU_UUID` (5090)      | `${JUPYTER_KURPATOV_WIKI_DOMAIN}`     |
+| Lab  | `phase-c-…/application-architecture/wiki-bench/`        | one-shot `bench-<run_id>`                                                                                                                             | none (CPU only)                      | none                                 |
+| Lab  | `phase-c-…/application-architecture/rl-2048/`           | `rl-2048-caddy`, `jupyter-rl-2048`, `mlflow`                                                                                                          | `RL_2048_GPU_UUID` (Blackwell)       | `${MLFLOW_DOMAIN}`, `${JUPYTER_RL_2048_DOMAIN}` |
+| Mode | `phase-c-…/operating-modes/inference/`                  | `inference-caddy`, `vllm-inference`                                                                                                                   | `INFERENCE_GPU_UUID` (Blackwell)     | `${INFERENCE_DOMAIN}`                 |
+
+## GPU ↔ lab/mode mapping
 
 Set via `.env`:
 
@@ -92,11 +95,16 @@ Set via `.env`:
   [phase-c-information-systems-architecture/application-architecture/wiki-ingest/docs/adr/0003-watcher-reactive-not-cron.md](../phase-c-information-systems-architecture/application-architecture/wiki-ingest/docs/adr/0003-watcher-reactive-not-cron.md)).
   Default: RTX 5090. `kurpatov-wiki-raw-pusher` is CPU-only (per
   [phase-c-information-systems-architecture/application-architecture/wiki-ingest/docs/adr/0006-lean-pusher-image.md](../phase-c-information-systems-architecture/application-architecture/wiki-ingest/docs/adr/0006-lean-pusher-image.md)).
-- `INFERENCE_GPU_UUID` → `vllm-inference`. Default: Blackwell.
+- `INFERENCE_GPU_UUID` → `vllm-inference`. Default: Blackwell. Used
+  by BOTH the `wiki-compiler` lab's `vllm-inference` container AND
+  the `inference` mode's `vllm-inference` container — whichever is
+  currently up. Mutex enforced at the operator level (see ADR 0028).
 
-**Mutex consequences:** Blackwell hosts compiler OR rl-2048 (not both
-simultaneously). Going to dual-GPU TP on the compiler will eventually
-take both cards, locking out wiki-ingest as well.
+**Mutex consequences:** Blackwell hosts exactly one of `wiki-compiler`
+mode / `inference` mode / `rl-2048` mode at a time (all three pin the
+same `INFERENCE_GPU_UUID` / `RL_2048_GPU_UUID` Blackwell card and bind
+ports 80/443 via own caddy). Going to dual-GPU TP on the compiler will
+eventually take both cards, locking out wiki-ingest as well.
 
 ## STORAGE_ROOT layout
 
@@ -148,9 +156,9 @@ ${STORAGE_ROOT:-/mnt/steam/forge}/
 Every public-facing surface goes through a per-lab caddy attached to
 `proxy-net`. The active lab's caddy binds host :80/:443.
 
-| Public hostname                     | Active when lab is up                  | Backend                      |
+| Public hostname                     | Active when lab/mode is up             | Backend                      |
 | ----------------------------------- | -------------------------------------- | ---------------------------- |
-| `${INFERENCE_DOMAIN}`               | `wiki-compiler`               | `vllm-inference:8000`        |
+| `${INFERENCE_DOMAIN}`               | `wiki-compiler` lab OR `inference` mode | `vllm-inference:8000`        |
 | `${JUPYTER_KURPATOV_WIKI_DOMAIN}`   | `wiki-ingest`                 | `jupyter-kurpatov-wiki:8888` |
 | `${JUPYTER_RL_2048_DOMAIN}`         | `rl-2048`                              | `jupyter-rl-2048:8888`       |
 | `${MLFLOW_DOMAIN}`                  | `rl-2048` (mlflow lives inside rl-2048 per ADR 0007) | `mlflow:5000`                |

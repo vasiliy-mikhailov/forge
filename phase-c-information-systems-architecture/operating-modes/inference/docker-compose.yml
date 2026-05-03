@@ -1,0 +1,58 @@
+services:
+  vllm-inference:
+    image: vllm/vllm-openai:v0.19.1-cu130-ubuntu2404
+    container_name: vllm-inference
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=${INFERENCE_GPU_UUID}
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+      - HUGGING_FACE_HUB_TOKEN=${HF_TOKEN}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              capabilities: [gpu, compute, utility]
+              device_ids:
+                - ${INFERENCE_GPU_UUID}
+    volumes:
+      - ${STORAGE_ROOT}/shared/models:/root/.cache/huggingface
+    expose:
+      - "8000"
+    shm_size: "16gb"
+    ipc: host
+    # All MODEL_* vars come from .env.active-model, rendered by
+    # bin/load-active-model.sh from configs/models.yml using the
+    # INFERENCE_ACTIVE_MODEL_ID selector in forge/.env.
+    # See ADR 0008.
+    command: >
+      --model ${MODEL_HF}
+      --served-model-name ${MODEL_SERVED_NAME}
+      --quantization ${MODEL_QUANTIZATION:-}
+      --kv-cache-dtype ${MODEL_KV_CACHE_DTYPE}
+      --max-model-len ${MODEL_MAX_MODEL_LEN}
+      --hf-overrides.rope_scaling.rope_type ${MODEL_ROPE_TYPE}
+      --hf-overrides.rope_scaling.factor ${MODEL_ROPE_FACTOR}
+      --hf-overrides.rope_scaling.original_max_position_embeddings ${MODEL_ROPE_ORIG_MAX}
+      --tool-call-parser ${MODEL_TOOL_CALL_PARSER}
+      ${MODEL_REASONING_PARSER_FLAG}
+      --default-chat-template-kwargs.enable_thinking ${MODEL_ENABLE_THINKING}
+      --tensor-parallel-size ${MODEL_TENSOR_PARALLEL_SIZE}
+      --gpu-memory-utilization ${MODEL_GPU_MEMORY_UTILIZATION}
+      --enable-prefix-caching
+      --enable-auto-tool-choice
+      --host 0.0.0.0
+      --port 8000
+      --api-key ${VLLM_API_KEY}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -H \"Authorization: Bearer ${VLLM_API_KEY}\" http://localhost:8000/v1/models || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 600s
+    networks:
+      - proxy-net
+    restart: unless-stopped
+
+networks:
+  proxy-net:
+    external: true

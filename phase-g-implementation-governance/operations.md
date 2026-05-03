@@ -22,14 +22,18 @@ Create on-disk layout (creates `` and subdirs):
 make setup
 ```
 
-Bring up one lab. Labs are mutex on host :80/:443; only one at a
-time, except `wiki-bench` may co-run with `wiki-compiler` (bench
-is a client without a caddy):
+Bring up one lab or mode. Labs and non-lab modes are mutex on host
+:80/:443 and on the Blackwell GPU; only one at a time, except
+`wiki-bench` may co-run with whatever provides the inference endpoint
+(`wiki-compiler` lab or `inference` mode — bench is a client without
+a caddy):
 
 ```bash
-make wiki-compiler   # vLLM endpoint
-make wiki-ingest     # whisper + ingest
-make rl-2048         # GRPO sandbox
+make wiki-compiler   # lab — wiki-compile pipeline + vLLM endpoint
+make wiki-ingest     # lab — whisper + ingest
+make rl-2048         # lab — GRPO sandbox
+make inference       # mode — vLLM endpoint without wiki-compile pipeline
+                     #         (per ADR 0028)
 ```
 
 Diagnostics:
@@ -124,14 +128,18 @@ sudo mkdir -p /mnt/steam/forge
 sudo chown -R $USER:$USER /mnt/steam/forge
 make setup
 
-# 3. Bring up one lab (labs are mutex on host :80/:443).
-make wiki-ingest    # transcription pipeline (Whisper + watchers + git pusher)
+# 3. Bring up one lab or mode (labs/modes are mutex on host :80/:443
+#    and on the Blackwell GPU).
+make wiki-ingest    # lab  — transcription pipeline (Whisper + watchers + git pusher)
 # or:
-# make wiki-compiler  # vLLM serving (compiles raw → wiki via LLM)
+# make wiki-compiler  # lab  — vLLM serving (compiles raw → wiki via LLM)
 # or:
-# make rl-2048                 # GRPO sandbox + jupyter + mlflow
-# Bench is co-runnable with compiler:
+# make rl-2048        # lab  — GRPO sandbox + jupyter + mlflow
+# or:
+# make inference      # mode — vLLM serving without wiki-compile pipeline (ADR 0028)
+# Bench is co-runnable with whatever provides the inference endpoint:
 # make wiki-compiler && make -C phase-c-information-systems-architecture/application-architecture/wiki-bench bench
+# make inference     && make -C phase-c-information-systems-architecture/application-architecture/wiki-bench bench
 
 # 4. Add source media for wiki-ingest under
 #    ${STORAGE_ROOT}/labs/wiki-ingest/sources/<course>/<module>/*.<ext>

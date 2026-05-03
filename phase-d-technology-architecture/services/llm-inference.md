@@ -2,7 +2,16 @@
 
 - **Component:** vLLM 0.19.1 (cu130) serving Qwen3.6-27B-FP8 on the
   Blackwell, 128 K context via YaRN factor 4.0, single-card.
-- **Lab:** [`wiki-compiler/`](../../phase-c-information-systems-architecture/application-architecture/wiki-compiler/).
+- **Realised by:** the `vllm-inference` container, in EITHER of two
+  operating units (mutex):
+  - the [`wiki-compiler/`](../../phase-c-information-systems-architecture/application-architecture/wiki-compiler/)
+    lab (vLLM as part of the wiki-compile pipeline), OR
+  - the [`inference/`](../../phase-c-information-systems-architecture/operating-modes/inference/)
+    mode (standalone vLLM, no wiki-compile pipeline — per
+    [ADR 0028](../../phase-preliminary/adr/0028-inference-mode.md)).
+  Both pin `${INFERENCE_GPU_UUID}` on the Blackwell, expose
+  `${INFERENCE_DOMAIN}`, and load the active model from the same
+  registry via `bin/load-active-model.sh` (per ADR 0008).
 
 ## Quality dimensions and trajectories
 

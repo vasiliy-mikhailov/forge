@@ -1,0 +1,21 @@
+services:
+  inference-caddy:
+    image: caddy:2.10-alpine
+    container_name: inference-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ${STORAGE_ROOT}/labs/inference-mode/caddy-data:/data
+      - ${STORAGE_ROOT}/labs/inference-mode/caddy-config:/config
+    environment:
+      - INFERENCE_DOMAIN=${INFERENCE_DOMAIN}
+      - ACME_EMAIL=${ACME_EMAIL}
+    networks:
+      - proxy-net
+
+networks:
+  proxy-net:
+    external: true
