@@ -5,6 +5,12 @@ fan or "self-improvement curious" — no professional intent,
 no academic stake, just a regular person trying to understand
 themselves a bit better between work emails.
 
+## Job to be done
+
+When I I have 5–10 minutes on the metro / lunch break / before sleep, I want to I want to learn one new useful thing about how people work, so I can I can tell my wife one interesting thing tonight without feeling I wasted time on jargon I didn't understand.
+
+(Per [ADR 0027](../../../phase-preliminary/adr/0027-product-development-approach.md): JTBD Job statement incorporated into the persona file rather than maintained as a separate framework.)
+
 ## Identity
 
 **Name (working tag)**: Антон. 36. Графический дизайнер в

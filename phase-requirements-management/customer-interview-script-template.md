@@ -1,8 +1,8 @@
-# Problem-interview script — template
+# Customer-interview script — template
 
-The per-persona interview-question schema for the Discovery stage of forge's [product-development approach](../../../phase-preliminary/product-development-approach.md). One script per persona × product. Per-product instances live at `phase-b-business-architecture/products/<product>/discovery/problem-interview-scripts/<persona-slug>.md`.
+The per-persona interview-question schema for the Discovery stage of forge's [product-development approach](../phase-preliminary/product-development-approach.md). One script per persona × product. Per-product instances live at `phase-b-business-architecture/products/<product>/discovery/problem-interview-scripts/<persona-slug>.md`.
 
-Per Maurya's *Running Lean* Problem-interview structure + Bob Moesta's [Jobs-to-be-Done](../../../phase-preliminary/product-development-approach.md#3-complement--jobs-to-be-done-for-persona-depth) interview discipline + Teresa Torres's open-ended-question rule.
+Per Maurya's *Running Lean* Problem-interview structure + Bob Moesta's [Jobs-to-be-Done](../phase-preliminary/product-development-approach.md#3-complement--jobs-to-be-done-for-persona-depth) interview discipline + Teresa Torres's open-ended-question rule.
 
 ## What a problem interview is for
 
@@ -16,7 +16,7 @@ Authored as 6 sections in this order. Total artifact ~600-1000 words.
 
 ### 1. Persona header
 
-Cross-link to the persona file in [`../../roles/customers/`](../../../roles/customers/). State the **Job statement** explicitly (per JTBD § 3 of the approach). State the **early-adopter signal** for this persona (what would tell us this person is desperate enough to be an early adopter).
+Cross-link to the persona file in [`../phase-b-business-architecture/roles/customers/`](../phase-b-business-architecture/roles/customers/). State the **Job statement** explicitly (per JTBD § 3 of the approach). State the **early-adopter signal** for this persona (what would tell us this person is desperate enough to be an early adopter).
 
 ### 2. Hypothesis under test
 
@@ -83,20 +83,20 @@ Open-ended close. Capture introducible referrals or further-context offers:
 
 When the "customer" is a simulated persona-agent (forge today):
 - The script is loaded as the user-facing prompt for the agent.
-- The agent imitates the persona per its [persona file](../../../roles/customers/).
+- The agent imitates the persona per its [persona file](../phase-b-business-architecture/roles/customers/).
 - The PM agent runs the interview multi-turn, branching on persona-agent responses per the protocol.
-- Transcripts are saved to private repo per [ADR 0018 § 7](../../../phase-preliminary/adr/0018-privacy-boundary-public-vs-private-repos.md).
+- Transcripts are saved to private repo per [ADR 0018 § 7](../phase-preliminary/adr/0018-privacy-boundary-public-vs-private-repos.md).
 - Honesty caveat: simulated persona-agent interview is NOT the same as a real-customer interview. It's useful for hypothesis-formation refinement, NOT for product-market-fit claims.
 
 ## Measurable motivation chain
 
-Per [P7](../../../phase-preliminary/architecture-principles.md):
+Per [P7](../phase-preliminary/architecture-principles.md):
 
-- **Driver**: forge's existing customer-walk cycle ([ADR 0016](../../../phase-preliminary/adr/0016-wiki-customers-as-roles.md)) does not author per-persona problem-interview scripts. Without a script, agent-driven "interviews" devolve into reading sessions; PM hypotheses go un-tested.
-- **Goal**: [Quality](../../../phase-a-architecture-vision/goals.md) (KR: pre_prod_share ≥ 0.95). Validated problems = fewer wrong-direction experiments.
+- **Driver**: forge's existing customer-walk cycle ([ADR 0016](../phase-preliminary/adr/0016-wiki-customers-as-roles.md)) does not author per-persona problem-interview scripts. Without a script, agent-driven "interviews" devolve into reading sessions; PM hypotheses go un-tested.
+- **Goal**: [Quality](../../phase-a-architecture-vision/goals.md) (KR: pre_prod_share ≥ 0.95). Validated problems = fewer wrong-direction experiments.
 - **Outcome**: this template is the canonical schema for per-persona problem-interview scripts; per-product instances cite it.
 - **Measurement source**: audit-predicate: P26 + P29.
 - **Contribution**: gives the Wiki PM a script template to fill in instead of authoring schema each cycle; reduces per-cycle invention; future predicate (queued: P32 — "every problem interview script cites this template's section structure") makes drift auditable.
-- **Capability realised**: [Develop wiki product line](../../capabilities/develop-wiki-product-line.md).
+- **Capability realised**: [Architecture knowledge management](../phase-b-business-architecture/capabilities/forge-level.md) (the meta-capability of keeping forge's discipline internally consistent — these protocols are method, not wiki-product-specific).
 - **Function**: Schema-problem-interview-script.
 - **Element**: this template file.

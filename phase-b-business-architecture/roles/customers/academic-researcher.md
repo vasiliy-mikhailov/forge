@@ -4,6 +4,12 @@ Fills the [Wiki Customer](../wiki-customer.md) role.
 Cross-references against primary literature; cites in their
 own work or critical reviews.
 
+## Job to be done
+
+When I I am writing a literature-review chapter on Russian-language psychotherapy traditions, I want to I want to characterise СПП accurately enough to cite in English-language literature, with primary-source attribution intact, so I can I can include Курпатов's contribution in my chapter without being embarrassed by misrepresenting his lineage or claims.
+
+(Per [ADR 0027](../../../phase-preliminary/adr/0027-product-development-approach.md): JTBD Job statement incorporated into the persona file rather than maintained as a separate framework.)
+
 ## Identity
 
 **Name (working tag)**: Dr. М. (Marina). Late 30s. PhD in clinical

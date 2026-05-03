@@ -5,6 +5,12 @@ Already-qualified clinician; reads to enrich the therapeutic
 toolkit and constantly evaluates: *could I use this with my
 client X next Tuesday?*
 
+## Job to be done
+
+When I I have a session with a real client on Tuesday and I am evaluating new methods, I want to I want to know whether a technique is clinically applicable, with what contraindications, and what evidence supports it, so I can I can decide whether to introduce the technique to my client (with informed consent and a safety scaffold), refer them out, or keep it filed under 'supervision-teaching negative example'.
+
+(Per [ADR 0027](../../../phase-preliminary/adr/0027-product-development-approach.md): JTBD Job statement incorporated into the persona file rather than maintained as a separate framework.)
+
 ## Identity
 
 **Name (working tag)**: Анна С. Mid-30s. МГУ, клиническая

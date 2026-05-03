@@ -117,6 +117,15 @@ rather than a per-product one.
   [`../../phase-f-migration-planning/experiments/`](../../phase-f-migration-planning/experiments/).
 
 
+## Customer-discovery activities (per ADR 0027)
+
+This Capability is realised in part through customer-discovery activities run by the [Wiki PM](../roles/wiki-pm.md):
+- The [customer-walk cycle](../../phase-requirements-management/wiki-customer-walk.md) — simulated-reading breadth coverage of the corpus. Produces per-persona pain ledgers in the private repo (per [ADR 0018](../../phase-preliminary/adr/0018-privacy-boundary-public-vs-private-repos.md)).
+- Customer interviews via the [interview protocol](../../phase-requirements-management/customer-interview-protocol.md) and [per-persona script template](../../phase-requirements-management/customer-interview-script-template.md). Probes specific hypotheses through multi-turn dialogue.
+- Cross-tab into customer-observations (private) → named customer-problems (private) → R-NN trajectory rows in [`catalog.md`](../../phase-requirements-management/catalog.md).
+
+These activities feed every Quality Dimension this Capability owns (Voice preservation / Reading speed / Dedup correctness / Fact-check coverage / Concept-graph quality / Reproducibility / Transcription accuracy / Requirement traceability) — the Wiki PM tags each customer-derived observation with the affected dimension.
+
 ## Measurable motivation chain
 Per [P7](../../phase-preliminary/architecture-principles.md):
 

@@ -1,10 +1,10 @@
-# Problem-interview protocol
+# Customer-interview protocol
 
-How to actually run a problem interview. Companion to [the script template](./problem-interview-script-template.md). Per [`product-development-approach.md` § 1](../../../phase-preliminary/product-development-approach.md).
+How to actually run a problem interview. Companion to [the script template](./customer-interview-script-template.md). Per [`product-development-approach.md` § 1](../phase-preliminary/product-development-approach.md).
 
 ## Setup (before the interview)
 
-1. Persona file loaded (per agent activation, per [ADR 0016 § Activation](../../../phase-preliminary/adr/0016-wiki-customers-as-roles.md)).
+1. Persona file loaded (per agent activation, per [ADR 0016 § Activation](../phase-preliminary/adr/0016-wiki-customers-as-roles.md)).
 2. Persona's [problem-interview script](./problem-interview-script-template.md) authored for this product cycle.
 3. Hypothesis under test stated explicitly (one falsifiable claim).
 4. Transcript file pre-created at `kurpatov-wiki-wiki/metadata/discovery/interview-transcripts/<persona>/<YYYY-MM-DD>.md` with header (persona, hypothesis, date, interviewer = "Wiki PM agent").
@@ -83,7 +83,7 @@ Every interview produces a transcript with:
   - <question>
 ```
 
-The transcript lives in [private repo](https://github.com/vasiliy-mikhailov/kurpatov-wiki-wiki/) per [ADR 0018 § 7](../../../phase-preliminary/adr/0018-privacy-boundary-public-vs-private-repos.md) (customer assessments are private).
+The transcript lives in [private repo](https://github.com/vasiliy-mikhailov/kurpatov-wiki-wiki/) per [ADR 0018 § 7](../phase-preliminary/adr/0018-privacy-boundary-public-vs-private-repos.md) (customer assessments are private).
 
 ## After the interview
 
@@ -98,19 +98,19 @@ The transcript lives in [private repo](https://github.com/vasiliy-mikhailov/kurp
 
 When PM and persona are both LLM agents:
 - **PM agent** is spawned with [the script](./problem-interview-script-template.md) + [this protocol](./problem-interview-protocol.md) as tools. PM agent has the hypothesis loaded and the dialogue rules above.
-- **Persona agent** is spawned with the [persona file](../../../roles/customers/) + a directive to imitate the persona under interview conditions (NOT the simulated-reading-walk directive of [ADR 0016](../../../phase-preliminary/adr/0016-wiki-customers-as-roles.md)).
+- **Persona agent** is spawned with the [persona file](../phase-b-business-architecture/roles/customers/) + a directive to imitate the persona under interview conditions (NOT the simulated-reading-walk directive of [ADR 0016](../phase-preliminary/adr/0016-wiki-customers-as-roles.md)).
 - PM agent and persona agent communicate multi-turn; PM agent saves transcript; persona agent does NOT save anything (it just speaks in-character).
-- **Honesty caveat per [approach § 7](../../../phase-preliminary/product-development-approach.md#7-stealth-mode-caveat)**: simulated-persona-agent transcript is NOT a real-customer transcript. It's useful for hypothesis-formation refinement; NOT for product-market-fit claims.
+- **Honesty caveat per [approach § 7](../phase-preliminary/product-development-approach.md#7-stealth-mode-caveat)**: simulated-persona-agent transcript is NOT a real-customer transcript. It's useful for hypothesis-formation refinement; NOT for product-market-fit claims.
 
 ## Measurable motivation chain
 
-Per [P7](../../../phase-preliminary/architecture-principles.md):
+Per [P7](../phase-preliminary/architecture-principles.md):
 
-- **Driver**: forge's customer-walk cycle ([ADR 0016](../../../phase-preliminary/adr/0016-wiki-customers-as-roles.md)) does not specify how to run a multi-turn interview. Without a protocol, agent-driven interviews drift into reading sessions or pitch demos.
-- **Goal**: [Quality](../../../phase-a-architecture-vision/goals.md) (KR: pre_prod_share ≥ 0.95). Disciplined interviews = real validated learning = fewer wrong-direction experiments.
+- **Driver**: forge's customer-walk cycle ([ADR 0016](../phase-preliminary/adr/0016-wiki-customers-as-roles.md)) does not specify how to run a multi-turn interview. Without a protocol, agent-driven interviews drift into reading sessions or pitch demos.
+- **Goal**: [Quality](../../phase-a-architecture-vision/goals.md) (KR: pre_prod_share ≥ 0.95). Disciplined interviews = real validated learning = fewer wrong-direction experiments.
 - **Outcome**: this protocol is the canonical interview-execution doc; the script template + this protocol together produce schema-conformant transcripts in private repo.
 - **Measurement source**: audit-predicate: P26 + P29.
 - **Contribution**: prevents interview-drift; gives PM agent a multi-turn discipline; transcripts are cross-product-comparable because of schema.
-- **Capability realised**: [Develop wiki product line](../../capabilities/develop-wiki-product-line.md).
+- **Capability realised**: [Architecture knowledge management](../phase-b-business-architecture/capabilities/forge-level.md) (the meta-capability of keeping forge's discipline internally consistent — these protocols are method, not wiki-product-specific).
 - **Function**: Document-problem-interview-protocol.
 - **Element**: this file.

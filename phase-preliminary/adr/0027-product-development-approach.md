@@ -1,114 +1,90 @@
-# ADR 0027 — Adopt Lean Startup as product-development base; complement with Wardley Maps / JTBD / Opportunity Solution Trees
+# ADR 0027 — Customer-development discipline added on top of TOGAF/ArchiMate; nothing else
 
 ## Status
 
-Accepted (2026-05-02). Active.
+Accepted (2026-05-02). Active. Amended 2026-05-02 per architect call to simplify scope.
 
 ## Measurable motivation chain
 
 Per [P7](../architecture-principles.md):
 
-- **Driver**: Customer-Interview cycle (per [ADR 0016](0016-wiki-customers-as-roles.md)) shipped 220 simulated-reading pain ledgers + 34 cross-tabbed observations + 10 named problems, but is missing four product-development discipline pieces a real cycle needs: (1) PM hypothesis explicit, (2) interview script per persona, (3) interview protocol, (4) statistical analysis to pick 1-of-N. Current cycle is mis-named "interview" — it's actually a **simulated-reading walk**. Architect call: "approach should be described in architecture" — codify the methodology before applying it.
-- **Goal**: [Architect-velocity](../../phase-a-architecture-vision/goals.md) (KR: ≤ 20 execution failures / 30-day rolling). A documented approach prevents re-litigating method choice each cycle; the Wiki PM and team know which tool to reach for without per-decision architect intervention.
-- **Outcome**: forge documents the product-development approach in [`phase-preliminary/product-development-approach.md`](../product-development-approach.md) — Maurya's *Running Lean* as the iterative base, complemented by three specific tools for forge's specific gaps. Discovery-stage architecture documents in [`phase-b-business-architecture/processes/discovery/`](../../phase-b-business-architecture/processes/discovery/) operationalise the first stage.
-- **Measurement source**: audit-predicate: P7 (universal motivation traceability — meta-method is itself measurable) + audit-predicate: P26 (every chain in scope cites a measurement source).
-- **Contribution**: this ADR + the approach doc + 5 discovery-stage artifact templates land as a coherent meta-method addition; future cycles cite the approach instead of re-inventing it; reduces architect-velocity execution-failure count by removing per-cycle methodology arguments.
-- **Capability realised**: [Architecture knowledge management](../../phase-b-business-architecture/capabilities/forge-level.md).
-- **Function**: Adopt-and-document-product-development-approach.
+- **Driver**: forge's existing TOGAF + ArchiMate + RLVR + delete-on-promotion + OKR cascade discipline covers most of what a product team needs. The one piece that was genuinely missing: a **customer-interview discipline** to find real customer problems (forge had only the simulated-reading walk per [ADR 0016](0016-wiki-customers-as-roles.md), no actual interviews).
+- **Goal**: [Architect-velocity](../../phase-a-architecture-vision/goals.md) (KR: ≤ 20 execution failures / 30-day rolling). The simplest possible customer-discovery addition that fits forge's existing discipline.
+- **Outcome**: 2 new artifacts in `phase-requirements-management/` (customer-interview script template + protocol), JTBD Job statements added to existing persona files, customer-walk cycle file renamed for honesty. Nothing else added; no parallel methodology framework imported.
+- **Measurement source**: audit-predicate: P26.
+- **Contribution**: closes the customer-development gap surfaced by the audit cycle without importing Lean Canvas / MVP sketch / pivot-decision / Wardley-Maps scaffolding (all of which duplicate TOGAF/ArchiMate territory forge already covers).
+- **Capability realised**: [Architecture knowledge management](../../phase-b-business-architecture/capabilities/forge-level.md) (single-source-of-truth for forge's discipline).
+- **Function**: Add-customer-interview-discipline.
 
 ## Context
 
-Forge today has a strong **architecture-documentation discipline** (TOGAF + ArchiMate + RLVR + delete-on-promotion + OKR cascade + audit cycle). What it lacks until this ADR is an explicit **product-development discipline**.
+Original draft of this ADR (2026-05-02 morning) proposed adopting Maurya's *Running Lean* as a full product-development methodology base — Lean Canvas, MVP sketches, pivot-or-persevere templates, Wardley Maps for architecture decisions, Opportunity Solution Trees for prioritization. Auditor + Architect self-review identified the proposal as **massively over-engineered**:
 
-The customer-interview cycle (ADR 0016) is honest about what it does but uses misleading terminology. The cycle is in fact a **simulated-reading walk + PM-solo synthesis** — useful for breadth coverage in stealth-mode iteration, but it is not customer-development in Steve Blank's or Ash Maurya's sense (no actual back-and-forth between PM and customer; no hypothesis-validation interviews; no formal problem prioritization).
+- Lean Canvas duplicates Phase A goals + Phase B Capability + Phase B Product (cells we already have).
+- MVP sketches duplicate Phase F experiment specs (the experiments ARE MVPs).
+- Pivot-or-persevere templates duplicate the existing ADR-amendment + delete-on-promotion pattern.
+- Solution / Validation / Build-Measure-Learn stages add vocabulary on top of TOGAF/ArchiMate without adding capability.
+- Wardley Maps placeholder created without an actual decision needing one.
 
-The architect has been operating per Maurya's *Running Lean* "Plan A → Plan that works" frame intuitively but without architectural documentation. This ADR makes the choice explicit and adds three specific complements that fill known gaps in Maurya's coverage for forge's context.
+Architect call (2026-05-02): *"Yes, jobs to be done are good and you can incorporate it into personas. Yes, lean canvas is good — but do we really need one having togaf? I doubt it. Let's clean up a bit from unnecessary."*
+
+This amended ADR records the simplification.
 
 ## Decision
 
-### 1. Adopt Maurya's *Running Lean* as the product-development base
+### 1. Customer-interview discipline added (the one genuine gap)
 
-**What forge takes from Maurya:**
-- "Plan A → Plan that works" iterative discipline (matches K1 / K2 / K3 experiment trajectory).
-- Three-stage interview model: Problem interview → Solution interview → Validation interview.
-- Lean Canvas as the one-page strategic artifact per product (matches Architect-velocity ≤ 20-interventions-per-30-day discipline).
-- Pivot framework — explicit pivot-or-persevere criteria after each Build-Measure-Learn loop. Compatible with delete-on-promotion (a pivot is explicit deletion of a Plan A assumption).
-- Falsifier-first / cheap-experiment-first (matches forge's [P5](../architecture-principles.md)).
+Two new artifacts in [`../../phase-requirements-management/`](../../phase-requirements-management/):
+- [`customer-interview-script-template.md`](../../phase-requirements-management/customer-interview-script-template.md) — per-persona schema for customer-interview questions (open-ended, JTBD-anchored, Forces-of-Progress probing).
+- [`customer-interview-protocol.md`](../../phase-requirements-management/customer-interview-protocol.md) — multi-turn dialogue rules + transcript schema.
 
-**What forge does NOT take from Maurya:**
-- Lean Canvas's "Channels", "Revenue Streams", "Cost Structure", "Unfair Advantage" cells are weak when the product is in stealth mode and customers are simulated. These cells stay in the Lean Canvas template but are explicitly marked **deferred until commercialisation** for the kurpatov-wiki and tarasov-wiki product lines today.
+These complement (not replace) the existing customer-walk cycle in [`../../phase-requirements-management/wiki-customer-walk.md`](../../phase-requirements-management/wiki-customer-walk.md) (renamed in this commit from `wiki-customer-interview.md` per [ADR 0016 amendment](0016-wiki-customers-as-roles.md)). The customer-walk cycle = simulated-reading breadth coverage; customer-interviews = depth probing of specific hypotheses.
 
-### 2. Complement with Wardley Maps for architecture / strategy decisions
+### 2. JTBD Job statements added to existing personas
 
-When the decision is about technology stack, component build-vs-buy, or evolution-stage, Maurya is silent and Wardley is rigorous. Use Wardley Maps for:
-- ETL stack choices (Whisper-VAD vs alternatives, etc.).
-- Compact-restore architecture (K2 / K3).
-- Vector-retrieval / inference subsystem decisions.
-- Any "is this utility or custom-build?" call.
+Each of the 5 persona files in [`../../phase-b-business-architecture/roles/customers/`](../../phase-b-business-architecture/roles/customers/) gets a `## Job to be done` section with the format *"When I [situation], I want to [motivation], so I can [outcome]."* This is an **addition to** the existing persona files, NOT a parallel framework.
 
-Authoritative source: [`https://learnwardleymapping.com/`](https://learnwardleymapping.com/) and Simon Wardley's *Wardley Maps* book.
+### 3. EXPLICITLY REJECTED — no Lean Canvas / MVP sketch / pivot-or-persevere / Wardley-Maps scaffolding in forge
 
-### 3. Complement with Jobs-to-be-Done for persona depth
+Each rejection rationale:
 
-Personas tell *who*; JTBD tells *what they hire the wiki to do*. Use JTBD for:
-- Persona authoring + revision (richer than persona-as-archetype).
-- Pain-ledger framing (every pain becomes "this defeats the job").
-- Forces of Progress check (Push, Pull, Anxieties, Habits) when assessing whether a customer would actually adopt.
+- **Lean Canvas** rejected because Phase A `goals.md` + Phase B `<product>.md` + Phase B `capabilities/<capability>.md` already cover Problem / Solution / Customer Segments / Key Metrics / Cost / UVP / Channels / Revenue. Lean Canvas would duplicate the cells we already have in TOGAF-coherent form.
+- **MVP sketch templates** rejected because Phase F experiments ARE MVPs ([`../../phase-f-migration-planning/experiments/`](../../phase-f-migration-planning/experiments/) — K1, K2, G1, G2, G3 are precedents).
+- **Pivot-or-persevere decision template** rejected because forge handles pivots via ADR amendment + delete-on-promotion.
+- **Wardley Maps directory placeholder** rejected because no actual decision needed one yet; rebuild when first decision warrants it (queued: K3 compress-by-redundancy decision).
+- **Solution / Validation / Build-Measure-Learn stage scaffolding** rejected because TOGAF Phase B (Capabilities, Products) + Phase F (experiments) + Phase H (audit cycle) + ADR amendments already cover these.
+- **Opportunity Solution Tree as a separate template** rejected because the prioritization work happens in [`../../phase-requirements-management/catalog.md`](../../phase-requirements-management/catalog.md) (R-NN trajectory rows) and during the customer-walk cycle's CI-3..5 cross-tab — no separate OST artifact needed.
 
-Authoritative source: Christensen, *Competing Against Luck* (2016); Klement, *When Coffee and Kale Compete*; Bob Moesta interview series.
+### 4. Wiring into existing forge artifacts
 
-### 4. Complement with Teresa Torres' Opportunity Solution Trees
+Existing artifacts that previously didn't reference the customer-development discipline get cross-references in the same commit:
+- [`../../phase-b-business-architecture/capabilities/develop-wiki-product-line.md`](../../phase-b-business-architecture/capabilities/develop-wiki-product-line.md) cross-references customer-walk + interview discipline.
+- [`../../phase-b-business-architecture/roles/wiki-pm.md`](../../phase-b-business-architecture/roles/wiki-pm.md) gets interview protocol added to responsibilities.
+- [`../../phase-b-business-architecture/products/kurpatov-wiki.md`](../../phase-b-business-architecture/products/kurpatov-wiki.md) cross-references where customer-derived insights live (private repo).
 
-Maurya prioritization is implicit; OST is explicit and visual. Use OST for:
-- Picking 1-of-N opportunities for the next iteration (current state: 10 problems, no formal pick).
-- Mapping opportunities to outcomes (top-level Goal at root).
-- Surfacing solution candidates per opportunity for systematic exploration.
-
-Authoritative source: Torres, *Continuous Discovery Habits* (2021); [`producttalk.org`](https://www.producttalk.org/opportunity-solution-tree/).
-
-### 5. Keep TOGAF + ArchiMate + RLVR + OKR as the architecture-documentation layer
-
-Maurya covers product discovery; it does NOT replace architecture documentation. Forge keeps:
-- ADRs (architecture decisions).
-- ArchiMate-typed artifacts per phase.
-- Audit cycle (P1..P30) for enforcement.
-- OKR cascade (ADR 0023).
-
-Two layers, complementary — discovery / product on top, architecture / documentation underneath.
-
-### 6. Stealth-mode caveat documented
-
-Forge today operates with simulated personas, not real customers. Maurya is unambiguous: real validation requires real customers. Plan-A iteration in stealth is fine for direction-finding; product-market-fit claims require real users. Recorded in [`product-development-approach.md`](../product-development-approach.md) § 7 and queued as an amendment to [`phase-a-architecture-vision/vision.md`](../../phase-a-architecture-vision/vision.md).
-
-### 7. ADR 0016's customer-interview cycle relationship
-
-ADR 0016's cycle stays as-written. It implements one specific moment (the simulated-reading walk and ledger synthesis). It is not the entire product-development approach — it is one tool within Discovery. The relationship is documented in the new approach file's § 6.
+Without this wiring, the customer-development discipline floats; with it, the discipline is part of the architecture.
 
 ## Consequences
 
-- **Plus**: methodology choice is explicit, ADR-traceable, single-source-of-truth.
-- **Plus**: discovery-stage architecture documents (templates + protocols) operationalise the approach without re-inventing per cycle.
-- **Plus**: future ADRs about product strategy can cite the approach by name + section.
-- **Plus**: when a tool is missing from forge's toolbox, the gap is explicit (e.g. "no Validation-stage protocol yet" — visible from approach file).
-- **Minus**: documentation cost — ~6 new artifacts in this commit. Mitigated by template-once / instance-many pattern.
-- **Minus**: methodology drift — if the team uses tools outside the documented approach without ADR amendment, the approach becomes de-facto false. Mitigated by predicate (queued: P31 — "every product-discovery decision artifact cites a tool from `product-development-approach.md`").
+- **Plus**: forge's discipline stays simple. TOGAF + ArchiMate + RLVR + OKR cascade + customer-interview-protocol + JTBD-in-personas. No parallel methodology layer.
+- **Plus**: ~14 over-engineered files removed; ~3 genuinely-new artifacts added; existing 3-5 forge files updated to reference them. Net: leaner.
+- **Plus**: future architects don't have to choose between "Lean stage" and "TOGAF phase" — there's only one structure.
+- **Minus**: when forge enters a phase where Wardley Maps would help (real architecture decision with utility-vs-custom trade-off), we'll need to author that schema. That's a build-when-needed cost; cheaper than maintaining unused scaffolding.
 
 ## Invariants
 
-- Future product-development methodology additions land as ADR amendments to this ADR or new ADRs that explicitly cite this one.
-- Discovery-stage artifact templates in [`phase-b-business-architecture/processes/discovery/`](../../phase-b-business-architecture/processes/discovery/) are the canonical schemas; per-product instances live in `phase-b-business-architecture/products/<product>/discovery/` (private path for transcripts per [ADR 0018 § 7](0018-privacy-boundary-public-vs-private-repos.md)).
-- The Lean Canvas template is the canonical product strategic-summary format; per-product Lean Canvas lives in `phase-b-business-architecture/products/<product>/lean-canvas.md`.
+- Customer-interview script + protocol live in `phase-requirements-management/` (where TOGAF Requirements Management activities live), NOT in a `processes/` subdirectory of Phase B.
+- JTBD Job statements live INSIDE existing persona files, NOT as a separate framework directory.
+- Pivots land as ADR amendments + delete-on-promotion, NOT as separate "pivot-decision" artifacts.
+- Wardley Maps will be authored when an actual technology decision needs one, NOT as scaffolding.
 
 ## Alternatives considered
 
-- **Cagan's *Inspired* / *Empowered* product-trio model.** Rejected: assumes an established product team (PM + designer + engineer) with empowered organisation. Forge is solo-architect-of-record per [P1](../architecture-principles.md).
-- **Pure Steve Blank Customer Development (4-step model: Discovery → Validation → Creation → Building).** Considered. Rejected as base because Maurya is Blank's distillation with the Lean Canvas one-page artifact added; equivalent rigor with better tooling. Cite Blank as Maurya's progenitor.
-- **Design Sprint (Knapp / Google Ventures).** Rejected as base: time-boxed (5-day) sprint is tactical, not strategic. Could be adopted as a Validation-stage tool later if useful.
-- **OKR-only discovery (Doerr / Wodtke).** Rejected as base: OKRs frame outcomes but don't specify how to discover problems. Already adopted at the goal-cascade layer (ADR 0023); insufficient as a discovery method.
+- **Original draft**: full Lean Startup adoption with 17 process documents. Rejected by self-audit + architect call as massive over-engineering.
+- **Maurya's *Running Lean* as primary methodology base, TOGAF as documentation layer**. Rejected because TOGAF/ArchiMate IS the methodology base; Lean adds only customer-interview discipline beyond that.
+- **Phase B `processes/` directory**. Rejected because the templates inside are schemas (Business Objects), not Business Processes; ArchiMate-typing was wrong.
 
 ## Follow-ups
 
-- Author the four discovery-stage artifact templates in this commit.
-- Author the Solution-stage and Validation-stage architecture documents in a future ADR amendment when forge enters those stages.
-- Predicate P31 (queued) — every product-discovery decision artifact cites a tool from `product-development-approach.md`.
-- Apply the approach to the 10 outstanding problems (the worked example) — separate commit after architect review.
+- Author the worked example (apply customer-interview discipline to kurpatov-wiki) when ready. Per architect: "then we will proceed to wiki."
+- Tighten P31 audit predicate to the new minimal scope (it currently references the deleted `processes/` directory tree).

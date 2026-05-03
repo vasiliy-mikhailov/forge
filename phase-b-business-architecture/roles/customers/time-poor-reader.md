@@ -6,6 +6,12 @@ one action. Treats long-form content like a podcast at 1.5x —
 scans for high-density signal, skips wandering parts, closes the
 tab the moment the signal-to-noise drops.
 
+## Job to be done
+
+When I I have 12 minutes between calendar slots and a backlog of "self-development" links, I want to I want the TL;DR + one technique + one reframe per lecture, so I can I can decide whether to send a chunk to Slack for my team, or close the tab and reclaim the 12 minutes.
+
+(Per [ADR 0027](../../../phase-preliminary/adr/0027-product-development-approach.md): JTBD Job statement incorporated into the persona file rather than maintained as a separate framework.)
+
 ## Identity
 
 **Name (working tag)**: А. (Антон). 42. Senior Product Manager at

@@ -161,6 +161,17 @@ no separate test md exists at the process-spec mirror path.
 When the process spec changes and the role's outputs regress,
 the role's test catches it.
 
+## Customer-discovery responsibilities
+
+Per [ADR 0027](../../phase-preliminary/adr/0027-product-development-approach.md) the Wiki PM owns customer-discovery activities:
+
+- Run the [customer-walk cycle](../../phase-requirements-management/wiki-customer-walk.md) (simulated-reading breadth coverage; per [ADR 0016](../../phase-preliminary/adr/0016-wiki-customers-as-roles.md)).
+- Run customer interviews per [the protocol](../../phase-requirements-management/customer-interview-protocol.md), using [per-persona interview scripts](../../phase-requirements-management/customer-interview-script-template.md). Multi-turn dialogue with persona-agents (or real customers when not in stealth) probing specific hypotheses.
+- Cross-tabulate observations from both walks and interviews into customer-observations file (private repo per [ADR 0018 § 7](../../phase-preliminary/adr/0018-privacy-boundary-public-vs-private-repos.md)).
+- Distil into named customer-problems → emit R-NN trajectory rows in [`catalog.md`](../../phase-requirements-management/catalog.md).
+
+The Wiki PM is the single role responsible for the customer-development discipline; no separate "PM" role per Maurya's framing — the Wiki PM IS that role.
+
 ## Measurable motivation chain
 Per [ADR 0015](../../phase-preliminary/adr/0015-verifiable-agent-rewards.md),
 every role declares its measurable motivation chain in ArchiMate 4 terms.

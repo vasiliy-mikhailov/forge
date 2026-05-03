@@ -7,6 +7,12 @@ hunting **definitions** and **context**: «what does this word
 MEAN», «who is this person», «is this the same as last lecture
 or different».
 
+## Job to be done
+
+When I I am studying psychology at university for the first time, I want to I want to actually understand each concept (not just memorise the term), so I can I can answer my exam questions without panic, and message Лера on WhatsApp about ideas she'd find cool.
+
+(Per [ADR 0027](../../../phase-preliminary/adr/0027-product-development-approach.md): JTBD Job statement incorporated into the persona file rather than maintained as a separate framework.)
+
 ## Identity
 
 **Name (working tag)**: Аня (Анна). 19 лет. Второй курс

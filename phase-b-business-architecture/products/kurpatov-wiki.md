@@ -106,6 +106,19 @@ Headline next step: scale the same pilot driver to 200+ sources
 without quality regression — including without voice regression.
 
 
+## Customer-derived insights
+
+Customer-walk and interview outputs for this product live in the private sibling repo per [ADR 0018 § 7](../../phase-preliminary/adr/0018-privacy-boundary-public-vs-private-repos.md):
+- Per-persona pain ledgers: `kurpatov-wiki-wiki/metadata/customer-pains/<persona>/<lecture-stem>.md` (220 ledgers from the 2026-05-02 customer-walk cycle).
+- Cross-tabulated observations: `kurpatov-wiki-wiki/metadata/customer-observations.md` + `customer-observations/CO-NN-X.md` per-observation pages.
+- Named customer-problems: `kurpatov-wiki-wiki/metadata/customer-problems.md`.
+
+Forge schema stubs (no assessment content) live at:
+- [`./kurpatov-wiki/customer-observations.md`](./kurpatov-wiki/customer-observations.md)
+- [`./kurpatov-wiki/customer-problems.md`](./kurpatov-wiki/customer-problems.md)
+
+R-NN trajectory rows derived from customer-problems land in [`../../phase-requirements-management/catalog.md`](../../phase-requirements-management/catalog.md) with `customer:<persona>` Source-cell tags.
+
 ## Measurable motivation chain
 Per [P7](../../phase-preliminary/architecture-principles.md):
 

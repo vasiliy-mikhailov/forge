@@ -1,3 +1,6 @@
+
+*Renamed from `wiki-customer-interview.md` 2026-05-02 per [ADR 0016 amendment](../phase-preliminary/adr/0016-wiki-customers-as-roles.md). The cycle is honestly a **customer-walk** (simulated-reading breadth coverage), not a customer-interview. Companion artifacts for actual interviews live at [`./customer-interview-protocol.md`](./customer-interview-protocol.md) + [`./customer-interview-script-template.md`](./customer-interview-script-template.md).*
+
 # Wiki customer interview cycle
 
 The Wiki PM's **customer-development cycle**, complementary to
