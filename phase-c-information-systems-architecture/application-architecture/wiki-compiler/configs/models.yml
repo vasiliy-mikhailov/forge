@@ -67,6 +67,30 @@ models:
       (factor=1.0, original_max==max_model_len) per models.yml schema
       convention for native-context models.
 
+  - id: qwen3.6-27b-nvfp4
+    hf: sakamakismile/Qwen3.6-27B-NVFP4
+    served_name: qwen3.6-27b-nvfp4
+    quantization: compressed-tensors
+    kv_cache_dtype: fp8
+    max_model_len: 262144
+    rope_scaling:
+      rope_type: yarn
+      factor: 1.0
+      original_max_position_embeddings: 262144
+    tool_call_parser: qwen3_xml
+    reasoning_parser: qwen3
+    chat_template_kwargs:
+      enable_thinking: false
+    tensor_parallel_size: 1
+    gpu_memory_utilization: 0.92
+    bench_tier: A
+    bench_skip: false
+    notes: |
+      NVFP4 (4-bit weights via NVIDIA microscaling format) for Blackwell
+      sm_120 tensor cores. Format: compressed-tensors / nvfp4-pack-quantized,
+      vision blocks preserved. Added 2026-05-03 for FP8 vs FP4 throughput
+      A/B benchmark vs qwen3.6-27b-fp8.
+
   - id: qwen3.5-27b-fp8
     hf: Qwen/Qwen3.5-27B-FP8
     served_name: qwen3.5-27b-fp8

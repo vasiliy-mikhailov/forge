@@ -1,7 +1,11 @@
 # Service: LLM inference
 
-- **Component:** vLLM 0.19.1 (cu130) serving Qwen3.6-27B-FP8 on the
-  Blackwell, 128 K context via YaRN factor 4.0, single-card.
+- **Component:** vLLM 0.19.1 (cu130) serving Qwen 3.6-27B on the
+  Blackwell, 256 K native context, single-card. Active-quantization
+  default: NVFP4 (4-bit weights via Blackwell tensor cores; per
+  [G4 closure 2026-05-03](../../phase-f-migration-planning/experiments/G4-nvfp4-faster-inference.md)
+  — +23 % decode TPS / +42 % prefill TPS vs FP8). FP8 baseline kept in
+  the model registry for revert.
 - **Realised by:** the `vllm-inference` container, in EITHER of two
   operating units (mutex):
   - the [`wiki-compiler/`](../../phase-c-information-systems-architecture/application-architecture/wiki-compiler/)
@@ -43,8 +47,9 @@ Per [P7](../../phase-preliminary/architecture-principles.md):
 - **Driver**: every wiki-compile pipeline needs a long-running
   LLM inference endpoint.
 - **Goal**: Quality (KR: pre_prod_share ≥ 0.95).
-- **Outcome**: wiki-compiler vLLM serves Qwen3.6-27B-FP8 on the
-  Blackwell GPU; OpenAI-compatible.
+- **Outcome**: vLLM serves Qwen 3.6-27B (NVFP4 default per G4
+  closure 2026-05-03; FP8 fallback in registry) on the Blackwell
+  GPU; OpenAI-compatible; 256 K context.
 - **Measurement source**: lab-tests: WC (wiki-compiler smoke + AGENTS Phase A-H integrity)
 - **Contribution**: audit-predicate enforcement — each PASS prevents one infrastructure-domain incident class; contributes to Quality KR pre_prod_share.
 - **Capability realised**: Service operation
