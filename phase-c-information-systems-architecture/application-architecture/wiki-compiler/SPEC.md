@@ -18,8 +18,9 @@ inference providers.
 
 ## Mode mutex with rl-2048
 `wiki-compiler` and `rl-2048` both want the Blackwell.
-forge has effectively two modes: **compiler mode** (this lab running,
-`rl-2048` stopped) and **2048 mode** (`rl-2048` running, this lab
+forge has effectively two modes: **wiki-compiler mode** (this lab
+running, `rl-2048` stopped) and **rl-2048 mode** (`rl-2048` running,
+this lab
 stopped). Bringing both up at once will OOM or fail
 nvidia-container-toolkit GPU allocation.
 

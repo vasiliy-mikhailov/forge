@@ -64,7 +64,7 @@ user-facing UI (a Jupyter, a dashboard) goes back to caddy basic auth.
 Inference reuses the same HuggingFace cache mount that `rl-2048` and
 `kurpatov-wiki` already share at `${STORAGE_ROOT}/shared/models →
 /root/.cache/huggingface`. Weights downloaded once for inference are
-reusable by the GRPO sandbox the next time we swap to 2048 mode. No
+reusable by the GRPO sandbox the next time we swap to rl-2048 mode. No
 new `${STORAGE_ROOT}` subdir.
 
 ## Consequences
