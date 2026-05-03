@@ -26,8 +26,8 @@ nvidia-container-toolkit GPU allocation.
 Discipline:
 ```
 make stop-all      # stops every lab
-make wiki-compiler     # → inference mode
-make rl-2048       # → 2048 mode (you do this only after make kurpatov-wiki-compiler-down)
+make wiki-compiler     # → wiki-compiler mode (vLLM inference is one of the containers inside)
+make rl-2048           # → rl-2048 mode (you do this only after make kurpatov-wiki-compiler-down)
 ```
 The Makefile does not enforce the mutex; forge convention is one
 operator, the operator manages mode transitions deliberately.

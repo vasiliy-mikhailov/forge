@@ -28,12 +28,21 @@ image vs upstream, vLLM API key vs caddy basic auth) live in
 [`phase-c-information-systems-architecture/application-architecture/wiki-compiler/docs/adr/0001`](../../phase-c-information-systems-architecture/application-architecture/wiki-compiler/docs/adr/0001-vllm-public-openai-compatible-endpoint.md).
 
 ### 1. Mode mutex with rl-2048
-`inference` and `rl-2048` both want the Blackwell. forge has effectively
-**two GPU modes for now**: inference mode (`inference` up, `rl-2048`
-down) and 2048 mode (`rl-2048` up, `inference` down). The mutex is
-not enforced in code — `make stop-all` already exists for exactly
-this kind of mode switch and is now extended to also stop `inference`.
+`wiki-compiler` (which contains the `vllm-inference` container) and
+`rl-2048` both want the Blackwell. forge has effectively **two GPU
+modes for now**: **wiki-compiler mode** (`make wiki-compiler` —
+spins up the wiki-compile pipeline; vLLM serves inference internally
+on `${INFERENCE_DOMAIN}` for the lab's own use AND for external
+agents) and **rl-2048 mode** (`make rl-2048` — GRPO sandbox; vLLM
+not running). The mutex is not enforced in code — `make stop-all`
+exists for exactly this kind of mode switch and stops every lab.
 Operator manages the swap.
+
+(NB: there is **no separate "inference mode"** in the Makefile — the
+vLLM endpoint is a sub-component of the wiki-compiler lab, not its
+own mode. If a future use-case needs vLLM without the rest of the
+wiki-compile pipeline, add a separate Makefile target then; today
+this is not the case.)
 
 This keeps the door open to future GPU rotation policies (a third
 service entering the rotation, automated mode-pinning per cron) without

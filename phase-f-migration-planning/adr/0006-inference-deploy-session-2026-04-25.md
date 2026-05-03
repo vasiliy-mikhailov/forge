@@ -95,7 +95,7 @@ The architectural choices held up:
 - Mode mutex with rl-2048 — verified by `make rl-2048-down && make
   inference`. Smooth swap.
 - Shared HF cache at `${STORAGE_ROOT}/models` — model weights
-  downloaded once, reusable by rl-2048 in 2048 mode.
+  downloaded once, reusable by rl-2048 in rl-2048 mode.
 
 ## Decision
 Amend ADR 0005 with the deploy-time discoveries above. The
