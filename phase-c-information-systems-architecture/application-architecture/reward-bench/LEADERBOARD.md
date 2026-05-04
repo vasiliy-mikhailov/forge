@@ -1,6 +1,6 @@
 # reward-bench leaderboard — Tier 1 (2048)
 
-Per [ADR 0029](../../../phase-preliminary/adr/0029-reward-bench.md). All scores are mean over 20 canonical games on held-out seeds 1000-1019, target=2048, max_moves=10000. Stage-2 sandbox: `reward-bench-tier1:0.1`, `--network=none`, deterministic.
+Per [ADR 0029](../../../phase-preliminary/adr/0029-reward-bench.md). All scores are mean over 20 canonical games on held-out seeds 1000-1019, target=2048, max_moves=10000, **walltime budget 300 s per attempt** (≈15 s/game on average; see SPEC). Stage-2 sandbox: `reward-bench-tier1:0.2`, `--network=none`, deterministic.
 
 ## Tier 1 — static FSM
 

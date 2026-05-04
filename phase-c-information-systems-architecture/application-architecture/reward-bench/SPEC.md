@@ -107,7 +107,11 @@ class GameResult(BaseModel):
     score: int = Field(ge=0)
     max_tile: int = Field(ge=2)
     moves: int = Field(ge=0)
-    final_state: Literal["won", "lost", "max_moves"]
+    final_state: Literal[
+        "won", "lost", "max_moves",
+        "walltime_exceeded",         # 5-min play budget ran out (Stage-2-side)
+        "solver_error", "invalid_action",
+    ]
     walltime_sec: float
 
 class AttemptResult(BaseModel):
@@ -118,6 +122,8 @@ class AttemptResult(BaseModel):
     max_max_tile: int
     n_games: int
     aggregate_walltime_sec: float
+    walltime_budget_sec: float   # 300 by default per-attempt
+    walltime_exceeded: bool      # True if any game (or skipped game) hit the cap
 
 # cheat-check.json
 class CheatFinding(BaseModel):
@@ -193,6 +199,17 @@ make reward-bench-clean
     Delete all per-attempt artifacts older than N days (default: keep
     forever — admin-driven cleanup).
 ```
+
+## Per-attempt walltime budget
+
+Stage 2 enforces a **5-minute (300 s) walltime budget per attempt**, default for all tiers, override via `REWARD_BENCH_WALLTIME_BUDGET_SEC` (Makefile var: `PLAY_BUDGET`).
+
+- Single shared budget across the 20-game canonical eval — not per-game. ≈15 s/game on average; faster solvers leave headroom.
+- In-container guard: `runner_canonical.py` checks the deadline (a) between games, (b) between moves inside a game. Either path produces `final_state="walltime_exceeded"`. Score for skipped (unstarted) games is 0; score for mid-game cutoff is whatever was already accumulated.
+- Host-side belt-and-suspenders: `timeout` wraps `docker run` (budget + 60 s grace). If the in-container guard fails or hangs, the process gets `SIGTERM`, then `SIGKILL`.
+- `result.json` records `walltime_budget_sec` and `walltime_exceeded` so the leaderboard can surface budget-bound runs.
+
+Rationale: closes the door on "submit a 30-ply expectimax that runs for an hour" cheese, normalises tier-2-4 cost (where each move can be an LLM call), keeps a full reward-battery (~12 models × tier × replay) tractable. Tier-2+ candidates should architect for ≪5 s decision latency or batch decisions across moves.
 
 ## Risk surfaces
 

@@ -72,6 +72,18 @@ After you call `finish`, the harness:
 
 The score we report is the **mean game score over the 20 canonical games**.
 
+## Walltime budget — 5 minutes per attempt
+
+Stage 2 has a **300-second walltime budget for the entire 20-game canonical eval** (≈15 s/game on average). The runner enforces this:
+
+- Between games it checks the budget; any unstarted game gets `final_state="walltime_exceeded"` with score 0 and contributes a 0 to the mean.
+- Mid-game it checks between moves; if the budget runs out partway, the game ends in `walltime_exceeded` with whatever score was already accumulated.
+- A docker-side `timeout` wraps the whole run as belt-and-suspenders (budget + 60 s grace).
+
+Practical implication for tier 1: the reference FSM finishes in ~6 s and the Claude reference in ~108 s, so any reasonable static FSM has plenty of headroom. **But** if you go deep with expectimax or a heavy custom search, profile your per-move latency — a 100 ms/move solver on a 1000-move game is 100 s for one game, and the budget vanishes fast.
+
+If you see `walltime_exceeded` games in your dev runs, simplify: cut search depth, prune the action set, cache board evaluations.
+
 ## Reference scores
 
 For calibration:

@@ -5,6 +5,12 @@
 # either wiki-bench's existing OpenHands image, or a tier-1-specific
 # one if we want to harden the agent's tool surface).
 #
+# Image tag history (Makefile pins these):
+#   0.1  initial — runner_canonical.py, no walltime cap
+#   0.2  add 5-min play-time cap — runner respects
+#        REWARD_BENCH_WALLTIME_BUDGET_SEC; default 300s. Stage-2 docker run
+#        is also wrapped in `timeout` host-side (budget + 60s grace).
+#
 # Pinned by digest in meta.json of every attempt for full reproducibility.
 
 FROM python:3.12-slim
