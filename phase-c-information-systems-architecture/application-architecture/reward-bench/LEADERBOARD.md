@@ -1,0 +1,55 @@
+# reward-bench leaderboard — Tier 1 (2048)
+
+Per [ADR 0029](../../../phase-preliminary/adr/0029-reward-bench.md). All scores are mean over 20 canonical games on held-out seeds 1000-1019, target=2048, max_moves=10000. Stage-2 sandbox: `reward-bench-tier1:0.1`, `--network=none`, deterministic.
+
+## Tier 1 — static FSM
+
+| Submission | Author | Mean | Median | Max | Max-tile reached | Won (out of 20) | Walltime |
+|---|---|---:|---:|---:|---:|---:|---:|
+| Random | (floor) | ~1 000 | ~1 000 | ~1 500 | 128 | 0 | <1 s |
+| `reference_fsm.py` | hand-written FSM (corner-anchor + 1-ply expectimax) | 7 211 | 6 192 | 14 436 | 1 024 | 0 | 6 s |
+| `claude_fsm.py` | **Claude (harness ceiling reference)** — 2-ply expectimax + snake heuristic | **8 632** | **7 012** | **20 440** | **2 048** | **2** | 108 s |
+| (tbd) | candidate models via OpenHands ralph-loop → Stage 2 | — | — | — | — | — | — |
+
+## What the numbers mean
+
+- **Mean score** is the headline metric — Tier 1 ranks models by this.
+- **Max-tile reached** tells us whether the strategy can sustain the snake/corner pattern into late game.
+- **Won** = reached 2048 tile (game terminates as `won` state).
+- **Walltime** is the canonical-eval wall time; correlates with strategy depth (1-ply vs 2-ply expectimax). Not part of the score.
+
+## Reference scores beyond reward-bench (just for orientation)
+
+| Solver | Mean score | Notes |
+|---|---|---|
+| Textbook expectimax 3-ply (literature) | ~40 000-80 000 | Way more compute per move; not in our bench |
+| Well-tuned MCTS / RL | 100 000+ | Definitely not in our bench |
+
+So **Claude's 8 632 ceiling reference is well below textbook 3-ply expectimax.** That's intentional: Tier 1 is about whether models can produce a reasonable static FSM, not whether they can implement state-of-the-art search.
+
+## Candidates queued
+
+The 12 models from the throughput sweep + Devstral, all expected to attempt Tier 1:
+
+```
+qwen25-7b           Mistral-Nemo-12B           qwen25-14b
+mistral-small-3.2-24b   devstral-small-2-24b   qwen36-27b
+gemma3-27b          qwen3-32b                  gemma4-31b
+llama33-70b         qwen25-72b                 (devstral-2-123b: tbd)
+```
+
+Each goes through:
+
+1. Stage 1 — OpenHands ralph loop with the candidate model writing/iterating on submission.py against dev seeds 1-5.
+2. Stage 2 — canonical 20-game eval at seeds 1000-1019.
+3. Stage 3 — replay determinism check (Tier 1: must match Stage 2 exactly).
+
+Expected outcome: most candidates score below the Claude ceiling (~9 000) but above random (~1 000). The interesting differential is between architecture families and parameter sizes within the candidate band.
+
+## Methodology notes
+
+- **Stage 2 is closed-world.** No LLM calls during play. Submissions that import `langgraph`/`openai` get rejected by the AST scan (those are Tier 2+ libraries).
+- **Replay determinism** is exact-match for Tier 1. Any submission whose Stage 3 score differs from Stage 2 is `verdict: rejected` and doesn't enter the leaderboard.
+- **Sandbox image is digest-pinned.** `meta.json` records `image_digest`; given that + submission sha256 + seed range, anyone can reproduce.
+- **Anti-cheat:** AST allow-list + bandit. See `bin/anti_cheat.py`.
+- **Calibration runs are reproducible:** `make smoke-tier1` re-runs the reference FSM and must output mean_score=7 211.2, median=6 192. Drift in this number = harness regression.
