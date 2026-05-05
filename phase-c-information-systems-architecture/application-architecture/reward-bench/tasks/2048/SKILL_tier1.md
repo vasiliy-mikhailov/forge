@@ -72,17 +72,17 @@ After you call `finish`, the harness:
 
 The score we report is the **mean game score over the 20 canonical games**.
 
-## Walltime budget — 5 minutes per attempt
+## Per-game stagnation detector
 
-Stage 2 has a **300-second walltime budget for the entire 20-game canonical eval** (≈15 s/game on average). The runner enforces this:
+Stage 2 does NOT have a fixed walltime budget. Instead, **each game runs as long as it's making progress**, where progress = score increasing OR max-tile increasing. If neither has changed for **60 seconds** of wall time, the game ends with `final_state="stagnated"` and whatever score was accumulated counts.
 
-- Between games it checks the budget; any unstarted game gets `final_state="walltime_exceeded"` with score 0 and contributes a 0 to the mean.
-- Mid-game it checks between moves; if the budget runs out partway, the game ends in `walltime_exceeded` with whatever score was already accumulated.
-- A docker-side `timeout` wraps the whole run as belt-and-suspenders (budget + 60 s grace).
+- The window is per-game, not per-attempt — fast solvers play 20 games quickly; slow solvers can take longer if each game is genuinely advancing.
+- A solver stuck in a tight loop emitting illegal actions, or trapped against the corner with no legal merges, will trip the detector within 60 s.
+- An outer `REWARD_BENCH_HARD_WALL_SEC` runaway cap is available but disabled by default.
 
-Practical implication for tier 1: the reference FSM finishes in ~6 s and the Claude reference in ~108 s, so any reasonable static FSM has plenty of headroom. **But** if you go deep with expectimax or a heavy custom search, profile your per-move latency — a 100 ms/move solver on a 1000-move game is 100 s for one game, and the budget vanishes fast.
+Practical implication for tier 1: the reference FSM finishes in ~6 s total over 20 games and the Claude reference in ~108 s, so neither comes close to triggering. The detector mostly matters for tier 2-4 where each move is an LLM call, so 60 s ≈ 30-60 moves before abort if no merges are happening.
 
-If you see `walltime_exceeded` games in your dev runs, simplify: cut search depth, prune the action set, cache board evaluations.
+If you see `stagnated` games in your dev runs, your solver is making no merges in some configurations — fix the policy or break the bad pattern.
 
 ## Reference scores
 

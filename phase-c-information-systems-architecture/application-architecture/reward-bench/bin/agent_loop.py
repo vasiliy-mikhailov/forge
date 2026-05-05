@@ -318,8 +318,8 @@ def main():
     ap.add_argument("--workspace", required=True, help="rw scratch + final submission.py lives here")
     ap.add_argument("--tasks-dir", required=True, help="ro mount with task files")
     ap.add_argument("--env-dir", required=True, help="ro mount with env_2048.py")
-    ap.add_argument("--max-iters", type=int, default=20, help="hard cap on agent turns")
-    ap.add_argument("--max-wall-sec", type=float, default=3600.0, help="hard cap on wall time")
+    ap.add_argument("--max-iters", type=int, default=100, help="hard cap on agent turns (default: 100)")
+    ap.add_argument("--max-wall-sec", type=float, default=7200.0, help="hard cap on wall time, runaway protection only (default: 2 h)")
     ap.add_argument("--trace", default=None, help="optional path to write events.jsonl trace")
     args = ap.parse_args()
 

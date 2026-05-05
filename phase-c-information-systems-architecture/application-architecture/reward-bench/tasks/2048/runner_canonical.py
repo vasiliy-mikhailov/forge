@@ -4,19 +4,25 @@ Loads the submitted Solver from /workspace/submission.py, plays N games of
 2048 (deterministic seed sequence), writes structured result.json + events.jsonl.
 
 Inputs (env vars):
-    REWARD_BENCH_NUM_GAMES              default 20
-    REWARD_BENCH_SEED_BASE              default 0
-    REWARD_BENCH_TARGET                 default 2048
-    REWARD_BENCH_MAX_MOVES              default 10000
-    REWARD_BENCH_WALLTIME_BUDGET_SEC    default 300 (5 minutes per attempt).
-                                        Soft in-container guard. When exceeded
-                                        the runner stops starting new games and
-                                        marks any unstarted game as
-                                        final_state="walltime_exceeded" / score=0.
-                                        A long-running single move is also
-                                        checked between moves; if the budget is
-                                        already gone, the game ends in
-                                        final_state="walltime_exceeded".
+    REWARD_BENCH_NUM_GAMES        default 20
+    REWARD_BENCH_SEED_BASE        default 0
+    REWARD_BENCH_TARGET           default 2048
+    REWARD_BENCH_MAX_MOVES        default 10000
+    REWARD_BENCH_STAGNATION_SEC   default 60. Per-game stagnation detector:
+                                  if neither game.score nor game.max_tile has
+                                  increased for this many seconds of wall time,
+                                  the game ends with final_state="stagnated".
+                                  This replaces the previous hard 5-min wall
+                                  budget; it works for any tier because it's
+                                  wall-time-based regardless of decision
+                                  latency (a tier-1 FSM with millisecond
+                                  decisions or a tier-2 LangGraph with 2 s
+                                  decisions are both bounded by the same rule).
+    REWARD_BENCH_HARD_WALL_SEC    default 0 (disabled). Optional outer
+                                  runaway-protection cap across the whole 20-
+                                  game eval. Set to a positive number to keep
+                                  the previous "kill the run after N seconds"
+                                  behaviour as a safety net.
 
 Output paths (matched to /reports mount inside the container):
     /reports/result.json
@@ -50,21 +56,42 @@ def _load_submission(submission_path: str):
 
 
 def _play_one(solver_class, seed: int, target: int, max_moves: int,
-              events_fp, deadline: float | None = None):
-    """Play one game. If `deadline` (monotonic clock seconds) is set, the game
-    aborts cleanly between moves once exceeded — final_state="walltime_exceeded".
-    Whatever score was accumulated up to that point is kept (no zeroing)."""
+              events_fp, stagnation_sec: float = 60.0,
+              hard_deadline: float | None = None):
+    """Play one game.
+
+    Stagnation rule: if neither game.score nor game.max_tile has changed for
+    `stagnation_sec` seconds of wall time, the game ends with
+    final_state="stagnated" — the score accumulated so far is kept.
+
+    Optional `hard_deadline` (monotonic clock seconds) is an outer
+    runaway-protection cap across the whole eval; if it fires mid-game the
+    game ends with final_state="walltime_exceeded" (kept for backward
+    compatibility with REWARD_BENCH_HARD_WALL_SEC; default disabled).
+    """
     game = GameBoard(seed=seed, target=target)
     solver = solver_class()
     moves = 0
     final_state = "max_moves"
+    last_progress_t = time.monotonic()
+    last_progress_score = game.score
+    last_progress_tile = game.max_tile
     while not game.is_terminal() and moves < max_moves:
-        if deadline is not None and time.monotonic() >= deadline:
+        now = time.monotonic()
+        if hard_deadline is not None and now >= hard_deadline:
             events_fp.write(json.dumps({
                 "seed": seed, "move": moves, "event": "walltime_exceeded_midgame",
                 "score": game.score, "max_tile": game.max_tile,
             }) + "\n")
             final_state = "walltime_exceeded"
+            break
+        if (now - last_progress_t) >= stagnation_sec:
+            events_fp.write(json.dumps({
+                "seed": seed, "move": moves, "event": "stagnated",
+                "score": game.score, "max_tile": game.max_tile,
+                "secs_since_progress": now - last_progress_t,
+            }) + "\n")
+            final_state = "stagnated"
             break
         # Pass an immutable copy to the solver
         board = game.board
@@ -108,6 +135,12 @@ def _play_one(solver_class, seed: int, target: int, max_moves: int,
             break
 
         moves += 1
+        # Track progress for stagnation detector — score or max-tile increase
+        # resets the stagnation clock.
+        if game.score > last_progress_score or game.max_tile > last_progress_tile:
+            last_progress_t = time.monotonic()
+            last_progress_score = game.score
+            last_progress_tile = game.max_tile
         # Compact step trace — keep events.jsonl readable
         if moves % 10 == 0 or game.is_terminal():
             events_fp.write(json.dumps({
@@ -115,7 +148,7 @@ def _play_one(solver_class, seed: int, target: int, max_moves: int,
                 "score": game.score, "max_tile": game.max_tile, "state": game.state,
             }) + "\n")
 
-    if game.state in ("won", "lost") and final_state not in ("walltime_exceeded",):
+    if game.state in ("won", "lost") and final_state not in ("walltime_exceeded", "stagnated"):
         final_state = game.state
     return {
         "seed": seed,
@@ -132,7 +165,8 @@ def main():
     seed_base = int(os.environ.get("REWARD_BENCH_SEED_BASE", "0"))
     target = int(os.environ.get("REWARD_BENCH_TARGET", "2048"))
     max_moves = int(os.environ.get("REWARD_BENCH_MAX_MOVES", "10000"))
-    walltime_budget_sec = float(os.environ.get("REWARD_BENCH_WALLTIME_BUDGET_SEC", "300"))
+    stagnation_sec = float(os.environ.get("REWARD_BENCH_STAGNATION_SEC", "60"))
+    hard_wall_sec = float(os.environ.get("REWARD_BENCH_HARD_WALL_SEC", "0"))
 
     reports_dir = Path(os.environ.get("REWARD_BENCH_REPORTS", "/reports"))
     reports_dir.mkdir(parents=True, exist_ok=True)
@@ -141,7 +175,7 @@ def main():
 
     t0 = time.time()
     mono0 = time.monotonic()
-    deadline = mono0 + walltime_budget_sec if walltime_budget_sec > 0 else None
+    hard_deadline = mono0 + hard_wall_sec if hard_wall_sec > 0 else None
     try:
         solver_class = _load_submission(submission_path)
     except Exception as e:
@@ -150,18 +184,19 @@ def main():
             "exc": repr(e),
             "traceback": traceback.format_exc(),
             "walltime_sec": time.time() - t0,
-            "walltime_budget_sec": walltime_budget_sec,
+            "stagnation_sec": stagnation_sec,
+            "hard_wall_sec": hard_wall_sec,
         }, indent=2))
         return 1
 
     games = []
     walltime_exceeded = False
+    stagnated_any = False
     with open(events_path, "w") as events_fp:
         for i in range(n_games):
             seed = seed_base + i
-            if deadline is not None and time.monotonic() >= deadline:
-                # No budget left — record stub for every remaining game so
-                # mean_score is over n_games (penalising slow solvers fairly).
+            if hard_deadline is not None and time.monotonic() >= hard_deadline:
+                # Outer runaway cap kicked in. Mark remaining games as skipped.
                 events_fp.write(json.dumps({
                     "seed": seed, "event": "walltime_exceeded_skip",
                 }) + "\n")
@@ -178,11 +213,14 @@ def main():
             t_game = time.time()
             res = _play_one(solver_class, seed=seed, target=target,
                             max_moves=max_moves, events_fp=events_fp,
-                            deadline=deadline)
+                            stagnation_sec=stagnation_sec,
+                            hard_deadline=hard_deadline)
             res["walltime_sec"] = time.time() - t_game
             games.append(res)
             if res["final_state"] == "walltime_exceeded":
                 walltime_exceeded = True
+            if res["final_state"] == "stagnated":
+                stagnated_any = True
 
     scores = [g["score"] for g in games]
     max_tiles = [g["max_tile"] for g in games]
@@ -197,8 +235,10 @@ def main():
         "max_score": max(scores) if scores else 0,
         "max_max_tile": max(max_tiles) if max_tiles else 0,
         "aggregate_walltime_sec": time.time() - t0,
-        "walltime_budget_sec": walltime_budget_sec,
+        "stagnation_sec": stagnation_sec,
+        "hard_wall_sec": hard_wall_sec,
         "walltime_exceeded": walltime_exceeded,
+        "stagnated_any": stagnated_any,
     }
     result_path.write_text(json.dumps(summary, indent=2))
     return 0

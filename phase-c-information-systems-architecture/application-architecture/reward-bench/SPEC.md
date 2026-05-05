@@ -109,7 +109,8 @@ class GameResult(BaseModel):
     moves: int = Field(ge=0)
     final_state: Literal[
         "won", "lost", "max_moves",
-        "walltime_exceeded",         # 5-min play budget ran out (Stage-2-side)
+        "stagnated",                 # neither score nor max-tile changed for stagnation_sec
+        "walltime_exceeded",         # outer hard-wall cap fired (only if HARD_WALL_SEC>0)
         "solver_error", "invalid_action",
     ]
     walltime_sec: float
@@ -122,8 +123,10 @@ class AttemptResult(BaseModel):
     max_max_tile: int
     n_games: int
     aggregate_walltime_sec: float
-    walltime_budget_sec: float   # 300 by default per-attempt
-    walltime_exceeded: bool      # True if any game (or skipped game) hit the cap
+    stagnation_sec: float        # default 60 — per-game progress watchdog
+    hard_wall_sec: float         # 0 = disabled. Outer runaway-protection cap.
+    stagnated_any: bool          # any game ended in final_state="stagnated"
+    walltime_exceeded: bool      # any game ended due to outer hard-wall cap
 
 # cheat-check.json
 class CheatFinding(BaseModel):
@@ -200,16 +203,17 @@ make reward-bench-clean
     forever — admin-driven cleanup).
 ```
 
-## Per-attempt walltime budget
+## Per-game stagnation detector
 
-Stage 2 enforces a **5-minute (300 s) walltime budget per attempt**, default for all tiers, override via `REWARD_BENCH_WALLTIME_BUDGET_SEC` (Makefile var: `PLAY_BUDGET`).
+Stage 2 budgets are **per-game**, not per-attempt. Each game runs as long as it's making progress; "progress" means `game.score` increased OR `game.max_tile` increased. If neither has changed for `REWARD_BENCH_STAGNATION_SEC` seconds (default 60), the game ends with `final_state="stagnated"`. The score accumulated up to that point is kept.
 
-- Single shared budget across the 20-game canonical eval — not per-game. ≈15 s/game on average; faster solvers leave headroom.
-- In-container guard: `runner_canonical.py` checks the deadline (a) between games, (b) between moves inside a game. Either path produces `final_state="walltime_exceeded"`. Score for skipped (unstarted) games is 0; score for mid-game cutoff is whatever was already accumulated.
-- Host-side belt-and-suspenders: `timeout` wraps `docker run` (budget + 60 s grace). If the in-container guard fails or hangs, the process gets `SIGTERM`, then `SIGKILL`.
-- `result.json` records `walltime_budget_sec` and `walltime_exceeded` so the leaderboard can surface budget-bound runs.
+- Tier-1 FSMs play 20 games in seconds (microseconds per move) — they never trip the detector.
+- Tier-2+ candidates calling an LLM per move have 60 s ≈ 30-60 moves of headroom; if the policy can't find a merge in that span the game is genuinely stuck and we move on.
+- Detection is wall-time-based, so it normalises across tiers without per-tier tuning.
 
-Rationale: closes the door on "submit a 30-ply expectimax that runs for an hour" cheese, normalises tier-2-4 cost (where each move can be an LLM call), keeps a full reward-battery (~12 models × tier × replay) tractable. Tier-2+ candidates should architect for ≪5 s decision latency or batch decisions across moves.
+An outer runaway cap remains available via `REWARD_BENCH_HARD_WALL_SEC` (default 0 = disabled). Set it to e.g. 1800 if you want to bound total Stage-2 wall time as a safety net for badly-misbehaving solvers.
+
+Rationale: per-game stagnation is more honest than a hard wall budget. A submission that legitimately sustains long, productive games (the textbook expectimax case) shouldn't be punished by a one-size-fits-all clock; one that's stuck in a no-progress loop should be cut off fast regardless of decision latency.
 
 ## Risk surfaces
 
