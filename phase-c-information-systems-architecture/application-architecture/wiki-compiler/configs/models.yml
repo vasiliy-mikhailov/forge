@@ -113,6 +113,29 @@ models:
       Previous Qwen generation, control vs Qwen3.6 (was H2 in the
       original backlog before A8 made the family-bug hypothesis moot).
 
+
+  - id: qwen3.5-27b-nvfp4
+    hf: kaitchup/Qwen3.5-27B-NVFP4
+    served_name: qwen3.5-27b-nvfp4
+    quantization: compressed-tensors
+    kv_cache_dtype: fp8
+    max_model_len: 131072
+    rope_scaling:
+      rope_type: yarn
+      factor: 4.0
+      original_max_position_embeddings: 32768
+    tool_call_parser: qwen3_xml
+    reasoning_parser: qwen3
+    chat_template_kwargs:
+      enable_thinking: false
+    tensor_parallel_size: 1
+    gpu_memory_utilization: 0.92
+    bench_tier: A
+    bench_skip: false
+    notes: |
+      Qwen 3.5-27B NVFP4 (kaitchup/llm-compressor pack, vLLM-native).
+      Pairs with qwen3.5-27b-fp8 for FP8 vs NVFP4 A/B at this generation.
+
   - id: qwen3-32b-fp8
     hf: Qwen/Qwen3-32B-FP8
     served_name: qwen3-32b-fp8
@@ -135,9 +158,9 @@ models:
       Qwen3 base 32B; same parser family as Qwen3.6.
 
   - id: devstral-small-2-24b
-    hf: mistralai/Devstral-Small-2-24B-Instruct-2512
+    hf: Firworks/Devstral-Small-2-24B-Instruct-2512-nvfp4
     served_name: devstral-small-2-24b
-    quantization: null   # vLLM auto-detect
+    quantization: compressed-tensors
     kv_cache_dtype: fp8
     max_model_len: 131072
     rope_scaling:
@@ -152,7 +175,9 @@ models:
     bench_tier: A
     bench_skip: false
     notes: |
-      Mistral code-focused 24B. Native 128K context, factor=1.0 noop.
+      Mistral code-focused 24B, NVFP4 (Firworks LLM-Compressor pack,
+      vLLM-native).  Native 128K context, factor=1.0 noop.  Replaces
+      the BF16 base which is too big to bother with on Blackwell.
 
   - id: mistral-small-3.2-24b
     hf: RedHatAI/Mistral-Small-3.2-24B-Instruct-2506-NVFP4
@@ -196,6 +221,29 @@ models:
     bench_skip: false
     notes: NVidia Llama-3.3-Nemotron Super 49B FP8.
 
+
+  - id: nemotron-super-49b-v1.5-nvfp4
+    hf: nvidia/Llama-3_3-Nemotron-Super-49B-v1_5-NVFP4
+    served_name: nemotron-super-49b-v1.5-nvfp4
+    quantization: modelopt_fp4
+    kv_cache_dtype: fp8
+    max_model_len: 131072
+    rope_scaling:
+      rope_type: yarn
+      factor: 1.0
+      original_max_position_embeddings: 131072
+    tool_call_parser: hermes
+    reasoning_parser: null
+    chat_template_kwargs: {}
+    tensor_parallel_size: 1
+    gpu_memory_utilization: 0.92
+    bench_tier: B
+    bench_skip: false
+    notes: |
+      NVIDIA Llama-3.3-Nemotron-Super-49B v1.5, NVFP4 (NVIDIA-official
+      ModelOpt pack).  Reasoning model — supports /no_think system prompt
+      to disable reasoning ON mode.  ~25 GB on disk.
+
   - id: llama-3.3-70b-nvfp4
     hf: nvidia/Llama-3.3-70B-Instruct-NVFP4
     served_name: llama-3.3-70b-nvfp4
@@ -221,9 +269,9 @@ models:
   # ============================================================
 
   - id: devstral-2-123b
-    hf: mistralai/Devstral-2-123B-Instruct
+    hf: cyankiwi/Devstral-2-123B-Instruct-2512-AWQ-4bit
     served_name: devstral-2-123b
-    quantization: null
+    quantization: awq
     kv_cache_dtype: fp8
     max_model_len: 131072
     rope_scaling:
@@ -233,13 +281,16 @@ models:
     tool_call_parser: mistral
     reasoning_parser: null
     chat_template_kwargs: {}
-    tensor_parallel_size: 2
+    tensor_parallel_size: 1
     gpu_memory_utilization: 0.92
-    bench_tier: C
-    bench_skip: true
+    bench_tier: B
+    bench_skip: false
     notes: |
-      Requires dual-GPU TP=2 (Blackwell + 5090). Compose changes needed
-      to expose both GPUs to vllm-inference; not yet wired.
+      Mistral 123B code model.  AWQ-INT4 (cyankiwi pack) — only viable
+      4-bit format that fits the 97 GB Blackwell solo (~62 GB weights +
+      KV).  No vLLM-compatible NVFP4 quant exists upstream as of 2026-05.
+      Replaces the BF16 base (246 GB, would not fit) and the previous
+      TP=2 plan.
 
   # ============================================================
   # Tier D — historical / refuted (skip-default)
@@ -288,8 +339,8 @@ models:
       enable_thinking: false
     tensor_parallel_size: 1
     gpu_memory_utilization: 0.85
-    bench_tier: A
-    bench_skip: false
+    bench_tier: D
+    bench_skip: true   # MoE not in scope per 2026-05-05 user direction
     notes: |
       Qwen3.6 MoE: 35B total, ~3B active per token via expert routing.
       G2 hypothesis: decode throughput should jump 4-8x vs dense
