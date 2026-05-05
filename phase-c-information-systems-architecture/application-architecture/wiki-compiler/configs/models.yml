@@ -157,6 +157,31 @@ models:
     notes: |
       Qwen3 base 32B; same parser family as Qwen3.6.
 
+
+  - id: qwen3-32b-nvfp4
+    hf: nvidia/Qwen3-32B-NVFP4
+    served_name: qwen3-32b-nvfp4
+    quantization: modelopt_fp4
+    kv_cache_dtype: fp8
+    max_model_len: 131072
+    rope_scaling:
+      rope_type: yarn
+      factor: 4.0
+      original_max_position_embeddings: 32768
+    tool_call_parser: qwen3_xml
+    reasoning_parser: qwen3
+    chat_template_kwargs:
+      enable_thinking: false
+    tensor_parallel_size: 1
+    gpu_memory_utilization: 0.92
+    bench_tier: A
+    bench_skip: false
+    notes: |
+      NVIDIA-official ModelOpt FP4 pack.  73K downloads on HF, 3000x more
+      validated than the AngelSlim NVFP4 pack we tried earlier (which
+      FAILED in May-04 sweep).  Pairs with qwen3-32b-fp8 for FP8 vs NVFP4
+      A/B at this size.
+
   - id: devstral-small-2-24b
     hf: Firworks/Devstral-Small-2-24B-Instruct-2512-nvfp4
     served_name: devstral-small-2-24b
