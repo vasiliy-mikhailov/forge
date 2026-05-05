@@ -9,7 +9,8 @@ Per [ADR 0029](../../../phase-preliminary/adr/0029-reward-bench.md). All scores 
 | Random | (floor) | ~1 000 | ~1 000 | ~1 500 | 128 | 0 | <1 s |
 | `reference_fsm.py` | hand-written FSM (corner-anchor + 1-ply expectimax) | 7 211 | 6 192 | 14 436 | 1 024 | 0 | 6 s |
 | `claude_fsm.py` | **Claude (harness ceiling reference)** — 2-ply expectimax + snake heuristic | **8 632** | **7 012** | **20 440** | **2 048** | **2** | 108 s |
-| (tbd) | candidate models via OpenHands ralph-loop → Stage 2 | — | — | — | — | — | — |
+| candidate-tier1: qwen3.6-27b-nvfp4 | Qwen 3.6-27B (NVFP4) — agent_loop, 25 turns, 589 s Stage-1 walltime | 4 401 | 4 220 | 7 316 | 512 | 0 | 0.4 s |
+| (tbd) | other candidate models via agent_loop → Stage 2 | — | — | — | — | — | — |
 
 ## What the numbers mean
 

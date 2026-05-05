@@ -34,6 +34,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import subprocess
 import sys
@@ -64,38 +65,85 @@ def _trim(s: str, n: int = 4000) -> str:
     return s[: n - 200] + f"\n... [truncated, total {len(s)} chars]"
 
 
+# ----- Virtual → host path remapping -----
+# The model thinks it is operating on /workspace, /env, /tasks. We remap to
+# the actual host directories the operator passed via CLI flags. This keeps
+# the prompt portable across attempts (which live under different host paths)
+# and matches the canonical-eval sandbox's path layout.
+
+def _virt_to_host(virt: str, workspace: Path, env_dir: Path, tasks_dir: Path) -> Path | None:
+    """Resolve a model-supplied virtual path to a host path. Returns None if
+    the path doesn't sit under one of the allowed virtual roots."""
+    if not virt:
+        return None
+    p = virt.strip()
+    # Normalise: strip any trailing slash, collapse double slashes
+    while "//" in p:
+        p = p.replace("//", "/")
+    for prefix, root in (("/workspace", workspace), ("/env", env_dir), ("/tasks", tasks_dir)):
+        if p == prefix or p.startswith(prefix + "/"):
+            tail = p[len(prefix):].lstrip("/")
+            host = (root / tail).resolve() if tail else root.resolve()
+            # Defence-in-depth: post-resolve check to block ../ escapes
+            if not str(host).startswith(str(root.resolve())):
+                return None
+            return host
+    return None
+
+
+def _host_to_virt(host: Path, workspace: Path, env_dir: Path, tasks_dir: Path) -> str:
+    """Best-effort reverse map (used only for echoing paths back)."""
+    h = str(host.resolve())
+    for prefix, root in (("/workspace", workspace), ("/env", env_dir), ("/tasks", tasks_dir)):
+        rs = str(root.resolve())
+        if h == rs:
+            return prefix
+        if h.startswith(rs + "/"):
+            return prefix + "/" + h[len(rs) + 1:]
+    return h
+
+
 def execute_tool(name: str, args: dict[str, str], workspace: Path, env_dir: Path, tasks_dir: Path) -> str:
     """Run one tool. Returns observation text the model will see next turn."""
     if name == "view":
-        path = Path(args.get("path", "")).resolve()
-        # Restrict reads to the three mounts
-        allowed_roots = [workspace.resolve(), env_dir.resolve(), tasks_dir.resolve()]
-        if not any(str(path).startswith(str(root)) for root in allowed_roots):
-            return f"<error>view: path outside allowed roots ({path})</error>"
-        if not path.exists():
-            return f"<error>view: file not found: {path}</error>"
+        virt = args.get("path", "")
+        host = _virt_to_host(virt, workspace, env_dir, tasks_dir)
+        if host is None:
+            return f"<error>view: path must start with /workspace, /env, or /tasks (got {virt!r})</error>"
+        if not host.exists():
+            return f"<error>view: file not found: {virt}</error>"
         try:
-            return f"<view path=\"{path}\">\n{_trim(path.read_text())}\n</view>"
+            return f"<view path=\"{virt}\">\n{_trim(host.read_text())}\n</view>"
         except Exception as e:
             return f"<error>view: {e}</error>"
 
     if name == "write_file":
-        path = Path(args.get("path", ""))
+        virt = args.get("path", "")
         content = args.get("content", "")
-        if not str(path.resolve()).startswith(str(workspace.resolve())):
-            return f"<error>write_file: writes only allowed under /workspace ({path})</error>"
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(content)
-        return f"<ok>wrote {len(content)} chars to {path}</ok>"
+        host = _virt_to_host(virt, workspace, env_dir, tasks_dir)
+        if host is None:
+            return f"<error>write_file: path must start with /workspace (got {virt!r})</error>"
+        if not str(host).startswith(str(workspace.resolve())):
+            return f"<error>write_file: writes only allowed under /workspace (got {virt!r})</error>"
+        host.parent.mkdir(parents=True, exist_ok=True)
+        host.write_text(content)
+        return f"<ok>wrote {len(content)} chars to {virt}</ok>"
 
     if name == "bash":
-        cmd = args.get("cmd", "").strip()
-        if not any(cmd.startswith(p) for p in ALLOWED_BASH_PREFIXES):
-            return f"<error>bash: command not on allow-list. Allowed prefixes:\n" + "\n".join(f"  {p}" for p in ALLOWED_BASH_PREFIXES) + f"\nReceived: {cmd}</error>"
+        virt_cmd = args.get("cmd", "").strip()
+        if not any(virt_cmd.startswith(p) for p in ALLOWED_BASH_PREFIXES):
+            return f"<error>bash: command not on allow-list. Allowed prefixes:\n" + "\n".join(f"  {p}" for p in ALLOWED_BASH_PREFIXES) + f"\nReceived: {virt_cmd}</error>"
+        # Translate virtual paths inside the command. Order matters: longer first.
+        cmd = virt_cmd
+        for prefix, root in (("/workspace", workspace), ("/tasks", tasks_dir), ("/env", env_dir)):
+            cmd = cmd.replace(prefix, str(root.resolve()))
+        # Make `import env_2048` resolve to env_dir/env_2048.py inside dev_runner.
+        env = os.environ.copy()
+        env["PYTHONPATH"] = f"{env_dir.resolve()}:" + env.get("PYTHONPATH", "")
         try:
             result = subprocess.run(
                 cmd, shell=True, capture_output=True, text=True, timeout=120,
-                cwd=str(workspace),
+                cwd=str(workspace), env=env,
             )
             stdout = _trim(result.stdout)
             stderr = _trim(result.stderr)
@@ -113,33 +161,93 @@ def execute_tool(name: str, args: dict[str, str], workspace: Path, env_dir: Path
 
 
 # ----- Tool-call parser -----
+#
+# Format: a single fenced ```tool block per call. The block has two regions
+# separated by a line containing only `---`:
+#
+#   1. JSON args   — small, machine-readable
+#   2. Body text   — optional, used as `content` for write_file. Raw, no
+#                    escaping required (this is the whole point — keeps
+#                    multi-KB Python files in O(file_size) tokens).
+#
+# Example with body:
+#   ```tool
+#   {"name": "write_file", "args": {"path": "/workspace/submission.py"}}
+#   ---
+#   from __future__ import annotations
+#   import math
+#   ... raw code ...
+#   ```
+#
+# Example without body:
+#   ```tool
+#   {"name": "view", "args": {"path": "/env/env_2048.py"}}
+#   ```
 
-# Match <tool name="X"> ... </tool>, capturing name + body.
-_TOOL_RE = re.compile(r"<tool\s+name=\"([^\"]+)\"\s*>(.*?)</tool>", re.DOTALL)
-# Match <key>value</key> inside the body.
-_ARG_RE = re.compile(r"<([a-z_]+)>(.*?)</\1>", re.DOTALL)
+_TOOL_BLOCK_RE = re.compile(r"```tool\s*\n(.*?)\n```", re.DOTALL)
+_BODY_SPLIT_RE = re.compile(r"\n---\s*\n", re.DOTALL)
 
 
 def parse_tool_calls(text: str) -> list[tuple[str, dict[str, str]]]:
     out: list[tuple[str, dict[str, str]]] = []
-    for m in _TOOL_RE.finditer(text):
-        name = m.group(1).strip()
-        body = m.group(2)
-        args: dict[str, str] = {}
-        for am in _ARG_RE.finditer(body):
-            args[am.group(1)] = am.group(2)
-        out.append((name, args))
+    for m in _TOOL_BLOCK_RE.finditer(text):
+        raw = m.group(1)
+        # Split args region from optional body region on `---` line.
+        parts = _BODY_SPLIT_RE.split(raw, maxsplit=1)
+        json_part = parts[0].strip()
+        body_part = parts[1] if len(parts) == 2 else None
+        try:
+            obj = json.loads(json_part)
+        except json.JSONDecodeError:
+            try:
+                obj = json.loads(json_part.rstrip(", \t\n"))
+            except json.JSONDecodeError:
+                continue
+        if not isinstance(obj, dict):
+            continue
+        name = str(obj.get("name", "")).strip()
+        if not name:
+            continue
+        args = obj.get("args", {})
+        if not isinstance(args, dict):
+            args = {}
+        norm: dict[str, str] = {}
+        for k, v in args.items():
+            if isinstance(v, str):
+                norm[k] = v
+            else:
+                norm[k] = json.dumps(v)
+        # Body region attached as `content` if write_file didn't pass one.
+        if body_part is not None:
+            if name == "write_file" and "content" not in norm:
+                norm["content"] = body_part
+            else:
+                norm.setdefault("body", body_part)
+        out.append((name, norm))
     return out
 
 
 # ----- LLM client -----
 
-def call_llm(base_url: str, api_key: str, model: str, messages: list[dict], temperature: float = 0.0) -> str:
+def call_llm(base_url: str, api_key: str, model: str, messages: list[dict],
+             temperature: float = 0.0, max_tokens: int = 12288) -> str:
+    """POST to an OpenAI-compat /v1/chat/completions endpoint.
+
+    max_tokens is set explicitly because some servers (incl. vLLM with default
+    config) cap completions at a small number that truncates tool calls
+    mid-tag.
+
+    tool_choice="none" disables vLLM's auto-tool-choice parser, which
+    otherwise intercepts our XML-style <tool name="…"> blocks (Qwen's tool
+    parser collides with our convention). We do our own parsing in
+    parse_tool_calls()."""
     url = f"{base_url.rstrip('/')}/chat/completions"
     body = json.dumps({
         "model": model,
         "messages": messages,
         "temperature": temperature,
+        "max_tokens": max_tokens,
+        "tool_choice": "none",
     }).encode("utf-8")
     req = urllib.request.Request(
         url, data=body,
@@ -160,26 +268,46 @@ SYSTEM_PROMPT = """You are an expert Python engineer competing in reward-bench T
 
 You have read access to the task spec and the env source, and write access to /workspace.
 
-Available tools (use these exact XML tags; one or more per turn):
+Tool calls go in fenced code blocks tagged `tool` with a JSON body. One or more per turn. Examples:
 
-  <tool name="view"><path>/path</path></tool>
-      Read a file (limited to /workspace, /env, /tasks).
+```tool
+{"name": "view", "args": {"path": "/tasks/2048/SKILL_tier1.md"}}
+```
+  Read a file (paths must start with /workspace, /env, or /tasks).
 
-  <tool name="write_file"><path>/workspace/submission.py</path><content>
-  ...your code...
-  </content></tool>
-      Overwrite a file under /workspace.
+```tool
+{"name": "write_file", "args": {"path": "/workspace/submission.py"}}
+---
+from __future__ import annotations
+import math
+... your full file, raw, no JSON escaping ...
+```
+  Overwrite a file under /workspace. Inside the SAME ```tool block, after a
+  line containing only `---`, put the file content as raw text. NO JSON
+  escaping — newlines, quotes, backslashes all literal. The `---` separator
+  is REQUIRED to start the content region. Everything between the `---`
+  line and the closing ``` becomes the file body.
 
-  <tool name="bash"><cmd>python /tasks/2048/dev_runner.py /workspace/submission.py</cmd></tool>
-      Run an allow-listed command. The dev_runner gives you fast feedback
-      (5 dev-seed games, ~1 sec total).
+```tool
+{"name": "bash", "args": {"cmd": "python3 /tasks/2048/dev_runner.py /workspace/submission.py"}}
+```
+  Run an allow-listed command. The dev_runner gives you fast feedback (5
+  dev-seed games, ~1-5 s total). Use python3 — `python` is not available.
 
-  <tool name="finish"><note>why you're done</note></tool>
-      Stop. Whatever's at /workspace/submission.py gets scored.
+```tool
+{"name": "finish", "args": {"note": "why you're done"}}
+```
+  Stop. Whatever is at /workspace/submission.py at finish time gets scored.
 
-You are in a ralph loop: write → bash dev_runner → observe → refine → repeat until finished or budget exhausted. Be deliberate; quality matters more than turn count. Read the SKILL spec FIRST."""
+You are in a ralph loop: write → bash dev_runner → observe → refine → repeat
+until finished or budget exhausted. Be deliberate — quality matters more than
+turn count. READ THE SKILL SPEC FIRST so you understand the FSM contract,
+allowed imports, and anti-cheat rules.
 
-FIRST_USER = """Start the task. Read /tasks/2048/SKILL_tier1.md to learn the constraints, then optionally /env/env_2048.py for env details, then write your submission to /workspace/submission.py and iterate."""
+Always emit at least one tool call per turn. If you're done, emit a `finish`
+tool call rather than free text — only `finish` stops the loop."""
+
+FIRST_USER = """Start the task. Read /tasks/2048/SKILL_tier1.md to learn the constraints, then optionally /env/env_2048.py for env details, then write your submission to /workspace/submission.py and iterate. Use the fenced-block JSON tool format the system prompt described."""
 
 
 def main():
@@ -236,7 +364,10 @@ def main():
 
         tool_calls = parse_tool_calls(reply)
         if not tool_calls:
-            obs = "<error>no tool calls found in your reply. You must use one of: view, write_file, bash, finish. Wrap each call in <tool name=\"X\">...</tool>.</error>"
+            obs = ("<error>no tool calls found in your reply. Each tool call must be in a "
+                   "fenced code block tagged `tool` containing JSON like "
+                   "```tool\\n{\"name\": \"view\", \"args\": {\"path\": \"/...\"}}\\n```. "
+                   "Allowed names: view, write_file, bash, finish.</error>")
             print(obs, flush=True)
             messages.append({"role": "user", "content": obs})
             trace({"event": "no_tool_calls"})
