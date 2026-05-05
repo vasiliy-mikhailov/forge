@@ -135,7 +135,7 @@ models:
       Qwen3 base 32B; same parser family as Qwen3.6.
 
   - id: devstral-small-2-24b
-    hf: mistralai/Devstral-Small-2-24B
+    hf: mistralai/Devstral-Small-2-24B-Instruct-2512
     served_name: devstral-small-2-24b
     quantization: null   # vLLM auto-detect
     kv_cache_dtype: fp8
@@ -197,7 +197,7 @@ models:
     notes: NVidia Llama-3.3-Nemotron Super 49B FP8.
 
   - id: llama-3.3-70b-nvfp4
-    hf: nvidia/Llama-3.3-70B-Instruct-FP4
+    hf: nvidia/Llama-3.3-70B-Instruct-NVFP4
     served_name: llama-3.3-70b-nvfp4
     quantization: modelopt_fp4
     kv_cache_dtype: fp8
