@@ -72,7 +72,11 @@ lines = [
     # vLLM rejects --reasoning-parser with no value, so we omit the
     # whole flag when reasoning_parser is null.
     f"MODEL_REASONING_PARSER_FLAG={('--reasoning-parser ' + m['reasoning_parser']) if m.get('reasoning_parser') else ''}",
-    f"MODEL_ENABLE_THINKING={'true' if chat.get('enable_thinking', False) else 'false'}",
+    # `enable_thinking` only applies to Qwen 3-family chat templates; passing
+    # it to non-Qwen models (Llama, Gemma, Mistral) hangs vLLM during chat-
+    # template setup. Emit the flag ONLY if the registry entry declares
+    # chat_template_kwargs.enable_thinking explicitly.
+    f"MODEL_CHAT_TEMPLATE_KWARGS_FLAG={('--default-chat-template-kwargs.enable_thinking ' + ('true' if chat.get('enable_thinking') else 'false')) if 'enable_thinking' in chat else ''}",
     f"MODEL_TENSOR_PARALLEL_SIZE={m.get('tensor_parallel_size', 1)}",
     f"MODEL_GPU_MEMORY_UTILIZATION={m.get('gpu_memory_utilization', 0.92)}",
 ]

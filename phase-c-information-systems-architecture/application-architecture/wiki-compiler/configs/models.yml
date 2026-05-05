@@ -155,9 +155,9 @@ models:
       Mistral code-focused 24B. Native 128K context, factor=1.0 noop.
 
   - id: mistral-small-3.2-24b
-    hf: mistralai/Mistral-Small-3.2-24B-Instruct-2506
+    hf: RedHatAI/Mistral-Small-3.2-24B-Instruct-2506-NVFP4
     served_name: mistral-small-3.2-24b
-    quantization: null
+    quantization: compressed-tensors
     kv_cache_dtype: fp8
     max_model_len: 131072
     rope_scaling:
