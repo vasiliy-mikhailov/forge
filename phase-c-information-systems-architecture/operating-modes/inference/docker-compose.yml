@@ -27,7 +27,7 @@ services:
     command: >
       --model ${MODEL_HF}
       --served-model-name ${MODEL_SERVED_NAME}
-      --quantization ${MODEL_QUANTIZATION:-}
+      ${MODEL_QUANTIZATION_FLAG}
       --kv-cache-dtype ${MODEL_KV_CACHE_DTYPE}
       --max-model-len ${MODEL_MAX_MODEL_LEN}
       --hf-overrides.rope_scaling.rope_type ${MODEL_ROPE_TYPE}

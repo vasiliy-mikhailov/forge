@@ -185,12 +185,19 @@ def execute_tool(name: str, args: dict[str, str], workspace: Path, env_dir: Path
 #   ```
 
 _TOOL_BLOCK_RE = re.compile(r"```tool\s*\n(.*?)\n```", re.DOTALL)
+# Fallback: an unclosed ```tool block at the end of the reply. Some models
+# (notably Qwen 3.6) hit a practical generation cap around ~9 KB and stop
+# emitting tokens before they reach the closing fence. This still gives us
+# a parseable tool call most of the time — better than dropping the turn.
+_TOOL_BLOCK_TRAILING_RE = re.compile(r"```tool\s*\n(.*)\Z", re.DOTALL)
 _BODY_SPLIT_RE = re.compile(r"\n---\s*\n", re.DOTALL)
 
 
 def parse_tool_calls(text: str) -> list[tuple[str, dict[str, str]]]:
     out: list[tuple[str, dict[str, str]]] = []
+    consumed_end = 0
     for m in _TOOL_BLOCK_RE.finditer(text):
+        consumed_end = m.end()
         raw = m.group(1)
         # Split args region from optional body region on `---` line.
         parts = _BODY_SPLIT_RE.split(raw, maxsplit=1)
@@ -219,15 +226,87 @@ def parse_tool_calls(text: str) -> list[tuple[str, dict[str, str]]]:
                 norm[k] = json.dumps(v)
         # Body region attached as `content` if write_file didn't pass one.
         if body_part is not None:
+            # Strip the trailing artifacts the model sometimes leaves behind
+            # (XML-ish closing tags from pretraining data — </write_file>,
+            # </content>, </tool>) so they don't end up inside the file.
+            body_part = re.sub(
+                r"(\n*</[a-zA-Z_][a-zA-Z0-9_]*>\s*|\s)+\Z",
+                "", body_part)
             if name == "write_file" and "content" not in norm:
                 norm["content"] = body_part
             else:
                 norm.setdefault("body", body_part)
         out.append((name, norm))
+
+    # Fallback: if no closed tool block matched AT ALL but the reply ends
+    # with an unclosed ```tool block, treat that as one. Catches Qwen-3.6's
+    # generation-cap truncation where the closing fence never lands.
+    if not out:
+        m = _TOOL_BLOCK_TRAILING_RE.search(text)
+        if m:
+            raw = m.group(1)
+            parts = _BODY_SPLIT_RE.split(raw, maxsplit=1)
+            json_part = parts[0].strip()
+            body_part = parts[1] if len(parts) == 2 else None
+            try:
+                obj = json.loads(json_part)
+            except json.JSONDecodeError:
+                obj = None
+            if isinstance(obj, dict):
+                name = str(obj.get("name", "")).strip()
+                args = obj.get("args", {})
+                if name and isinstance(args, dict):
+                    norm: dict[str, str] = {}
+                    for k, v in args.items():
+                        norm[k] = v if isinstance(v, str) else json.dumps(v)
+                    if body_part is not None and name == "write_file":
+                        # Strip trailing artifacts the model emits when it
+                        # runs out of generation budget mid-block:
+                        #   - partial closing code fence ``` or ``
+                        #   - XML-ish closing tags from training data
+                        #     (</write_file>, </content>, </tool>, etc.)
+                        #   - whitespace
+                        body_part = re.sub(
+                            r"(\n```\s*|\n*</[a-zA-Z_][a-zA-Z0-9_]*>\s*|\s)+\Z",
+                            "", body_part)
+                        norm.setdefault("content", body_part)
+                    out.append((name, norm))
     return out
 
 
 # ----- LLM client -----
+
+def _approx_tokens(messages: list[dict]) -> int:
+    """Cheap char-based estimate. Real tokenisation depends on the model;
+    4 chars ≈ 1 token is a conservative upper bound for English/code."""
+    total = 0
+    for m in messages:
+        c = m.get("content", "")
+        if isinstance(c, str):
+            total += len(c)
+    return total // 4
+
+
+def _prune_history(messages: list[dict], target_tokens: int) -> list[dict]:
+    """Keep system + first user + last assistant/observation pairs whose
+    cumulative token count fits target_tokens. Older middle turns are
+    dropped (replaced with a single placeholder note)."""
+    if _approx_tokens(messages) <= target_tokens:
+        return messages
+    if len(messages) < 4:
+        return messages
+    head = messages[:2]  # system + first user
+    tail = messages[2:]
+    # Keep the most recent N pairs that still fit; pop oldest until under target.
+    while _approx_tokens(head + tail) > target_tokens and len(tail) > 2:
+        # Drop two messages (assistant + observation) from the front of the tail.
+        tail = tail[2:]
+    placeholder = {
+        "role": "user",
+        "content": "<note>Earlier turns were pruned to keep the conversation under the context-length watchdog. Your current submission is still on disk at /workspace/submission.py — view it if you need to refresh your memory.</note>",
+    }
+    return head + [placeholder] + tail
+
 
 def call_llm(base_url: str, api_key: str, model: str, messages: list[dict],
              temperature: float = 0.0, max_tokens: int = 12288) -> str:
@@ -305,7 +384,11 @@ turn count. READ THE SKILL SPEC FIRST so you understand the FSM contract,
 allowed imports, and anti-cheat rules.
 
 Always emit at least one tool call per turn. If you're done, emit a `finish`
-tool call rather than free text — only `finish` stops the loop."""
+tool call rather than free text — only `finish` stops the loop. WHEN TO
+FINISH: as soon as your dev_runner mean stops improving for two consecutive
+iterations, your previous-best submission is what scores. Whatever is at
+/workspace/submission.py at finish time is what gets scored — make sure it
+is your best version, not the latest experimental one."""
 
 FIRST_USER = """Start the task. Read /tasks/2048/SKILL_tier1.md to learn the constraints, then optionally /env/env_2048.py for env details, then write your submission to /workspace/submission.py and iterate. Use the fenced-block JSON tool format the system prompt described."""
 
@@ -320,6 +403,8 @@ def main():
     ap.add_argument("--env-dir", required=True, help="ro mount with env_2048.py")
     ap.add_argument("--max-iters", type=int, default=100, help="hard cap on agent turns (default: 100)")
     ap.add_argument("--max-wall-sec", type=float, default=7200.0, help="hard cap on wall time, runaway protection only (default: 2 h)")
+    ap.add_argument("--context-budget-tokens", type=int, default=200_000,
+                    help="approx token budget for conversation; older turns are pruned past this (default: 200k of the 256k qwen3.6 window)")
     ap.add_argument("--trace", default=None, help="optional path to write events.jsonl trace")
     args = ap.parse_args()
 
@@ -348,6 +433,19 @@ def main():
         iter_n += 1
         print(f"\n=== turn {iter_n} ===", flush=True)
         trace({"event": "turn_start", "iter": iter_n})
+
+        # Context-length watchdog — prune older turns when projected token
+        # count exceeds the budget. Keeps system prompt + first user + most
+        # recent turns intact, drops oldest middle turns.
+        approx = _approx_tokens(messages)
+        if approx > args.context_budget_tokens:
+            n_before = len(messages)
+            messages = _prune_history(messages, args.context_budget_tokens)
+            trace({"event": "history_pruned", "before_msgs": n_before,
+                   "after_msgs": len(messages),
+                   "before_approx_tokens": approx,
+                   "after_approx_tokens": _approx_tokens(messages)})
+            print(f"[watchdog] pruned history {n_before}→{len(messages)} msgs, ~{approx} → ~{_approx_tokens(messages)} tokens", flush=True)
 
         try:
             reply = call_llm(args.shim, args.api_key, args.model, messages)

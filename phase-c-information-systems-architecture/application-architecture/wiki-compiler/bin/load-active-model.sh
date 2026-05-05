@@ -59,7 +59,9 @@ lines = [
     f"MODEL_ID={m['id']}",
     f"MODEL_HF={m['hf']}",
     f"MODEL_SERVED_NAME={m['served_name']}",
-    f"MODEL_QUANTIZATION={safe(m.get('quantization'), '')}",
+    # vLLM rejects --quantization with no value, so we emit the full flag
+    # string (or empty) the same way we do for --reasoning-parser.
+    f"MODEL_QUANTIZATION_FLAG={('--quantization ' + m['quantization']) if m.get('quantization') else ''}",
     f"MODEL_KV_CACHE_DTYPE={m.get('kv_cache_dtype', 'fp8')}",
     f"MODEL_MAX_MODEL_LEN={m['max_model_len']}",
     f"MODEL_ROPE_TYPE={rope.get('rope_type', 'yarn')}",
