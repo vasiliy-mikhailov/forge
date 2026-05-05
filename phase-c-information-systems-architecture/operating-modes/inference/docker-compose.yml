@@ -38,6 +38,7 @@ services:
       ${MODEL_CHAT_TEMPLATE_KWARGS_FLAG}
       --tensor-parallel-size ${MODEL_TENSOR_PARALLEL_SIZE}
       --gpu-memory-utilization ${MODEL_GPU_MEMORY_UTILIZATION}
+      --trust-remote-code
       --enable-prefix-caching
       --enable-auto-tool-choice
       --host 0.0.0.0
