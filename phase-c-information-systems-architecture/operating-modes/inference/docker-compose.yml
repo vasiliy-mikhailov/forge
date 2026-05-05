@@ -1,6 +1,6 @@
 services:
   vllm-inference:
-    image: vllm/vllm-openai:v0.19.1-cu130-ubuntu2404
+    image: vllm/vllm-openai:v0.20.0-cu130-ubuntu2404
     container_name: vllm-inference
     environment:
       - NVIDIA_VISIBLE_DEVICES=${INFERENCE_GPU_UUID}

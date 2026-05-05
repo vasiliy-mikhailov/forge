@@ -199,13 +199,13 @@ models:
   - id: llama-3.3-70b-nvfp4
     hf: nvidia/Llama-3.3-70B-Instruct-FP4
     served_name: llama-3.3-70b-nvfp4
-    quantization: nvfp4
+    quantization: modelopt_fp4
     kv_cache_dtype: fp8
-    max_model_len: 131072
+    max_model_len: 32768
     rope_scaling:
       rope_type: yarn
       factor: 1.0
-      original_max_position_embeddings: 131072
+      original_max_position_embeddings: 32768
     tool_call_parser: llama3_json
     reasoning_parser: null
     chat_template_kwargs: {}
