@@ -472,3 +472,24 @@ models:
     notes: |
       Qwen 2.5 72B Instruct, NVFP4 from enfuse pack. ~42GB on disk.
       Companion to llama-3.3-70b-nvfp4 in 70B class.
+
+  - id: gpt-oss-20b
+    hf: openai/gpt-oss-20b
+    served_name: gpt-oss-20b
+    quantization: null
+    kv_cache_dtype: fp8
+    max_model_len: 131072
+    rope_scaling: null
+    tool_call_parser: openai
+    reasoning_parser: null
+    chat_template_kwargs: {}
+    tensor_parallel_size: 1
+    gpu_memory_utilization: 0.85
+    bench_tier: A
+    bench_skip: false
+    notes: |
+      OpenAI gpt-oss-20b. 7.1M HF dl — most-popular open-weights
+      OpenAI release. MoE: 32 experts, 4 active per token (~3.6B
+      effective). Native MXFP4 quantization. ~9 GB on disk.
+      Tool-call parser: hermes (defaults; gpt-oss may use OpenAI's
+      Harmony format internally — check if hermes works first).

@@ -338,7 +338,8 @@ def call_llm(base_url: str, api_key: str, model: str, messages: list[dict],
     )
     with urllib.request.urlopen(req, timeout=4000) as resp:
         data = json.loads(resp.read().decode("utf-8"))
-    return data["choices"][0]["message"]["content"]
+    msg = data["choices"][0]["message"]
+    return (msg.get("reasoning") or "") + (msg.get("content") or "")
 
 
 # ----- Main loop -----
