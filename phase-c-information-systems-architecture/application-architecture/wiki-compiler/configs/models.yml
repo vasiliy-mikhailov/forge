@@ -451,3 +451,24 @@ models:
       Meta Llama 3.1 8B Instruct, NVFP4 from nvidia.
       176K HF downloads. Smallest popular Llama on the Blackwell.
       RoPE: llama3 scheme, factor 8.0 to extend 8K -> 131K.
+
+  - id: qwen2.5-72b-nvfp4
+    hf: enfuse/Qwen2.5-72B-Instruct-NVFP4
+    served_name: qwen2.5-72b-nvfp4
+    quantization: null
+    kv_cache_dtype: fp8
+    max_model_len: 32768
+    rope_scaling:
+      rope_type: yarn
+      factor: 1.0
+      original_max_position_embeddings: 32768
+    tool_call_parser: hermes
+    reasoning_parser: null
+    chat_template_kwargs: {}
+    tensor_parallel_size: 1
+    gpu_memory_utilization: 0.92
+    bench_tier: B
+    bench_skip: false
+    notes: |
+      Qwen 2.5 72B Instruct, NVFP4 from enfuse pack. ~42GB on disk.
+      Companion to llama-3.3-70b-nvfp4 in 70B class.
