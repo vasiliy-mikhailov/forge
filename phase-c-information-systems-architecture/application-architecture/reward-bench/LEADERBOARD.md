@@ -15,6 +15,7 @@ Per [ADR 0029](../../../phase-preliminary/adr/0029-reward-bench.md). All scores 
 | candidate-tier1: qwen3.5-27b-nvfp4 | Qwen 3.5-27B (NVFP4-A16, kaitchup pack) — agent_loop, 61 turns + voluntary `finish`, dev MEAN=9 331 max-tile=1024 | 6 847 | 6 436 | 14 364 | 1 024 | 0 | 0.1 s |
 | candidate-tier1: nemotron-super-49b-v1.5-nvfp4 | Llama-3.3-Nemotron-Super 49B (NVFP4) — **skipped**: reasoning model burns 5+ min of `<think>` per turn at 35 tok/s decode; Stage 1 didn't produce its first reply within reasonable bounds. Tier 1 harness assumes non-reasoning authors. | — | — | — | — | — | — |
 | candidate-tier1: gemma-4-31b-nvfp4 | Gemma 4 31B IT (NVFP4) — agent_loop, 10 turns + voluntary `finish` at 121 s, dev MEAN=2 054 max-tile=256 | 1 303 | 1 072 | 2 680 | 256 | 0 | 0.1 s |
+| candidate-tier1: llama-3.1-8b-nvfp4 | Llama 3.1 8B Instruct (NVFP4) — **rejected**: at registry's 32K context, agent_loop overflows by turn 3 (rolling history >20K, +12K output reservation = 32 769 vs 32 768 max). Bumped to yarn factor 8 (max 64K), but at 64K extension the model degenerates into incoherent output (repeated single tokens). 8B is too small and yarn-extended too far for this harness. | — | — | — | — | — | — |
 | (tbd) | other candidate models via agent_loop → Stage 2 | — | — | — | — | — | — |
 
 ## What the numbers mean
