@@ -12,6 +12,7 @@ Per [ADR 0029](../../../phase-preliminary/adr/0029-reward-bench.md). All scores 
 | `claude_fsm.py` | **Claude (harness ceiling reference)** — 2-ply expectimax + snake heuristic | 8 632 | 7 012 | 20 440 | 2 048 | 2 | 108 s |
 | candidate-tier1: qwen3.6-27b-nvfp4 | Qwen 3.6-27B (NVFP4) — agent_loop, 25 turns, 589 s Stage-1 walltime | 4 401 | 4 220 | 7 316 | 512 | 0 | 0.4 s |
 | candidate-tier1: qwen3-32b-fp8 | Qwen 3-32B (FP8) — agent_loop, 9 turns + voluntary `finish`, 77 s Stage-1 walltime | 2 585 | 2 544 | 4 344 | 256 | 0 | 0.2 s |
+| candidate-tier1: qwen3.5-27b-nvfp4 | Qwen 3.5-27B (NVFP4-A16, kaitchup pack) — agent_loop, 61 turns + voluntary `finish`, dev MEAN=9 331 max-tile=1024 | 6 847 | 6 436 | 14 364 | 1 024 | 0 | 0.1 s |
 | (tbd) | other candidate models via agent_loop → Stage 2 | — | — | — | — | — | — |
 
 ## What the numbers mean
