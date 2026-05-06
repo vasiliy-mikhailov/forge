@@ -252,6 +252,7 @@ models:
     served_name: nemotron-super-49b-v1.5-nvfp4
     quantization: modelopt_fp4
     kv_cache_dtype: fp8
+    reasoning_parser: nemotron_v3
     max_model_len: 131072
     rope_scaling:
       rope_type: yarn
@@ -401,3 +402,48 @@ models:
       is gemma4 (vLLM has gemma4_tool_parser). YaRN factor 1.0
       since Gemma 4 31B already supports 128K natively (no extension).
 
+  - id: gemma-4-31b-nvfp4
+    hf: nvidia/Gemma-4-31B-IT-NVFP4
+    served_name: gemma-4-31b-nvfp4
+    quantization: null
+    kv_cache_dtype: fp8
+    max_model_len: 131072
+    rope_scaling:
+      rope_type: yarn
+      factor: 1.0
+      original_max_position_embeddings: 131072
+    tool_call_parser: gemma4
+    reasoning_parser: null
+    chat_template_kwargs: {}
+    tensor_parallel_size: 1
+    gpu_memory_utilization: 0.85
+    bench_tier: A
+    bench_skip: false
+    notes: |
+      Google Gemma 4 31B instruction-tuned, NVFP4 from nvidia.
+      2.2M HF downloads — most-downloaded NVFP4 pack on HF as of 2026-05.
+      Companion to gemma-4-31b-fp8; same base model, lower VRAM/faster
+      decode on Blackwell sm_120. quantization=null because the pack
+      ships pre-quantized (vLLM auto-detects from hf_quant_config).
+
+  - id: llama-3.1-8b-nvfp4
+    hf: nvidia/Llama-3.1-8B-Instruct-NVFP4
+    served_name: llama-3.1-8b-nvfp4
+    quantization: null
+    kv_cache_dtype: fp8
+    max_model_len: 32768
+    rope_scaling:
+      rope_type: yarn
+      factor: 4.0
+      original_max_position_embeddings: 8192
+    tool_call_parser: llama3_json
+    reasoning_parser: null
+    chat_template_kwargs: {}
+    tensor_parallel_size: 1
+    gpu_memory_utilization: 0.85
+    bench_tier: A
+    bench_skip: false
+    notes: |
+      Meta Llama 3.1 8B Instruct, NVFP4 from nvidia.
+      176K HF downloads. Smallest popular Llama on the Blackwell.
+      RoPE: llama3 scheme, factor 8.0 to extend 8K -> 131K.
