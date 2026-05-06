@@ -64,9 +64,26 @@ lines = [
     f"MODEL_QUANTIZATION_FLAG={('--quantization ' + m['quantization']) if m.get('quantization') else ''}",
     f"MODEL_KV_CACHE_DTYPE={m.get('kv_cache_dtype', 'fp8')}",
     f"MODEL_MAX_MODEL_LEN={m['max_model_len']}",
-    f"MODEL_ROPE_TYPE={rope.get('rope_type', 'yarn')}",
-    f"MODEL_ROPE_FACTOR={rope.get('factor', 1.0)}",
-    f"MODEL_ROPE_ORIG_MAX={rope.get('original_max_position_embeddings', m['max_model_len'])}",
+    # Build MODEL_ROPE_OVERRIDE_FLAGS — empty when registry omits rope_scaling
+    # (use the model's native RoPE config), or 3 fields for yarn, or 5 fields
+    # for llama3. Emitting an empty value lets compose substitute nothing,
+    # so vLLM falls back to the model's native RoPE.
+    f"MODEL_ROPE_OVERRIDE_FLAGS={{rope_flags}}".format(rope_flags=(
+        "" if not rope else (
+            " ".join([
+                "--hf-overrides.rope_scaling.rope_type",   rope["rope_type"],
+                "--hf-overrides.rope_scaling.factor",      str(rope["factor"]),
+                "--hf-overrides.rope_scaling.original_max_position_embeddings", str(rope["original_max_position_embeddings"]),
+                "--hf-overrides.rope_scaling.low_freq_factor",  str(rope["low_freq_factor"]),
+                "--hf-overrides.rope_scaling.high_freq_factor", str(rope["high_freq_factor"]),
+            ]) if rope.get("rope_type") == "llama3" else
+            " ".join([
+                "--hf-overrides.rope_scaling.rope_type",   rope.get("rope_type", "yarn"),
+                "--hf-overrides.rope_scaling.factor",      str(rope.get("factor", 1.0)),
+                "--hf-overrides.rope_scaling.original_max_position_embeddings", str(rope.get("original_max_position_embeddings", m["max_model_len"])),
+            ])
+        )
+    )),
     f"MODEL_TOOL_CALL_PARSER={m.get('tool_call_parser', 'hermes')}",
     # Emit a complete flag string so compose can pass it verbatim;
     # vLLM rejects --reasoning-parser with no value, so we omit the

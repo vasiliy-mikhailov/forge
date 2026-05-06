@@ -30,9 +30,7 @@ services:
       ${MODEL_QUANTIZATION_FLAG}
       --kv-cache-dtype ${MODEL_KV_CACHE_DTYPE}
       --max-model-len ${MODEL_MAX_MODEL_LEN}
-      --hf-overrides.rope_scaling.rope_type ${MODEL_ROPE_TYPE}
-      --hf-overrides.rope_scaling.factor ${MODEL_ROPE_FACTOR}
-      --hf-overrides.rope_scaling.original_max_position_embeddings ${MODEL_ROPE_ORIG_MAX}
+      ${MODEL_ROPE_OVERRIDE_FLAGS}
       --tool-call-parser ${MODEL_TOOL_CALL_PARSER}
       ${MODEL_REASONING_PARSER_FLAG}
       ${MODEL_CHAT_TEMPLATE_KWARGS_FLAG}
