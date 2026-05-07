@@ -19,6 +19,7 @@ Per [ADR 0029](../../../phase-preliminary/adr/0029-reward-bench.md). All scores 
 | candidate-tier1: qwen2.5-72b-nvfp4 | Qwen 2.5-72B Instruct (NVFP4, enfuse) — agent_loop, 8 turns + voluntary `finish` at 221 s, dev MEAN=2 574 max-tile=256 | 2 921 | 2 946 | 5 128 | 512 | 0 | 0.2 s |
 | candidate-tier1: llama-3.3-70b-nvfp4 | Llama 3.3 70B Instruct (NVFP4) — **rejected**: in 1 turn (17 s), model emitted multiple stacked fenced tool blocks (view + write_file + bash + finish) and copied the placeholder text `... your full file, raw, no JSON escaping ...` from the system-prompt example into submission.py, then called `finish`. SyntaxError at parse — submission unloadable. Pure instruction-following failure. | — | — | — | — | — | — |
 | candidate-tier1: gpt-oss-20b | OpenAI gpt-oss-20b (native MXFP4, 32-expert MoE, 4 active = ~3.6B effective) — agent_loop, ~54 turns to write a working FSM, then stuck in reasoning loop. Required (1) bypass docker-compose to drop `--tool-call-parser`, (2) patch agent_loop to coalesce `content=None` and concat `reasoning + content` so harmony channel output reaches the parser. Dev MEAN=3 241 max-tile=512 | 2 990 | 2 998 | 6 812 | 512 | 0 | 0.1 s |
+| candidate-tier1: gpt-oss-120b | OpenAI gpt-oss-120b (native MXFP4, 128-expert MoE, 4 active) — agent_loop, 20 turns + voluntary `finish` at 124 s, dev MEAN=3 328 max-tile=256. Same harmony-format infra fixes as gpt-oss-20b. | 3 149 | 3 160 | 6 756 | 512 | 0 | 0.2 s |
 | (tbd) | other candidate models via agent_loop → Stage 2 | — | — | — | — | — | — |
 
 ## What the numbers mean

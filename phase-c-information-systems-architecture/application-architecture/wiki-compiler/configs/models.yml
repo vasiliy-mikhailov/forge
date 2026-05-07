@@ -493,3 +493,22 @@ models:
       effective). Native MXFP4 quantization. ~9 GB on disk.
       Tool-call parser: hermes (defaults; gpt-oss may use OpenAI's
       Harmony format internally — check if hermes works first).
+
+  - id: gpt-oss-120b
+    hf: openai/gpt-oss-120b
+    served_name: gpt-oss-120b
+    quantization: null
+    kv_cache_dtype: fp8
+    max_model_len: 65536
+    rope_scaling: null
+    tool_call_parser: openai
+    reasoning_parser: null
+    chat_template_kwargs: {}
+    tensor_parallel_size: 1
+    gpu_memory_utilization: 0.92
+    bench_tier: A
+    bench_skip: false
+    notes: |
+      OpenAI gpt-oss-120b. 4.4M HF dl. MoE: 128 experts, 4 active.
+      ~60GB MXFP4. Use openai tool parser; agent_loop reads
+      reasoning + content channels.
