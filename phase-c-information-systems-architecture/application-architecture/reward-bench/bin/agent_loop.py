@@ -190,7 +190,7 @@ _TOOL_BLOCK_RE = re.compile(r"```tool\s*\n(.*?)\n```", re.DOTALL)
 # emitting tokens before they reach the closing fence. This still gives us
 # a parseable tool call most of the time — better than dropping the turn.
 _TOOL_BLOCK_TRAILING_RE = re.compile(r"```tool\s*\n(.*)\Z", re.DOTALL)
-_BODY_SPLIT_RE = re.compile(r"\n---\s*\n", re.DOTALL)
+_BODY_SPLIT_RE = re.compile(r"\n(?:===FILE_BODY===|---)\s*\n", re.DOTALL)
 
 
 def parse_tool_calls(text: str) -> list[tuple[str, dict[str, str]]]:
@@ -357,16 +357,18 @@ Tool calls go in fenced code blocks tagged `tool` with a JSON body. One or more 
 
 ```tool
 {"name": "write_file", "args": {"path": "/workspace/submission.py"}}
----
+===FILE_BODY===
 from __future__ import annotations
 import math
 ... your full file, raw, no JSON escaping ...
 ```
   Overwrite a file under /workspace. Inside the SAME ```tool block, after a
-  line containing only `---`, put the file content as raw text. NO JSON
-  escaping — newlines, quotes, backslashes all literal. The `---` separator
-  is REQUIRED to start the content region. Everything between the `---`
-  line and the closing ``` becomes the file body.
+  line containing exactly `===FILE_BODY===`, put the file content as raw
+  text. NO JSON escaping — newlines, quotes, backslashes all literal. The
+  `===FILE_BODY===` separator is REQUIRED to start the content region.
+  Everything between that line and the closing ``` becomes the file body.
+  IMPORTANT: do NOT use `===FILE_BODY===` anywhere inside the file body
+  itself — it's a parser separator, not a section marker.
 
 ```tool
 {"name": "bash", "args": {"cmd": "python3 /tasks/2048/dev_runner.py /workspace/submission.py"}}
