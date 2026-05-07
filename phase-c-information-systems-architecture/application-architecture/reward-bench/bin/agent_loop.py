@@ -396,6 +396,41 @@ is your best version, not the latest experimental one."""
 FIRST_USER = """Start the task. Read /tasks/2048/SKILL_tier1.md to learn the constraints, then optionally /env/env_2048.py for env details, then write your submission to /workspace/submission.py and iterate. Use the fenced-block JSON tool format the system prompt described."""
 
 
+_DEV_MEAN_RE = re.compile(r"^\s*MEAN=(\d+)\b", re.MULTILINE)
+
+
+def _parse_dev_mean(bash_obs: str) -> int | None:
+    """Parse dev_runner output bash observation for MEAN=N. None if not found."""
+    m = _DEV_MEAN_RE.search(bash_obs)
+    return int(m.group(1)) if m else None
+
+
+def _snapshot_best(workspace: "Path") -> bool:
+    """Copy submission.py → submission.best.py. Returns True on success."""
+    src = workspace / "submission.py"
+    dst = workspace / "submission.best.py"
+    if not src.exists():
+        return False
+    try:
+        dst.write_bytes(src.read_bytes())
+        return True
+    except Exception:
+        return False
+
+
+def _restore_best(workspace: "Path") -> bool:
+    """Copy submission.best.py → submission.py at end of loop, if best exists."""
+    src = workspace / "submission.best.py"
+    dst = workspace / "submission.py"
+    if not src.exists():
+        return False
+    try:
+        dst.write_bytes(src.read_bytes())
+        return True
+    except Exception:
+        return False
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--shim", required=True, help="OpenAI-compatible base URL, e.g. http://localhost:8765/v1")
@@ -404,7 +439,11 @@ def main():
     ap.add_argument("--workspace", required=True, help="rw scratch + final submission.py lives here")
     ap.add_argument("--tasks-dir", required=True, help="ro mount with task files")
     ap.add_argument("--env-dir", required=True, help="ro mount with env_2048.py")
-    ap.add_argument("--max-iters", type=int, default=100, help="hard cap on agent turns (default: 100)")
+    ap.add_argument("--max-iters", type=int, default=30, help="hard cap on agent turns (default: 30 — placed-model trajectories show peak by 60-80%)")
+    ap.add_argument("--max-no-improve", type=int, default=5,
+                    help="stop loop after N consecutive dev_runs without improving best dev MEAN (default: 5)")
+    ap.add_argument("--finish-floor", type=int, default=7211,
+                    help="reject `finish` if best dev MEAN < this (default: 7211 = reference_fsm.py mean)")
     ap.add_argument("--max-wall-sec", type=float, default=7200.0, help="hard cap on wall time, runaway protection only (default: 2 h)")
     ap.add_argument("--context-budget-tokens", type=int, default=200_000,
                     help="approx token budget for conversation; older turns are pruned past this (default: 200k of the 256k qwen3.6 window)")
@@ -430,6 +469,9 @@ def main():
 
     t0 = time.time()
     finished = False
+    best_dev_mean = -1
+    no_improve_count = 0
+    plateau_stopped = False
     iter_n = 0
 
     while iter_n < args.max_iters and (time.time() - t0) < args.max_wall_sec and not finished:
@@ -479,18 +521,70 @@ def main():
             obs = execute_tool(name, tool_args, workspace, env_dir, tasks_dir)
             print(f"--- tool {name} ---\n{_trim(obs, 2000)}", flush=True)
             trace({"event": "tool_call", "name": name, "args_keys": list(tool_args.keys())})
-            observations.append(obs)
+
+            # --- best-checkpoint + plateau detection on dev_runner bash output ---
+            if name == "bash":
+                dev_mean = _parse_dev_mean(obs)
+                if dev_mean is not None:
+                    if dev_mean > best_dev_mean:
+                        best_dev_mean = dev_mean
+                        no_improve_count = 0
+                        snapped = _snapshot_best(workspace)
+                        print(f"[harness] new best dev MEAN={dev_mean} (snapshot={snapped})", flush=True)
+                        trace({"event": "best_snapshot", "dev_mean": dev_mean,
+                               "iter": iter_n})
+                    else:
+                        no_improve_count += 1
+                        print(f"[harness] no-improve {no_improve_count}/{args.max_no_improve} (this={dev_mean}, best={best_dev_mean})", flush=True)
+                        trace({"event": "no_improve", "dev_mean": dev_mean,
+                               "best": best_dev_mean, "count": no_improve_count})
+                    if no_improve_count >= args.max_no_improve:
+                        plateau_stopped = True
+                        print(f"[harness] plateau-stop after {args.max_no_improve} non-improving dev_runs", flush=True)
+                        trace({"event": "plateau_stop", "best_dev_mean": best_dev_mean,
+                               "iter": iter_n})
+
+            # --- finish-floor: reject finish() below the reference_fsm.py baseline ---
             if name == "finish":
-                finished = True
+                if best_dev_mean < args.finish_floor:
+                    rejected = (
+                        f"<error>finish rejected: best dev MEAN so far is "
+                        f"{best_dev_mean if best_dev_mean >= 0 else 'unknown (no dev_run yet)'}, "
+                        f"which is below the reference_fsm.py baseline ({args.finish_floor}). "
+                        f"You must produce a submission scoring above this floor before finishing. "
+                        f"Run `python /tasks/2048/dev_runner.py /workspace/submission.py` to test, "
+                        f"then refine your FSM until dev MEAN exceeds {args.finish_floor}.</error>"
+                    )
+                    obs = rejected
+                    print(f"[harness] finish rejected (best_dev_mean={best_dev_mean} < floor={args.finish_floor})", flush=True)
+                    trace({"event": "finish_rejected", "best_dev_mean": best_dev_mean,
+                           "floor": args.finish_floor})
+                else:
+                    finished = True
+
+            observations.append(obs)
 
         messages.append({"role": "user", "content": "\n\n".join(observations)})
 
+        if plateau_stopped:
+            break
+
     elapsed = time.time() - t0
     submission = workspace / "submission.py"
+    best_path = workspace / "submission.best.py"
+    restored = False
+    if best_path.exists():
+        restored = _restore_best(workspace)
+        if restored:
+            print(f"[harness] restored submission.best.py (dev MEAN={best_dev_mean}) to submission.py for Stage 2", flush=True)
+            trace({"event": "best_restored", "dev_mean": best_dev_mean})
     summary = {
         "iterations": iter_n,
         "wall_sec": elapsed,
         "finished_via_tool": finished,
+        "plateau_stopped": plateau_stopped,
+        "best_dev_mean": best_dev_mean,
+        "best_restored": restored,
         "submission_exists": submission.exists(),
         "submission_size": submission.stat().st_size if submission.exists() else 0,
     }
