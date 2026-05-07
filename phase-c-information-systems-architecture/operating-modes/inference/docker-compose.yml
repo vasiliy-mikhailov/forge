@@ -16,6 +16,7 @@ services:
                 - ${INFERENCE_GPU_UUID}
     volumes:
       - ${STORAGE_ROOT}/shared/models:/root/.cache/huggingface
+      - /mnt/fire/forge/shared/models/hub:/mnt/fire/forge/shared/models/hub
     expose:
       - "8000"
     shm_size: "16gb"
