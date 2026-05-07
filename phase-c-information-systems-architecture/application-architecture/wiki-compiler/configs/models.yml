@@ -512,3 +512,62 @@ models:
       OpenAI gpt-oss-120b. 4.4M HF dl. MoE: 128 experts, 4 active.
       ~60GB MXFP4. Use openai tool parser; agent_loop reads
       reasoning + content channels.
+
+  - id: devstral-2-123b-nvfp4
+    hf: BrainForge/Devstral-2-123B-Instruct-2512-NVFP4
+    served_name: devstral-2-123b-nvfp4
+    quantization: null
+    kv_cache_dtype: fp8
+    max_model_len: 32768
+    rope_scaling:
+      rope_type: yarn
+      factor: 1.0
+      original_max_position_embeddings: 32768
+    tool_call_parser: mistral
+    reasoning_parser: null
+    chat_template_kwargs: {}
+    tensor_parallel_size: 1
+    gpu_memory_utilization: 0.92
+    bench_tier: B
+    bench_skip: false
+    notes: |
+      Devstral 2 123B Instruct, NVFP4 from BrainForge pack. ~62GB
+      on disk. Mistral-Large arch, code-tuned. Companion to
+      devstral-small-2-24b for the 100B+ coding class.
+
+  - id: nemotron-3-super-120b-a12b-nvfp4
+    hf: nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-NVFP4
+    served_name: nemotron-3-super-120b-a12b-nvfp4
+    quantization: null
+    kv_cache_dtype: fp8
+    max_model_len: 32768
+    rope_scaling: null
+    tool_call_parser: hermes
+    reasoning_parser: null
+    chat_template_kwargs: {}
+    tensor_parallel_size: 1
+    gpu_memory_utilization: 0.92
+    bench_tier: A
+    bench_skip: false
+    notes: |
+      NVIDIA Nemotron 3 Super 120B-A12B Instruct, NVFP4. ~75GB on
+      disk. MoE: 12B active per token. 897K HF dl. Companion to
+      v1.5 49B.
+
+  - id: nemotron-3-super-120b-nvfp4
+    hf: nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-NVFP4
+    served_name: nemotron-3-super-120b-nvfp4
+    quantization: null
+    kv_cache_dtype: fp8
+    max_model_len: 16384
+    rope_scaling: null
+    tool_call_parser: hermes
+    reasoning_parser: null
+    chat_template_kwargs: {}
+    tensor_parallel_size: 1
+    gpu_memory_utilization: 0.85
+    bench_tier: A
+    bench_skip: false
+    notes: |
+      NVIDIA Nemotron 3 Super 120B (A12B MoE), NVFP4. 899K HF dl.
+      ~75GB on disk. Reasoning model (uses <think> tags).
