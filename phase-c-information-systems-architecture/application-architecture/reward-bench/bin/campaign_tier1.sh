@@ -113,7 +113,7 @@ run_sweep() {
       --seed "$trial" --temperature "$TEMPERATURE" \
       --condenser-shim "$CONDENSER_URL" --condenser-model "$CONDENSER_MODEL" \
       --condenser-api-key "$VLLM_API_KEY" \
-      --condenser-trigger-tokens 80000 --condenser-keep-recent 8 \
+      --condenser-trigger-tokens 40000 --condenser-keep-recent 8 \
       --trace "$exp_dir/events.jsonl" \
       > "$exp_dir/agent.log" 2>&1
     local rc=$?

@@ -329,7 +329,7 @@ models:
     served_name: qwen3.6-27b
     quantization: null   # compressed-tensors auto-detect
     kv_cache_dtype: fp8
-    max_model_len: 65536
+    max_model_len: 131072
     rope_scaling:
       rope_type: yarn
       factor: 2.0
@@ -499,7 +499,7 @@ models:
     served_name: gpt-oss-120b
     quantization: null
     kv_cache_dtype: fp8
-    max_model_len: 65536
+    max_model_len: 131072
     rope_scaling: null
     tool_call_parser: openai
     reasoning_parser: null
