@@ -500,6 +500,67 @@ def _condense_history(messages: list[dict], condenser_args) -> list[dict]:
     return head + [summary_msg] + tail
 
 
+def _get_max_model_len(shim_url: str, api_key: str, model: str) -> int | None:
+    """GET shim/v1/models. Return max_model_len for `model`, or None if unknown."""
+    try:
+        url = f"{shim_url.rstrip('/')}/models"
+        req = urllib.request.Request(
+            url,
+            headers={"Authorization": f"Bearer {api_key}"},
+        )
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+        for entry in data.get("data", []):
+            if entry.get("id") == model and entry.get("max_model_len"):
+                return int(entry["max_model_len"])
+        # Fallback: first entry's max_model_len if there's only one.
+        entries = data.get("data", [])
+        if len(entries) == 1 and entries[0].get("max_model_len"):
+            return int(entries[0]["max_model_len"])
+    except Exception:
+        return None
+    return None
+
+
+def _check_context_guardrail(args) -> None:
+    """Refuse to start if the budget would exceed vLLM's reject threshold.
+
+    vLLM rejects requests where prompt_tokens + max_tokens > max_model_len.
+    Our effective input ceiling is therefore max_model_len - 12288 (call_llm's
+    default max_tokens). If --condenser-trigger-tokens (when condenser is
+    enabled) or --context-budget-tokens (when not) >= that ceiling, the
+    watchdog/condenser fires too late and the loop hits an HTTP 400 cascade.
+    """
+    max_model_len = _get_max_model_len(args.shim, args.api_key, args.model)
+    if max_model_len is None:
+        print("[guardrail] could not read max_model_len from shim — skipping check", flush=True)
+        return
+    # 12288 is call_llm's default max_tokens per request. Mirrored here.
+    max_safe_input = max_model_len - 12288
+    condenser_enabled = bool(args.condenser_shim and args.condenser_model)
+
+    if condenser_enabled:
+        knob = "--condenser-trigger-tokens"
+        val = args.condenser_trigger_tokens
+    else:
+        knob = "--context-budget-tokens"
+        val = args.context_budget_tokens
+
+    if val >= max_safe_input:
+        sys.stderr.write(
+            "[guardrail] context budget would exceed max_safe_input.\n"
+            f"  candidate max_model_len = {max_model_len}\n"
+            f"  max_tokens reserved per call = 12288\n"
+            f"  max_safe_input = {max_safe_input} (= max_model_len - max_tokens)\n"
+            f"  {knob} = {val}  (must be < max_safe_input)\n"
+            "Lower the value, raise the candidate's max_model_len, or run without\n"
+            "this guardrail by editing _check_context_guardrail.\n"
+        )
+        sys.exit(2)
+    print(f"[guardrail] OK: {knob}={val} < max_safe_input={max_safe_input} "
+          f"(max_model_len={max_model_len})", flush=True)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--shim", required=True, help="OpenAI-compatible base URL, e.g. http://localhost:8765/v1")
@@ -532,6 +593,7 @@ def main():
                     help="approx token budget for conversation; older turns are pruned past this (default: 200k of the 256k qwen3.6 window)")
     ap.add_argument("--trace", default=None, help="optional path to write events.jsonl trace")
     args = ap.parse_args()
+    _check_context_guardrail(args)
 
     workspace = Path(args.workspace).resolve()
     workspace.mkdir(parents=True, exist_ok=True)
