@@ -309,7 +309,8 @@ def _prune_history(messages: list[dict], target_tokens: int) -> list[dict]:
 
 
 def call_llm(base_url: str, api_key: str, model: str, messages: list[dict],
-             temperature: float = 0.0, max_tokens: int = 12288) -> str:
+             temperature: float = 0.0, max_tokens: int = 12288,
+             seed: int | None = None) -> str:
     """POST to an OpenAI-compat /v1/chat/completions endpoint.
 
     max_tokens is set explicitly because some servers (incl. vLLM with default
@@ -321,13 +322,16 @@ def call_llm(base_url: str, api_key: str, model: str, messages: list[dict],
     parser collides with our convention). We do our own parsing in
     parse_tool_calls()."""
     url = f"{base_url.rstrip('/')}/chat/completions"
-    body = json.dumps({
+    body_dict = {
         "model": model,
         "messages": messages,
         "temperature": temperature,
         "max_tokens": max_tokens,
         "tool_choice": "none",
-    }).encode("utf-8")
+    }
+    if seed is not None:
+        body_dict["seed"] = seed
+    body = json.dumps(body_dict).encode("utf-8")
     req = urllib.request.Request(
         url, data=body,
         headers={
@@ -431,6 +435,71 @@ def _restore_best(workspace: "Path") -> bool:
         return False
 
 
+def _summarize_messages(msgs: list[dict], condenser_shim: str,
+                        condenser_model: str, condenser_api_key: str) -> str:
+    """Send msgs to condenser LLM, get back a concise summary string."""
+    transcript = "\n\n".join(
+        f"[{m['role']}]\n{m.get('content', '') or m.get('reasoning', '') or ''}" for m in msgs
+    )
+    prompt = (
+        "You are a context condenser. Summarize the following conversation between an "
+        "agent and its tool environment. Preserve: (1) the user's task and constraints; "
+        "(2) what the agent has already tried; (3) what the agent has discovered or "
+        "decided; (4) the current state of /workspace/submission.py and any dev_runner "
+        "scores observed; (5) the agent's plan for the next steps. Be concise but "
+        "complete. Output the summary only, no preamble.\n\n"
+        + transcript
+    )
+    body = json.dumps({
+        "model": condenser_model,
+        "messages": [{"role": "user", "content": prompt}],
+        "temperature": 0.0,
+        "max_tokens": 4096,
+    }).encode("utf-8")
+    req = urllib.request.Request(
+        f"{condenser_shim.rstrip('/')}/chat/completions",
+        data=body,
+        headers={"Content-Type": "application/json",
+                 "Authorization": f"Bearer {condenser_api_key}"},
+        method="POST",
+    )
+    with urllib.request.urlopen(req, timeout=600) as resp:
+        data = json.loads(resp.read().decode("utf-8"))
+    msg = data["choices"][0]["message"]
+    return (msg.get("reasoning") or "") + (msg.get("content") or "")
+
+
+def _condense_history(messages: list[dict], condenser_args) -> list[dict]:
+    """Replace middle turns with a single LLM-generated summary message.
+
+    Keeps: messages[0] (system), messages[1] (first user), messages[-2*keep_recent:]
+    (last N turn-pairs).
+    """
+    keep = condenser_args.condenser_keep_recent
+    head = messages[:2]
+    tail_n = max(2, 2 * keep)
+    tail = messages[-tail_n:] if len(messages) > 2 + tail_n else []
+    middle = messages[2:-tail_n] if tail else messages[2:]
+    if not middle:
+        return messages
+
+    summary_text = _summarize_messages(
+        middle,
+        condenser_args.condenser_shim,
+        condenser_args.condenser_model,
+        condenser_args.condenser_api_key,
+    )
+    summary_msg = {
+        "role": "user",
+        "content": (
+            "[CONDENSED HISTORY — earlier turns summarized by condenser model]\n\n"
+            + summary_text
+            + "\n\n[END CONDENSED HISTORY — recent turns continue below]"
+        ),
+    }
+    return head + [summary_msg] + tail
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--shim", required=True, help="OpenAI-compatible base URL, e.g. http://localhost:8765/v1")
@@ -444,6 +513,20 @@ def main():
                     help="stop loop after N consecutive dev_runs without improving best dev MEAN (default: 5)")
     ap.add_argument("--finish-floor", type=int, default=7211,
                     help="reject `finish` if best dev MEAN < this (default: 7211 = reference_fsm.py mean)")
+    ap.add_argument("--seed", type=int, default=None,
+                    help="seed for sampling (passed to /v1/chat/completions seed param). None = no seed.")
+    ap.add_argument("--temperature", type=float, default=0.0,
+                    help="sampling temperature (default: 0.0 = greedy/deterministic). For multi-seed variance, use 0.7-1.0.")
+    ap.add_argument("--condenser-shim", default=None,
+                    help="OpenAI-compat URL for the condenser model. If set with --condenser-model, history >--condenser-trigger-tokens is summarized via this endpoint.")
+    ap.add_argument("--condenser-model", default=None,
+                    help="model name on the condenser shim (e.g., qwen2.5-7b-nvfp4).")
+    ap.add_argument("--condenser-api-key", default="fixture",
+                    help="API key for condenser shim (default: fixture).")
+    ap.add_argument("--condenser-trigger-tokens", type=int, default=80_000,
+                    help="trigger condensation when approx token count exceeds this (default: 80k).")
+    ap.add_argument("--condenser-keep-recent", type=int, default=8,
+                    help="condense everything except the system, first user, and last N turn-pairs (default: 8).")
     ap.add_argument("--max-wall-sec", type=float, default=7200.0, help="hard cap on wall time, runaway protection only (default: 2 h)")
     ap.add_argument("--context-budget-tokens", type=int, default=200_000,
                     help="approx token budget for conversation; older turns are pruned past this (default: 200k of the 256k qwen3.6 window)")
@@ -483,17 +566,38 @@ def main():
         # count exceeds the budget. Keeps system prompt + first user + most
         # recent turns intact, drops oldest middle turns.
         approx = _approx_tokens(messages)
-        if approx > args.context_budget_tokens:
+        condenser_enabled = args.condenser_shim and args.condenser_model
+        condenser_threshold = args.condenser_trigger_tokens if condenser_enabled else args.context_budget_tokens
+        if approx > condenser_threshold:
             n_before = len(messages)
-            messages = _prune_history(messages, args.context_budget_tokens)
-            trace({"event": "history_pruned", "before_msgs": n_before,
-                   "after_msgs": len(messages),
-                   "before_approx_tokens": approx,
-                   "after_approx_tokens": _approx_tokens(messages)})
-            print(f"[watchdog] pruned history {n_before}→{len(messages)} msgs, ~{approx} → ~{_approx_tokens(messages)} tokens", flush=True)
+            if condenser_enabled:
+                try:
+                    messages = _condense_history(messages, args)
+                    trace({"event": "history_condensed", "before_msgs": n_before,
+                           "after_msgs": len(messages),
+                           "before_approx_tokens": approx,
+                           "after_approx_tokens": _approx_tokens(messages),
+                           "condenser_model": args.condenser_model})
+                    print(f"[watchdog] condensed history {n_before}→{len(messages)} msgs, "
+                          f"~{approx} → ~{_approx_tokens(messages)} tokens via "
+                          f"{args.condenser_model}", flush=True)
+                except Exception as e:
+                    print(f"[watchdog] condenser call failed ({e}); falling back to prune", flush=True)
+                    messages = _prune_history(messages, args.context_budget_tokens)
+                    trace({"event": "history_pruned_fallback", "err": str(e),
+                           "before_msgs": n_before, "after_msgs": len(messages)})
+            else:
+                messages = _prune_history(messages, args.context_budget_tokens)
+                trace({"event": "history_pruned", "before_msgs": n_before,
+                       "after_msgs": len(messages),
+                       "before_approx_tokens": approx,
+                       "after_approx_tokens": _approx_tokens(messages)})
+                print(f"[watchdog] pruned history {n_before}→{len(messages)} msgs, "
+                      f"~{approx} → ~{_approx_tokens(messages)} tokens", flush=True)
 
         try:
-            reply = call_llm(args.shim, args.api_key, args.model, messages)
+            reply = call_llm(args.shim, args.api_key, args.model, messages,
+                             temperature=args.temperature, seed=args.seed)
         except Exception as e:
             err = f"<error>llm call failed: {e}</error>"
             print(err)

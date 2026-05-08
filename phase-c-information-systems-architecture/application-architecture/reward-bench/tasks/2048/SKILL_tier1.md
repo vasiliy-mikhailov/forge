@@ -48,16 +48,18 @@ env_2048             # provided in /env (read-only) — only if you want to insp
 
 Anything else (`os`, `subprocess`, `socket`, `pickle`, `eval`, `exec`, `__import__`, etc.) is rejected by the static AST scan and your submission gets verdict=`rejected`. **No timing-based randomness either** (`time.time()`, `os.urandom`) — those defeat the replay-determinism check. Use `random.Random(seed)` if you need any randomness.
 
-## Iterating (ralph loop)
+## Iterating (turns within a trial)
 
-You can iterate as many times as you want within your budget. Suggested workflow:
+You are inside a single **trial** of the agentic loop. Each cycle below is one **turn**; the harness caps your turns via `--max-iters`. Suggested workflow:
 
 1. **Read** `/env/env_2048.py` to understand the env (board shape, action API, state machine).
 2. **Sketch** a Solver in `/workspace/submission.py`.
-3. **Test** with: `python /tasks/2048/dev_runner.py /workspace/submission.py`
+3. **Test** with: `python3 /tasks/2048/dev_runner.py /workspace/submission.py`
    This plays 5 games on dev seeds and prints scores. Fast feedback loop (~5-30s).
-4. **Refine**: Tune your states, transitions, per-state policies. Re-test.
-5. **Finish** when your dev mean score plateaus or your budget is up.
+4. **Refine**: tune your states, transitions, per-state policies. Re-test.
+5. **Finish** when your dev mean score plateaus or your turn budget is up.
+
+Vocabulary used here is defined in [TERMINOLOGY.md](../../TERMINOLOGY.md). Quick map: you are the **candidate model**, this loop is one **trial**, each cycle is one **turn**, and a series of trials becomes a **replication** that goes on the leaderboard.
 
 The dev runner uses seeds 1-5; the canonical eval uses different seeds (1000-1019). Don't bother memorizing seed-specific patterns.
 
@@ -76,7 +78,7 @@ The score we report is the **mean game score over the 20 canonical games**.
 
 Stage 2 does NOT have a fixed walltime budget. Instead, **each game runs as long as it's making progress**, where progress = score increasing OR max-tile increasing. If neither has changed for **60 seconds** of wall time, the game ends with `final_state="stagnated"` and whatever score was accumulated counts.
 
-- The window is per-game, not per-attempt — fast solvers play 20 games quickly; slow solvers can take longer if each game is genuinely advancing.
+- The stagnation window is per-game, not per-attempt — fast solvers play 20 games quickly; slow solvers can take longer if each game is genuinely advancing.
 - A solver stuck in a tight loop emitting illegal actions, or trapped against the corner with no legal merges, will trip the detector within 60 s.
 - An outer `REWARD_BENCH_HARD_WALL_SEC` runaway cap is available but disabled by default.
 

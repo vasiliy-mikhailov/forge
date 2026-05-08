@@ -1,10 +1,10 @@
 # reward-bench leaderboard — Tier 1 (2048)
 
-Per [ADR 0029](../../../phase-preliminary/adr/0029-reward-bench.md). All scores are mean over 20 canonical games on held-out seeds 1000-1019, target=2048, max_moves=10000. Stage-2 budget is **per-game stagnation** — a game ends `final_state="stagnated"` if neither score nor max-tile has changed for 60 s (see SPEC). Stage-1 ralph-loop budget: 100 iterations. Stage-2 sandbox: `reward-bench-tier1:0.3`, `--network=none`, deterministic.
+Per [ADR 0029](../../../phase-preliminary/adr/0029-reward-bench.md). Vocabulary used in this doc is defined in [TERMINOLOGY.md](TERMINOLOGY.md) — short version: each row is a single **attempt** (one **trial** of the ralph loop + Stage 2 + Stage 3) by a **candidate model**. Newer rows from the May-08 sweep onward report a **replication** (mean ± stdev across N=10 trials). All Stage-2 scores are mean over 20 canonical **games** on held-out seeds 1000-1019, target=2048, max_moves=10000. Stage-2 budget is **per-game stagnation** — a game ends `final_state="stagnated"` if neither score nor max-tile changes for 60 s (see SPEC). Stage-2 sandbox: `reward-bench-tier1:0.3`, `--network=none`, deterministic.
 
 ## Tier 1 — static FSM
 
-| Submission | Author | Mean | Median | Max | Max-tile reached | Won (out of 20) | Walltime |
+| Submission | Candidate / notes | Mean | Median | Max | Max-tile reached | Won (out of 20) | Walltime |
 |---|---|---:|---:|---:|---:|---:|---:|
 | Random | (floor) | ~1 000 | ~1 000 | ~1 500 | 128 | 0 | <1 s |
 | `reference_fsm.py` | hand-written FSM (corner-anchor + 1-ply expectimax) | 7 211 | 6 192 | 14 436 | 1 024 | 0 | 6 s |
