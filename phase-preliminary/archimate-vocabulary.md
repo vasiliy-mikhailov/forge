@@ -75,7 +75,7 @@ Value Streams for the wiki product line), they'd land here too.
 
 | forge concept                                                 | ArchiMate 4 element | Notes |
 |---------------------------------------------------------------|---------------------|-------|
-| Wiki PM (the role definition in `phase-b/roles/wiki-pm.md`)   | Role                | A Role is the position or purpose an Actor performs (v4 §4.1.1). |
+| Wiki PM (role definition lives in psi daughter; see [psi catalog](../phase-b-business-architecture/subsidiaries/psi.md))   | Role                | A Role is the position or purpose an Actor performs (v4 §4.1.1). |
 | (future) wiki-bench developer role                            | Role                | Pending persona file. |
 | Source-author / concept-curator pre-ADR-0013                  | Role                | Was an external agent role; now subsumed into the wiki-bench Application Component. |
 | Wiki requirements collection                                  | Function            | Behavior grouped by required skills and resources (v4 §4.2.3). Realizes the Develop wiki product line Capability. |

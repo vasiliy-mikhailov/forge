@@ -60,7 +60,7 @@ The labs that physically exercise the capability:
   `inference.mikhailov.tech`). Realises Reproducibility (in part)
   and is the dependency wiki-bench calls into. Its own
   capability angle is [Service Operation](service-operation.md).
-- **[Wiki PM role](../roles/wiki-pm.md)** — the **Wiki
+- **[Wiki PM role](https://github.com/vasiliy-mikhailov/course-wiki/blob/main/phase-b-business-architecture/roles/wiki-pm.md)** — the **Wiki
   requirements collection** sub-activity. Activates from
   [`../../phase-requirements-management/wiki-requirements-collection.md`](../../phase-requirements-management/wiki-requirements-collection.md)
   and emits `R-NN` rows into the
@@ -123,7 +123,7 @@ rather than a per-product one.
 
 ## Customer-discovery activities (per ADR 0027)
 
-This Capability is realised in part through customer-discovery activities run by the [Wiki PM](../roles/wiki-pm.md):
+This Capability is realised in part through customer-discovery activities run by the [Wiki PM](https://github.com/vasiliy-mikhailov/course-wiki/blob/main/phase-b-business-architecture/roles/wiki-pm.md):
 - The [customer-walk cycle](../../phase-requirements-management/wiki-customer-walk.md) — simulated-reading breadth coverage of the corpus. Produces per-persona pain ledgers in the private repo (per [ADR 0018](../../phase-preliminary/adr/0018-privacy-boundary-public-vs-private-repos.md)).
 - Customer interviews via the [interview protocol](../../phase-requirements-management/customer-interview-protocol.md) and [per-persona script template](../../phase-requirements-management/customer-interview-script-template.md). Probes specific hypotheses through multi-turn dialogue.
 - Cross-tab into customer-observations (private) → named customer-problems (private) → R-NN trajectory rows in [`catalog.md`](../../phase-requirements-management/catalog.md).

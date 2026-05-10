@@ -69,7 +69,6 @@ smoke.sh" without touching `tests/` is a code smell.
   they live under `scripts/test-runners/`.
 
   Currently:
-  - [`phase-b-business-architecture/roles/test-wiki-pm.md`](phase-b-business-architecture/roles/test-wiki-pm.md)
     — runner: [`/scripts/test-runners/test-wiki-pm-runner.py`](../scripts/test-runners/test-wiki-pm-runner.py)
   - [`phase-b-business-architecture/roles/test-auditor.md`](phase-b-business-architecture/roles/test-auditor.md)
     — runner: [`/scripts/test-runners/test-auditor-runner.py`](../scripts/test-runners/test-auditor-runner.py)

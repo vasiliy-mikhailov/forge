@@ -8,7 +8,7 @@
   is written here is for them.
 - **End users (wiki readers)** — formalised as 5 reader-segment
   personas filling the
-  [Wiki Customer role](../phase-b-business-architecture/roles/wiki-customer.md)
+  [Wiki Customer role](https://github.com/vasiliy-mikhailov/course-wiki/blob/main/phase-b-business-architecture/roles/wiki-customer.md)
   per [ADR 0016](../phase-preliminary/adr/0016-wiki-customers-as-roles.md):
   - [entry-level-student](../phase-b-business-architecture/roles/customers/entry-level-student.md) — linear reader, builds from zero.
   - [working-psychologist](../phase-b-business-architecture/roles/customers/working-psychologist.md) — index-and-skim for clinical techniques.
@@ -35,7 +35,7 @@ Per [P7](../phase-preliminary/architecture-principles.md) +
 - **Outcome**: 5 customer personas formalised; Wiki PM runs
   CI-1..7 cycle against them; per-persona pain ledgers feed
   R-NN emission.
-- **Measurement source**: n/a — declarative: stakeholder roster (5 customer personas formalised in roles/customers/; abstract Wiki Customer in roles/wiki-customer.md)
+- **Measurement source**: n/a — declarative: stakeholder roster (5 customer personas + abstract Wiki Customer role live in the psi daughter (course-wiki))
 - **Contribution**: declarative Phase A artifact; contributes to A-V KR by anchoring downstream cascade.
 - **Capability realised**: Develop wiki product line
   ([develop-wiki-product-line.md](../phase-b-business-architecture/capabilities/develop-wiki-product-line.md)).

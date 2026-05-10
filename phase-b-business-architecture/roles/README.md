@@ -20,13 +20,11 @@ side.
 | Role | File | Tests | One-line purpose |
 |------|------|-------|------------------|
 | Architect | [`architect.md`](architect.md) | (transitive — covered by audit-process predicates per ADR 0013 dec 9) | Decide what the architecture *is*. Open ADRs, promote trajectories, approve catalog rows, refuse to delegate the single-decision-maker scope (P1). |
-| Wiki PM   | [`wiki-pm.md`](wiki-pm.md)     | [`/tests/phase-b-business-architecture/roles/test-wiki-pm.md`](../../tests/phase-b-business-architecture/roles/test-wiki-pm.md)     | Own the requirements catalog for every product on the [Wiki product line](../products/wiki-product-line.md). |
 | Auditor   | [`auditor.md`](auditor.md)     | [`/tests/phase-b-business-architecture/roles/test-auditor.md`](../../tests/phase-b-business-architecture/roles/test-auditor.md)     | Periodically check forge's working tree for conformance to its declared architectural rules; produce typed findings per [`audit-process.md`](../../phase-h-architecture-change-management/audit-process.md). |
 | Developer | [`developer.md`](developer.md) | [`/tests/phase-b-business-architecture/roles/test-developer.md`](../../tests/phase-b-business-architecture/roles/test-developer.md) | Implement production code in the labs against an active R-NN trajectory or Phase F R&D experiment; pair with TDD tests; ship diffs that close hypotheses. |
 | DevOps    | [`devops.md`](devops.md)       | [`/tests/phase-b-business-architecture/roles/test-devops.md`](../../tests/phase-b-business-architecture/roles/test-devops.md)       | Operate the single-host deployment (mikhailov.tech): apply deploys, restart containers, allocate GPU power-caps, rotate keys, keep [`operations.md`](../../phase-g-implementation-governance/operations.md) current. |
 | Source-author   | [`source-author.md`](source-author.md)     | [`/tests/phase-b-business-architecture/roles/test-source-author.md`](../../tests/phase-b-business-architecture/roles/test-source-author.md)     | Operational role: compile one raw transcript into one `source.md` per activation. Filled by an OpenHands SDK agent inside the wiki-bench harness. |
 | Concept-curator | [`concept-curator.md`](concept-curator.md) | [`/tests/phase-b-business-architecture/roles/test-concept-curator.md`](../../tests/phase-b-business-architecture/roles/test-concept-curator.md) | Operational role: maintain `data/concepts/` graph (create on introduce, update on touch, keep `concept-index.json` consistent). Sub-Conversation spawned from source-author. |
-| Wiki Customer (abstract) | [`wiki-customer.md`](wiki-customer.md) + [`customers/`](customers/) | (PENDING — CU-NN per persona queued) | Consumer-side abstract role; per ADR 0016. Filled by 5 personas (entry-level-student, working-psychologist, lay-curious-reader, academic-researcher, time-poor-reader). Reads raw lectures, emits per-lecture pain ledger. Wiki PM cross-tabulates and emits R-NN. |
 
 ## Collaborations formalised today
 
@@ -35,6 +33,14 @@ Cowork session, a CI runner, or the architect) can fill multiple
 Roles via a Collaboration. Today's collaborations:
 
 Per-author wiki-team collaborations (Architect + Wiki PM + Auditor + Developer + DevOps + Source author + Concept curator + Wiki customer) live in the psi daughter (course-wiki) at `phase-b-business-architecture/roles/collaborations/`. Load the appropriate per-author team file at the start of any cycle that may need the team's collective behaviour. The role decision-rights matrix scopes any subset of roles for a given task — no separate sub-collaboration needed.
+
+Wiki-pipeline roles (Wiki PM, Wiki Customer, Source Author, Concept
+Curator) live in the psi daughter (course-wiki) at
+[](https://github.com/vasiliy-mikhailov/course-wiki/blob/main/phase-b-business-architecture/roles/),
+since psi is the only consumer. Per ADR 0030 the URL is
+permitted on forge-public; per-author concrete role
+instantiations (customer personas) live alongside in the
+daughter.
 
 ## When to add a new role file
 

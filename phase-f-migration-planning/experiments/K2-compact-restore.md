@@ -1,7 +1,7 @@
 # K2 — Two-way compact / restore on Kurpatov lecture A
 
 Active spec. Phase F R&D experiment driven by the
-[Wiki PM role](../../phase-b-business-architecture/roles/wiki-pm.md)
+[Wiki PM role](https://github.com/vasiliy-mikhailov/course-wiki/blob/main/phase-b-business-architecture/roles/wiki-pm.md)
 on behalf of the
 [Develop wiki product line](../../phase-b-business-architecture/capabilities/develop-wiki-product-line.md)
 capability — quality dimensions **Reading speed** (forward) and

@@ -8,10 +8,10 @@ The Wiki PM's **customer-development cycle**, complementary to
 Where `wiki-requirements-collection.md` covers the architect-
 side discovery (corpus walk, observation classification, R-NN
 emission), this file covers the **customer-side** discovery:
-how the [Wiki PM role](../phase-b-business-architecture/roles/wiki-pm.md)
+how the [Wiki PM role](https://github.com/vasiliy-mikhailov/course-wiki/blob/main/phase-b-business-architecture/roles/wiki-pm.md)
 gathers per-segment reader pain via a defined set of customer
 personas (each filling the
-[Wiki Customer role](../phase-b-business-architecture/roles/wiki-customer.md)),
+[Wiki Customer role](https://github.com/vasiliy-mikhailov/course-wiki/blob/main/phase-b-business-architecture/roles/wiki-customer.md)),
 cross-tabulates the signals, and turns them into R-NN rows.
 
 Introduced by [ADR 0016](../phase-preliminary/adr/0016-wiki-customers-as-roles.md).
@@ -50,7 +50,7 @@ For each persona in
 
 - Open a fresh Cowork session (or sub-Conversation).
 - Load
-  [`../phase-b-business-architecture/roles/wiki-customer.md`](../phase-b-business-architecture/roles/wiki-customer.md)
+  [`wiki-customer.md` in psi](https://github.com/vasiliy-mikhailov/course-wiki/blob/main/phase-b-business-architecture/roles/wiki-customer.md)
   + the persona file (e.g. `entry-level-student.md`).
 - Provide the raw lecture (transcript + slides path).
 - The customer reads the lecture in-character, produces a pain
