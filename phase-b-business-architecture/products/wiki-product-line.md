@@ -86,7 +86,7 @@ dimensions. Today's open line-wide rows:
   per-author wiki when it opens.
 - `R-B-wiki-req-collection` -- every implementation choice on
   the line cites a requirement. Activity in
-  [`../../phase-requirements-management/wiki-requirements-collection.md`](../../phase-requirements-management/wiki-requirements-collection.md)
+  [`https://github.com/vasiliy-mikhailov/course-wiki/blob/main/phase-requirements-management/wiki-requirements-collection.md`](https://github.com/vasiliy-mikhailov/course-wiki/blob/main/phase-requirements-management/wiki-requirements-collection.md)
   walked at least once per product on the line.
 
 Per-product trajectories (different status / different module
@@ -99,7 +99,7 @@ cadence) live in the psi daughter repo per author.
   dimensions, realising labs).
 - [`../subsidiaries/psi.md`](../subsidiaries/psi.md) -- the
   daughter that owns the per-author products on this line.
-- [`../../phase-requirements-management/wiki-requirements-collection.md`](../../phase-requirements-management/wiki-requirements-collection.md)
+- [`https://github.com/vasiliy-mikhailov/course-wiki/blob/main/phase-requirements-management/wiki-requirements-collection.md`](https://github.com/vasiliy-mikhailov/course-wiki/blob/main/phase-requirements-management/wiki-requirements-collection.md)
   -- the wiki-PM activity that emits requirements for any
   product on this line.
 - [`../../phase-c-information-systems-architecture/application-architecture/`](../../phase-c-information-systems-architecture/application-architecture/)

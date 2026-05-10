@@ -2,7 +2,7 @@
 
 The K2-R1 (synth) result landed at trip-quality **0.2261**
 (V4_aggressive winner) — see
-[`/phase-f-migration-planning/experiments/K2-compact-restore.md`](../../../../../phase-f-migration-planning/experiments/K2-compact-restore.md)
+[`/phase-f-migration-planning/experiments/https://github.com/vasiliy-mikhailov/course-wiki/blob/main/https://github.com/vasiliy-mikhailov/course-wiki/blob/main/phase-f-migration-planning/experiments/K2-compact-restore.md`](../../../../../phase-f-migration-planning/experiments/https://github.com/vasiliy-mikhailov/course-wiki/blob/main/https://github.com/vasiliy-mikhailov/course-wiki/blob/main/phase-f-migration-planning/experiments/K2-compact-restore.md)
 Execution log. K2-R2 is the same algorithm against the **real**
 lecture A from `kurpatov-wiki-raw` on the
 [mikhailov.tech / Blackwell host](../../../../../phase-d-technology-architecture/architecture.md).
@@ -96,7 +96,7 @@ Substance + 7 Form + 9 Air).
 After the sweep prints, capture both blocks and:
 
 1. Append a new row to the K2 Execution log table in
-   [`/phase-f-migration-planning/experiments/K2-compact-restore.md`](../../../../../phase-f-migration-planning/experiments/K2-compact-restore.md)
+   [`/phase-f-migration-planning/experiments/https://github.com/vasiliy-mikhailov/course-wiki/blob/main/https://github.com/vasiliy-mikhailov/course-wiki/blob/main/phase-f-migration-planning/experiments/K2-compact-restore.md`](../../../../../phase-f-migration-planning/experiments/https://github.com/vasiliy-mikhailov/course-wiki/blob/main/https://github.com/vasiliy-mikhailov/course-wiki/blob/main/phase-f-migration-planning/experiments/K2-compact-restore.md)
    under `## Execution log`. Use the per-variant numbers from
    the sweep output. Run_id format: `K2-R2-real-A-<variant>` so
    the row is unique.
@@ -113,7 +113,7 @@ After the sweep prints, capture both blocks and:
 3. Commit the K2 Execution log update:
 
    ```bash
-   git add phase-f-migration-planning/experiments/K2-compact-restore.md
+   git add phase-f-migration-planning/experiments/https://github.com/vasiliy-mikhailov/course-wiki/blob/main/https://github.com/vasiliy-mikhailov/course-wiki/blob/main/phase-f-migration-planning/experiments/K2-compact-restore.md
    git -c user.name=vasiliy-mikhailov \
        -c user.email=vasiliy.mikhailov@gmail.com \
        commit -m "K2-R2 lands: trip-quality <NNNN> on real lecture A from kurpatov-wiki-raw

@@ -48,7 +48,7 @@ into trajectories.
   phase that addresses it, and status.
 - [`process.md`](process.md) — how a requirement enters the
   catalog, gets routed to a Phase F experiment, and exits.
-- [`wiki-requirements-collection.md`](wiki-requirements-collection.md) —
+- [`https://github.com/vasiliy-mikhailov/course-wiki/blob/main/phase-requirements-management/wiki-requirements-collection.md (moved to psi daughter)`](https://github.com/vasiliy-mikhailov/course-wiki/blob/main/phase-requirements-management/wiki-requirements-collection.md (moved to psi daughter)) —
   the wiki-specific *front-end* to `process.md`: how the architect
   (wearing the wiki PM hat) discovers requirements for a new wiki
   product from the raw corpus + reader needs, before the general
