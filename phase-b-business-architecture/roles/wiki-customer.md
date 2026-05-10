@@ -41,15 +41,15 @@ persona file the customer is filling sits alongside as the
 
 ## Inputs
 
-- **One raw lecture** under study — `raw.json` from
-  `kurpatov-wiki-raw` (transcript), or the matching slides
+- **One raw lecture** under study — `raw.json` from the psi daughter (`content/<author>/raw/`),
+  or the matching slides
   PDF, or the recorded talk-as-audio (when available).
 - **The persona file** (entry-level-student.md, …) — the
   customer's reading-mode + pain signature + vocabulary.
 - **OpenHands tool repertoire** (file_editor, web_search,
   task_tracker) — for note-taking + light research while reading.
 - **The current published wiki state** (read-only access to
-  `kurpatov-wiki-wiki/data/sources/` + `data/concepts/`) — so the
+  psi daughter `content/<author>/wiki/sources/` + `wiki/concepts/`) — so the
   customer can flag "I would have wanted this to link to a
   concept article" or "this lecture said the same thing as
   source X already."
@@ -57,7 +57,7 @@ persona file the customer is filling sits alongside as the
 ## Outputs
 
 - **One pain ledger** at
-  `phase-b-business-architecture/products/kurpatov-wiki/customer-pains/<persona>/<lecture-stem>.md`.
+  the psi daughter at `phase-b-business-architecture/products/<author>-wiki/customer-pains/<persona>/<lecture-stem>.md`.
   Per-persona, per-lecture, append-only. Format documented at
   the top of `wiki-customer-interview.md`.
 - **Specific structural pains** — timestamped (or paragraph-
@@ -103,11 +103,11 @@ The role may decide, without consultation:
 - **OpenHands SDK** — runs inside the wiki-bench harness's
   sandboxed Docker container.
 - **file_editor** — writes the pain ledger to disk under
-  `customer-pains/<persona>/<stem>.md`.
+  psi daughter `customer-pains/<persona>/<stem>.md`.
 - **web_search** — bounded by the persona's reading-mode
   (academic-researcher uses it more than time-poor-reader).
-- **Read-only access** to forge tree, `kurpatov-wiki-wiki`,
-  and `kurpatov-wiki-raw` vault.
+- **Read-only access** to forge tree and the psi daughter
+  (`content/<author>/{raw,wiki}/`).
 
 The role does NOT have:
 

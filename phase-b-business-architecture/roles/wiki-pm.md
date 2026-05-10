@@ -42,7 +42,7 @@ both feed catalog.md.
 ## Inputs
 
 - **Raw source corpus** of the wiki under inspection
-  (read-only). Today: `kurpatov-wiki-raw` repo.
+  (read-only). Lives in the psi daughter under `content/<author>/raw/`; see [subsidiaries/psi.md](../subsidiaries/psi.md).
 - **Stakeholder evidence** — direct architect input, plus any
   external readers the architect surfaces.
 - **Existing artefacts** of the wiki — current schema,

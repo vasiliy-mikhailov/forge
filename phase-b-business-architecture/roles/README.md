@@ -34,9 +34,7 @@ Per ArchiMate 4 §4.1.2 (Business Collaboration), one Actor (a
 Cowork session, a CI runner, or the architect) can fill multiple
 Roles via a Collaboration. Today's collaborations:
 
-| Collaboration | File | Roles aggregated | Use |
-|---------------|------|------------------|-----|
-| Kurpatov-wiki-team | [`collaborations/kurpatov-wiki-team.md`](collaborations/kurpatov-wiki-team.md) | Architect + Wiki PM + Auditor + Developer + DevOps | Full product team for the Kurpatov wiki; load when any cycle that may need the team's collective behaviour starts. The role decision-rights matrix scopes any subset of roles for a given task — no separate sub-collaboration needed. |
+Per-author wiki-team collaborations (Architect + Wiki PM + Auditor + Developer + DevOps + Source author + Concept curator + Wiki customer) live in the psi daughter (course-wiki) at `phase-b-business-architecture/roles/collaborations/`. Load the appropriate per-author team file at the start of any cycle that may need the team's collective behaviour. The role decision-rights matrix scopes any subset of roles for a given task — no separate sub-collaboration needed.
 
 ## When to add a new role file
 

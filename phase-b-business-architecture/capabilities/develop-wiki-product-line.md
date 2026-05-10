@@ -95,10 +95,14 @@ references them), but they gate Voice-preservation closure.
 The [Wiki product line](../products/wiki-product-line.md), and
 through it every product on that line:
 
-- [Kurpatov Wiki](../products/kurpatov-wiki.md)
-- [Tarasov Wiki](../products/tarasov-wiki.md)
-- Future authors (joining the line via
-  `<author>-wiki-{raw,wiki}` repos + per-pilot env config).
+Per-author wikis on this line are owned by the psi subsidiary
+(catalog: [../subsidiaries/psi.md](../subsidiaries/psi.md)) per
+[ADR 0030](../../phase-preliminary/adr/0030-subsidiary-url-visibility.md);
+per-author content stays in the auth-gated daughter per
+[ADR 0018](../../phase-preliminary/adr/0018-privacy-boundary-public-vs-private-repos.md).
+Adding a new author to the line is a daughter-side change
+(new `content/<author>/{raw,wiki}/` tree + per-pilot env
+config); no forge change needed.
 
 Adding a new product to the line consumes this capability without
 extending it — that's what makes it a *line*-level capability

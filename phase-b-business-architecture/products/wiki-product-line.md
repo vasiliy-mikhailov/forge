@@ -1,43 +1,49 @@
 # Wiki product line
 
-A family of forge products — **Kurpatov Wiki** + **Tarasov Wiki** +
-future authors — built on the same wiki-* labs and the same
-forge capability ([`Develop wiki product line`](../capabilities/develop-wiki-product-line.md)),
-differing only in which corpus they're applied to. The product
-line is its own entry in this folder so that line-wide product
-decisions (membership, value proposition, line-wide trajectories)
-live alongside the per-product entries they govern.
+A family of forge products built on the same wiki-* labs and
+the same forge capability ([`Develop wiki product line`](../capabilities/develop-wiki-product-line.md)),
+differing only in which corpus they're applied to. Per-author
+products on this line are owned by the **psi** subsidiary
+(course-wiki); this file holds the line-wide product
+decisions (membership shape, value proposition, line-wide
+trajectories) and points to the daughter for per-author
+detail.
 
 ## Members of the line
 
-| Product           | Status                                                            | Per-product detail                            |
-|-------------------|-------------------------------------------------------------------|-----------------------------------------------|
-| **Kurpatov Wiki** | Active — module 005 published as canonical Qwen3.6-27B-FP8 result | [`kurpatov-wiki.md`](kurpatov-wiki.md)        |
-| **Tarasov Wiki**  | Pre-pilot — content acquisition phase                             | [`tarasov-wiki.md`](tarasov-wiki.md)          |
-| Future authors    | None opened                                                       | (new pair of `<author>-wiki-{raw,wiki}` GitHub repos + per-pilot env config) |
+The members of this line are per-author wikis owned by the
+psi subsidiary. Per [ADR 0030](../../phase-preliminary/adr/0030-subsidiary-url-visibility.md)
+the subsidiary URL is permitted on forge-public; per-author
+membership and per-author content (including which corpora
+exist, status per author, quality numbers per release) lives
+in the auth-gated daughter repo per
+[ADR 0018](../../phase-preliminary/adr/0018-privacy-boundary-public-vs-private-repos.md).
+
+Catalog entry: [`../subsidiaries/psi.md`](../subsidiaries/psi.md).
+
+A new wiki product joins the line by:
+
+1. New per-author content tree under `content/<author>/{raw,wiki}/`
+   in the psi daughter repo (per the established per-author content tree shape).
+2. Per-pilot env config (which raw tree, which wiki tree, which
+   model) -- in the psi daughter.
+3. Domain-specific fact-check sources and concept glossary in
+   the psi daughter's `prompts/`.
+
+No lab change. No capability extension. No new architecture on
+the forge side.
 
 ## Why a line, not one product per author
 
 The `wiki-*` labs (application components in
 [`../../phase-c-information-systems-architecture/application-architecture/`](../../phase-c-information-systems-architecture/application-architecture/))
 are content-agnostic. The lab structure does not change between
-Kurpatov and Tarasov; only the input corpus, fact-check domain,
-and skill-v2 ritual's domain-specific glossary differ. Treating
-each author as a fully separate product would duplicate the
-capability description, the quality dimensions, and the
-trajectories. The product line is the level at which those are
-stated once, on the capabilities side.
-
-A new wiki product joins the line by:
-
-1. New pair of `<author>-wiki-{raw,wiki}` GitHub repos
-   (matching the `kurpatov-wiki-{raw,wiki}` shape).
-2. Per-pilot env config (which raw repo, which wiki repo, which
-   model).
-3. Domain-specific fact-check sources and concept glossary in the
-   wiki repo's `prompts/`.
-
-No lab change. No capability extension. No new architecture.
+authors; only the input corpus, fact-check domain, and skill-v2
+ritual's domain-specific glossary differ. Treating each author
+as a fully separate product would duplicate the capability
+description, the quality dimensions, and the trajectories. The
+product line is the level at which those are stated once, on
+the capabilities side.
 
 ## Line-wide value proposition
 
@@ -74,44 +80,48 @@ Per-line trajectories (Phase H) are the trajectory rows in the
 whose Quality dim column starts with one of the line's quality
 dimensions. Today's open line-wide rows:
 
-- `R-B-voice-preservation` — voice intact across all line
-  members. Validated on K1 modules 000+001 (Kurpatov, in
-  flight); future Tarasov pilot is the second validation.
-- `R-B-wiki-req-collection` — every implementation choice on the
-  line cites a requirement. Activity in
+- `R-B-voice-preservation` -- voice intact across all line
+  members. First validation in flight on the inaugural psi
+  product; second validation will follow on the second
+  per-author wiki when it opens.
+- `R-B-wiki-req-collection` -- every implementation choice on
+  the line cites a requirement. Activity in
   [`../../phase-requirements-management/wiki-requirements-collection.md`](../../phase-requirements-management/wiki-requirements-collection.md)
   walked at least once per product on the line.
 
 Per-product trajectories (different status / different module
-cadence) live in the per-product files
-([`kurpatov-wiki.md`](kurpatov-wiki.md),
-[`tarasov-wiki.md`](tarasov-wiki.md)).
+cadence) live in the psi daughter repo per author.
 
 ## Forward references
 
 - [`../capabilities/develop-wiki-product-line.md`](../capabilities/develop-wiki-product-line.md)
-  — the capability the line draws on (operations, quality
+  -- the capability the line draws on (operations, quality
   dimensions, realising labs).
-- [`kurpatov-wiki.md`](kurpatov-wiki.md), [`tarasov-wiki.md`](tarasov-wiki.md)
-  — per-product detail.
+- [`../subsidiaries/psi.md`](../subsidiaries/psi.md) -- the
+  daughter that owns the per-author products on this line.
 - [`../../phase-requirements-management/wiki-requirements-collection.md`](../../phase-requirements-management/wiki-requirements-collection.md)
-  — the wiki-PM activity that emits requirements for any product
-  on this line.
+  -- the wiki-PM activity that emits requirements for any
+  product on this line.
 - [`../../phase-c-information-systems-architecture/application-architecture/`](../../phase-c-information-systems-architecture/application-architecture/)
-  — the `wiki-*` labs that physically realise the capability.
-
+  -- the `wiki-*` labs that physically realise the capability.
 
 ## Measurable motivation chain
+
 Per [P7](../../phase-preliminary/architecture-principles.md):
 
-- **Driver**: forge ships multiple wiki products (Kurpatov,
-  Tarasov, future). The product-line file holds shared
-  characteristics + per-wiki branches.
-- **Goal**: TTS (KR: tts_share ≥ 0.30 per-use).
-- **Outcome**: per-wiki product folders under
-  [products/](.) cite back to this file's shared spec.
-- **Measurement source**: experiment-closure: K1 (modules 000+001 source.md count vs 44 target) + experiment-closure: K2 (compact-restore trip-quality)
-- **Contribution**: product TTS share — pending TTS harness (CI-1..7 cycle); when measured, per-source tts_share contributes to TTS KR rollup mean. K1 v2 published 44 sources at 71min wall; per-reader savings TBD.
+- **Driver**: forge runs multiple wiki products through the
+  same labs; psi owns the per-author detail. The product-line
+  file holds shared characteristics + the daughter pointer.
+- **Goal**: TTS (KR: tts_share >= 0.30 per-use).
+- **Outcome**: per-author wikis in the psi daughter cite back
+  to this file's shared spec; this file cites back to the
+  capability.
+- **Measurement source**: experiment-closure data in psi
+  per-product files; aggregated TTS KR is computed across
+  per-author results.
+- **Contribution**: product TTS share -- pending TTS harness
+  (CI-1..7 cycle); when measured, per-source tts_share
+  contributes to TTS KR rollup mean.
 - **Capability realised**: Develop wiki product line
   ([../capabilities/develop-wiki-product-line.md](../capabilities/develop-wiki-product-line.md)).
 - **Function**: Hold-shared-wiki-product-line-spec.

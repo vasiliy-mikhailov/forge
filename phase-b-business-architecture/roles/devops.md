@@ -106,7 +106,7 @@ note in `operations.md`, do not apply, escalate.
 ## Capabilities (today)
 
 - **SSH to mikhailov.tech** — using
-  `~/.ssh/kurpatov-wiki-vault` (legacy filename per ADR 0005)
+  `~/.ssh/wiki-vault` (legacy SSH key per ADR 0005)
   and the architect's user key. Per ADR 0009, ControlMaster
   multiplexed sessions.
 - **docker compose** — per-lab `compose.yml` files.
@@ -122,7 +122,7 @@ The role does NOT have:
 - Authority to write production code (Developer's territory).
 - Authority to author requirements (Wiki PM).
 - Authority to open ADRs (architect).
-- Direct write access to `kurpatov-wiki-raw` / `kurpatov-wiki-wiki`
+- Direct write access to subsidiary content repos (psi daughter)
   beyond the existing pusher container's automated commits.
 
 ## Filled by (today)

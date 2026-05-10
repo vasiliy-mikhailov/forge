@@ -118,8 +118,8 @@ When in doubt: open a `Status: PROPOSED` note in the lab's
 The role does NOT have:
 
 - SSH access to mikhailov.tech (DevOps's territory).
-- Direct write access to `kurpatov-wiki-raw` / `kurpatov-wiki-wiki`
-  (those repos receive content via the wiki-ingest pusher and the
+- Direct write access to subsidiary content repos (psi daughter)
+  (those receive content via the wiki-ingest pusher and the
   Mac-side Cowork session, not via Developer commits).
 - Authority to restart production containers (DevOps).
 
