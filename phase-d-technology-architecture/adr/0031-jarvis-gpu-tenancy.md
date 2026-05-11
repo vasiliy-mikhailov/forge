@@ -84,6 +84,41 @@ multiplexed across:
 - future psi (course-wiki) tenancy if/when psi gains its
   own runtime services (today: none)
 
+### 1a. Tenancy modes (added 2026-05-11)
+
+forge is a home-lab dev environment with no production/UAT/staging
+stage gates. Within that flat environment, two tenancy modes share
+the GPU pool:
+
+| Mode | Definition |
+|---|---|
+| **Lab** | Formally architected workload: SPEC, ADR(s), smoke tests, catalog entry (in `phase-c-.../application-architecture/` for forge labs, in the daughter\'s subsidiary catalog for daughter labs). Claims an explicit resource set in the mutex at start. Not preemptable. |
+| **Playground** | Informal exploration of what a future lab might become. May implement only part of the future lab\'s architecture. May have only a SPEC drafted, or none. Uses resources NOT currently held by any lab. Held on architect permission; released on architect request. No catalog entry; no formal preemption protocol (the architect controls both sides of the request). |
+
+**Concurrency rule:** at most **one lab** and at most **one
+playground** active at a time. Two labs concurrently are still
+forbidden (the cognitive-bandwidth argument in section 2 stands).
+Two playgrounds simultaneously also forbidden, same reason.
+
+**Resource priority:** **lab has priority over playground for any
+resource.** A playground borrows what no lab currently holds; if a
+lab claim arrives for a playground-held resource, the playground
+releases it within the architect-requested window. The kid-using-
+the-workshop metaphor: the playground uses dad\'s tools when dad
+isn\'t using them and hands them back the moment dad asks.
+
+**Transition:** a playground becomes a lab when it earns the
+paperwork -- SPEC committed, ADR landed, catalog entry created,
+explicit resource set declared in the mutex. After that it is
+subject to the lab rules including non-preemption.
+
+**Today\'s state at 2026-05-11:** reward-bench campaign is a lab
+holding the Blackwell. control-minecraft on 5090 with
+Nemotron-3-Nano-Omni NVFP4 (planned next) is a playground; it has
+a SPEC ([reptile-brain SPEC](../../phase-c-information-systems-architecture/application-architecture/jarvis-reptile-brain/SPEC.md)
+on the daughter side) but no formal resource claim and may be
+torn down at any time on architect request.
+
 ### 2. Mutex membership
 
 All seven principals listed above belong to the **forge
