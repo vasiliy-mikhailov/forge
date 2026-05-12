@@ -21,3 +21,15 @@ and run against the live `qwen3.6-27b-awq` container.
   API key from `$VLLM_API_KEY` env.
 - **Act**: `GET {base_url}/v1/models`, parse JSON body.
 - **Assert**: `qwen3.6-27b-awq` appears in `data[].id`.
+
+## `test_when_chat_completion_sent_then_response_has_non_empty_content`
+
+- **Arrange**: docker-resolved base_url of `omega-reptile-vllm-playground`;
+  bench API key from `$VLLM_API_KEY` env; minimal payload with
+  `model=qwen3.6-27b-awq`, single user message `Say hi.`,
+  `max_tokens=16`, `temperature=0.0`.
+- **Act**: `POST {base_url}/v1/chat/completions` with `Content-Type:
+  application/json` and `Authorization: Bearer <api_key>`, HTTP
+  timeout 60 s.
+- **Assert**: response status is `200` AND `choices[0].message.content`
+  is a non-empty string.
