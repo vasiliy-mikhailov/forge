@@ -11,6 +11,12 @@ certs/
 mlflow/data/
 vault/
 models/
+# bench-spec model addendums live in the repo and must not be ignored
+!**/spec/models/
+!**/spec/models/*
+!**/tests/specs/models/
+!**/tests/specs/models/*
+
 videos/
 checkpoints/
 mlruns/

@@ -1,0 +1,32 @@
+# qwen3.6-27b-awq — bench spec addendum
+
+Inherits SPEC.md.
+
+## Identity
+served_name:  qwen3.6-27b-awq
+hf_path:      cyankiwi/Qwen3.6-27B-AWQ-INT4
+family:       qwen3.5 (mamba-transformer hybrid)
+quant:        awq-int4
+vram_budget:  ~ 18 GB (fits 5090 with headroom)
+tool_parser:  qwen3_coder
+
+## Hardware
+primary:  rtx-5090 (playground container)
+fallback: blackwell (also fits trivially)
+
+## Currently served
+container: omega-reptile-vllm-playground
+ip:        172.18.0.3
+port:      8000
+
+## Family-derived constraints
+Inherits spec/families/qwen3.5.md when it is born. Until that file
+exists, the relevant fact is captured below.
+
+- Mamba-Transformer hybrid → vLLM auto-scales block_size to 2096.
+  Requires --max-num-batched-tokens >= 4096 in serve_flags to avoid
+  silent validator hang (vllm#36697).
+
+## Known issues
+None observed at Step 1. (Step 2 and Step 3 tests will populate this
+section if the model misbehaves.)
