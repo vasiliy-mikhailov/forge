@@ -33,9 +33,14 @@ returns an empty list.
 For a reply containing N well-formed closed tool fences in document
 order, parse_tool_calls returns a list of N tuples in the same order.
 
+Before matching fences, parse_tool_calls substitutes BPE byte-pair
+marker U+0120 (Ġ) with a literal space. This is needed because some
+HF-format Mistral quants leak the marker between JSON tokens, where
+it is not valid whitespace and would otherwise break json.loads.
+
 ## Out of scope (deferred to future cycles)
 
-- BPE detokenization (Ġ, Ċ, ĉ byte-pair markers)
+- BPE detokenization of Ċ (newline) and ĉ (tab) markers
 - Empty "name"
 - Non-string "name"
 - Non-dict "args"

@@ -50,3 +50,18 @@ def test_when_reply_has_two_closed_tool_fences_then_returns_two_calls_in_order()
 
     # Assert
     assert calls == [('view', {'path': '/a'}), ('bash', {'cmd': 'ls'})]
+
+
+def test_when_reply_has_bpe_g_marker_between_json_tokens_then_detokenized_to_space():
+    # Arrange — Mistral HF-quant leaks U+0120 (Ga) instead of space.
+    reply = (
+        '```tool\n'
+        '{"name":Ġ"view", "args":Ġ{"path":Ġ"/a"}}\n'
+        '```'
+    )
+
+    # Act
+    calls = parse_tool_calls(reply)
+
+    # Assert
+    assert calls == [('view', {'path': '/a'})]
