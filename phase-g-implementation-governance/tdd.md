@@ -36,9 +36,20 @@ Do all ten steps for ONE test case, then start the next.
      type coercion, error handling, or any other behavior beyond what
      the test asserts.
   7. Run the just-added test. Green.
-  8. Refactor while green. Extract duplication, improve naming, simplify
-     structure. The refactor must NOT change any observable behavior;
-     no new test should be passing or failing because of it.
+  8. Refactor while green. The four artifacts that can rot — test
+     spec, spec, test code, implementation code — are all in scope:
+       - test spec: collapse near-duplicate entries; tighten names
+         that drifted from the test_when_X_then_Y form; prune
+         tested items from the "Out of scope" list.
+       - spec: trim overpromises (anything no test exercises),
+         consolidate paragraphs, refresh the "Out of scope" list.
+       - test code: extract duplicated arrange blocks into helpers
+         or fixtures; rename for clarity.
+       - implementation code: extract duplication, simplify structure,
+         improve naming.
+     The refactor must NOT change any observable behavior; no new test
+     should be passing or failing because of it, and no spec promise
+     should change.
   9. Run the FULL test suite (not just the new test). Confirm every
      previously-green test is still green. If any regressed, the
      refactor was not behavior-preserving — revert and try again.
