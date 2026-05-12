@@ -10,3 +10,4 @@ Reverse-engineered from _bak/bin/agent_loop.py (parse_tool_calls + helpers).
 - test_when_reply_has_bpe_g_marker_between_json_tokens_then_detokenized_to_space
 - test_when_reply_has_bpe_c_newline_marker_then_detokenized_to_newline
 - test_when_reply_has_bpe_tab_marker_then_detokenized_to_tab
+- test_when_reply_ends_with_unclosed_tool_fence_then_returns_one_call

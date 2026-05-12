@@ -95,3 +95,17 @@ def test_when_reply_has_bpe_tab_marker_then_detokenized_to_tab():
 
     # Assert
     assert calls == [('view', {'path': '/a'})]
+
+
+def test_when_reply_ends_with_unclosed_tool_fence_then_returns_one_call():
+    # Arrange — Qwen-3.6 hits gen cap before closing fence lands.
+    reply = (
+        '```tool\n'
+        '{"name": "view", "args": {"path": "/a"}}'
+    )
+
+    # Act
+    calls = parse_tool_calls(reply)
+
+    # Assert
+    assert calls == [('view', {'path': '/a'})]
