@@ -1,5 +1,6 @@
 """Tier 1 end-to-end tests against live qwen3.6-27b-awq.
-See spec/tier1/end_to_end.md for the layered procedure."""
+See src-spec/tier1/end_to_end.md for the layered procedure.
+See tests-spec/SPEC.md for per-test Arrange/Act/Assert contracts."""
 import urllib.request
 
 
