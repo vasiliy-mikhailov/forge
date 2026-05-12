@@ -35,6 +35,14 @@ baseline; SPEC.md states it should produce mean_score >= 4400 over
 the canonical eval. Harness regressions are caught by a calibration
 test pinned to this floor.
 
+## Determinism
+
+For a fixed (solver, seed) pair, run_game returns the same score every
+call. SPEC.md Tier 1 mandates 0% replay tolerance: Stage 2 and Stage 3
+must produce identical scores. Determinism flows from GameBoard(seed)
+seeding random.Random() for tile spawns plus the solver being
+stateful-but-deterministic per seed.
+
 ## Out of scope (deferred)
 
 - Move-count cap (run_game runs until terminal today)

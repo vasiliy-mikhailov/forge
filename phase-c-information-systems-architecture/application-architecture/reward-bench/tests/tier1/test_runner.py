@@ -47,3 +47,17 @@ def test_when_reference_fsm_plays_20_canonical_games_then_mean_score_at_least_44
     assert result['mean_score'] >= 4400, (
         f'reference_fsm dropped below calibration floor: {result["mean_score"]:.1f}'
     )
+
+
+def test_when_reference_fsm_plays_same_seed_twice_then_scores_match_exactly():
+    # Arrange
+    repo = Path(__file__).resolve().parents[2]
+    Solver = load_submission(repo / 'tasks/2048/baselines/reference_fsm.py')
+    seed = 1000
+
+    # Act — same solver class, two fresh instances, same seed
+    score_a = run_game(Solver(), seed=seed)
+    score_b = run_game(Solver(), seed=seed)
+
+    # Assert
+    assert score_a == score_b, f'replay mismatch: {score_a} != {score_b}'
