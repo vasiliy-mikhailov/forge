@@ -184,12 +184,22 @@ def execute_tool(name: str, args: dict[str, str], workspace: Path, env_dir: Path
 #   {"name": "view", "args": {"path": "/env/env_2048.py"}}
 #   ```
 
-_TOOL_BLOCK_RE = re.compile(r"```tool\s*\n(.*?)\n```", re.DOTALL)
+def _detokenize_bpe(s):
+    """Strip BPE byte-pair markers that some Mistral/Pixtral quants leak.
+    Ga (U+0120) is leading-space; Cnewline (U+010A) is newline.
+    Proper detokenizer should convert these but doesn't for HF-format
+    Mistral quants without --tokenizer-mode mistral."""
+    if not s:
+        return s
+    return s.replace("\u0120", " ").replace("\u010a", "\n").replace("\u0109", "\t")
+
+
+_TOOL_BLOCK_RE = re.compile(r"```tool\b\s*(.*?)\s*```", re.DOTALL)
 # Fallback: an unclosed ```tool block at the end of the reply. Some models
 # (notably Qwen 3.6) hit a practical generation cap around ~9 KB and stop
 # emitting tokens before they reach the closing fence. This still gives us
 # a parseable tool call most of the time — better than dropping the turn.
-_TOOL_BLOCK_TRAILING_RE = re.compile(r"```tool\s*\n(.*)\Z", re.DOTALL)
+_TOOL_BLOCK_TRAILING_RE = re.compile(r"```tool\b\s*(.*)\Z", re.DOTALL)
 _BODY_SPLIT_RE = re.compile(r"\n(?:===FILE_BODY===|---)\s*\n", re.DOTALL)
 
 
@@ -343,7 +353,7 @@ def call_llm(base_url: str, api_key: str, model: str, messages: list[dict],
     with urllib.request.urlopen(req, timeout=4000) as resp:
         data = json.loads(resp.read().decode("utf-8"))
     msg = data["choices"][0]["message"]
-    return (msg.get("reasoning") or "") + (msg.get("content") or "")
+    return _detokenize_bpe((msg.get("reasoning") or "") + (msg.get("content") or ""))
 
 
 # ----- Main loop -----
@@ -466,7 +476,7 @@ def _summarize_messages(msgs: list[dict], condenser_shim: str,
     with urllib.request.urlopen(req, timeout=600) as resp:
         data = json.loads(resp.read().decode("utf-8"))
     msg = data["choices"][0]["message"]
-    return (msg.get("reasoning") or "") + (msg.get("content") or "")
+    return _detokenize_bpe((msg.get("reasoning") or "") + (msg.get("content") or ""))
 
 
 def _condense_history(messages: list[dict], condenser_args) -> list[dict]:
