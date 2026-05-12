@@ -11,4 +11,4 @@ Pins protocol layer L2.1: generic chat completion works.
 - **Assert**: response status is `200` AND `choices[0].message.content`
   is a non-empty string.
 
-Test code: [`tests/tier1/test_end_to_end.py`](../../tests/tier1/test_end_to_end.py).
+Test code: [`tests/tier1/test_inference.py`](../../tests/tier1/test_inference.py).

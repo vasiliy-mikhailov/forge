@@ -126,6 +126,30 @@ Do all eleven steps for ONE test case, then start the next.
                                        tests/ which satisfies tests-spec/.
       <module>.py
 
+## Test file mirrors source file
+
+A pytest file in `tests/` is named `test_<module>.py` for the exact
+`<module>.py` it covers in `src/`. One source file → one test
+file. The mirroring is required so coverage is traceable by file:
+
+    src/<area>/inference.py            covered by
+    tests/<area>/test_inference.py
+
+    src/<area>/parser.py               covered by
+    tests/<area>/test_parser.py
+
+A test file may hold many `test_when_X_then_Y` functions; what is
+forbidden is grouping tests that span multiple source files into one
+`test_<feature>.py` or `test_end_to_end.py`. End-to-end coverage
+emerges from the union of per-module test files plus shared fixtures,
+not from a separate \end_to_end\ file.
+
+The per-behavior naming for spec files (test_spec_when_X_then_Y.md,
+src_spec_when_X_then_Y.md) and the per-module naming for test code
+(test_<module>.py) coexist: each test function maps 1:1 to a
+test_spec_when_X_then_Y.md file, but the .py file it lives in is
+chosen by which src/ module it exercises.
+
 ## Spec files are Markdown
 
 Both `src_spec_*.md` and `test_spec_*.md` files MUST be valid

@@ -7,4 +7,4 @@ Pins infrastructure layer L1.2: the correct model is loaded.
 - **Act**: `GET {base_url}/v1/models`, parse JSON body.
 - **Assert**: `qwen3.6-27b-awq` appears in `data[].id`.
 
-Test code: [`tests/tier1/test_end_to_end.py`](../../tests/tier1/test_end_to_end.py).
+Test code: [`tests/tier1/test_inference.py`](../../tests/tier1/test_inference.py).

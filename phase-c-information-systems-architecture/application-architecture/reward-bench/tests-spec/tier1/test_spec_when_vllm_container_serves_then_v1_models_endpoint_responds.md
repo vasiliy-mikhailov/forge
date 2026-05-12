@@ -8,4 +8,4 @@ Pins infrastructure layer L1.1: the live vLLM container responds at all.
   <api_key>`, HTTP timeout 10 s.
 - **Assert**: response status is `200` AND response body is non-empty.
 
-Test code: [`tests/tier1/test_end_to_end.py`](../../tests/tier1/test_end_to_end.py).
+Test code: [`tests/tier1/test_inference.py`](../../tests/tier1/test_inference.py).
