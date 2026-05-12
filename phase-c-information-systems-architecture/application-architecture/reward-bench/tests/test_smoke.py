@@ -11,6 +11,13 @@ import urllib.request
 import pytest
 
 
+MODELS = [
+    # name, base_url
+    ('qwen3.6-27b-awq', 'http://172.18.0.3:8000'),  # 5090 playground (current bench target)
+    ('qwen2.5-0.5b',    'http://172.18.0.5:8000'),  # Blackwell fixture-capture (fast intermediate)
+]
+
+
 def _chat(base_url, api_key, model, messages, max_tokens=64, temperature=0.0):
     body = json.dumps({
         'model': model,
@@ -31,9 +38,9 @@ def _chat(base_url, api_key, model, messages, max_tokens=64, temperature=0.0):
     return data['choices'][0]['message']['content']
 
 
-def test_when_qwen3_6_27b_awq_asked_for_a_swipe_then_reply_names_one_direction():
+@pytest.mark.parametrize('model,base_url', MODELS, ids=lambda v: v.split('/')[-1])
+def test_when_model_asked_for_a_swipe_then_reply_names_one_direction(model, base_url):
     # Arrange
-    base_url = 'http://172.18.0.3:8000'
     api_key = os.environ['VLLM_API_KEY']
     messages = [
         {'role': 'system',
@@ -45,8 +52,8 @@ def test_when_qwen3_6_27b_awq_asked_for_a_swipe_then_reply_names_one_direction()
     ]
 
     # Act
-    reply = _chat(base_url, api_key, 'qwen3.6-27b-awq', messages)
+    reply = _chat(base_url, api_key, model, messages)
 
     # Assert
-    letters_in_reply = {c for c in reply.upper() if c in 'WASD'}
-    assert letters_in_reply, f'no swipe direction in reply: {reply!r}'
+    letters = {c for c in reply.upper() if c in 'WASD'}
+    assert letters, f'{model} did not name a swipe direction: {reply!r}'
