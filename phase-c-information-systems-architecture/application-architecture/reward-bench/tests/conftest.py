@@ -47,6 +47,6 @@ def skill_tier1_reply(vllm_base_url, vllm_api_key):
             'Authorization': f'Bearer {vllm_api_key}',
         },
     )
-    with urllib.request.urlopen(req, timeout=300) as r:
+    with urllib.request.urlopen(req, timeout=600) as r:
         data = json.loads(r.read())
     return data['choices'][0]['message']['content']

@@ -9,3 +9,10 @@ _FENCED_PYTHON_RE = re.compile(
 
 def has_fenced_python_block(reply):
     return bool(_FENCED_PYTHON_RE.search(reply))
+
+
+def extract_python(reply):
+    m = _FENCED_PYTHON_RE.search(reply)
+    if m is None:
+        raise ValueError('no fenced python block in reply')
+    return m.group(1)
