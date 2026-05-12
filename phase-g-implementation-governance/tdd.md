@@ -175,3 +175,30 @@ Rule: if the test cannot exercise the hardest dependency yet (the
 container is not up, the API key is missing, the secret is not in
 .env), the cycle is blocked, not deferred. Stop and fix the
 infrastructure before writing more code.
+
+
+## Decompose a capability into one test per observable layer
+
+If a single test would force the cycle to also exercise upstream or
+downstream layers (HTTP -> auth -> chat -> parse -> compile -> load ->
+run), decompose into independent test cases — one per layer. Each
+layer-test pins exactly one observable capability:
+
+  - Layer 1 / infrastructure reachable
+  - Layer 2 / generic protocol works
+  - Layer 3 / specific request/response works
+  - Layer 4 / response can be parsed
+  - Layer 5 / parsed value loads as the expected object
+  - Layer 6 / object behaves as expected
+  - ...
+
+When something breaks, the failing test name localizes the break. A
+single coarse end-to-end test is a smoke alarm for the whole house;
+ten layered tests are the room-level alarms you actually need.
+
+Shared expensive setup (an LLM call that produces input for several
+downstream tests) is acceptable via a session-scoped pytest fixture:
+live capture, in-memory, evicted at the end of every pytest run. Not
+frozen on disk. The distinction matters — session fixtures still
+exercise the real system every run, on-disk fixtures freeze a moment
+of reality and stop catching drift.

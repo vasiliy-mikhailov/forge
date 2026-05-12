@@ -7,3 +7,4 @@ All tests pinned to qwen3.6-27b-awq (current bench target). Multi-model
 parameterization will return when test-suite runtime becomes the
 bottleneck.
 
+- test_when_vllm_container_serves_then_v1_models_endpoint_responds
