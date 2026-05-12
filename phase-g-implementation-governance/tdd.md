@@ -62,9 +62,11 @@ Do all eleven steps for ONE test case, then start the next.
   9. Run the FULL test suite (not just the new test). Confirm every
      previously-green test is still green. If any regressed, the
      refactor was not behavior-preserving — revert and try again.
-  10. Commit. Only after step 9 reports the entire suite green.
-      Message names the cycle and the test case so the trace is
-      reproducible when context collapses.
+  10. Commit and push. Only after step 9 reports the entire suite
+      green. Message names the cycle and the test case so the trace
+      is reproducible when context collapses. Push to origin so the
+      remote stays in sync with each cycle — otherwise commits pile
+      up locally and the user cannot see them.
   11. Report progress. After the commit, surface:
         - the TOGAF documents under implementation (SPEC.md, ADRs,
           capability docs) being driven by this work
@@ -100,13 +102,13 @@ Do all eleven steps for ONE test case, then start the next.
                                        implementation (TOGAF-facing; what the
                                        lab promises to do for its capability).
     AGENTS.md                          operator interface
-    code-spec/                         CODE-facing functional specs. One file
+    src-spec/                         CODE-facing functional specs. One file
                                        per implementation module / sub-area;
                                        describes what each piece of code does.
       <module>.md
       <sub-area>/<module>.md
     tests-spec/                        CODE-facing test case specs. Mirrors
-                                       code-spec/ structure. Each entry is
+                                       src-spec/ structure. Each entry is
                                        a test_when_X_then_Y contract with
                                        Arrange/Act/Assert detail, written
                                        per step 2 of the cycle.
@@ -114,8 +116,9 @@ Do all eleven steps for ONE test case, then start the next.
       <sub-area>/<module>.md
     tests/                             pytest implementations of tests-spec/.
       test_<module>.py
-    bench/ or src/ or <lab>/           clean implementation, generated to
-                                       satisfy code-spec/.
+    src/                               clean implementation, generated to
+                                       satisfy src-spec/. Symmetric to
+                                       tests/ which satisfies tests-spec/.
       <module>.py
 
 ## Two layers of spec, one document under implementation
@@ -124,13 +127,13 @@ Do all eleven steps for ONE test case, then start the next.
     is TOGAF-facing (what the lab measures, what its tiers are, what
     its outputs are). Coverage of SPEC.md is the report from step 11.
 
-  - code-spec/ and tests-spec/ are both code-facing artifacts. They
+  - src-spec/ and tests-spec/ are both code-facing artifacts. They
     describe and verify code, not the TOGAF promise. The symmetry
     matters: every entry in tests-spec/ should be derivable from
-    code-spec/ and SPEC.md, and every line of bench/ code should be
-    derivable from code-spec/ + tests-spec/.
+    src-spec/ and SPEC.md, and every line of src/ code should be
+    derivable from src-spec/ + tests-spec/.
 
-  - When SPEC.md changes (TOGAF document amended), code-spec/ may
+  - When SPEC.md changes (TOGAF document amended), src-spec/ may
     need to follow, which triggers tests-spec/ updates, which trigger
     tests, which trigger code. The propagation chain works in either
     direction.

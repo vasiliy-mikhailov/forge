@@ -8,7 +8,7 @@ choices on top of it.
 ## Lab-specific scope
 
 - Reverse-engineer the legacy implementation in `_bak/bin/` and
-  `_bak/test_*.py` into `bench/` via the seven-step cycle.
+  `_bak/test_*.py` into `src/` via the 11-step cycle.
 - Tier 1 is in scope. Tiers 2-4 are deferred until Tier 1 is fully
   green.
 - Interactive submission protocol only (per SPEC.md *Submission
@@ -21,14 +21,14 @@ choices on top of it.
                                      implementation (TOGAF-facing).
     AGENTS.md                        operator interface
     TDD.md                           this file
-    code-spec/                       CODE-facing functional specs.
+    src-spec/                       CODE-facing functional specs.
       tier1/                         tier-1 module specs
         end_to_end.md
         harness.md
         runner.md
       models/<name>.md               per-model bench addendums (cross-tier)
     tests-spec/                      CODE-facing test case specs (mirrors
-                                     code-spec/). Each entry has Arrange/
+                                     src-spec/). Each entry has Arrange/
                                      Act/Assert detail per step 2.
       SPEC.md                        roll-up test case index
       tier1/                         tier-1 test specs
@@ -36,7 +36,9 @@ choices on top of it.
       conftest.py
       tier1/
         test_end_to_end.py
-    bench/                           clean implementation.
+    src/                             clean implementation. Satisfies
+                                     src-spec/. Symmetric to tests/ which
+                                     satisfies tests-spec/.
       tier1/
     _bak/                            legacy code; read-only reference
     tasks/                           task definitions (2048, ...)
