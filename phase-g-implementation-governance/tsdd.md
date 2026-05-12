@@ -35,8 +35,9 @@ Do all eleven steps for ONE test case, then start the next.
      The when-clause maps to Arrange + Act; the then-clause maps to
      Assert. The entry IS the contract; test code is its embodiment.
   3. Extend the matching src-spec only as far as the new test demands.
-     Keep the 'Out of scope' list honest — everything not yet
-     tested goes there.
+     The src-spec describes exactly what tests prove. Nothing else.
+     No 'Out of scope' / 'deferred' / 'future' enumeration —
+     anything not in the spec is implicitly not yet specified.
   4. Write ONE pytest function in test_<module>.py using Arrange /
      Act / Assert. Function name matches the test case name from
      step 2.
@@ -48,10 +49,9 @@ Do all eleven steps for ONE test case, then start the next.
   8. Refactor while green. The four artifacts that can rot — tests-spec, src-spec,
      test code, implementation code — are all in scope:
        - tests-spec: collapse near-duplicate entries; tighten names
-         that drifted from the test_when_X_then_Y form; prune
-         tested items from the "Out of scope" list.
+         that drifted from the test_when_X_then_Y form.
        - src-spec: trim overpromises (anything no test exercises),
-         consolidate paragraphs, refresh the "Out of scope" list.
+         consolidate paragraphs.
        - test code: extract duplicated arrange blocks into helpers
          or fixtures; rename for clarity.
        - implementation code: extract duplication, simplify structure,
@@ -82,7 +82,8 @@ Do all eleven steps for ONE test case, then start the next.
 ## Discipline rules
 
 - src-spec describes only what tests prove. Anything in a src-spec file
-  that no test exercises is a lie. Move it to 'Out of scope' or delete.
+  that no test exercises is a lie. Delete it — no 'Out of scope'
+  section, no anticipatory enumeration. Spec grows only as tests grow.
 - One test case per cycle. Do not pre-write large test enumerations
   — they accrete unverified speculation.
 - Test names are sentences: test_when_X_then_Y. One when-clause,

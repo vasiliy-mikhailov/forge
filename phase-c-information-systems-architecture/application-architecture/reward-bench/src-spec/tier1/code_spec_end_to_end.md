@@ -30,13 +30,3 @@ Layers L3.2 through L6.2 all consume the same model reply. They share
 a session-scoped pytest fixture that performs the L3.1 model call once
 per test session. The fixture re-runs every fresh pytest invocation
 so the model output is never frozen on disk.
-
-## Out of scope (deferred)
-
-- Anti-cheat (AST + bandit) before load.
-- 20-canonical eval against model output.
-- Replay determinism check against model output.
-- Stagnation detector.
-- Sandbox isolation.
-- Per-attempt directory layout (`meta.json`, `result.json`).
-- Models other than `qwen3.6-27b-awq`.
