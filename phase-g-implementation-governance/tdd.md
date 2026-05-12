@@ -16,7 +16,7 @@ tests prove.
 
 ## The TDD cycle (one iteration)
 
-Do all seven steps for ONE test case, then commit, then start the next.
+Do all ten steps for ONE test case, then start the next.
 
   1. Pick the next behavior that advances the TOGAF documents under
      implementation (vision, capability, ADR, SPEC.md). Smallest unit
@@ -41,8 +41,10 @@ Do all seven steps for ONE test case, then commit, then start the next.
      no new test should be passing or failing because of it.
   9. Run the FULL test suite (not just the new test). Confirm every
      previously-green test is still green. If any regressed, the
-     refactor was not behavior-preserving — revert and try again. Then
-     commit with a message naming the cycle and the test case.
+     refactor was not behavior-preserving — revert and try again.
+  10. Commit. Only after step 9 reports the entire suite green.
+      Message names the cycle and the test case so the trace is
+      reproducible when context collapses.
 
 ## Discipline rules
 
