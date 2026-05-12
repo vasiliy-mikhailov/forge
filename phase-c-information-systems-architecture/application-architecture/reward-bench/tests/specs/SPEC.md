@@ -1,8 +1,16 @@
 # Test cases — SPEC.md
 
-These are the test cases that prove a model card satisfies the bench
-contract in SPEC.md.
+Each case here is a behavior the bench expects from a model under the
+interactive submission protocol (SPEC.md Submission protocols section).
 
-## Cycle 1 — model responds to a 2048 swipe prompt
+All tests pinned to qwen3.6-27b-awq (current bench target). Multi-model
+parameterization will return when test-suite runtime becomes the
+bottleneck.
 
-- test_when_qwen3_6_27b_awq_asked_for_a_swipe_then_reply_names_one_direction
+## Plumbing
+
+- test_when_model_asked_for_a_swipe_then_reply_names_one_direction
+
+## Tier 1 submission
+
+- test_when_model_asked_for_tier1_solver_then_reply_contains_class_solver_using_transitions
