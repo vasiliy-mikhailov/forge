@@ -103,17 +103,20 @@ Do all eleven steps for ONE test case, then start the next.
                                        lab promises to do for its capability).
     AGENTS.md                          operator interface
     src-spec/                         CODE-facing functional specs. One file
-                                       per implementation module / sub-area;
-                                       describes what each piece of code does.
-      <module>.md
-      <sub-area>/<module>.md
+                                       per feature, named code_spec_<feature>.md
+                                       so the role is unmistakable in the file
+                                       listing.
+      code_spec_<feature>.md
+      <sub-area>/code_spec_<feature>.md
     tests-spec/                        CODE-facing test case specs. Mirrors
-                                       src-spec/ structure. Each entry is
-                                       a test_when_X_then_Y contract with
-                                       Arrange/Act/Assert detail, written
-                                       per step 2 of the cycle.
-      <module>.md
-      <sub-area>/<module>.md
+                                       src-spec/ structure. One file per
+                                       feature, named test_spec_<feature>.md
+                                       so the symmetry with code_spec is
+                                       visible. Each entry is a test_when_X_then_Y
+                                       contract with Arrange/Act/Assert detail,
+                                       written per step 2 of the cycle.
+      test_spec_<feature>.md
+      <sub-area>/test_spec_<feature>.md
     tests/                             pytest implementations of tests-spec/.
       test_<module>.py
     src/                               clean implementation, generated to
