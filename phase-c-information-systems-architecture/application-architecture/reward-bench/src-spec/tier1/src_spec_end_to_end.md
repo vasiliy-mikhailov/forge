@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Prove that the live `qwen3.6-27b-awq`, given the `SKILL_tier1.md` task
+Prove that the live `qwen3.6-27b-bf16`, given the `SKILL_tier1.md` task
 spec, produces a Tier 1 submission the harness can load and play.
 
 Per the [phase-g/tsdd.md](../../../../../phase-g-implementation-governance/tsdd.md)
@@ -14,7 +14,7 @@ pinning one observable layer.
 | Id   | Layer behavior                                                                                |
 |------|-----------------------------------------------------------------------------------------------|
 | L1.1 | vLLM serves: `GET /v1/models` returns 200.                                                    |
-| L1.2 | Correct model loaded: served_name `qwen3.6-27b-awq` present.                                  |
+| L1.2 | Correct model loaded: served_name `qwen3.6-27b-bf16` present.                                  |
 | L2.1 | Chat completion works: `POST /v1/chat/completions` on a trivial prompt returns 200 + content. |
 | L3.1 | Tier-1 prompt (SKILL_tier1.md content) returns within 5 min at `max_tokens=32768`.            |
 | L3.2 | Reply contains one fenced Python block.                                                       |
