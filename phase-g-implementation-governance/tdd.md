@@ -18,9 +18,11 @@ tests prove.
 
 Do all seven steps for ONE test case, then commit, then start the next.
 
-  1. Pick the smallest next behavior. Read existing legacy / _bak /
-     reference code if you need to learn the legacy behavior. Confirm
-     scope with the user when ambiguous.
+  1. Pick the next behavior that advances the TOGAF documents under
+     implementation (vision, capability, ADR, SPEC.md). Smallest unit
+     that adds value is usually right; avoid scoping a single cycle
+     beyond what fits in one paragraph of spec. Confirm scope with
+     the user when ambiguous.
   2. Add ONE line to the test-spec file naming the case in
      test_when_X_then_Y form.
   3. Extend the matching spec only as far as the new test demands.
@@ -69,12 +71,17 @@ Do all seven steps for ONE test case, then commit, then start the next.
 
 ## Reverse-engineering legacy code
 
-When a lab has legacy code that drifted from spec, move it to _bak/
+When a lab has legacy code that drifted from spec, move it to a
+quarantined directory (per-lab convention — see lab AGENTS.md / TDD.md)
 and rebuild from tests via the cycle above. Rules:
 
-  - Read _bak/ to learn legacy behavior; do not import from it.
-  - New code has no dependency on _bak/.
-  - Each green cycle frees a slice of _bak/ to delete later.
+  - Read the quarantined code to learn its observable behavior; do not
+    import from it.
+  - New code has no dependency on the quarantined code.
+  - Each green cycle frees a slice of the quarantined code to delete.
+
+Lab-specific quarantine paths and reverse-engineering notes live in
+each lab's own TDD.md.
 
 ## When to stop a cycle and ask the user
 
