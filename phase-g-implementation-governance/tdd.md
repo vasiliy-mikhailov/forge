@@ -23,7 +23,7 @@ Do all eleven steps for ONE test case, then start the next.
      that adds value is usually right; avoid scoping a single cycle
      beyond what fits in one paragraph of spec. Confirm scope with
      the user when ambiguous.
-  2. Add an entry to the test-spec file. Not a one-liner — the entry
+  2. Add an entry to the tests-spec file. Not a one-liner — the entry
      must carry enough detail to reconstruct the test if the test code
      is lost. Format:
 
@@ -34,7 +34,7 @@ Do all eleven steps for ONE test case, then start the next.
 
      The when-clause maps to Arrange + Act; the then-clause maps to
      Assert. The entry IS the contract; test code is its embodiment.
-  3. Extend the matching spec only as far as the new test demands.
+  3. Extend the matching src-spec only as far as the new test demands.
      Keep the 'Out of scope' list honest — everything not yet
      tested goes there.
   4. Write ONE pytest function in test_<module>.py using Arrange /
@@ -45,12 +45,12 @@ Do all eleven steps for ONE test case, then start the next.
      type coercion, error handling, or any other behavior beyond what
      the test asserts.
   7. Run the just-added test. Green.
-  8. Refactor while green. The four artifacts that can rot — test
-     spec, spec, test code, implementation code — are all in scope:
-       - test spec: collapse near-duplicate entries; tighten names
+  8. Refactor while green. The four artifacts that can rot — tests-
+     spec, src-spec, test code, implementation code — are all in scope:
+       - tests-spec: collapse near-duplicate entries; tighten names
          that drifted from the test_when_X_then_Y form; prune
          tested items from the "Out of scope" list.
-       - spec: trim overpromises (anything no test exercises),
+       - src-spec: trim overpromises (anything no test exercises),
          consolidate paragraphs, refresh the "Out of scope" list.
        - test code: extract duplicated arrange blocks into helpers
          or fixtures; rename for clarity.
