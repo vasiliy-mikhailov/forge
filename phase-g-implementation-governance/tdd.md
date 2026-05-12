@@ -23,8 +23,17 @@ Do all ten steps for ONE test case, then start the next.
      that adds value is usually right; avoid scoping a single cycle
      beyond what fits in one paragraph of spec. Confirm scope with
      the user when ambiguous.
-  2. Add ONE line to the test-spec file naming the case in
-     test_when_X_then_Y form.
+  2. Add an entry to the test-spec file. Not a one-liner — the entry
+     must carry enough detail to reconstruct the test if the test code
+     is lost. Format:
+
+         test_when_X_then_Y
+           Arrange: what fixture / inputs the test sets up.
+           Act:     what call / interaction the test makes.
+           Assert:  what property of the result the test checks.
+
+     The when-clause maps to Arrange + Act; the then-clause maps to
+     Assert. The entry IS the contract; test code is its embodiment.
   3. Extend the matching spec only as far as the new test demands.
      Keep the 'Out of scope' list honest — everything not yet
      tested goes there.
