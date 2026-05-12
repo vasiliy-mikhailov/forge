@@ -11,3 +11,4 @@ Reverse-engineered from _bak/bin/agent_loop.py (parse_tool_calls + helpers).
 - test_when_reply_has_bpe_c_newline_marker_then_detokenized_to_newline
 - test_when_reply_has_bpe_tab_marker_then_detokenized_to_tab
 - test_when_reply_ends_with_unclosed_tool_fence_then_returns_one_call
+- test_when_fence_body_is_malformed_json_then_skipped_silently

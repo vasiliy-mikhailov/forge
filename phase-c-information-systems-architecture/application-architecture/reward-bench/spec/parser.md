@@ -46,7 +46,7 @@ it is not valid whitespace and would otherwise break json.loads.
 - Non-dict "args"
 - Top-level body is not a dict (list, string, number)
 - Body separator after ===FILE_BODY=== or ---
-- Malformed JSON tolerance (trailing comma, syntax errors)
+- Malformed JSON tolerance with trailing-comma rescue
 - Arg value coercion (non-string values stringified)
 
 Behavior on inputs outside the current scope is unspecified.

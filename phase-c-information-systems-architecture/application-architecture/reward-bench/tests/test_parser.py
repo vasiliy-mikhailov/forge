@@ -109,3 +109,18 @@ def test_when_reply_ends_with_unclosed_tool_fence_then_returns_one_call():
 
     # Assert
     assert calls == [('view', {'path': '/a'})]
+
+
+def test_when_fence_body_is_malformed_json_then_skipped_silently():
+    # Arrange — fence opens but body is not parseable.
+    reply = (
+        '```tool\n'
+        '{not even close to json}\n'
+        '```'
+    )
+
+    # Act
+    calls = parse_tool_calls(reply)
+
+    # Assert
+    assert calls == []
