@@ -113,3 +113,34 @@ Each lab that follows this methodology should keep its lab-specific
 conventions in <lab>/TDD.md and reference this document at the top.
 The lab-specific file enumerates lab-only choices (module names,
 specific reverse-engineering scope, lab-specific 'when to ask' cases).
+
+
+## Stay close to the real scenario
+
+Do not fabricate inputs. Do not capture fixtures preemptively. Do not
+build extractors for hypothetical model behavior. Each of these is a
+windmill — work that looks productive but produces no signal about
+the actual system.
+
+Concrete rules:
+
+  - Test inputs come from the real system under test: live LLM calls,
+    real config files, real captured request/response pairs from a
+    real benched model. Not strings invented in the test file.
+  - A fixture (frozen test input on disk) is justified ONLY when the
+    real-time cost makes the test suite unusable (e.g., > 60 s for
+    a unit-level run). Until that cost is observed and felt, use the
+    live source and accept the latency.
+  - When a cycle goes red on live-system output, the question is
+    "what does the real system actually do?" — read the real output
+    in the failure log, do not speculate about edge cases the system
+    might exhibit.
+  - Multi-round speculative edits chasing imagined behavior are
+    forbidden. If two consecutive code edits in the same cycle are
+    not driven by a new red test from the real system, stop and ask
+    the user.
+
+The lesson from past sessions: hand-rolled BPE marker tests, fabricated
+fence-extractor edge cases, and premature reply fixtures all wasted
+hours that one direct probe of the real model would have ended in
+minutes. Reality is cheaper than imagination.
