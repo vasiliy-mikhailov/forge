@@ -28,7 +28,15 @@ fallback in a later cycle).
 
 solver_factory is a no-arg callable producing a fresh Solver instance
 per game. Plays N=20 games on canonical seeds 1000..1019, returns
-a dict with at least mean_score (float).
+a dict matching the SPEC.md AttemptResult schema:
+
+  mean_score (float)
+  median_score (float)
+  std_score (float)
+  max_max_tile (int)
+  n_games (int)
+  aggregate_walltime_sec (float)
+
 
 Calibration: tasks/2048/baselines/reference_fsm.py is the human
 baseline; SPEC.md states it should produce mean_score >= 4400 over

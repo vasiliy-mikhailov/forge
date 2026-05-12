@@ -61,3 +61,21 @@ def test_when_reference_fsm_plays_same_seed_twice_then_scores_match_exactly():
 
     # Assert
     assert score_a == score_b, f'replay mismatch: {score_a} != {score_b}'
+
+
+def test_when_run_canonical_eval_completes_then_result_has_mean_median_std_max_tile_n_games_walltime():
+    # Arrange
+    repo = Path(__file__).resolve().parents[2]
+    Solver = load_submission(repo / 'tasks/2048/baselines/reference_fsm.py')
+
+    # Act
+    from bench.tier1.runner import run_canonical_eval
+    result = run_canonical_eval(Solver)
+
+    # Assert
+    for key in ('mean_score', 'median_score', 'std_score',
+                'max_max_tile', 'n_games', 'aggregate_walltime_sec'):
+        assert key in result, f'missing key: {key}'
+    assert result['n_games'] == 20
+    assert result['max_max_tile'] >= 2
+    assert result['aggregate_walltime_sec'] > 0
