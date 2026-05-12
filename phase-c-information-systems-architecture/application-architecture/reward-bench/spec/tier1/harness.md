@@ -9,7 +9,8 @@ disk so the harness can run games against it.
 
     load_submission(path: Path) -> type
 
-Returns the Solver class declared in the module at path.
+Returns the Solver class declared in the module at path. Solver
+is expected to be instantiable with no arguments (Solver()).
 
 ## Contract (current scope)
 
@@ -20,6 +21,5 @@ the module in an isolated namespace and returns the Solver class.
 
 - Anti-cheat checks before load
 - Sandbox isolation (currently loads in-process)
-- Modules without class Solver
 - Modules that raise on import
 - Multiple Solver classes (only the one named Solver is returned)

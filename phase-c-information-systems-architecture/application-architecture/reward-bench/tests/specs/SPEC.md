@@ -15,3 +15,4 @@ bottleneck.
 
 - test_when_model_asked_for_tier1_solver_then_reply_contains_class_solver_using_transitions
 - test_when_reference_fsm_loaded_then_exposes_class_solver
+- test_when_reference_fsm_solver_instantiated_then_returns_instance

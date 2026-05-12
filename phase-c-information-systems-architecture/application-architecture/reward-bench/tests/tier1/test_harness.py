@@ -18,3 +18,15 @@ def test_when_reference_fsm_loaded_then_exposes_class_solver():
 
     # Assert
     assert Solver.__name__ == 'Solver'
+
+
+def test_when_reference_fsm_solver_instantiated_then_returns_instance():
+    # Arrange
+    repo = Path(__file__).resolve().parents[2]
+    Solver = load_submission(repo / 'tasks/2048/baselines/reference_fsm.py')
+
+    # Act
+    instance = Solver()
+
+    # Assert
+    assert isinstance(instance, Solver)
