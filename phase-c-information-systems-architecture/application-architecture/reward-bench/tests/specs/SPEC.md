@@ -9,3 +9,4 @@ bottleneck.
 
 - test_when_vllm_container_serves_then_v1_models_endpoint_responds
 - test_when_v1_models_queried_then_qwen3_6_27b_awq_served_name_present
+- test_when_chat_completion_sent_to_qwen_then_response_has_non_empty_content
