@@ -22,6 +22,14 @@ If the solver returns an illegal move, run_game accepts the failed-move
 return value silently (no score change, board advances by a forced
 fallback in a later cycle).
 
+## Multi-game evaluation
+
+    run_canonical_eval(solver_factory) -> dict
+
+solver_factory is a no-arg callable producing a fresh Solver instance
+per game. Plays N=20 games on canonical seeds 1000..1019, returns
+a dict with at least mean_score (float).
+
 ## Out of scope (deferred)
 
 - Move-count cap (run_game runs until terminal today)
