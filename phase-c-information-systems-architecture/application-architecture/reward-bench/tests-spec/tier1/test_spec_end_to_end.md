@@ -13,3 +13,11 @@ and run against the live `qwen3.6-27b-awq` container.
 - **Act**: `GET {base_url}/v1/models` with `Authorization: Bearer
   <api_key>`, HTTP timeout 10 s.
 - **Assert**: response status is `200` AND response body is non-empty.
+
+## `test_when_v1_models_queried_then_qwen3_6_27b_awq_served_name_present`
+
+- **Arrange**: docker-resolved base_url of container
+  `omega-reptile-vllm-playground` on the `proxy-net` network; bench
+  API key from `$VLLM_API_KEY` env.
+- **Act**: `GET {base_url}/v1/models`, parse JSON body.
+- **Assert**: `qwen3.6-27b-awq` appears in `data[].id`.
