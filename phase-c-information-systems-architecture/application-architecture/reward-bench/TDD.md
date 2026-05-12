@@ -17,26 +17,31 @@ choices on top of it.
 ## Lab folder layout
 
   reward-bench/
-    SPEC.md                          bench spec
+    SPEC.md                          bench spec — the document UNDER
+                                     implementation (TOGAF-facing).
     AGENTS.md                        operator interface
     TDD.md                           this file
-    spec/                            cross-tier functional specs
-      parser.md                      interactive protocol parser
-      models/<name>.md               per-model bench addendums
-      tier1/                         tier-1 functional specs
-    tests/
-      specs/                         test case enumerations (mirror spec/)
-        SPEC.md
-        parser.md
-        models/
-        tier1/
-      test_parser.py                 pytest for cross-tier code
-      tier1/                         pytest for tier-1 code
-    bench/                           clean implementation
-      parser.py                      cross-tier code
-      tier1/                         tier-1 code
+    code-spec/                       CODE-facing functional specs.
+      tier1/                         tier-1 module specs
+        end_to_end.md
+        harness.md
+        runner.md
+      models/<name>.md               per-model bench addendums (cross-tier)
+    tests-spec/                      CODE-facing test case specs (mirrors
+                                     code-spec/). Each entry has Arrange/
+                                     Act/Assert detail per step 2.
+      SPEC.md                        roll-up test case index
+      tier1/                         tier-1 test specs
+    tests/                           pytest implementations of tests-spec/.
+      conftest.py
+      tier1/
+        test_end_to_end.py
+    bench/                           clean implementation.
+      tier1/
     _bak/                            legacy code; read-only reference
     tasks/                           task definitions (2048, ...)
+    pyproject.toml                   pytest testpaths = ["tests"]
+                                     so _bak/ stays out of test discovery
 
 ## Lab-specific 'when to ask the user'
 

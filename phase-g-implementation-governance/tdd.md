@@ -96,17 +96,44 @@ Do all eleven steps for ONE test case, then start the next.
 ## Suggested folder layout per lab
 
   <lab>/
-    SPEC.md                            lab functional spec
+    SPEC.md                            lab functional spec — the document UNDER
+                                       implementation (TOGAF-facing; what the
+                                       lab promises to do for its capability).
     AGENTS.md                          operator interface
-    spec/                              functional specs (mirror SPEC.md sections)
+    code-spec/                         CODE-facing functional specs. One file
+                                       per implementation module / sub-area;
+                                       describes what each piece of code does.
       <module>.md
       <sub-area>/<module>.md
-    tests/
-      specs/                           test case enumerations (mirror spec/)
-        <module>.md
-      test_<module>.py                 pytest, AAA bodies
-    bench/ or src/ or <lab>/           clean implementation
+    tests-spec/                        CODE-facing test case specs. Mirrors
+                                       code-spec/ structure. Each entry is
+                                       a test_when_X_then_Y contract with
+                                       Arrange/Act/Assert detail, written
+                                       per step 2 of the cycle.
+      <module>.md
+      <sub-area>/<module>.md
+    tests/                             pytest implementations of tests-spec/.
+      test_<module>.py
+    bench/ or src/ or <lab>/           clean implementation, generated to
+                                       satisfy code-spec/.
       <module>.py
+
+## Two layers of spec, one document under implementation
+
+  - SPEC.md at the lab root is the document under implementation. It
+    is TOGAF-facing (what the lab measures, what its tiers are, what
+    its outputs are). Coverage of SPEC.md is the report from step 11.
+
+  - code-spec/ and tests-spec/ are both code-facing artifacts. They
+    describe and verify code, not the TOGAF promise. The symmetry
+    matters: every entry in tests-spec/ should be derivable from
+    code-spec/ and SPEC.md, and every line of bench/ code should be
+    derivable from code-spec/ + tests-spec/.
+
+  - When SPEC.md changes (TOGAF document amended), code-spec/ may
+    need to follow, which triggers tests-spec/ updates, which trigger
+    tests, which trigger code. The propagation chain works in either
+    direction.
 
 ## Reverse-engineering legacy code
 
