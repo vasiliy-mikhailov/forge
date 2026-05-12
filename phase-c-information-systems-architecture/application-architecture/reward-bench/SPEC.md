@@ -202,6 +202,12 @@ on a larger context budget. Cross-mode comparison is informative.
 **Allowed imports:** numpy, transitions, re, math, random, collections, itertools, functools, dataclasses, typing, plus `env_2048` (the read-only env module).
 **Reward:** mean game score over N=20 games (configurable).
 **Replay tolerance:** 0 % — exact match required.
+**Author-stage inference context:** the Stage 1 author loop runs the
+model with **128 K input + output context** (`--max-model-len 131072`).
+A **condenser** summarises older turns when prompt + reserved
+output exceeds the budget so the loop can run as long as the model
+can still make progress. This applies to the interactive submission
+protocol; static-mode authors get one shot inside the same budget.
 
 ### Tier 2 — open-world FSM-of-agents
 
