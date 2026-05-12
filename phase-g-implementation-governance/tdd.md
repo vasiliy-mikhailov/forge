@@ -35,8 +35,14 @@ Do all seven steps for ONE test case, then commit, then start the next.
   6. Write the minimum code to make it green. Do NOT add validation,
      type coercion, error handling, or any other behavior beyond what
      the test asserts.
-  7. Run pytest. Green. Commit with a message naming the cycle and
-     the test case.
+  7. Run the just-added test. Green.
+  8. Refactor while green. Extract duplication, improve naming, simplify
+     structure. The refactor must NOT change any observable behavior;
+     no new test should be passing or failing because of it.
+  9. Run the FULL test suite (not just the new test). Confirm every
+     previously-green test is still green. If any regressed, the
+     refactor was not behavior-preserving — revert and try again. Then
+     commit with a message naming the cycle and the test case.
 
 ## Discipline rules
 
