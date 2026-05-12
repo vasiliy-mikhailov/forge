@@ -30,3 +30,22 @@ def test_when_reference_fsm_solver_instantiated_then_returns_instance():
 
     # Assert
     assert isinstance(instance, Solver)
+
+
+def test_when_reference_fsm_move_called_on_starting_board_then_returns_one_of_wasd():
+    # Arrange
+    repo = Path(__file__).resolve().parents[2]
+    Solver = load_submission(repo / 'tasks/2048/baselines/reference_fsm.py')
+    solver = Solver()
+    starting_board = [
+        [2, 0, 0, 0],
+        [0, 0, 0, 0],
+        [0, 0, 0, 2],
+        [0, 0, 0, 0],
+    ]
+
+    # Act
+    move = solver.move(starting_board)
+
+    # Assert
+    assert move in {'W', 'A', 'S', 'D'}

@@ -10,7 +10,8 @@ disk so the harness can run games against it.
     load_submission(path: Path) -> type
 
 Returns the Solver class declared in the module at path. Solver
-is expected to be instantiable with no arguments (Solver()).
+is expected to be instantiable with no arguments. Instances expose
+move(board: list[list[int]]) -> str returning one of W, A, S, D.
 
 ## Contract (current scope)
 
