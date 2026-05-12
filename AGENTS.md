@@ -51,6 +51,13 @@ Pick the right entry point for the work in front of you.
   [`tests/README.md`](tests/README.md) — the plain-English model
   the smoke tests derive from. Update the model **before** editing
   `scripts/smoke.sh`.
+- **Writing implementation code that has to match TOGAF
+  documents** (any lab) →
+  [`phase-g-implementation-governance/tdd.md`](phase-g-implementation-governance/tdd.md)
+  — the test-driven cycle that bridges architecture documents
+  (Phase A vision, Phase C SPECs, ADRs) to runnable code.
+  Per-lab application lives at `<lab>/TDD.md` and references the
+  forge-wide methodology.
 
 ## Architecture — TOGAF-style layered structure (navigation index)
 
