@@ -145,6 +145,53 @@ class CheatReport(BaseModel):
     rejected_reason: str | None
 ```
 
+## Submission protocols
+
+Each tier admits two protocols for getting from a model to a scored
+submission. Both target the same per-tier submission file (Solver
+class, build_graph, or construct meta-orchestrator) described in the
+tier sections below. They differ only in how the model produces it.
+
+### Static — single-reply emission
+
+The model receives the task spec in one prompt and must emit the
+submission as one fenced code block in its reply. The harness extracts
+the block, writes it to the sandbox, runs the game suite, scores.
+
+Status: planned. Not currently implemented.
+
+### Interactive — tool-using agent loop
+
+The model is given a workspace, an env module, and a tool protocol. It
+reads files (view), runs shell commands (bash), writes the submission
+file, and signals completion (finish). The loop runs up to a per-attempt
+iteration cap or until the model calls finish. The submission file
+present in the workspace at finish time is the one that gets scored.
+
+Tool-call wire format: each call is one fenced block in the assistant
+reply:
+
+    ```tool
+    {"name": "<view|bash|finish>", "args": {<...>}}
+    ```
+
+Per-call semantics:
+  - view(path)   read file contents into the next prompt.
+  - bash(cmd)    run cmd in the sandbox; stdout/stderr into the next prompt.
+  - finish(note) end the loop; current submission file is scored.
+
+The parser that decodes assistant replies into (name, args) tuples is
+specified in spec/parser.md.
+
+Status: the only currently-implemented protocol. The live 2026-05
+reward-bench campaign runs every tier and every model in this mode.
+
+### Why two protocols
+
+Static bounds reasoning at one forward pass; it is the cheaper baseline.
+Interactive gives the model access to the env source and shell iteration
+on a larger context budget. Cross-mode comparison is informative.
+
 ## Tier specifications
 
 ### Tier 1 — closed-world FSM
