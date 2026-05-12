@@ -9,3 +9,10 @@ bottleneck.
 
 ## Tier 1 end-to-end layers (see spec/tier1/end_to_end.md)
 
+test_when_vllm_container_serves_then_v1_models_endpoint_responds
+  Arrange: docker-resolved base_url of container omega-reptile-vllm-playground
+           on the proxy-net network; bench API key from $VLLM_API_KEY.
+  Act:     GET {base_url}/v1/models with Authorization: Bearer <api_key>,
+           timeout 10 s.
+  Assert:  response status is 200 AND response body is non-empty.
+
