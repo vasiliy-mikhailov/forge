@@ -6,7 +6,7 @@ _FENCE_RE = re.compile(r'```tool\b\s*(.*?)\s*```', re.DOTALL)
 
 
 def parse_tool_calls(text):
-    text = text.replace('Ġ', ' ')
+    text = text.replace('Ġ', ' ').replace('Ċ', '\n')
     out = []
     for m in _FENCE_RE.finditer(text):
         obj = json.loads(m.group(1))

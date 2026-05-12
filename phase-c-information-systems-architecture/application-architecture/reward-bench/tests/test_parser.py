@@ -65,3 +65,18 @@ def test_when_reply_has_bpe_g_marker_between_json_tokens_then_detokenized_to_spa
 
     # Assert
     assert calls == [('view', {'path': '/a'})]
+
+
+def test_when_reply_has_bpe_c_newline_marker_then_detokenized_to_newline():
+    # Arrange — U+010A leaks instead of newline.
+    reply = (
+        '```tool\nĊ'
+        '{"name": "view", "args": {"path": "/a"}}Ċ'
+        '```'
+    )
+
+    # Act
+    calls = parse_tool_calls(reply)
+
+    # Assert
+    assert calls == [('view', {'path': '/a'})]

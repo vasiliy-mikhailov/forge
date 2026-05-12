@@ -8,3 +8,4 @@ Reverse-engineered from _bak/bin/agent_loop.py (parse_tool_calls + helpers).
 - test_when_reply_has_no_tool_fence_then_returns_empty_list
 - test_when_reply_has_two_closed_tool_fences_then_returns_two_calls_in_order
 - test_when_reply_has_bpe_g_marker_between_json_tokens_then_detokenized_to_space
+- test_when_reply_has_bpe_c_newline_marker_then_detokenized_to_newline
