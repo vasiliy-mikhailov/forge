@@ -1,6 +1,6 @@
 # Test spec: tier 1 end-to-end (real model → real harness)
 
-Mirrors [`code_spec_end_to_end.md`](../../src-spec/tier1/code_spec_end_to_end.md).
+Mirrors [`src_spec_end_to_end.md`](../../src-spec/tier1/src_spec_end_to_end.md).
 Each entry pins one observable layer. All tests in this file are
 implemented in [`tests/tier1/test_end_to_end.py`](../../tests/tier1/test_end_to_end.py)
 and run against the live `qwen3.6-27b-awq` container.

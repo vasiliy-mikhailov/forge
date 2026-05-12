@@ -22,11 +22,11 @@ choices on top of it.
     AGENTS.md                        operator interface
     TSDD.md                           this file
     src-spec/                       CODE-facing functional specs. File
-                                     names use code_spec_<feature>.md.
+                                     names use src_spec_<feature>.md.
       tier1/
-        code_spec_end_to_end.md
-        code_spec_harness.md         (when it lands)
-        code_spec_runner.md          (when it lands)
+        src_spec_end_to_end.md
+        src_spec_harness.md         (when it lands)
+        src_spec_runner.md          (when it lands)
       models/<name>.md               per-model bench addendums (cross-tier)
     tests-spec/                      CODE-facing test case specs. File
                                      names use test_spec_<feature>.md and

@@ -104,15 +104,15 @@ Do all eleven steps for ONE test case, then start the next.
                                        lab promises to do for its capability).
     AGENTS.md                          operator interface
     src-spec/                         CODE-facing functional specs. One file
-                                       per feature, named code_spec_<feature>.md
+                                       per feature, named src_spec_<feature>.md
                                        so the role is unmistakable in the file
                                        listing.
-      code_spec_<feature>.md
-      <sub-area>/code_spec_<feature>.md
+      src_spec_<feature>.md
+      <sub-area>/src_spec_<feature>.md
     tests-spec/                        CODE-facing test case specs. Mirrors
                                        src-spec/ structure. One file per
                                        feature, named test_spec_<feature>.md
-                                       so the symmetry with code_spec is
+                                       so the symmetry with src_spec is
                                        visible. Each entry is a test_when_X_then_Y
                                        contract with Arrange/Act/Assert detail,
                                        written per step 2 of the cycle.
@@ -127,7 +127,7 @@ Do all eleven steps for ONE test case, then start the next.
 
 ## Spec files are Markdown
 
-Both `code_spec_*.md` and `test_spec_*.md` files MUST be valid
+Both `src_spec_*.md` and `test_spec_*.md` files MUST be valid
 Markdown. They render on GitHub, on local previewers, in IDE side
 panels — readers depend on that rendering to navigate the spec.
 
@@ -153,7 +153,7 @@ collapses in Markdown is a near-invisible drift.
 
 Per-feature spec files use a prefix that names the artifact's role:
 
-    src-spec/<area>/code_spec_<feature>.md
+    src-spec/<area>/src_spec_<feature>.md
     tests-spec/<area>/test_spec_<feature>.md
 
 Both files map 1:1 to a feature. Reading the directory listing tells
