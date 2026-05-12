@@ -80,3 +80,18 @@ def test_when_reply_has_bpe_c_newline_marker_then_detokenized_to_newline():
 
     # Assert
     assert calls == [('view', {'path': '/a'})]
+
+
+def test_when_reply_has_bpe_tab_marker_then_detokenized_to_tab():
+    # Arrange — U+0109 (lowercase c-circumflex) leaks instead of tab.
+    reply = (
+        '```tool\n'
+        '{"name":ĉ"view",\t"args":\t{"path":\t"/a"}}\n'
+        '```'
+    )
+
+    # Act
+    calls = parse_tool_calls(reply)
+
+    # Assert
+    assert calls == [('view', {'path': '/a'})]

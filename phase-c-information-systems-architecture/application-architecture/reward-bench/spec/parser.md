@@ -34,13 +34,13 @@ For a reply containing N well-formed closed tool fences in document
 order, parse_tool_calls returns a list of N tuples in the same order.
 
 Before matching fences, parse_tool_calls substitutes BPE byte-pair
-markers U+0120 (Ġ → space) and U+010A (Ċ → newline). This is needed because some
+markers U+0120 (Ġ → space), U+010A (Ċ → newline), and U+0109
+(ĉ → tab). This is needed because some
 HF-format Mistral quants leak the marker between JSON tokens, where
 it is not valid whitespace and would otherwise break json.loads.
 
 ## Out of scope (deferred to future cycles)
 
-- BPE detokenization of ĉ (tab) marker
 - Empty "name"
 - Non-string "name"
 - Non-dict "args"
