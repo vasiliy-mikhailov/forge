@@ -1,7 +1,7 @@
-# reward-bench TDD application
+# reward-bench TSDD application
 
-Follows forge-wide TDD methodology in
-[`../../../phase-g-implementation-governance/tdd.md`](../../../phase-g-implementation-governance/tdd.md).
+Follows forge-wide TSDD methodology in
+[`../../../phase-g-implementation-governance/tsdd.md`](../../../phase-g-implementation-governance/tsdd.md).
 Read that first. This file captures only the reward-bench-specific
 choices on top of it.
 
@@ -20,7 +20,7 @@ choices on top of it.
     SPEC.md                          bench spec — the document UNDER
                                      implementation (TOGAF-facing).
     AGENTS.md                        operator interface
-    TDD.md                           this file
+    TSDD.md                           this file
     src-spec/                       CODE-facing functional specs.
       tier1/                         tier-1 module specs
         end_to_end.md
@@ -74,7 +74,7 @@ copy its approach. Reasons:
   - The legacy prompt (e.g. tasks/2048/SKILL_tier1.md) was tuned against
     the actual benched models; your hand-rolled prompt has not been.
 
-The rule: if a TDD cycle requires touching prompt content, system
+The rule: if a TSDD cycle requires touching prompt content, system
 behavior, or any model-facing protocol, first grep _bak/ for the
 nearest equivalent. Cite the source file in the spec or test docstring.
 Do not invent until you have confirmed _bak does not address it.

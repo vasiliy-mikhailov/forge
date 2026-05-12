@@ -1,4 +1,4 @@
-# TDD methodology — bridging TOGAF documents to robust implementation
+# TSDD methodology — bridging TOGAF documents to robust implementation (test-spec-driven development)
 
 Read this before writing implementation code in any forge lab.
 
@@ -14,14 +14,14 @@ The connection is test-first. Tests pin the contract that documents
 promise. Code exists only to make tests pass. Spec describes only what
 tests prove.
 
-## The TDD cycle (one iteration)
+## The TSDD cycle (one iteration)
 
 Do all eleven steps for ONE test case, then start the next.
 
   1. Pick the next behavior that advances the TOGAF documents under
      implementation (vision, capability, ADR, SPEC.md). Smallest unit
      that adds value is usually right; avoid scoping a single cycle
-     beyond what fits in one paragraph of spec. Confirm scope with
+     beyond what fits in one paragraph of src-spec. Confirm scope with
      the user when ambiguous.
   2. Add an entry to the tests-spec file. Not a one-liner — the entry
      must carry enough detail to reconstruct the test if the test code
@@ -45,8 +45,8 @@ Do all eleven steps for ONE test case, then start the next.
      type coercion, error handling, or any other behavior beyond what
      the test asserts.
   7. Run the just-added test. Green.
-  8. Refactor while green. The four artifacts that can rot — tests-
-     spec, src-spec, test code, implementation code — are all in scope:
+  8. Refactor while green. The four artifacts that can rot — tests-spec, src-spec,
+     test code, implementation code — are all in scope:
        - tests-spec: collapse near-duplicate entries; tighten names
          that drifted from the test_when_X_then_Y form; prune
          tested items from the "Out of scope" list.
@@ -57,8 +57,8 @@ Do all eleven steps for ONE test case, then start the next.
        - implementation code: extract duplication, simplify structure,
          improve naming.
      The refactor must NOT change any observable behavior; no new test
-     should be passing or failing because of it, and no spec promise
-     should change.
+     should be passing or failing because of it, and no src-spec or
+     tests-spec promise should change.
   9. Run the FULL test suite (not just the new test). Confirm every
      previously-green test is still green. If any regressed, the
      refactor was not behavior-preserving — revert and try again.
@@ -81,8 +81,8 @@ Do all eleven steps for ONE test case, then start the next.
 
 ## Discipline rules
 
-- Spec describes only what tests prove. Anything in a spec file that
-  no test exercises is a lie. Move it to 'Out of scope' or delete.
+- src-spec describes only what tests prove. Anything in a src-spec file
+  that no test exercises is a lie. Move it to 'Out of scope' or delete.
 - One test case per cycle. Do not pre-write large test enumerations
   — they accrete unverified speculation.
 - Test names are sentences: test_when_X_then_Y. One when-clause,
@@ -121,7 +121,7 @@ Do all eleven steps for ONE test case, then start the next.
                                        tests/ which satisfies tests-spec/.
       <module>.py
 
-## Two layers of spec, one document under implementation
+## Two layers of code-facing spec, one TOGAF document under implementation
 
   - SPEC.md at the lab root is the document under implementation. It
     is TOGAF-facing (what the lab measures, what its tiers are, what
@@ -140,8 +140,8 @@ Do all eleven steps for ONE test case, then start the next.
 
 ## Reverse-engineering legacy code
 
-When a lab has legacy code that drifted from spec, move it to a
-quarantined directory (per-lab convention — see lab AGENTS.md / TDD.md)
+When a lab has legacy code that drifted from src-spec / SPEC.md, move it to a
+quarantined directory (per-lab convention — see lab AGENTS.md / TSDD.md)
 and rebuild from tests via the cycle above. Rules:
 
   - Read the quarantined code to learn its observable behavior; do not
@@ -150,7 +150,7 @@ and rebuild from tests via the cycle above. Rules:
   - Each green cycle frees a slice of the quarantined code to delete.
 
 Lab-specific quarantine paths and reverse-engineering notes live in
-each lab's own TDD.md.
+each lab's own TSDD.md.
 
 ## When to stop a cycle and ask the user
 
@@ -167,19 +167,20 @@ each lab's own TDD.md.
 ## Why this works as a TOGAF bridge
 
 TOGAF separates architecture (what + why) from implementation (how).
-Without discipline the gap leaks: implementation drifts from spec,
-spec drifts from implementation, both drift from documented vision.
-The test-spec → spec → test → code chain keeps every layer auditable
-from any other. A change to a TOGAF document forces a change to spec,
-which forces a change to test, which forces a change to code, which
-surfaces in a commit. The cycle works in reverse too — a bug in
-production forces a regression test, which forces a spec amendment,
-which may force a TOGAF document amendment.
+Without discipline the gap leaks: src/ drifts from src-spec, src-spec
+drifts from src/, both drift from the documented TOGAF vision. The
+chain SPEC.md → src-spec → tests-spec → tests → src/ keeps every
+layer auditable from any other. A change to a TOGAF document (SPEC.md)
+forces a change to src-spec, which forces a change to tests-spec,
+which forces a change to tests, which forces a change to src/, which
+surfaces in a commit. The cycle works in reverse too — a bug in src/
+forces a regression entry in tests-spec, which forces an src-spec
+amendment, which may force a SPEC.md amendment.
 
 ## Per-lab adoption
 
 Each lab that follows this methodology should keep its lab-specific
-conventions in <lab>/TDD.md and reference this document at the top.
+conventions in <lab>/TSDD.md and reference this document at the top.
 The lab-specific file enumerates lab-only choices (module names,
 specific reverse-engineering scope, lab-specific 'when to ask' cases).
 

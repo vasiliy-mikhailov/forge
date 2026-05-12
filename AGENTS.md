@@ -53,10 +53,10 @@ Pick the right entry point for the work in front of you.
   `scripts/smoke.sh`.
 - **Writing implementation code that has to match TOGAF
   documents** (any lab) →
-  [`phase-g-implementation-governance/tdd.md`](phase-g-implementation-governance/tdd.md)
-  — the test-driven cycle that bridges architecture documents
+  [`phase-g-implementation-governance/tsdd.md`](phase-g-implementation-governance/tsdd.md)
+  — the test-spec-driven cycle that bridges architecture documents
   (Phase A vision, Phase C SPECs, ADRs) to runnable code.
-  Per-lab application lives at `<lab>/TDD.md` and references the
+  Per-lab application lives at `<lab>/TSDD.md` and references the
   forge-wide methodology.
 
 ## Architecture — TOGAF-style layered structure (navigation index)
