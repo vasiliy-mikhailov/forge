@@ -144,3 +144,34 @@ The lesson from past sessions: hand-rolled BPE marker tests, fabricated
 fence-extractor edge cases, and premature reply fixtures all wasted
 hours that one direct probe of the real model would have ended in
 minutes. Reality is cheaper than imagination.
+
+
+## The real system includes its hardest dependency from cycle 1
+
+When a bench, agent, or pipeline depends on a remote / expensive /
+non-deterministic component (an LLM, a sandbox, a connector, a remote
+API), that component must participate in cycle 1. No stand-ins, no
+reference fixtures, no "build the harness first then plug the LLM in
+later". Reasons:
+
+  - The hardest dependency is where reality bites. A harness that
+    works against a stand-in but never against the real component
+    proves nothing about the system.
+  - Substituting reference solvers / synthetic responses / canned
+    replies hides exactly the surprises that the cycle exists to
+    surface (token budgets, reasoning preambles, kernel quirks).
+  - Deferring the hard dependency lets the rest of the code drift
+    from what the real dependency expects. Plugging in last produces
+    cascading red.
+
+If the hard dependency requires non-trivial settings (token budgets,
+container flags, sandbox image), copy them from the legacy / production
+config. Do not invent budgets that look reasonable; production knew
+better. A 1500-token budget against a 65k-context reasoning model
+because "1500 felt enough" is the canonical failure mode this rule
+exists to prevent.
+
+Rule: if the test cannot exercise the hardest dependency yet (the
+container is not up, the API key is missing, the secret is not in
+.env), the cycle is blocked, not deferred. Stop and fix the
+infrastructure before writing more code.
