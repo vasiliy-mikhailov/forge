@@ -104,20 +104,21 @@ Do all eleven steps for ONE test case, then start the next.
                                        lab promises to do for its capability).
     AGENTS.md                          operator interface
     src-spec/                         CODE-facing functional specs. One file
-                                       per feature, named src_spec_<feature>.md
-                                       so the role is unmistakable in the file
-                                       listing.
-      src_spec_<feature>.md
-      <sub-area>/src_spec_<feature>.md
-    tests-spec/                        CODE-facing test case specs. Mirrors
-                                       src-spec/ structure. One file per
-                                       feature, named test_spec_<feature>.md
-                                       so the symmetry with src_spec is
-                                       visible. Each entry is a test_when_X_then_Y
-                                       contract with Arrange/Act/Assert detail,
-                                       written per step 2 of the cycle.
-      test_spec_<feature>.md
-      <sub-area>/test_spec_<feature>.md
+                                       PER BEHAVIOR, filename mirrors the test
+                                       it justifies:
+                                         src_spec_when_X_then_Y.md
+                                       so the file IS the contract for that
+                                       behavior. No roll-up file per feature.
+      src_spec_when_X_then_Y.md
+      <sub-area>/src_spec_when_X_then_Y.md
+    tests-spec/                        CODE-facing test case specs. One file
+                                       PER TEST, filename mirrors the test:
+                                         test_spec_when_X_then_Y.md
+                                       Holds the Arrange / Act / Assert contract
+                                       for that single test, written per step 2.
+                                       No roll-up file per feature.
+      test_spec_when_X_then_Y.md
+      <sub-area>/test_spec_when_X_then_Y.md
     tests/                             pytest implementations of tests-spec/.
       test_<module>.py
     src/                               clean implementation, generated to
@@ -151,23 +152,28 @@ collapses in Markdown is a near-invisible drift.
 
 ## File naming convention
 
-Per-feature spec files use a prefix that names the artifact's role:
+Per-behavior spec files are named after the test they justify:
 
-    src-spec/<area>/src_spec_<feature>.md
-    tests-spec/<area>/test_spec_<feature>.md
+    src-spec/<area>/src_spec_when_X_then_Y.md
+    tests-spec/<area>/test_spec_when_X_then_Y.md
 
-Both files map 1:1 to a feature. Reading the directory listing tells
-the agent immediately which file is the code spec and which is the
-test spec. No roll-up index file at the directory root is needed —
-the folder structure plus the prefix is enough. Trying to maintain
-a separate "index" file just adds another rotting artifact.
+ONE file per test case. The filename IS the contract; reading the
+directory listing tells the agent immediately which test the file
+backs. Do NOT bundle multiple test specs into one file per feature
+— small per-behavior files are easier to scan, link to, and refactor.
+No roll-up index file at the directory root is needed — folder
+structure + per-behavior filenames are enough. Trying to maintain a
+separate "index" or "end_to_end" file just adds another rotting
+artifact that drifts from the actual per-behavior files.
 
-The corresponding implementation and test code files use:
+The corresponding test code and implementation code files use:
 
-    src/<area>/<feature>.py
-    tests/<area>/test_<feature>.py
+    tests/<area>/test_<module>.py
+    src/<area>/<module>.py
 
-so the four artifacts for one feature have four predictable paths.
+A test code file may contain multiple test functions; one per
+test_spec_when_X_then_Y.md. The src code is whatever satisfies the
+collected src_spec_when_X_then_Y.md files in that area.
 
 ## Two layers of code-facing spec, one TOGAF document under implementation
 

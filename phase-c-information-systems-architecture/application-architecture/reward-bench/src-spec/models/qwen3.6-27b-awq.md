@@ -1,21 +1,21 @@
-# qwen3.6-27b-bf16 — bench spec addendum
+# qwen3.6-27b-awq — bench spec addendum
 
 Inherits SPEC.md.
 
 ## Identity
-served_name:  qwen3.6-27b-bf16
-hf_path:      Qwen/Qwen3.6-27B
+served_name:  qwen3.6-27b-awq
+hf_path:      cyankiwi/Qwen3.6-27B-AWQ-INT4
 family:       qwen3.5 (mamba-transformer hybrid)
-quant:        bf16
-vram_budget:  ~ 53 GB on Blackwell (BF16, mamba-hybrid)
+quant:        awq-int4
+vram_budget:  ~ 18 GB on 5090 (AWQ, mamba-hybrid)
 tool_parser:  qwen3_coder
 
 ## Hardware
-primary:  blackwell (lab container vllm-inference)
-fallback: none on 5090 (BF16 does not fit 32 GB)
+primary:  rtx-5090 (playground container omega-reptile-vllm-playground)
+fallback: blackwell (also fits trivially)
 
 ## Currently served
-container: vllm-inference
+container: omega-reptile-vllm-playground
 ip:        resolved at test time via docker inspect
 port:      8000
 

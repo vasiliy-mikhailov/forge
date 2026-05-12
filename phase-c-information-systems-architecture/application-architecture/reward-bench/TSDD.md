@@ -21,19 +21,18 @@ choices on top of it.
                                      implementation (TOGAF-facing).
     AGENTS.md                        operator interface
     TSDD.md                           this file
-    src-spec/                       CODE-facing functional specs. File
-                                     names use src_spec_<feature>.md.
+    src-spec/                       CODE-facing functional specs.
+                                     ONE file per behavior, named
+                                     src_spec_when_X_then_Y.md.
       tier1/
-        src_spec_end_to_end.md
-        src_spec_harness.md         (when it lands)
-        src_spec_runner.md          (when it lands)
+        src_spec_when_*.md           one per behavior
       models/<name>.md               per-model bench addendums (cross-tier)
-    tests-spec/                      CODE-facing test case specs. File
-                                     names use test_spec_<feature>.md and
-                                     mirror src-spec/ files 1:1.
-      SPEC.md                        short index pointing at per-feature files
+    tests-spec/                      CODE-facing test case specs.
+                                     ONE file per test, named
+                                     test_spec_when_X_then_Y.md, mirroring
+                                     src-spec/ files 1:1.
       tier1/
-        test_spec_end_to_end.md
+        test_spec_when_*.md          one per test
     tests/                           pytest implementations of tests-spec/.
       conftest.py
       tier1/
