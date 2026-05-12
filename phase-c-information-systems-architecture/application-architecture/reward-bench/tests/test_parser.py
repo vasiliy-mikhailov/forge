@@ -25,10 +25,28 @@ def test_when_reply_has_one_closed_tool_fence_then_returns_one_call():
 
 def test_when_reply_has_no_tool_fence_then_returns_empty_list():
     # Arrange
-    reply = "the model said nothing useful here"
+    reply = 'the model said nothing useful here'
 
     # Act
     calls = parse_tool_calls(reply)
 
     # Assert
     assert calls == []
+
+
+def test_when_reply_has_two_closed_tool_fences_then_returns_two_calls_in_order():
+    # Arrange
+    reply = (
+        '```tool\n'
+        '{"name": "view", "args": {"path": "/a"}}\n'
+        '```\n'
+        '```tool\n'
+        '{"name": "bash", "args": {"cmd": "ls"}}\n'
+        '```'
+    )
+
+    # Act
+    calls = parse_tool_calls(reply)
+
+    # Assert
+    assert calls == [('view', {'path': '/a'}), ('bash', {'cmd': 'ls'})]

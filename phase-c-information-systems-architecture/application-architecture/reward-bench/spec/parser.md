@@ -30,6 +30,9 @@ Values inside "args" are returned unchanged.
 For a reply containing no tool fence at all, parse_tool_calls
 returns an empty list.
 
+For a reply containing N well-formed closed tool fences in document
+order, parse_tool_calls returns a list of N tuples in the same order.
+
 ## Out of scope (deferred to future cycles)
 
 - BPE detokenization (Ġ, Ċ, ĉ byte-pair markers)
@@ -40,7 +43,6 @@ returns an empty list.
 - Body separator after ===FILE_BODY=== or ---
 - Trailing unclosed fence fallback
 - Malformed JSON tolerance (trailing comma, syntax errors)
-- Multiple fences in one reply
 - Arg value coercion (non-string values stringified)
 
 Behavior on inputs outside the current scope is unspecified.
