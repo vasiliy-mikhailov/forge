@@ -16,7 +16,7 @@ tests prove.
 
 ## The TDD cycle (one iteration)
 
-Do all ten steps for ONE test case, then start the next.
+Do all eleven steps for ONE test case, then start the next.
 
   1. Pick the next behavior that advances the TOGAF documents under
      implementation (vision, capability, ADR, SPEC.md). Smallest unit
@@ -65,6 +65,17 @@ Do all ten steps for ONE test case, then start the next.
   10. Commit. Only after step 9 reports the entire suite green.
       Message names the cycle and the test case so the trace is
       reproducible when context collapses.
+  11. Report progress. After the commit, surface:
+        - the TOGAF documents under implementation (SPEC.md, ADRs,
+          capability docs) being driven by this work
+        - approximate coverage percent of each document (count tested
+          requirements / total enumerated requirements)
+        - estimated time to complete remaining cycles for the current
+          document, broken down by cycle if possible
+        - the next cycle name + its planned scope
+      The report makes the gap between TOGAF promises and tested
+      reality auditable. A document at 100% coverage is fully
+      validated by tests; everything else is still aspirational.
 
 ## Discipline rules
 
