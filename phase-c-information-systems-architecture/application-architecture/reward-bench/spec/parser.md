@@ -27,6 +27,9 @@ length 1:
 
 Values inside "args" are returned unchanged.
 
+For a reply containing no tool fence at all, parse_tool_calls
+returns an empty list.
+
 ## Out of scope (deferred to future cycles)
 
 - BPE detokenization (Ġ, Ċ, ĉ byte-pair markers)
@@ -39,6 +42,5 @@ Values inside "args" are returned unchanged.
 - Malformed JSON tolerance (trailing comma, syntax errors)
 - Multiple fences in one reply
 - Arg value coercion (non-string values stringified)
-- No fence in reply at all
 
 Behavior on inputs outside the current scope is unspecified.
