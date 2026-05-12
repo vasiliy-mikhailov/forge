@@ -30,6 +30,11 @@ solver_factory is a no-arg callable producing a fresh Solver instance
 per game. Plays N=20 games on canonical seeds 1000..1019, returns
 a dict with at least mean_score (float).
 
+Calibration: tasks/2048/baselines/reference_fsm.py is the human
+baseline; SPEC.md states it should produce mean_score >= 4400 over
+the canonical eval. Harness regressions are caught by a calibration
+test pinned to this floor.
+
 ## Out of scope (deferred)
 
 - Move-count cap (run_game runs until terminal today)
