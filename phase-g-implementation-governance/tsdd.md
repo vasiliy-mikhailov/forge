@@ -124,6 +124,30 @@ Do all eleven steps for ONE test case, then start the next.
                                        tests/ which satisfies tests-spec/.
       <module>.py
 
+## Spec files are Markdown
+
+Both `code_spec_*.md` and `test_spec_*.md` files MUST be valid
+Markdown. They render on GitHub, on local previewers, in IDE side
+panels — readers depend on that rendering to navigate the spec.
+
+Concrete rules:
+
+- Paragraph breaks need a blank line. Soft line wraps inside a
+  paragraph collapse to a single line.
+- Test names, file paths, environment variable names, HTTP verbs,
+  and inline code go in backticks.
+- Test-spec entries use a heading per test case (`### \`test_when_X_then_Y\``)
+  followed by bulleted `**Arrange**` / `**Act**` / `**Assert**`
+  blocks. The bullets render as a definition-list-like structure
+  on GitHub.
+- Tables are appropriate for enumerating layers, fields, fixtures.
+- Cross-references between spec files use Markdown link syntax
+  (relative paths) so navigation works in any renderer.
+
+The reason: a spec file that fails to render is a spec file the
+agent and the user cannot read. Plain-text-with-indentation that
+collapses in Markdown is a near-invisible drift.
+
 ## File naming convention
 
 Per-feature spec files use a prefix that names the artifact's role:
