@@ -124,6 +124,26 @@ Do all eleven steps for ONE test case, then start the next.
                                        tests/ which satisfies tests-spec/.
       <module>.py
 
+## File naming convention
+
+Per-feature spec files use a prefix that names the artifact's role:
+
+    src-spec/<area>/code_spec_<feature>.md
+    tests-spec/<area>/test_spec_<feature>.md
+
+Both files map 1:1 to a feature. Reading the directory listing tells
+the agent immediately which file is the code spec and which is the
+test spec. No roll-up index file at the directory root is needed —
+the folder structure plus the prefix is enough. Trying to maintain
+a separate "index" file just adds another rotting artifact.
+
+The corresponding implementation and test code files use:
+
+    src/<area>/<feature>.py
+    tests/<area>/test_<feature>.py
+
+so the four artifacts for one feature have four predictable paths.
+
 ## Two layers of code-facing spec, one TOGAF document under implementation
 
   - SPEC.md at the lab root is the document under implementation. It
