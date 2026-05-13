@@ -180,7 +180,42 @@ iterations, your previous-best submission is what scores. Whatever is at
 is your best version, not the latest experimental one."""
 
 
-FIRST_USER = """Start the task. Read /tasks/2048/SKILL_tier1.md to learn the constraints, then optionally /env/env_2048.py for env details, then write your submission to /workspace/submission.py and iterate. Use the fenced-block JSON tool format the system prompt described."""
+FIRST_USER = """Start the task.
+
+REQUIRED API CONTRACT (do NOT deviate; the harness loads your submission
+exactly this way):
+
+    # /workspace/submission.py
+    from transitions import Machine
+
+    class Solver:                    # <-- exact name `Solver`, capital S
+        def __init__(self):
+            # build your state machine with `transitions` here
+            ...
+
+        def move(self, board: list[list[int]]) -> str:
+            # board is a 4x4 list of ints (0 = empty; tiles are powers of 2)
+            # return EXACTLY ONE of the four characters: 'W', 'A', 'S', 'D'
+            # (W=up, A=left, S=down, D=right)
+            ...
+
+Common mistakes to avoid:
+  - DO NOT write `def solve(state)` returning ints 0/1/2/3 — wrong shape.
+  - DO NOT return strings like 'up'/'down' — must be 'W'/'A'/'S'/'D'.
+  - DO NOT skip the `transitions` library — the spec mandates an FSM
+    declared with `transitions.Machine`.
+
+Workflow:
+  1. View /tasks/2048/SKILL_tier1.md for the full task spec.
+  2. (optional) View /env/env_2048.py for the env API.
+  3. Write /workspace/submission.py respecting the API contract above.
+  4. Run `bash python3 /tasks/2048/dev_runner.py /workspace/submission.py`
+     BEFORE calling finish. The dev_runner will error loudly if your
+     Solver class is missing or move() returns the wrong type — fix
+     and retry. Only call finish once dev_runner prints non-zero scores
+     for every seed.
+
+Use the fenced-block JSON tool format the system prompt described."""
 
 
 def _call_model(vllm_base_url, vllm_api_key, messages, max_tokens=32768, temperature=0.0):
