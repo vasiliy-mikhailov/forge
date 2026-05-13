@@ -131,6 +131,24 @@ Do all eleven steps for ONE test case, then start the next.
   smaller behavior.
 - Each commit covers exactly one cycle. The diff should be readable
   in one screen.
+- **No silent bug fixes.** When a bug is discovered OUTSIDE a test run
+  (manual probe, production observation, eyeballing logs, an agent
+  noticing something looks off), the agent MUST:
+    1. Write a `test_spec` that captures the bug as a behaviour
+       contract — what behaviour was expected, what was observed.
+    2. Write the matching test code. Run it; CONFIRM it reproduces
+       the bug (RED, with the same error mode that was originally
+       observed). If the test does not reproduce the bug, it does
+       not actually pin the behaviour and is not yet a useful test.
+    3. Only then fix the underlying code.
+    4. Re-run the test; confirm GREEN.
+    5. Commit the test + fix together so the audit trail is intact.
+  A "silent fix" (code change without a corresponding test that
+  would have caught the bug) is forbidden. The test suite must
+  remember every bug we ever found, so the regression is never free
+  to come back. This applies equally to import errors discovered
+  while running a script, integration failures seen while running
+  the bench live, and real-system observations from operations.
 
 ## Suggested folder layout per lab
 
