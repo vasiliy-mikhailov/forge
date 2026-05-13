@@ -17,7 +17,6 @@ Fields (aligning with SPEC.md Tier 1 `AttemptResult` schema):
   max_max_tile            int
   n_games                 int
   aggregate_walltime_sec  float
-  seeds                   tuple[int, ...]
 
 `games` is the new SPEC.md-aligned field carrying per-game
 `GameResult` records. It defaults to `()` so existing constructors

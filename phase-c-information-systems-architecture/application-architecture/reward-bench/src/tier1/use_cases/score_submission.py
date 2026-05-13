@@ -44,7 +44,6 @@ def score_submission(
         max_max_tile=max(max_tiles),
         n_games=len(scores),
         aggregate_walltime_sec=time.monotonic() - start,
-        seeds=seeds_tuple,
         games=games,
         stagnated_any=any(g.final_state == 'stagnated' for g in games),
         walltime_exceeded=any(g.final_state == 'walltime_exceeded' for g in games),

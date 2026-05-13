@@ -16,7 +16,6 @@ class AttemptResult:
     max_max_tile: int
     n_games: int
     aggregate_walltime_sec: float
-    seeds: Tuple[int, ...]
     games: Tuple[GameResult, ...] = field(default_factory=tuple)
     stagnation_sec: float = 60.0
     hard_wall_sec: float = 0.0

@@ -26,4 +26,5 @@ def test_when_score_submission_wired_with_adapter_then_returns_attempt_result_ma
     assert clean.mean_score == legacy['mean_score']
     assert clean.median_score == legacy['median_score']
     assert clean.max_max_tile == legacy['max_max_tile']
-    assert clean.seeds == tuple(seeds)
+    # Per-seed identity now lives inside games; verify the seed tuple.
+    assert tuple(g.seed for g in clean.games) == tuple(seeds)
