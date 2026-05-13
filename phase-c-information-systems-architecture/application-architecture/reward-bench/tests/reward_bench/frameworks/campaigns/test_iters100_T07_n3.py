@@ -20,7 +20,12 @@ from src.reward_bench.use_cases.run_bench_trials import run_bench_trials
 
 REPO = Path(__file__).resolve().parents[4]
 ARTIFACT = REPO / 'experiments' / '2026-05-13-iters100-T07-n3.json'
-CONFIG = BenchConfig(max_iters=100, n_trials=3, temperature=0.7)
+CONFIG = BenchConfig(
+    max_iters=100,
+    n_trials=3,
+    temperature=0.7,
+    hard_wall_sec=60.0,  # cycle 26: per-trial scoring cap, ADR 0006 layer 1
+)
 
 
 @pytest.mark.campaign

@@ -1,22 +1,28 @@
 # `test_when_campaign_run_with_iters100_T07_n3_then_artifact_written_with_required_fields`
 
 Pins the leaderboard-data-point contract under
-`BenchConfig(max_iters=100, n_trials=3, temperature=0.7)`. The test
-runs the campaign live against `qwen3.6-27b-awq`, writes the
-result to a declared artifact path, and asserts the artifact's
-SHAPE (not its specific numeric values — model noise is real).
+`BenchConfig(max_iters=100, n_trials=3, temperature=0.7,
+hard_wall_sec=60)`. The test runs the campaign live against
+`qwen3.6-27b-awq`, writes the result to a declared artifact path,
+and asserts the artifact's SHAPE (not its specific numeric values —
+model noise is real).
 
 This is the test-backed replacement for the deleted ad-hoc
 `bin/run_campaign.py`. Per the cats.md
-**artifacts-come-from-tests** rule (commit forthcoming), every
-leaderboard data point must come from a pytest test that pins its
-shape; ad-hoc scripts are forbidden because their output cannot be
-traced back to a contract.
+**artifacts-come-from-tests** rule, every leaderboard data point
+must come from a pytest test that pins its shape.
+
+`hard_wall_sec=60` was added in cycle 26 to bound the per-trial
+score_submission walltime (per ADR 0006 layer 1). Without this knob
+the cycle-22 attempt hung 34+ minutes on a slow Solver. With it,
+each trial is capped at 60 s of aggregate scoring time; remaining
+seeds get sentinel `final_state='walltime_exceeded'` per cycle 23.
 
 - **Arrange**: import `main`, `BenchConfig`, `run_bench_trials`,
   `json`. The artifact path is
   `experiments/2026-05-13-iters100-T07-n3.json` (committed alongside
-  the test).
+  the test). Config: `BenchConfig(max_iters=100, n_trials=3,
+  temperature=0.7, hard_wall_sec=60)`.
 - **Act**: run the 3-trial campaign live; write per-trial
   `mean_score`, aggregated `mean_of_means`, `best_mean`,
   `worst_mean`, `max_max_tile`, `aggregate_walltime_sec`, and the
@@ -33,6 +39,6 @@ traced back to a contract.
 
 Pytest marker: `@pytest.mark.campaign` — opt-in via
 `pytest -m campaign`; the default TIA per-cycle gate skips this
-test because it takes 5-10 minutes.
+test because it takes minutes (bounded now by `hard_wall_sec`).
 
 Test code: [`tests/reward_bench/frameworks/campaigns/test_iters100_T07_n3.py`](../../../../tests/reward_bench/frameworks/campaigns/test_iters100_T07_n3.py).

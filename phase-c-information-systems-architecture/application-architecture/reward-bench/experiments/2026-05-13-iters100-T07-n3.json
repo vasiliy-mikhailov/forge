@@ -1,0 +1,22 @@
+{
+  "model_id": "qwen3.6-27b-awq",
+  "config": {
+    "max_iters": 100,
+    "n_trials": 3,
+    "temperature": 0.7,
+    "max_no_improve": 999999,
+    "finish_floor": 0.0,
+    "hard_wall_sec": 0.0
+  },
+  "n_trials": 3,
+  "per_trial_mean": [
+    3136.4,
+    3850.0,
+    3221.6
+  ],
+  "mean_of_means": 3402.6666666666665,
+  "best_mean": 3850.0,
+  "worst_mean": 3136.4,
+  "max_max_tile": 512,
+  "aggregate_walltime_sec": 0.8196237969677895
+}
