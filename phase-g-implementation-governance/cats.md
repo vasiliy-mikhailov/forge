@@ -103,22 +103,29 @@ Do all eleven steps for ONE test case, then start the next.
                                        implementation (TOGAF-facing; what the
                                        lab promises to do for its capability).
     AGENTS.md                          operator interface
-    src-spec/                         CODE-facing functional specs. One file
-                                       PER BEHAVIOR, filename mirrors the test
-                                       it justifies:
+    src-spec/                         CODE-facing functional specs. Two-level
+                                       hierarchy: <layer>/<source_file>/.
+                                       First level is the clean-arch layer
+                                       (entities, use_cases, adapters,
+                                       frameworks, plus lab-specific groupings
+                                       such as architecture, clean_arch).
+                                       Second level is the python module name
+                                       under test (e.g. agent_loop, parser,
+                                       score_submission). Inside, ONE file PER
+                                       BEHAVIOR; filename mirrors the test:
                                          src_spec_when_X_then_Y.md
                                        so the file IS the contract for that
                                        behavior. No roll-up file per feature.
-      src_spec_when_X_then_Y.md
-      <sub-area>/src_spec_when_X_then_Y.md
-    tests-spec/                        CODE-facing test case specs. One file
-                                       PER TEST, filename mirrors the test:
+      <layer>/<source_file>/src_spec_when_X_then_Y.md
+    tests-spec/                        CODE-facing test case specs. Same
+                                       two-level hierarchy as src-spec/:
+                                       <layer>/<source_file>/. ONE file PER
+                                       TEST; filename mirrors the test:
                                          test_spec_when_X_then_Y.md
                                        Holds the Arrange / Act / Assert contract
                                        for that single test, written per step 2.
                                        No roll-up file per feature.
-      test_spec_when_X_then_Y.md
-      <sub-area>/test_spec_when_X_then_Y.md
+      <layer>/<source_file>/test_spec_when_X_then_Y.md
     tests/                             pytest implementations of tests-spec/.
       test_<module>.py
     src/                               clean implementation, generated to
@@ -150,6 +157,49 @@ src_spec_when_X_then_Y.md) and the per-module naming for test code
 test_spec_when_X_then_Y.md file, but the .py file it lives in is
 chosen by which src/ module it exercises.
 
+## Spec folder hierarchy mirrors clean-arch + source layout
+
+Spec files do NOT live as a flat list. They live in a two-level
+hierarchy:
+
+    src-spec/<layer>/<source_file>/src_spec_when_X_then_Y.md
+    tests-spec/<layer>/<source_file>/test_spec_when_X_then_Y.md
+
+First level (`<layer>/`) is the clean-arch layer the source code lives
+in: `entities/`, `use_cases/`, `adapters/`, `frameworks/`, plus any
+lab-specific cross-cutting groupings such as `architecture/` (for the
+ast-walking dependency-direction tests) or `clean_arch/` (for layered
+wire-up tests).
+
+Second level (`<source_file>/`) is the python module name under test
+— the bare module stem, no `.py` extension, no `test_` prefix. For
+`src/<layer>/parser.py`, specs live under `src-spec/<layer>/parser/`
+and `tests-spec/<layer>/parser/`.
+
+Example:
+
+    src/use_cases/score_submission.py
+      <-> src-spec/use_cases/score_submission/src_spec_*.md
+      <-> tests-spec/use_cases/score_submission/test_spec_*.md
+      <-> tests/use_cases/test_score_submission.py
+
+    src/adapters/game_board_2048.py
+      <-> src-spec/adapters/game_board_2048/src_spec_*.md
+      <-> tests-spec/adapters/game_board_2048/test_spec_*.md
+      <-> tests/adapters/test_game_board_2048.py
+
+The hierarchy buys three things:
+
+  - Directory listing answers "what specifies module X?" with one
+    `ls src-spec/<layer>/<module>/` — no grep.
+  - Architectural test specs and behavioral specs live in distinct
+    layer folders, so cross-cutting concerns don't pollute per-module
+    folders.
+  - A new layer or a new module shows up as a new folder, not a
+    naming-convention violation buried in a long flat list. The
+    structure makes the four clean-arch layers visible without
+    reading the code.
+
 ## Spec files are Markdown
 
 Both `src_spec_*.md` and `test_spec_*.md` files MUST be valid
@@ -178,8 +228,8 @@ collapses in Markdown is a near-invisible drift.
 
 Per-behavior spec files are named after the test they justify:
 
-    src-spec/<area>/src_spec_when_X_then_Y.md
-    tests-spec/<area>/test_spec_when_X_then_Y.md
+    src-spec/<layer>/<source_file>/src_spec_when_X_then_Y.md
+    tests-spec/<layer>/<source_file>/test_spec_when_X_then_Y.md
 
 ONE file per test case. The filename IS the contract; reading the
 directory listing tells the agent immediately which test the file
