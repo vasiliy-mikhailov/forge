@@ -639,6 +639,64 @@ A test code file may contain multiple test functions; one per
 test_spec_when_X_then_Y.md. The src code is whatever satisfies the
 collected src_spec_when_X_then_Y.md files in that area.
 
+## Implementation ADRs — between SPEC.md and test_spec
+
+A `test_spec_when_X_then_Y.md` pins ONE behavior in 30-300 words.
+`SPEC.md` describes the lab's promise to its TOGAF capability in
+hundreds of lines. Between those two layers there is a third: the
+**architectural decisions** that shape how the lab is built — too
+detailed for SPEC.md but too cross-cutting for any single test_spec.
+Those decisions live as **implementation ADRs** at
+`<lab>/docs/adr/NNNN-short-slug.md`.
+
+Each implementation ADR captures:
+
+- **Status** — Accepted (date) | Superseded by ADR-NNN | Deprecated.
+- **Context** — what forced the decision; what observations or
+  prior decisions led to it.
+- **Decision** — the one-sentence position. Specific enough that an
+  agent reading it knows what code to write.
+- **Consequences** — positive AND negative; what reverting would
+  cost.
+- **Alternatives considered** — each named and briefly rejected.
+- **Implementation pointers** — files/cycles that realise the
+  decision (or are planned to).
+
+Implementation ADRs have **lab-local numbering** (own sequence
+starting at `0001`), distinct from forge-wide ADRs in
+`phase-preliminary/adr/`. The forge-wide sequence captures decisions
+that affect multiple labs; the lab-local sequence captures decisions
+that affect one lab only.
+
+### When to write an implementation ADR
+
+Write one BEFORE the cycle that realises the decision, not after.
+Symptoms that an ADR is overdue:
+
+- You're about to write a test_spec but you keep typing "we chose X
+  because Y" into the spec body instead of the behavior contract.
+- The decision is referenced (or contradicted) by `_bak/` legacy
+  code and you want the new direction recorded for the audit trail.
+- Two reasonable implementations fit the SPEC.md text and you need
+  to pin which one was chosen.
+- The cycle ahead will write production code that's hard to revert
+  without losing context.
+
+In each case: pause the test_spec cycle, write the ADR, commit it,
+THEN start the cycle that realises it. The test_spec then references
+the ADR by relative path; readers chase the link if they need the
+rationale.
+
+### Example
+
+`reward-bench` faced "the condenser uses the same model as the model
+under bench, or a separate smaller one?". SPEC.md mentioned "a
+condenser" without committing to either; the legacy `_bak/` used a
+separate model. The decision was made AS AN ADR
+(`reward-bench/docs/adr/0001-condenser-uses-same-model-as-bench.md`)
+BEFORE the cycle that wires the condenser. The ADR's Implementation
+pointers section names the cycles that will realise it.
+
 ## Two layers of code-facing spec, one TOGAF document under implementation
 
   - SPEC.md at the lab root is the document under implementation. It
