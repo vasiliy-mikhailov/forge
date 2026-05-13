@@ -131,6 +131,30 @@ Do all eleven steps for ONE test case, then start the next.
   smaller behavior.
 - Each commit covers exactly one cycle. The diff should be readable
   in one screen.
+- **Artifacts come from tests.** Leaderboard data points,
+  performance numbers, golden outputs, screenshot baselines,
+  benchmark scores — anything checked into the repo that's a
+  *result* — must come from a test that pins its shape. Ad-hoc
+  scripts that produce numbers without a test_spec are forbidden:
+  re-running the script silently yields different numbers because
+  no contract pins what "the same artifact" means. Concretely:
+    - A campaign that produces a leaderboard data point lives as a
+      pytest test (often opt-in / marked slow), not as a `bin/`
+      script invoked by hand.
+    - The test_spec declares: what config the run uses, what the
+      result file path is, what fields the result MUST contain
+      (n_games, mean_score type, etc.), and what tolerances apply
+      (e.g. "mean_score >= 0 and is a finite float"). It does NOT
+      assert a specific value — model noise is real — but it pins
+      the *shape* so the artifact's structure is stable.
+    - The test writes the artifact to its declared path as part of
+      executing; checking in the artifact + the test together makes
+      "what produced this number?" answerable by `git blame`.
+    - Slow live-model tests (5+ min each) are opt-in via a pytest
+      marker; the TIA per-cycle gate skips them; the coarser-gate
+      sessions run them deliberately to refresh the leaderboard.
+  Without this rule, the repo accumulates "raw numbers" that look
+  authoritative but have no traceable lineage.
 - **No silent bug fixes.** When a bug is discovered OUTSIDE a test run
   (manual probe, production observation, eyeballing logs, an agent
   noticing something looks off), the agent MUST:

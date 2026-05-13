@@ -1,2 +1,5 @@
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = [
+    "campaign: long-running live-model campaign tests; opt-in via -m campaign",
+]

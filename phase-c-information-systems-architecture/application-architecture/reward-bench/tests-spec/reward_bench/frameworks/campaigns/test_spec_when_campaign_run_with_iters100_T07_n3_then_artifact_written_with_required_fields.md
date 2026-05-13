@@ -1,0 +1,38 @@
+# `test_when_campaign_run_with_iters100_T07_n3_then_artifact_written_with_required_fields`
+
+Pins the leaderboard-data-point contract under
+`BenchConfig(max_iters=100, n_trials=3, temperature=0.7)`. The test
+runs the campaign live against `qwen3.6-27b-awq`, writes the
+result to a declared artifact path, and asserts the artifact's
+SHAPE (not its specific numeric values — model noise is real).
+
+This is the test-backed replacement for the deleted ad-hoc
+`bin/run_campaign.py`. Per the cats.md
+**artifacts-come-from-tests** rule (commit forthcoming), every
+leaderboard data point must come from a pytest test that pins its
+shape; ad-hoc scripts are forbidden because their output cannot be
+traced back to a contract.
+
+- **Arrange**: import `main`, `BenchConfig`, `run_bench_trials`,
+  `json`. The artifact path is
+  `experiments/2026-05-13-iters100-T07-n3.json` (committed alongside
+  the test).
+- **Act**: run the 3-trial campaign live; write per-trial
+  `mean_score`, aggregated `mean_of_means`, `best_mean`,
+  `worst_mean`, `max_max_tile`, `aggregate_walltime_sec`, and the
+  config metadata into a JSON object at the artifact path.
+- **Assert** (shape only — does NOT assert specific scores; model
+  noise is real and the test must be re-runnable):
+  - The artifact file exists at the declared path.
+  - The artifact is valid JSON.
+  - Required top-level keys present: `model_id`, `config`,
+    `n_trials`, `per_trial_mean`, `mean_of_means`, `best_mean`,
+    `worst_mean`, `max_max_tile`, `aggregate_walltime_sec`.
+  - `len(per_trial_mean) == 3`.
+  - Every numeric field is finite and non-negative.
+
+Pytest marker: `@pytest.mark.campaign` — opt-in via
+`pytest -m campaign`; the default TIA per-cycle gate skips this
+test because it takes 5-10 minutes.
+
+Test code: [`tests/reward_bench/frameworks/campaigns/test_iters100_T07_n3.py`](../../../../tests/reward_bench/frameworks/campaigns/test_iters100_T07_n3.py).
