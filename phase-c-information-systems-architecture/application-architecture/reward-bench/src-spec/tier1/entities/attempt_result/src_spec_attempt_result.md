@@ -7,6 +7,7 @@ domain type — no IO, no HTTP, no external systems.
 Fields (aligning with SPEC.md Tier 1 `AttemptResult` schema):
 
   games                   tuple[GameResult, ...]
+  stagnation_sec          float
   mean_score              float
   median_score            float
   std_score               float
@@ -27,3 +28,9 @@ Allowed imports (kept minimal to satisfy the entities-purity rule):
 The dataclass is `frozen=True` so instances are hashable / immutable
 value objects — matches Clean Architecture's idea that entities
 represent unchanging facts about a finished attempt.
+
+
+`stagnation_sec` is the per-game progress-watchdog threshold from
+SPEC.md §"Per-game stagnation detector" (default 60 s). The
+attempt record carries the value that applied to the run so later
+analysis can distinguish attempts with different settings.
