@@ -680,12 +680,17 @@ the answer is always one of the four:
   in `adapters/`, transforming entities into formatted strings or
   files. A presenter carries no business logic; it only formats.
 
-- **Persistence** (storing every swipe in a database, caching
-  attempts, writing artifacts to disk) splits across the layers: the
-  abstract port (`SwipeStorePort`) lives in `use_cases/`; the
-  concrete adapter (`SqliteSwipeStoreAdapter`) lives in `adapters/`;
-  the actual driver (sqlite/postgres client, file IO, env-var lookup)
-  is wired in `frameworks/`. The use case talks only to the port.
+- **Persistence** (storing every swipe, caching attempts, writing
+  artifacts to disk) splits across the layers: the abstract port
+  (`SwipeStorePort`) lives in `use_cases/`; the concrete adapter
+  (`SqliteSwipeStoreAdapter`, `MarkdownSwipeStoreAdapter`, or
+  similar) lives in `adapters/`; non-trivial drivers (sqlite/postgres
+  client, S3 SDK, env-var lookup) live in `frameworks/`. The use
+  case talks only to the port. The backing store doesn't have to be
+  a database: a folder of markdown files indexed by timestamp is a
+  perfectly valid swipe store and needs no `frameworks/` occupant at
+  all — pathlib file IO in the adapter is enough. Pick the simplest
+  backing store that captures what the lab needs to remember.
 
 If a new concern does not obviously fit, ask: is it (a) a domain
 type, (b) an application rule, (c) an input/output translator, or
