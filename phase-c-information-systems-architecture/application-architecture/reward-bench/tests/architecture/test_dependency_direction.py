@@ -19,6 +19,10 @@ _FORBIDDEN_FOR_USE_CASES = (
     'src.adapters', 'src.frameworks',
 )
 
+_FORBIDDEN_FOR_ADAPTERS = (
+    'src.frameworks',
+)
+
 
 def _collect_imports(py_file):
     tree = ast.parse(py_file.read_text())
@@ -63,6 +67,24 @@ def test_when_use_cases_imports_inspected_then_no_outer_imports():
         imports = _collect_imports(f)
         for imp in imports:
             for forbidden in _FORBIDDEN_FOR_USE_CASES:
+                assert not imp.startswith(forbidden), (
+                    f'{f.relative_to(REPO)}: forbidden import {imp!r} '
+                    f'(starts with {forbidden!r})'
+                )
+
+
+def test_when_adapters_imports_inspected_then_no_framework_imports():
+    # Arrange
+    adapters_dir = REPO / 'src' / 'adapters'
+    assert adapters_dir.is_dir(), f'{adapters_dir} does not exist'
+    files = [p for p in adapters_dir.rglob('*.py') if p.name != '__init__.py']
+    assert files, f'no adapter .py files under {adapters_dir}'
+
+    # Act + Assert per file
+    for f in files:
+        imports = _collect_imports(f)
+        for imp in imports:
+            for forbidden in _FORBIDDEN_FOR_ADAPTERS:
                 assert not imp.startswith(forbidden), (
                     f'{f.relative_to(REPO)}: forbidden import {imp!r} '
                     f'(starts with {forbidden!r})'
