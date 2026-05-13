@@ -72,6 +72,10 @@ def execute_tool(name, args, workspace, env_dir, tasks_dir):
         host.write_text(content)
         return f'<ok>wrote {len(content)} chars to {virt}</ok>'
 
+    if name == 'finish':
+        note = args.get('note', '')
+        return f'<finish>{note}</finish>'
+
     return f'<error>unknown tool: {name}</error>'
 
 

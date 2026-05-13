@@ -94,3 +94,19 @@ def test_when_write_file_tool_executed_then_writes_to_workspace(tmp_path):
     assert target.exists(), f'file not written; observation: {result!r}'
     assert target.read_text() == content, f'contents differ; observation: {result!r}'
     assert '<ok>' in result and '/workspace/submission.py' in result, f'unexpected observation: {result!r}'
+
+
+def test_when_finish_tool_executed_then_returns_finish_signal(tmp_path):
+    # Arrange
+    workspace = tmp_path / 'workspace'
+    workspace.mkdir()
+    env_dir = REPO / 'tasks/2048'
+    tasks_dir = REPO / 'tasks'
+    args = {'note': 'all done'}
+
+    # Act
+    result = execute_tool('finish', args, workspace, env_dir, tasks_dir)
+
+    # Assert
+    assert result.startswith('<finish>') and result.endswith('</finish>'), f'unexpected: {result!r}'
+    assert 'all done' in result, f'note missing: {result!r}'
