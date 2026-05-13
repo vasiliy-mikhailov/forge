@@ -1,4 +1,4 @@
-# TSDD methodology — bridging TOGAF documents to robust implementation (test-spec-driven development)
+# CATS methodology — bridging TOGAF documents to robust implementation (clean architecture test specs)
 
 Read this before writing implementation code in any forge lab.
 
@@ -14,7 +14,7 @@ The connection is test-first. Tests pin the contract that documents
 promise. Code exists only to make tests pass. Spec describes only what
 tests prove.
 
-## The TSDD cycle (one iteration)
+## The CATS cycle (one iteration)
 
 Do all eleven steps for ONE test case, then start the next.
 
@@ -219,7 +219,7 @@ collected src_spec_when_X_then_Y.md files in that area.
 ## Reverse-engineering legacy code
 
 When a lab has legacy code that drifted from src-spec / SPEC.md, move it to a
-quarantined directory (per-lab convention — see lab AGENTS.md / TSDD.md)
+quarantined directory (per-lab convention — see lab AGENTS.md / CATS.md)
 and rebuild from tests via the cycle above. Rules:
 
   - Read the quarantined code to learn its observable behavior; do not
@@ -228,7 +228,7 @@ and rebuild from tests via the cycle above. Rules:
   - Each green cycle frees a slice of the quarantined code to delete.
 
 Lab-specific quarantine paths and reverse-engineering notes live in
-each lab's own TSDD.md.
+each lab's own CATS.md.
 
 ## When to stop a cycle and ask the user
 
@@ -258,7 +258,7 @@ amendment, which may force a SPEC.md amendment.
 ## Per-lab adoption
 
 Each lab that follows this methodology should keep its lab-specific
-conventions in <lab>/TSDD.md and reference this document at the top.
+conventions in <lab>/CATS.md and reference this document at the top.
 The lab-specific file enumerates lab-only choices (module names,
 specific reverse-engineering scope, lab-specific 'when to ask' cases).
 
@@ -350,3 +350,120 @@ live capture, in-memory, evicted at the end of every pytest run. Not
 frozen on disk. The distinction matters — session fixtures still
 exercise the real system every run, on-disk fixtures freeze a moment
 of reality and stop catching drift.
+
+## Clean architecture, enforced by architectural test specs
+
+CATS code must form a clean dependency graph per Uncle Bob's Clean
+Architecture and the SOLID principles. Behavioral tests pin what the
+code does; architectural test specs pin how the code is layered.
+
+### The four layers
+
+Innermost outward:
+
+  src/<lab>/
+    entities/    Pure domain types. Dataclasses, enums, value objects.
+                 NO imports from other src/ layers. NO imports of
+                 urllib, requests, subprocess, docker, file IO, env vars.
+                 Example: AttemptResult, GameResult, Submission.
+
+    use_cases/   Application business rules. Orchestrates entities
+                 through abstract "ports" (Python Protocol or ABC
+                 interfaces). May import entities/ only.
+                 Example: ScoreSubmission, IterateToSubmission.
+
+    adapters/    Interface adapters. Concrete implementations of the
+                 ports declared in use_cases/. Translates between the
+                 entity world and external systems. May import
+                 entities/ and use_cases/.
+                 Example: VllmChatAdapter (implements ChatPort),
+                 DockerInferenceAdapter (implements InferencePort).
+
+    frameworks/  The only layer that touches HTTP libraries, docker
+                 commands, file system, environment variables. Wires
+                 adapters to concrete drivers. May import any inner
+                 layer.
+                 Example: vllm_http_driver, docker_provisioner.
+
+The Dependency Rule: code dependencies point only INWARD. Outer layers
+depend on inner; inner layers know nothing about outer.
+
+### Architectural test specs
+
+An architectural test spec is a pytest that walks the src/ import
+graph (via the `ast` module) and asserts the dependency direction.
+It is NOT a behavioral test — it pins a static invariant of the
+codebase.
+
+Mandatory architectural tests per lab:
+
+  test_when_entities_imports_inspected_then_no_outer_layer_imports
+    Arrange: walk every .py under src/<lab>/entities/.
+    Act:     parse imports via ast.
+    Assert:  no module imports anything starting with use_cases.,
+             adapters., frameworks., urllib, subprocess, requests,
+             httpx, docker, pathlib (except via stdlib).
+
+  test_when_use_cases_imports_inspected_then_no_framework_imports
+    Arrange: walk every .py under src/<lab>/use_cases/.
+    Act:     parse imports via ast.
+    Assert:  no module imports from adapters. or frameworks.;
+             no direct urllib/subprocess/docker; no environment
+             variable access.
+
+  test_when_adapters_imports_inspected_then_no_framework_imports
+    Arrange: walk every .py under src/<lab>/adapters/.
+    Act:     parse imports via ast.
+    Assert:  no imports from frameworks. — adapters expose ports
+             but don't choose drivers.
+
+When a refactor crosses the dependency direction, the architectural
+test breaks loudly. This is the static analog of behavioral test
+pinning, and it makes Clean Architecture a property the suite enforces
+rather than aspirational prose in a README.
+
+### SOLID in CATS
+
+- Single Responsibility: each module exposes ONE focused purpose.
+  Code that mixes orchestration with HTTP plumbing with file IO
+  violates SRP and must be refactored to separate layers.
+- Open/Closed: extending the bench to a new model family adds a
+  new adapter, not a modification to use_cases. New tier (T2/T3/T4)
+  adds new use cases + adapters; entities and unchanged adapters
+  stay untouched.
+- Liskov Substitution: adapters implementing the same port are
+  interchangeable. Tests on use_cases must run against any adapter
+  satisfying the port contract.
+- Interface Segregation: ports are small and focused. A use case
+  that needs only `chat(messages) -> str` depends on a `ChatPort`
+  with one method, not a fat client class with thirty.
+- Dependency Inversion: high-level policy (use cases) depends on
+  abstractions (ports); low-level details (HTTP, Docker) implement
+  those abstractions. Concretely: use_cases imports a Protocol;
+  frameworks constructs the concrete adapter at app entry.
+
+### When to write the architectural test spec
+
+Per the per-behavior cycle: an architectural rule is "next behavior"
+when the import graph would silently allow a violation that wrecks
+the design. Add the architectural test the moment a new layer
+emerges; the test then prevents future drift.
+
+### Refactor under CATS
+
+Restructuring src/ to fit the four layers is itself a sequence of
+CATS cycles, each one:
+
+  1. New architectural test spec asserting the next dependency rule.
+  2. Test red because current code violates the rule.
+  3. Refactor src/ to satisfy the rule (move files, rename, extract
+     interfaces).
+  4. Behavioral tests still green after the move.
+  5. Architectural test green.
+  6. Commit + push.
+
+Each architectural cycle moves one piece of code into its correct
+layer with the test as evidence. The codebase converges on Clean
+Architecture under the same TSDD-style discipline the rest of CATS
+uses.
+
