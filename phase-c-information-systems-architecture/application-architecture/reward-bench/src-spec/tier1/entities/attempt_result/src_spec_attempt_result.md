@@ -10,6 +10,7 @@ Fields (aligning with SPEC.md Tier 1 `AttemptResult` schema):
   stagnation_sec          float
   hard_wall_sec           float
   stagnated_any           bool
+  walltime_exceeded       bool
   mean_score              float
   median_score            float
   std_score               float
@@ -46,3 +47,8 @@ can distinguish attempts run with vs without the safety net.
 if any game in `games` ended with `final_state='stagnated'`. Carries
 no logic itself; the populating use case (`score_submission`) is
 responsible for setting it correctly. Default `False`.
+
+`walltime_exceeded` is the observation flag mirroring SPEC.md:
+`True` if any game in `games` ended with
+`final_state='walltime_exceeded'` (the outer `hard_wall_sec` cap
+fired). Default `False`.

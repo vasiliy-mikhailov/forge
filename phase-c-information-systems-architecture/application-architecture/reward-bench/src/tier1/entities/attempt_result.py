@@ -21,3 +21,4 @@ class AttemptResult:
     stagnation_sec: float = 60.0
     hard_wall_sec: float = 0.0
     stagnated_any: bool = False
+    walltime_exceeded: bool = False

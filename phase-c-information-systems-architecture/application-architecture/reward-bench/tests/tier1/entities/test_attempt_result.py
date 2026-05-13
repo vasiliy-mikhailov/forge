@@ -70,3 +70,18 @@ def test_when_attempt_result_constructed_with_stagnated_any_then_field_preserved
 
     # Assert
     assert r.stagnated_any is True
+
+
+def test_when_attempt_result_constructed_with_walltime_exceeded_then_field_preserved():
+    # Arrange (empty-games attempt; only walltime_exceeded varies)
+
+    # Act
+    r = AttemptResult(
+        mean_score=0.0, median_score=0.0, std_score=0.0,
+        max_max_tile=2, n_games=0, aggregate_walltime_sec=0.0,
+        seeds=(),
+        walltime_exceeded=True,
+    )
+
+    # Assert
+    assert r.walltime_exceeded is True
