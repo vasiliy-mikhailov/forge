@@ -5,8 +5,23 @@ currently-implemented mode. Lifted verbatim from _bak/bin/agent_loop.py
 (May 2026 production campaign, ~15.9k mean score on Qwen3.6-27B-AWQ).
 """
 import json
+import os
 import re
+import subprocess
 from pathlib import Path
+
+
+ALLOWED_BASH_PREFIXES = (
+    "python /tasks/2048/dev_runner.py /workspace/submission.py",
+    "python3 /tasks/2048/dev_runner.py /workspace/submission.py",
+    "ls /workspace",
+    "ls /tasks",
+    "ls /env",
+    "cat /workspace/submission.py",
+    "head /workspace/submission.py",
+    "cat /tasks/2048/SKILL_tier1.md",
+    "cat /env/env_2048.py",
+)
 
 
 _TOOL_BLOCK_RE = re.compile(r'```tool\b\s*\n(.*?)\n```', re.DOTALL)
@@ -71,6 +86,33 @@ def execute_tool(name, args, workspace, env_dir, tasks_dir):
         host.parent.mkdir(parents=True, exist_ok=True)
         host.write_text(content)
         return f'<ok>wrote {len(content)} chars to {virt}</ok>'
+
+    if name == 'bash':
+        virt_cmd = args.get('cmd', '').strip()
+        if not any(virt_cmd.startswith(p) for p in ALLOWED_BASH_PREFIXES):
+            return ('<error>bash: command not on allow-list. Allowed prefixes:\n'
+                    + '\n'.join(f'  {p}' for p in ALLOWED_BASH_PREFIXES)
+                    + f'\nReceived: {virt_cmd}</error>')
+        cmd = virt_cmd
+        for prefix, root in (('/workspace', workspace), ('/tasks', tasks_dir), ('/env', env_dir)):
+            cmd = cmd.replace(prefix, str(Path(root).resolve()))
+        env = os.environ.copy()
+        env['PYTHONPATH'] = f"{Path(env_dir).resolve()}:" + env.get('PYTHONPATH', '')
+        try:
+            result = subprocess.run(
+                cmd, shell=True, capture_output=True, text=True, timeout=120,
+                cwd=str(workspace), env=env,
+            )
+            stdout = _trim(result.stdout)
+            stderr = _trim(result.stderr)
+            return (f'<bash exit={result.returncode}>\n'
+                    f'--- stdout ---\n{stdout}\n'
+                    f'--- stderr ---\n{stderr}\n'
+                    f'</bash>')
+        except subprocess.TimeoutExpired:
+            return '<error>bash: timed out after 120s</error>'
+        except Exception as e:
+            return f'<error>bash: {e}</error>'
 
     if name == 'finish':
         note = args.get('note', '')

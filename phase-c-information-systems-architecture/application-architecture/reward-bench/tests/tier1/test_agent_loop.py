@@ -110,3 +110,22 @@ def test_when_finish_tool_executed_then_returns_finish_signal(tmp_path):
     # Assert
     assert result.startswith('<finish>') and result.endswith('</finish>'), f'unexpected: {result!r}'
     assert 'all done' in result, f'note missing: {result!r}'
+
+
+def test_when_bash_tool_executed_with_allowed_cmd_then_returns_stdout(tmp_path):
+    # Arrange
+    workspace = tmp_path / 'workspace'
+    workspace.mkdir()
+    # Put a sentinel file in workspace so `ls /workspace` has output.
+    (workspace / 'submission.py').write_text('# sentinel\n')
+    env_dir = REPO / 'tasks/2048'
+    tasks_dir = REPO / 'tasks'
+    args = {'cmd': 'ls /workspace'}
+
+    # Act
+    result = execute_tool('bash', args, workspace, env_dir, tasks_dir)
+
+    # Assert
+    assert '<bash exit=0>' in result, f'no successful bash header: {result!r}'
+    assert '--- stdout ---' in result, f'no stdout section: {result!r}'
+    assert 'submission.py' in result, f'sentinel not in stdout: {result!r}'
