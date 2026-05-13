@@ -59,9 +59,43 @@ Do all eleven steps for ONE test case, then start the next.
      The refactor must NOT change any observable behavior; no new test
      should be passing or failing because of it, and no src-spec or
      tests-spec promise should change.
-  9. Run the FULL test suite (not just the new test). Confirm every
-     previously-green test is still green. If any regressed, the
-     refactor was not behavior-preserving — revert and try again.
+  9. Run the IMPACTED test scope per **test impact analysis (TIA)**
+     — every test connected to the code you touched. "Connected"
+     means: the test imports a module you modified, or imports a
+     module that transitively imports one you modified. Confirm
+     every previously-green test in that connected set is still
+     green. If any regressed, the refactor was not behavior-
+     preserving — revert and try again.
+
+     The FULL suite is a coarser gate, NOT a per-cycle gate. It runs
+     before pushing a chain of cycles, at session boundary, in CI,
+     and on a schedule. The reason for the relaxation: when the
+     suite includes live-LLM tests (single test = 5+ minutes), a
+     full-suite gate every cycle either freezes the cadence or
+     drives the agent to silently skip slow tests (the worst
+     outcome). The full-suite gate at coarser intervals catches
+     cross-module drift TIA misses; TIA catches everything the
+     immediate change breaks.
+
+     Implementations of TIA:
+       - **Manual**: agent identifies imports of changed modules,
+         runs `pytest` against the matching test files. Works for
+         small repos and clean module graphs.
+       - **Tool-assisted**: tools like `pytest-testmon` track
+         per-test coverage maps across runs and replay only tests
+         whose coverage intersects the diff.
+       - **Static**: ast-walk the test tree to build a
+         test-file -> imports graph, intersect with the
+         changed-files set, run intersection.
+
+     Pragmatic guidance:
+       - When uncertain whether a test is connected, include it.
+       - Before `git push` of a chain of cycles, run the FULL suite.
+         The push is the escape-from-local moment; that's where the
+         wider gate applies.
+       - Document the TIA scope chosen in the commit message under
+         the step-11 coverage report — readers can audit whether the
+         choice was reasonable.
   10. Commit and push. Only after step 9 reports the entire suite
       green. Message names the cycle and the test case so the trace
       is reproducible when context collapses. Push to origin so the
