@@ -177,3 +177,30 @@ def test_when_run_loop_invoked_with_one_iter_cap_then_returns_one_turn_history(
     )
 
 
+def test_when_run_loop_produces_submission_then_solver_move_returns_one_of_wasd(
+        tmp_path, vllm_base_url, vllm_api_key):
+    from src.tier1.harness import load_submission
+    # Arrange
+    workspace = tmp_path / 'workspace'
+    workspace.mkdir()
+    env_dir = REPO / 'tasks/2048'
+    tasks_dir = REPO / 'tasks'
+    starting_board = [
+        [2, 0, 0, 0],
+        [0, 0, 0, 0],
+        [0, 0, 0, 2],
+        [0, 0, 0, 0],
+    ]
+
+    # Act
+    run_loop(workspace, env_dir, tasks_dir, vllm_base_url, vllm_api_key, max_iters=20)
+    submission = workspace / 'submission.py'
+    assert submission.exists(), 'submission.py not written during run_loop'
+    module = load_submission(submission)
+    solver = module.Solver()
+    action = solver.move(starting_board)
+
+    # Assert
+    assert action in {'W', 'A', 'S', 'D'}, f'action={action!r} not in WASD'
+
+
