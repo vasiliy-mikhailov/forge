@@ -4,6 +4,21 @@ Per SPEC.md Submission Protocols, the interactive protocol is the
 currently-implemented mode. Lifted verbatim from _bak/bin/agent_loop.py
 (May 2026 production campaign, ~15.9k mean score on Qwen3.6-27B-AWQ).
 """
+import json
+import re
+
+
+_TOOL_BLOCK_RE = re.compile(r'```tool\b\s*\n(.*?)\n```', re.DOTALL)
+
+
+def parse_tool_calls(reply):
+    out = []
+    for m in _TOOL_BLOCK_RE.finditer(reply):
+        body = m.group(1).strip()
+        obj = json.loads(body)
+        out.append((obj['name'], obj['args']))
+    return out
+
 
 SYSTEM_PROMPT = """You are an expert Python engineer competing in reward-bench Tier 1 — the 2048 FSM-solver task.
 
