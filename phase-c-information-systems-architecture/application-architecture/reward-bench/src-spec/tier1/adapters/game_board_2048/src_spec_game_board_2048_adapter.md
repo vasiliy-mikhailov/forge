@@ -8,11 +8,16 @@ concrete API.
 
 Public method:
 
-    def play_one_game(self, solver, seed: int) -> tuple[int, int]:
-        '''Returns (score, max_tile). Loops solver.move(board.board)
-        -> board.do_action(action) until is_terminal(). Same logic
-        as the legacy src/tier1/scorer.py _play helper, just under
-        the port contract.'''
+    def play_one_game(self, solver, seed: int) -> GameResult:
+        '''Returns a fully-populated GameResult: seed, score,
+        max_tile, moves (counted by the adapter), walltime_sec
+        (measured), final_state (mapped from board.state — 'won'
+        or 'lost'). Loops solver.move(board.board) ->
+        board.do_action(action) until is_terminal().'''
+
+The richer return is what lets `score_submission` populate
+`AttemptResult.games` per SPEC.md without itself reaching into env
+internals.
 
 Allowed imports: `sys`, `pathlib`, `src.tier1.use_cases.score_submission`
 (for type hint) and a `sys.path`-inserted import of the legacy

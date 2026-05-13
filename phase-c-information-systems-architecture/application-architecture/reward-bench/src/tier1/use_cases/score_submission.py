@@ -1,4 +1,6 @@
-"""Tier 1 score-submission use case. See src-spec/use_cases/src_spec_score_submission.md.
+"""Tier 1 score-submission use case.
+
+See src-spec/tier1/use_cases/score_submission/src_spec_score_submission.md.
 
 Application-policy orchestrator: plays N games per the seeds list via
 an injected GameEnvPort, aggregates per-game scores, returns an
@@ -9,17 +11,18 @@ import time
 from typing import Callable, Iterable, Protocol
 
 from src.tier1.entities.attempt_result import AttemptResult
+from src.tier1.entities.game_result import GameResult
 
 
 class GameEnvPort(Protocol):
     """Port for the 2048 game environment.
 
-    Adapters under src/adapters/ implement this interface against
+    Adapters under src/tier1/adapters/ implement this interface against
     concrete drivers (e.g., tasks/2048/env.GameBoard).
     """
 
-    def play_one_game(self, solver, seed: int) -> tuple:
-        """Return (score: int, max_tile: int)."""
+    def play_one_game(self, solver, seed: int) -> GameResult:
+        """Play one game and return a fully-populated GameResult."""
         ...
 
 
@@ -33,9 +36,9 @@ def score_submission(
     scores = []
     max_tiles = []
     for seed in seeds_tuple:
-        score, max_tile = env.play_one_game(solver_factory(), seed)
-        scores.append(score)
-        max_tiles.append(max_tile)
+        game = env.play_one_game(solver_factory(), seed)
+        scores.append(game.score)
+        max_tiles.append(game.max_tile)
     return AttemptResult(
         mean_score=sum(scores) / len(scores),
         median_score=statistics.median(scores),
