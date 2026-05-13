@@ -53,7 +53,7 @@ Pick the right entry point for the work in front of you.
   `scripts/smoke.sh`.
 - **Writing implementation code that has to match TOGAF
   documents** (any lab) →
-  [`phase-g-implementation-governance/cats.md`](phase-g-implementation-governance/cats.md)
+  [`phase-preliminary/cats.md`](phase-preliminary/cats.md)
   — the test-spec-driven cycle that bridges architecture documents
   (Phase A vision, Phase C SPECs, ADRs) to runnable code.
   Per-lab application lives at `<lab>/CATS.md` and references the
@@ -230,10 +230,10 @@ which is rare — write that down.
 
 ---
 
-## CATS methodology (inlined from `phase-g-implementation-governance/cats.md`)
+## CATS methodology (inlined from `phase-preliminary/cats.md`)
 
 **Keep in sync** with the canonical copy at
-[`phase-g-implementation-governance/cats.md`](phase-g-implementation-governance/cats.md).
+[`phase-preliminary/cats.md`](phase-preliminary/cats.md).
 Drift is a defect; when one file changes, update the other. CATS is
 the test-spec-driven cycle every implementation cycle in this repo
 follows.

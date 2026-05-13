@@ -1,7 +1,7 @@
 # reward-bench CATS application
 
 Follows forge-wide CATS methodology in
-[`../../../phase-g-implementation-governance/cats.md`](../../../phase-g-implementation-governance/cats.md).
+[`../../../phase-preliminary/cats.md`](../../../phase-preliminary/cats.md).
 Read that first. This file captures only the reward-bench-specific
 choices on top of it.
 
