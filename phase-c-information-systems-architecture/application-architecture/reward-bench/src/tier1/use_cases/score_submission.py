@@ -33,12 +33,10 @@ def score_submission(
 ) -> AttemptResult:
     start = time.monotonic()
     seeds_tuple = tuple(seeds)
-    scores = []
-    max_tiles = []
-    for seed in seeds_tuple:
-        game = env.play_one_game(solver_factory(), seed)
-        scores.append(game.score)
-        max_tiles.append(game.max_tile)
+    games = tuple(env.play_one_game(solver_factory(), seed)
+                  for seed in seeds_tuple)
+    scores = [g.score for g in games]
+    max_tiles = [g.max_tile for g in games]
     return AttemptResult(
         mean_score=sum(scores) / len(scores),
         median_score=statistics.median(scores),
@@ -47,4 +45,7 @@ def score_submission(
         n_games=len(scores),
         aggregate_walltime_sec=time.monotonic() - start,
         seeds=seeds_tuple,
+        games=games,
+        stagnated_any=any(g.final_state == 'stagnated' for g in games),
+        walltime_exceeded=any(g.final_state == 'walltime_exceeded' for g in games),
     )

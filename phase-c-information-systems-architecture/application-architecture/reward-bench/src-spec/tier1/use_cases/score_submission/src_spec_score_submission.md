@@ -1,20 +1,38 @@
-# `src_spec_score_submission_use_case`
+# `src/tier1/use_cases/score_submission.py`
 
-`src.tier1.use_cases.score_submission.score_submission(solver_factory, seeds, env)
--> AttemptResult` is the application-policy orchestrator for Tier 1
-canonical evaluation. It plays N games (one per seed) using a fresh
-`solver_factory()` each time, gathers per-game scores and max_tile via
-the injected `env` port, and aggregates into an `AttemptResult` entity.
+`score_submission` is the application-policy orchestrator: it plays
+N games via an injected `GameEnvPort`, aggregates per-game outcomes,
+and returns an `AttemptResult` aligned with SPEC.md.
 
-Same file declares `GameEnvPort` — a `typing.Protocol` describing the
-adapter contract:
+## Signature
 
-    def play_one_game(self, solver, seed: int) -> tuple[int, int]:
-        '''Returns (score, max_tile).'''
+    def score_submission(
+        solver_factory: Callable,
+        seeds: Iterable[int],
+        env: GameEnvPort,
+    ) -> AttemptResult
 
-The use case has no knowledge of the 2048 env implementation, no HTTP,
-no Docker, no file system. The concrete adapter (which wraps
-`tasks/2048/env.GameBoard`) lives under `src/adapters/` in a later
-cycle.
+## Responsibilities (per cycle)
 
-Allowed imports: `statistics`, `time`, `typing`, `src.tier1.entities.attempt_result`.
+1. For each `seed` in `seeds`, call `env.play_one_game(solver_factory(),
+   seed)` and collect the returned `GameResult`.
+2. Aggregate scoring metrics (`mean_score`, `median_score`,
+   `std_score`, `max_max_tile`, `aggregate_walltime_sec`).
+3. Populate the SPEC.md-aligned `AttemptResult` fields:
+   - `games` is the tuple of collected `GameResult` records.
+   - `stagnated_any` is the OR of `g.final_state == 'stagnated'`
+     across games.
+   - `walltime_exceeded` is the OR of
+     `g.final_state == 'walltime_exceeded'` across games.
+
+## Layer purity
+
+Pure application-business-rule code. Imports only entities and the
+`GameEnvPort` Protocol it declares. No IO, no HTTP, no Docker, no
+filesystem.
+
+## Legacy field
+
+`AttemptResult.seeds` is still populated as `tuple(seeds_iterable)`
+to keep callers that read `result.seeds` working. A later cycle
+drops the field once no caller depends on it.
