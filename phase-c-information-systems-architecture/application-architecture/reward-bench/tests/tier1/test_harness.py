@@ -4,7 +4,7 @@ import tempfile
 from pathlib import Path
 
 from src.tier1.harness import load_submission
-from src.adapters.parser import extract_python
+from src.tier1.adapters.parser import extract_python
 
 
 def _write_submission(skill_tier1_reply):

@@ -1,26 +1,34 @@
 """Architectural test specs: dependency direction across src/ layers.
+
+Multi-module monolith: src/ is a container of modules, each module
+(src/tier1/, eventually src/reward_bench/) has its own four-layer
+clean-arch. Dependency-direction tests run per-module.
+
 See tests-spec/architecture/ for the per-rule test specs."""
 import ast
 from pathlib import Path
 
 
 REPO = Path(__file__).resolve().parents[2]
+SRC = REPO / 'src'
 
 
+# Per-layer forbidden import prefixes. Names with {m} are module-scoped
+# and the helper substitutes the concrete module name.
 _FORBIDDEN_FOR_ENTITIES = (
     'urllib', 'http', 'requests', 'httpx', 'aiohttp',
     'subprocess', 'docker', 'os', 'socket',
-    'src.use_cases', 'src.adapters', 'src.frameworks',
+    'src.{m}.use_cases', 'src.{m}.adapters', 'src.{m}.frameworks',
 )
 
 _FORBIDDEN_FOR_USE_CASES = (
     'urllib', 'http', 'requests', 'httpx', 'aiohttp',
     'subprocess', 'docker', 'os', 'socket',
-    'src.adapters', 'src.frameworks',
+    'src.{m}.adapters', 'src.{m}.frameworks',
 )
 
 _FORBIDDEN_FOR_ADAPTERS = (
-    'src.frameworks',
+    'src.{m}.frameworks',
 )
 
 
@@ -37,55 +45,63 @@ def _collect_imports(py_file):
     return imports
 
 
-def test_when_entities_imports_inspected_then_only_pure_imports_allowed():
-    # Arrange
-    entities_dir = REPO / 'src' / 'entities'
-    assert entities_dir.is_dir(), f'{entities_dir} does not exist'
-    files = [p for p in entities_dir.rglob('*.py') if p.name != '__init__.py']
-    assert files, f'no entity .py files under {entities_dir}'
+def _modules():
+    """Return module folders under src/ that are clean-arch units."""
+    out = []
+    for child in SRC.iterdir():
+        if not child.is_dir() or child.name.startswith('_'):
+            continue
+        # A clean-arch unit module has at least one of the four layers.
+        names = {p.name for p in child.iterdir() if p.is_dir()}
+        if names & {'entities', 'use_cases', 'adapters', 'frameworks'}:
+            out.append(child)
+    return out
 
-    # Act + Assert per file
+
+def _assert_layer_imports_clean(module_dir, layer_name, forbidden_template):
+    """For module/layer/, ast-walk every .py and assert no forbidden imports."""
+    layer_dir = module_dir / layer_name
+    if not layer_dir.is_dir():
+        return  # layer may not yet exist for a young module
+    files = [p for p in layer_dir.rglob('*.py') if p.name != '__init__.py']
+    if not files:
+        return  # layer present but empty
+    forbidden = tuple(t.format(m=module_dir.name) for t in forbidden_template)
     for f in files:
         imports = _collect_imports(f)
         for imp in imports:
-            for forbidden in _FORBIDDEN_FOR_ENTITIES:
-                assert not imp.startswith(forbidden), (
+            for fb in forbidden:
+                assert not imp.startswith(fb), (
                     f'{f.relative_to(REPO)}: forbidden import {imp!r} '
-                    f'(starts with {forbidden!r})'
+                    f'(starts with {fb!r})'
                 )
+
+
+def test_when_entities_imports_inspected_then_only_pure_imports_allowed():
+    # Arrange
+    modules = _modules()
+    assert modules, f'no modules under {SRC}'
+
+    # Act + Assert per module
+    for module in modules:
+        _assert_layer_imports_clean(module, 'entities', _FORBIDDEN_FOR_ENTITIES)
 
 
 def test_when_use_cases_imports_inspected_then_no_outer_imports():
     # Arrange
-    use_cases_dir = REPO / 'src' / 'use_cases'
-    assert use_cases_dir.is_dir(), f'{use_cases_dir} does not exist'
-    files = [p for p in use_cases_dir.rglob('*.py') if p.name != '__init__.py']
-    assert files, f'no use case .py files under {use_cases_dir}'
+    modules = _modules()
+    assert modules, f'no modules under {SRC}'
 
-    # Act + Assert per file
-    for f in files:
-        imports = _collect_imports(f)
-        for imp in imports:
-            for forbidden in _FORBIDDEN_FOR_USE_CASES:
-                assert not imp.startswith(forbidden), (
-                    f'{f.relative_to(REPO)}: forbidden import {imp!r} '
-                    f'(starts with {forbidden!r})'
-                )
+    # Act + Assert per module
+    for module in modules:
+        _assert_layer_imports_clean(module, 'use_cases', _FORBIDDEN_FOR_USE_CASES)
 
 
 def test_when_adapters_imports_inspected_then_no_framework_imports():
     # Arrange
-    adapters_dir = REPO / 'src' / 'adapters'
-    assert adapters_dir.is_dir(), f'{adapters_dir} does not exist'
-    files = [p for p in adapters_dir.rglob('*.py') if p.name != '__init__.py']
-    assert files, f'no adapter .py files under {adapters_dir}'
+    modules = _modules()
+    assert modules, f'no modules under {SRC}'
 
-    # Act + Assert per file
-    for f in files:
-        imports = _collect_imports(f)
-        for imp in imports:
-            for forbidden in _FORBIDDEN_FOR_ADAPTERS:
-                assert not imp.startswith(forbidden), (
-                    f'{f.relative_to(REPO)}: forbidden import {imp!r} '
-                    f'(starts with {forbidden!r})'
-                )
+    # Act + Assert per module
+    for module in modules:
+        _assert_layer_imports_clean(module, 'adapters', _FORBIDDEN_FOR_ADAPTERS)

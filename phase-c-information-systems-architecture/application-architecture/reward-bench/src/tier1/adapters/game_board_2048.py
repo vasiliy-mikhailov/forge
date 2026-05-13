@@ -1,11 +1,11 @@
 """GameBoard2048Adapter: wraps tasks/2048/env.GameBoard behind GameEnvPort.
 
-See src-spec/adapters/src_spec_game_board_2048_adapter.md."""
+See src-spec/tier1/adapters/game_board_2048/src_spec_game_board_2048_adapter.md."""
 import sys
 from pathlib import Path
 
 
-_TASKS = Path(__file__).resolve().parents[2] / 'tasks/2048'
+_TASKS = Path(__file__).resolve().parents[3] / "tasks/2048"
 if str(_TASKS) not in sys.path:
     sys.path.insert(0, str(_TASKS))
 

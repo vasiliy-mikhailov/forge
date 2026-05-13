@@ -8,7 +8,7 @@ import statistics
 import time
 from typing import Callable, Iterable, Protocol
 
-from src.entities.attempt_result import AttemptResult
+from src.tier1.entities.attempt_result import AttemptResult
 
 
 class GameEnvPort(Protocol):

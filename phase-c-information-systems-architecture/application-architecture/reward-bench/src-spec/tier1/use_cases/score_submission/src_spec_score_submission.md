@@ -1,6 +1,6 @@
 # `src_spec_score_submission_use_case`
 
-`src.use_cases.score_submission.score_submission(solver_factory, seeds, env)
+`src.tier1.use_cases.score_submission.score_submission(solver_factory, seeds, env)
 -> AttemptResult` is the application-policy orchestrator for Tier 1
 canonical evaluation. It plays N games (one per seed) using a fresh
 `solver_factory()` each time, gathers per-game scores and max_tile via
@@ -17,4 +17,4 @@ no Docker, no file system. The concrete adapter (which wraps
 `tasks/2048/env.GameBoard`) lives under `src/adapters/` in a later
 cycle.
 
-Allowed imports: `statistics`, `time`, `typing`, `src.entities.attempt_result`.
+Allowed imports: `statistics`, `time`, `typing`, `src.tier1.entities.attempt_result`.

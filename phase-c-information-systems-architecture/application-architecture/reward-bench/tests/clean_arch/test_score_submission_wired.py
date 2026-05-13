@@ -2,10 +2,10 @@
 matches legacy scorer.run_canonical_eval. See tests-spec/clean_arch/."""
 from pathlib import Path
 
-from src.adapters.game_board_2048 import GameBoard2048Adapter
+from src.tier1.adapters.game_board_2048 import GameBoard2048Adapter
 from src.tier1.harness import load_submission
 from src.tier1.scorer import run_canonical_eval
-from src.use_cases.score_submission import score_submission
+from src.tier1.use_cases.score_submission import score_submission
 
 
 REPO = Path(__file__).resolve().parents[2]

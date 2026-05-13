@@ -1,6 +1,6 @@
 # `src_spec_when_fenced_python_extracted_then_compiles_without_syntax_error`
 
-`src.adapters.parser.extract_python(reply: str) -> str` returns the body
+`src.tier1.adapters.parser.extract_python(reply: str) -> str` returns the body
 of the first fenced Python code block found in `reply`. The body is
 the text between the opening ` ```python ` (or ` ``` `) and the
 matching closing ` ``` `, exclusive.

@@ -1,6 +1,6 @@
 # `src_spec_attempt_result_entity`
 
-`src.entities.attempt_result.AttemptResult` is a frozen `dataclass`
+`src.tier1.entities.attempt_result.AttemptResult` is a frozen `dataclass`
 holding the aggregate outcome of one Tier-1 canonical eval. Pure
 domain type — no IO, no HTTP, no external systems.
 
