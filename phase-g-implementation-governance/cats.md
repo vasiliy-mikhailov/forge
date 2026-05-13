@@ -455,7 +455,11 @@ graph (via the `ast` module) and asserts the dependency direction.
 It is NOT a behavioral test — it pins a static invariant of the
 codebase.
 
-Mandatory architectural tests per lab:
+Mandatory architectural tests per lab. There are two families:
+**dependency-direction** tests (who-imports-whom) and **structural**
+tests (which folders exist).
+
+### Dependency-direction tests
 
   test_when_entities_imports_inspected_then_no_outer_layer_imports
     Arrange: walk every .py under src/<lab>/entities/.
@@ -476,6 +480,49 @@ Mandatory architectural tests per lab:
     Act:     parse imports via ast.
     Assert:  no imports from frameworks. — adapters expose ports
              but don't choose drivers.
+
+### Structural tests
+
+The dependency-direction tests answer "are the layers wired
+correctly?" — but only if the layers exist. The structural tests pin
+that the layers DO exist and that no rogue feature-bundle folder
+sneaks in. They are the test-spec embodiment of the "Spec folder
+hierarchy mirrors clean-arch + source layout" rule.
+
+  test_when_src_top_level_inspected_then_only_canonical_layers
+    Arrange: list non-dunder, non-pycache directories directly under
+             src/<lab>/.
+    Act:     collect their names.
+    Assert:  every name is in {entities, use_cases, adapters,
+             frameworks}. Any other folder (tier1/, bench/, feature/)
+             is a violation and must be decomposed into the four
+             canonical layers.
+
+  test_when_src_top_level_inspected_then_all_four_canonical_layers_present
+    Arrange: list directories directly under src/<lab>/.
+    Act:     check for entities/, use_cases/, adapters/, frameworks/.
+    Assert:  all four exist. A lab missing a layer is either too
+             small to need clean architecture (premature for CATS)
+             or has hidden the missing layer's concerns inside
+             another layer (violation).
+
+  test_when_tests_top_level_inspected_then_only_canonical_layers_or_architectural_groups
+    Arrange: list non-dunder, non-pycache directories directly under
+             tests/<lab>/.
+    Act:     collect their names.
+    Assert:  every name is in {entities, use_cases, adapters,
+             frameworks, architecture, clean_arch}. The two extra
+             folders carry cross-cutting tests that span layers
+             (ast-walking dependency tests; multi-layer wire-up).
+
+The same three structural tests apply equally to src-spec/ and
+tests-spec/ folders — spec hierarchy must mirror code hierarchy.
+
+When a structural test fails, the failure message names the rogue
+folder. The fix is always one of: (a) decompose the rogue folder
+into the four canonical layers (preferred — see Refactor under CATS
+below), or (b) prove the folder is one of the two whitelisted test
+groups.
 
 When a refactor crosses the dependency direction, the architectural
 test breaks loudly. This is the static analog of behavioral test
