@@ -10,6 +10,9 @@ from src.reward_bench.entities.model_target import ModelTarget
 
 MODEL_REGISTRY = (
     # Tier A — dense 24-32B, single Blackwell
+    ModelTarget(id='qwen3.6-27b-awq', hf_path='cyankiwi/Qwen3.6-27B-AWQ-INT4',
+                served_name='qwen3.6-27b-awq', max_model_len=131072,
+                tool_call_parser='qwen3_coder'),
     ModelTarget(id='qwen3.6-27b-fp8', hf_path='Qwen/Qwen3.6-27B-FP8',
                 served_name='qwen3.6-27b-fp8', max_model_len=262144,
                 tool_call_parser='qwen3_xml'),
