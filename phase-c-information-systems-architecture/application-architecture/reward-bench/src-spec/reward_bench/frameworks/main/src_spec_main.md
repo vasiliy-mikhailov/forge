@@ -19,8 +19,12 @@ live vLLM endpoint, and emits an `AttemptResult`.
    and return its base URL.
 3. Create a workspace directory and run `agent_loop.run_loop()`
    against the model — produces `submission.py` in the workspace.
-4. `harness.load_submission()` the file; pick out `Solver`.
-5. Instantiate `GameBoard2048Adapter`; call
+4. Try to `harness.load_submission()` the file and access
+   `module.Solver`. On `AttributeError` (no `Solver` class) or
+   `FileNotFoundError` (no submission written), return a sentinel
+   `AttemptResult(n_games=0, games=(), mean_score=0.0, ...)` so
+   the bench never crashes on malformed model output.
+5. Happy path: instantiate `GameBoard2048Adapter`; call
    `score_submission(solver_factory=Solver, seeds=seeds, env=adapter)`.
 6. Print key fields of the `AttemptResult` to stdout for the human
    "watch the bench run" experience.
@@ -31,10 +35,7 @@ live vLLM endpoint, and emits an `AttemptResult`.
 This file is the only place that imports across all four reward-
 bench layers AND across modules into tier1's transitional root
 files (`tier1/inference.py`, `tier1/agent_loop.py`, `tier1/harness.py`).
-The cross-module reach is acceptable in the composition root by
-clean-architecture convention; later cycles decompose tier1 into
-its own four layers and main rewires through those rather than the
-transitional files.
+Cross-module reach is acceptable in the composition root.
 
 ## Entry point
 

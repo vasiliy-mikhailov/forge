@@ -4,7 +4,12 @@ See src-spec/reward_bench/frameworks/main/src_spec_main.md.
 
 Wires the model registry, the tier1 inference container, the agent
 loop, the harness, the GameBoard adapter, and the score_submission
-use case into a single end-to-end run that emits an AttemptResult."""
+use case into a single end-to-end run that emits an AttemptResult.
+
+Robust to malformed model output: when the agent loop produces a
+submission without a `Solver` class (or no submission at all), main
+emits a sentinel AttemptResult(n_games=0, games=(), mean_score=0.0)
+instead of crashing."""
 import os
 import tempfile
 from pathlib import Path
@@ -35,6 +40,21 @@ def _pick_model(model_id: str) -> ModelTarget:
     )
 
 
+def _sentinel_attempt_result(reason: str) -> AttemptResult:
+    """Empty AttemptResult emitted when the submission is malformed.
+    n_games=0, games=(), mean_score=0.0 mark the shape-error case."""
+    print(f'[bench] submission shape error: {reason}')
+    return AttemptResult(
+        mean_score=0.0,
+        median_score=0.0,
+        std_score=0.0,
+        max_max_tile=0,
+        n_games=0,
+        aggregate_walltime_sec=0.0,
+        games=(),
+    )
+
+
 def main(
     model_id: str = 'qwen3.6-27b-awq',
     seeds: Iterable[int] = range(1000, 1020),
@@ -58,10 +78,16 @@ def main(
     )
 
     submission_path = workspace / 'submission.py'
-    module = load_submission(submission_path)
+    try:
+        module = load_submission(submission_path)
+        SolverCls = module.Solver  # may raise AttributeError
+    except FileNotFoundError:
+        return _sentinel_attempt_result(f'no submission at {submission_path}')
+    except AttributeError as e:
+        return _sentinel_attempt_result(str(e))
 
     adapter = GameBoard2048Adapter()
-    result = score_submission(module.Solver, seeds, adapter)
+    result = score_submission(SolverCls, seeds, adapter)
 
     print(f'[bench] mean_score={result.mean_score:.1f} '
           f'median={result.median_score:.1f} '
