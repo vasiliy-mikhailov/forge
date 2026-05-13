@@ -166,10 +166,20 @@ hierarchy:
     tests-spec/<layer>/<source_file>/test_spec_when_X_then_Y.md
 
 First level (`<layer>/`) is the clean-arch layer the source code lives
-in: `entities/`, `use_cases/`, `adapters/`, `frameworks/`, plus any
-lab-specific cross-cutting groupings such as `architecture/` (for the
-ast-walking dependency-direction tests) or `clean_arch/` (for layered
-wire-up tests).
+in. Under `src/` and `src-spec/`, the ONLY allowed first-level folders
+are the four canonical clean-arch layers: `entities/`, `use_cases/`,
+`adapters/`, `frameworks/`. Under `tests/` and `tests-spec/`, the same
+four layers are allowed plus two cross-cutting test groups:
+`architecture/` (ast-walking dependency-direction tests) and
+`clean_arch/` (layered wire-up tests that span multiple layers).
+
+Feature-bundle folders at the first level (`tier1/`, `bench/`,
+`myfeature/`) are a violation. They re-introduce the mixed-concerns
+problem clean architecture is supposed to prevent — a `tier1/` that
+contains HTTP, parsing, file IO and business logic in one folder
+hides exactly the seam an architectural test should pin. Decompose
+such bundles into the four layers immediately; the architectural test
+specs then make the dependency direction enforceable.
 
 Second level (`<source_file>/`) is the python module name under test
 — the bare module stem, no `.py` extension, no `test_` prefix. For
@@ -498,6 +508,42 @@ Per the per-behavior cycle: an architectural rule is "next behavior"
 when the import graph would silently allow a violation that wrecks
 the design. Add the architectural test the moment a new layer
 emerges; the test then prevents future drift.
+
+### Where inputs, outputs, reports, and persistence live
+
+The four canonical layers absorb every lab concern. New labs often
+ask "where do I put inputs / outputs / reports / database storage?";
+the answer is always one of the four:
+
+- **Inputs** (e.g. a bench submission's model name + prompt) are
+  request DTOs at the use-case boundary. A `Submission` value object
+  with `model` and `prompt` fields lives in `entities/` if it is a
+  reusable domain concept; otherwise as a small dataclass alongside
+  the use case in `use_cases/`.
+
+- **Outputs** (e.g. attempt results, scores, statistics) are response
+  DTOs at the use-case boundary. Stable domain results live in
+  `entities/` (e.g. `AttemptResult`, `Iteration`, `MeanScores`);
+  use-case-specific response shapes live alongside the use case in
+  `use_cases/`.
+
+- **Reports** (human-readable summaries: markdown, HTML, terminal
+  output) are presenters — output-side interface adapters. They live
+  in `adapters/`, transforming entities into formatted strings or
+  files. A presenter carries no business logic; it only formats.
+
+- **Persistence** (storing every swipe in a database, caching
+  attempts, writing artifacts to disk) splits across the layers: the
+  abstract port (`SwipeStorePort`) lives in `use_cases/`; the
+  concrete adapter (`SqliteSwipeStoreAdapter`) lives in `adapters/`;
+  the actual driver (sqlite/postgres client, file IO, env-var lookup)
+  is wired in `frameworks/`. The use case talks only to the port.
+
+If a new concern does not obviously fit, ask: is it (a) a domain
+type, (b) an application rule, (c) an input/output translator, or
+(d) a low-level driver? That answer picks the layer. There is never a
+fifth answer; "make a new top-level folder" is the wrong move and
+indicates a layer that needs decomposing.
 
 ### Refactor under CATS
 
