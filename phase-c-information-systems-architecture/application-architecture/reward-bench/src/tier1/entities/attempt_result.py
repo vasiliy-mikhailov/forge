@@ -1,9 +1,11 @@
-"""Tier 1 AttemptResult entity. See src-spec/entities/src_spec_attempt_result.md.
+"""Tier 1 AttemptResult entity. See src-spec/tier1/entities/attempt_result/.
 
 Pure domain type — no IO, no HTTP, no external systems. The Clean
 Architecture innermost layer."""
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Tuple
+
+from src.tier1.entities.game_result import GameResult
 
 
 @dataclass(frozen=True)
@@ -15,3 +17,4 @@ class AttemptResult:
     n_games: int
     aggregate_walltime_sec: float
     seeds: Tuple[int, ...]
+    games: Tuple[GameResult, ...] = field(default_factory=tuple)

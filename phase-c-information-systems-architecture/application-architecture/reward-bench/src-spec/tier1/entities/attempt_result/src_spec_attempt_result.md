@@ -4,8 +4,9 @@
 holding the aggregate outcome of one Tier-1 canonical eval. Pure
 domain type — no IO, no HTTP, no external systems.
 
-Fields (matching SPEC.md Tier 1 `AttemptResult` schema):
+Fields (aligning with SPEC.md Tier 1 `AttemptResult` schema):
 
+  games                   tuple[GameResult, ...]
   mean_score              float
   median_score            float
   std_score               float
@@ -13,6 +14,11 @@ Fields (matching SPEC.md Tier 1 `AttemptResult` schema):
   n_games                 int
   aggregate_walltime_sec  float
   seeds                   tuple[int, ...]
+
+`games` is the new SPEC.md-aligned field carrying per-game
+`GameResult` records. It defaults to `()` so existing constructors
+continue to work; later cycles will populate it from the adapter
+and eventually drop the legacy `seeds` field.
 
 Allowed imports (kept minimal to satisfy the entities-purity rule):
 
