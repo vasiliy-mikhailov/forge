@@ -20,3 +20,4 @@ class AttemptResult:
     games: Tuple[GameResult, ...] = field(default_factory=tuple)
     stagnation_sec: float = 60.0
     hard_wall_sec: float = 0.0
+    stagnated_any: bool = False

@@ -9,6 +9,7 @@ Fields (aligning with SPEC.md Tier 1 `AttemptResult` schema):
   games                   tuple[GameResult, ...]
   stagnation_sec          float
   hard_wall_sec           float
+  stagnated_any           bool
   mean_score              float
   median_score            float
   std_score               float
@@ -40,3 +41,8 @@ analysis can distinguish attempts with different settings.
 SPEC.md §"Per-game stagnation detector" (default `0` = disabled).
 The attempt record carries the cap that applied so later analysis
 can distinguish attempts run with vs without the safety net.
+
+`stagnated_any` is the observation flag mirroring SPEC.md: `True`
+if any game in `games` ended with `final_state='stagnated'`. Carries
+no logic itself; the populating use case (`score_submission`) is
+responsible for setting it correctly. Default `False`.
