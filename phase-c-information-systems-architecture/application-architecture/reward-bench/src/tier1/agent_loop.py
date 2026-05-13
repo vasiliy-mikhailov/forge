@@ -26,14 +26,22 @@ ALLOWED_BASH_PREFIXES = (
 
 
 _TOOL_BLOCK_RE = re.compile(r'```tool\b\s*\n(.*?)\n```', re.DOTALL)
+_BODY_SPLIT_RE = re.compile(r'\n===FILE_BODY===\s*\n', re.DOTALL)
 
 
 def parse_tool_calls(reply):
     out = []
     for m in _TOOL_BLOCK_RE.finditer(reply):
-        body = m.group(1).strip()
-        obj = json.loads(body)
-        out.append((obj['name'], obj['args']))
+        raw = m.group(1)
+        parts = _BODY_SPLIT_RE.split(raw, maxsplit=1)
+        json_part = parts[0].strip()
+        body_part = parts[1] if len(parts) == 2 else None
+        obj = json.loads(json_part)
+        name = obj['name']
+        args = dict(obj.get('args') or {})
+        if body_part is not None:
+            args['content'] = body_part
+        out.append((name, args))
     return out
 
 

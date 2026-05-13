@@ -61,6 +61,30 @@ def test_when_tool_block_parsed_then_yields_name_and_args(tool_protocol_reply):
     assert isinstance(args, dict), f'args not a dict: {args!r}'
 
 
+def test_when_tool_block_has_file_body_then_content_extracted_into_args():
+    # Arrange — production-shape reply (per SYSTEM_PROMPT contract).
+    reply = (
+        '```tool\n'
+        '{"name": "write_file", "args": {"path": "/workspace/submission.py"}}\n'
+        '===FILE_BODY===\n'
+        'from __future__ import annotations\n'
+        'SOLVER = 42\n'
+        '```'
+    )
+
+    # Act
+    calls = parse_tool_calls(reply)
+
+    # Assert
+    assert len(calls) == 1
+    name, args = calls[0]
+    assert name == 'write_file'
+    assert args['path'] == '/workspace/submission.py'
+    assert args['content'].startswith('from __future__ import annotations'), (
+        f'content unexpected: {args.get("content")!r}'
+    )
+
+
 def test_when_view_tool_executed_then_returns_file_contents(tmp_path):
     # Arrange
     workspace = tmp_path / 'workspace'
@@ -151,3 +175,5 @@ def test_when_run_loop_invoked_with_one_iter_cap_then_returns_one_turn_history(
     assert '<view path=' in observation or '<error>' in observation, (
         f'observation has neither view nor error: {observation[:300]!r}'
     )
+
+
