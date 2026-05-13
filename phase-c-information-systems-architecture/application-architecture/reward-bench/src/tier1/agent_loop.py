@@ -238,9 +238,24 @@ def _call_model(vllm_base_url, vllm_api_key, messages, max_tokens=32768, tempera
     return data['choices'][0]['message']['content']
 
 
-def run_loop(workspace, env_dir, tasks_dir, vllm_base_url, vllm_api_key, max_iters):
-    """Drive the interactive agent loop for at most max_iters turns. Returns
-    {iterations, messages, finished}."""
+def _identity_condense(messages):
+    """Default condense: pass messages through unchanged."""
+    return tuple(messages)
+
+
+def run_loop(workspace, env_dir, tasks_dir, vllm_base_url, vllm_api_key,
+             max_iters, condense=_identity_condense):
+    """Drive the interactive agent loop for at most max_iters turns.
+
+    `condense` is an opaque callable that takes the message tuple and
+    returns a (possibly shorter) tuple. Called BEFORE every _call_model
+    invocation. Default is identity. See
+    src-spec/tier1/agent_loop/src_spec_when_run_loop_called_with_condense_callable_*
+    for the seam contract; see reward-bench/docs/adr/0001 for the
+    same-model decision used by the concrete LlmCondenser adapter.
+
+    Returns {iterations, messages, finished}.
+    """
     messages = [
         {'role': 'system', 'content': SYSTEM_PROMPT},
         {'role': 'user', 'content': FIRST_USER},
@@ -249,6 +264,7 @@ def run_loop(workspace, env_dir, tasks_dir, vllm_base_url, vllm_api_key, max_ite
     iter_n = 0
     while iter_n < max_iters and not finished:
         iter_n += 1
+        messages = list(condense(tuple(messages)))
         reply = _call_model(vllm_base_url, vllm_api_key, messages)
         messages.append({'role': 'assistant', 'content': reply})
         tool_calls = parse_tool_calls(reply)

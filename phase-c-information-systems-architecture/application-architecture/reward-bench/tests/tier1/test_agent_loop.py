@@ -204,3 +204,50 @@ def test_when_run_loop_produces_submission_then_solver_move_returns_one_of_wasd(
     assert action in {'W', 'A', 'S', 'D'}, f'action={action!r} not in WASD'
 
 
+
+
+def test_when_run_loop_called_with_condense_callable_then_condense_invoked_before_each_call_model(
+        monkeypatch, tmp_path):
+    """Cycle 15: pin the condense-callable seam in agent_loop.run_loop."""
+    from src.tier1 import agent_loop
+    # Arrange
+    workspace = tmp_path / 'workspace'
+    workspace.mkdir()
+    env_dir = tmp_path / 'env'
+    env_dir.mkdir()
+    tasks_dir = tmp_path / 'tasks'
+    tasks_dir.mkdir()
+
+    finish_reply = (
+        '```tool\n'
+        '{"name": "finish", "args": {"note": "test stub"}}\n'
+        '```'
+    )
+    monkeypatch.setattr(agent_loop, '_call_model',
+                        lambda *args, **kwargs: finish_reply)
+
+    calls = []
+    def recording_condense(messages):
+        calls.append(tuple(messages))
+        return messages
+
+    # Act
+    agent_loop.run_loop(
+        workspace=workspace,
+        env_dir=env_dir,
+        tasks_dir=tasks_dir,
+        vllm_base_url='http://unused',
+        vllm_api_key='unused',
+        max_iters=1,
+        condense=recording_condense,
+    )
+
+    # Assert
+    assert len(calls) >= 1, f'condense not called; calls={len(calls)}'
+    # First call receives at least the system + first-user messages
+    first_call_messages = calls[0]
+    assert isinstance(first_call_messages, tuple)
+    assert len(first_call_messages) >= 2
+    roles = [m['role'] for m in first_call_messages]
+    assert 'system' in roles
+    assert 'user' in roles

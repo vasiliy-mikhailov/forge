@@ -1,0 +1,36 @@
+# `test_when_run_loop_called_with_condense_callable_then_condense_invoked_before_each_call_model`
+
+Pins the **architectural seam** for context compaction: `run_loop`
+accepts a `condense` callable parameter and invokes it on the
+message history before each `_call_model` request. Default is
+identity (no compaction) — behaviour-preserving.
+
+Cycle 15 pins ONLY the seam. The LLM-backed condenser adapter
+(cycle 16) and the trigger logic (cycle 17) follow. The default
+identity behaviour means the cycle-12 end-to-end bench keeps working
+without changes.
+
+- **Arrange**: monkeypatch `agent_loop._call_model` to return a
+  finish tool block immediately (so the loop exits after one
+  iteration without a live vLLM call). Build a recording callable
+  that captures every invocation.
+- **Act**: `run_loop(workspace, ..., max_iters=1, condense=recorder)`.
+- **Assert**:
+  - The recorder was invoked at least once.
+  - Its argument was a tuple of message dicts (the conversation
+    history just before `_call_model`).
+  - The return value flows back into the loop without disrupting
+    the finish path.
+
+Test code: [`tests/tier1/test_agent_loop.py`](../../tests/tier1/test_agent_loop.py).
+
+Architectural note: agent_loop lives in tier1 (inner module); the
+condense parameter is a bare `Callable` (not typed as the outer
+module's `CondenserPort`). The orchestrator (`reward_bench.frameworks.main`)
+adapts a `CondenserPort` to the callable at the boundary so the
+inner-cannot-import-outer rule holds.
+
+Per [ADR 0001](../../../docs/adr/0001-condenser-uses-same-model-as-bench.md),
+the LLM-backed condenser adapter (cycle 16) will use the same
+`ModelTarget` as the model under bench; cycle 15 only pins the seam,
+the model decision lands when the adapter does.
