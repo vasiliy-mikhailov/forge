@@ -210,6 +210,89 @@ The hierarchy buys three things:
     structure makes the four clean-arch layers visible without
     reading the code.
 
+## Single-module vs multi-module monolith
+
+A lab is one of two shapes:
+
+**Single-module.** The whole lab is one clean-arch unit. `src/` is
+the unit's root; its direct children are exactly the four canonical
+layers.
+
+    src/
+      entities/
+      use_cases/
+      adapters/
+      frameworks/
+
+**Multi-module.** The lab contains multiple bounded contexts, each a
+self-contained clean-arch unit. `src/` is no longer a unit; it is a
+container of modules. Each module is itself a clean-arch unit with
+its own four canonical layers.
+
+    src/
+      <module_a>/
+        entities/
+        use_cases/
+        adapters/
+        frameworks/
+      <module_b>/
+        entities/
+        use_cases/
+        adapters/
+        frameworks/
+
+Concrete example — reward-bench (the orchestrator) running tier1,
+tier2, tier3 as separate evaluation pipelines:
+
+    src/
+      reward_bench/        orchestrator module
+        entities/          BenchRun, ModelTarget, TierConfig
+        use_cases/         RunBench, SelectTier, AggregateLeaderboard
+        adapters/          TierAdapter implementations, leaderboard
+                           presenters, swipe-store adapters
+        frameworks/        CLI entry point, scheduler, DB driver
+      tier1/               one specific evaluation tier
+        entities/          AttemptResult, Submission, Iteration, Swipe
+        use_cases/         ScoreSubmission, IterateToSubmission
+        adapters/          ParserAdapter, GameBoardAdapter,
+                           VllmChatAdapter, PythonModuleLoader
+        frameworks/        docker provisioner, vLLM HTTP driver
+      tier2/               another tier (control-minecraft, etc.)
+        ...
+
+Both shapes coexist with the same spec hierarchy: in single-module
+mode, specs live under `src-spec/<layer>/<source_file>/`. In
+multi-module mode, specs live under
+`src-spec/<module>/<layer>/<source_file>/`. The rule is: the spec
+folder structure mirrors the source folder structure exactly.
+
+### Module-to-module dependency rules
+
+Modules form a hierarchy. The lab's outermost module is the
+orchestrator that composes the others; the inner modules are
+specialised bounded contexts. The same dependency rule that holds
+within a module (outer-layer-depends-on-inner-layer) holds between
+modules (outer-module-depends-on-inner-module):
+
+  - An outer module may import the **public API** of an inner module
+    — its `entities/` and its `use_cases/`. These are the module's
+    contract.
+  - An outer module may NEVER import the **internals** of an inner
+    module — its `adapters/` or `frameworks/`. Those are private to
+    the inner module; reaching past the contract breaks the seam.
+  - An inner module NEVER imports from an outer module. The tier
+    must not know the orchestrator exists; this is what lets the
+    tier ship independently.
+  - Peer modules (tier1 and tier2) NEVER import from each other.
+    Both are inner to the orchestrator; both expose use_cases the
+    orchestrator composes. Tier-to-tier coupling is always routed
+    through the orchestrator.
+
+Cycles between modules are a hard violation. If two modules need to
+share types, those types belong in a third inner module (often a
+`shared/` or `kernel/` module) that both depend on, never in either
+of the two.
+
 ## Spec files are Markdown
 
 Both `src_spec_*.md` and `test_spec_*.md` files MUST be valid
@@ -489,31 +572,49 @@ that the layers DO exist and that no rogue feature-bundle folder
 sneaks in. They are the test-spec embodiment of the "Spec folder
 hierarchy mirrors clean-arch + source layout" rule.
 
-  test_when_src_top_level_inspected_then_only_canonical_layers
+  test_when_src_inspected_then_every_clean_arch_unit_has_exactly_four_layers
+    Arrange: walk src/<lab>/ and identify clean-arch units (a folder
+             that contains any of entities/, use_cases/, adapters/,
+             frameworks/ as direct children).
+    Act:     list the unit's direct children.
+    Assert:  the unit's direct children are exactly {entities,
+             use_cases, adapters, frameworks} (plus __init__.py and
+             __pycache__). No rogue feature-bundle subfolder inside
+             a clean-arch unit.
+
+  test_when_src_inspected_then_no_layer_folder_appears_outside_a_clean_arch_unit
+    Arrange: walk src/<lab>/ recursively. For every folder named
+             entities/, use_cases/, adapters/, or frameworks/, look
+             at its parent.
+    Assert:  the parent is a clean-arch unit (contains all four
+             layers). This prevents a stray entities/ or use_cases/
+             folder from sitting at an arbitrary level.
+
+  test_when_src_top_level_inspected_then_is_unit_or_module_container
     Arrange: list non-dunder, non-pycache directories directly under
              src/<lab>/.
-    Act:     collect their names.
-    Assert:  every name is in {entities, use_cases, adapters,
-             frameworks}. Any other folder (tier1/, bench/, feature/)
-             is a violation and must be decomposed into the four
-             canonical layers.
+    Assert:  EITHER all four canonical layers appear at src/ (lab
+             is single-module: src/ IS the clean-arch unit) OR none
+             of the four canonical layers appears at src/ and every
+             direct subfolder is itself a clean-arch unit (lab is
+             multi-module: each subfolder is a module). Mixed layouts
+             — a layer folder next to a module folder at src/ — are
+             a violation.
 
-  test_when_src_top_level_inspected_then_all_four_canonical_layers_present
-    Arrange: list directories directly under src/<lab>/.
-    Act:     check for entities/, use_cases/, adapters/, frameworks/.
-    Assert:  all four exist. A lab missing a layer is either too
-             small to need clean architecture (premature for CATS)
-             or has hidden the missing layer's concerns inside
-             another layer (violation).
+  test_when_tests_top_level_inspected_then_mirrors_src_layout
+    Arrange: tests/<lab>/ subfolders, same rule as src/.
+    Assert:  same shape as src/, plus the two cross-cutting test
+             groups architecture/ and clean_arch/ are always allowed
+             at the test root (they carry layer-spanning tests).
 
-  test_when_tests_top_level_inspected_then_only_canonical_layers_or_architectural_groups
-    Arrange: list non-dunder, non-pycache directories directly under
-             tests/<lab>/.
-    Act:     collect their names.
-    Assert:  every name is in {entities, use_cases, adapters,
-             frameworks, architecture, clean_arch}. The two extra
-             folders carry cross-cutting tests that span layers
-             (ast-walking dependency tests; multi-layer wire-up).
+  test_when_modules_inspected_then_no_inner_imports_outer_or_peer_internals
+    Arrange: for every multi-module lab, walk src/<lab>/<module>/
+             and ast-collect imports.
+    Assert:  no module imports from src.<other_module>.adapters or
+             src.<other_module>.frameworks. Cross-module imports are
+             allowed ONLY into src.<other_module>.entities or
+             src.<other_module>.use_cases. No import cycles between
+             modules.
 
 The same three structural tests apply equally to src-spec/ and
 tests-spec/ folders — spec hierarchy must mirror code hierarchy.
