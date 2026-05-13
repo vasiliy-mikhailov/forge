@@ -164,7 +164,7 @@ def main(
         return _sentinel_attempt_result(f'submission has SyntaxError: {e}')
 
     adapter = GameBoard2048Adapter()
-    result = score_submission(SolverCls, seeds, adapter)
+    result = score_submission(SolverCls, seeds, adapter, hard_wall_sec=config.hard_wall_sec)
 
     print(f'[bench] mean_score={result.mean_score:.1f} '
           f'median={result.median_score:.1f} '

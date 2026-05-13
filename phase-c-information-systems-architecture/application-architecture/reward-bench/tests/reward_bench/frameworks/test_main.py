@@ -117,3 +117,50 @@ def test_when_main_loads_submission_with_syntax_error_then_sentinel_emitted(monk
     assert isinstance(result, AttemptResult)
     assert result.n_games == 0
     assert result.games == ()
+
+
+def test_when_main_invoked_then_config_hard_wall_sec_passed_to_score_submission(monkeypatch, tmp_path):
+    """Cycle 25: pin the BenchConfig.hard_wall_sec -> score_submission wiring."""
+    from src.reward_bench.frameworks import main as main_mod
+    from src.tier1.entities.attempt_result import AttemptResult
+    from src.tier1.entities.game_result import GameResult
+
+    # Arrange — short-circuit serving + agent loop + adapter.
+    monkeypatch.setattr(main_mod, 'ensure_serving',
+                        lambda: 'http://stub')
+    monkeypatch.setenv('VLLM_API_KEY', 'stub')
+
+    def fake_run_loop(*, workspace, **kwargs):
+        # Write a minimal submission with a Solver class so load_submission
+        # succeeds and main reaches score_submission.
+        (workspace / 'submission.py').write_text(
+            'class Solver:\n'
+            '    def move(self, board):\n'
+            "        return 'W'\n"
+        )
+    monkeypatch.setattr(main_mod, 'run_loop', fake_run_loop)
+
+    captured = {'calls': []}
+    def stub_score_submission(*args, **kwargs):
+        captured['calls'].append({'args': args, 'kwargs': kwargs})
+        return AttemptResult(
+            mean_score=0.0, median_score=0.0, std_score=0.0,
+            max_max_tile=2, n_games=1, aggregate_walltime_sec=0.0,
+            games=(GameResult(seed=1, score=0, max_tile=2, moves=0,
+                              final_state='lost', walltime_sec=0.0),),
+        )
+    monkeypatch.setattr(main_mod, 'score_submission', stub_score_submission)
+
+    # Act
+    main_mod.main(
+        model_id='qwen3.6-27b-awq',
+        config=BenchConfig(max_iters=1, n_trials=1, temperature=0.0,
+                           hard_wall_sec=42.0),
+    )
+
+    # Assert
+    assert len(captured['calls']) == 1
+    assert captured['calls'][0]['kwargs'].get('hard_wall_sec') == 42.0, (
+        f'hard_wall_sec not forwarded; '
+        f'kwargs={captured["calls"][0]["kwargs"]}'
+    )
