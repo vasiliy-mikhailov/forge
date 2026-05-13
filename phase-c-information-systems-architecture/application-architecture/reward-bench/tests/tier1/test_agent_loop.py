@@ -9,6 +9,7 @@ from src.tier1.agent_loop import (
     FIRST_USER,
     parse_tool_calls,
     execute_tool,
+    run_loop,
 )
 
 
@@ -129,3 +130,24 @@ def test_when_bash_tool_executed_with_allowed_cmd_then_returns_stdout(tmp_path):
     assert '<bash exit=0>' in result, f'no successful bash header: {result!r}'
     assert '--- stdout ---' in result, f'no stdout section: {result!r}'
     assert 'submission.py' in result, f'sentinel not in stdout: {result!r}'
+
+
+def test_when_run_loop_invoked_with_one_iter_cap_then_returns_one_turn_history(
+        tmp_path, vllm_base_url, vllm_api_key):
+    # Arrange
+    workspace = tmp_path / 'workspace'
+    workspace.mkdir()
+    env_dir = REPO / 'tasks/2048'
+    tasks_dir = REPO / 'tasks'
+
+    # Act
+    result = run_loop(workspace, env_dir, tasks_dir, vllm_base_url, vllm_api_key, max_iters=1)
+
+    # Assert
+    assert result['iterations'] == 1, f'iterations={result["iterations"]}'
+    msgs = result['messages']
+    assert len(msgs) == 4, f'expected 4 messages, got {len(msgs)}: roles={[m["role"] for m in msgs]}'
+    observation = msgs[-1]['content']
+    assert '<view path=' in observation or '<error>' in observation, (
+        f'observation has neither view nor error: {observation[:300]!r}'
+    )

@@ -8,6 +8,7 @@ import json
 import os
 import re
 import subprocess
+import urllib.request
 from pathlib import Path
 
 
@@ -172,3 +173,52 @@ is your best version, not the latest experimental one."""
 
 
 FIRST_USER = """Start the task. Read /tasks/2048/SKILL_tier1.md to learn the constraints, then optionally /env/env_2048.py for env details, then write your submission to /workspace/submission.py and iterate. Use the fenced-block JSON tool format the system prompt described."""
+
+
+def _call_model(vllm_base_url, vllm_api_key, messages, max_tokens=32768, temperature=0.0):
+    payload = json.dumps({
+        'model': 'qwen3.6-27b-awq',
+        'messages': messages,
+        'max_tokens': max_tokens,
+        'temperature': temperature,
+    }).encode()
+    req = urllib.request.Request(
+        f'{vllm_base_url}/v1/chat/completions',
+        data=payload,
+        headers={
+            'Content-Type': 'application/json',
+            'Authorization': f'Bearer {vllm_api_key}',
+        },
+    )
+    with urllib.request.urlopen(req, timeout=600) as r:
+        data = json.loads(r.read())
+    return data['choices'][0]['message']['content']
+
+
+def run_loop(workspace, env_dir, tasks_dir, vllm_base_url, vllm_api_key, max_iters):
+    """Drive the interactive agent loop for at most max_iters turns. Returns
+    {iterations, messages, finished}."""
+    messages = [
+        {'role': 'system', 'content': SYSTEM_PROMPT},
+        {'role': 'user', 'content': FIRST_USER},
+    ]
+    finished = False
+    iter_n = 0
+    while iter_n < max_iters and not finished:
+        iter_n += 1
+        reply = _call_model(vllm_base_url, vllm_api_key, messages)
+        messages.append({'role': 'assistant', 'content': reply})
+        tool_calls = parse_tool_calls(reply)
+        if not tool_calls:
+            obs = ('<error>no tool calls found in your reply. Each tool call '
+                   'must be in a fenced code block tagged `tool`.</error>')
+            messages.append({'role': 'user', 'content': obs})
+            continue
+        observations = []
+        for name, tool_args in tool_calls:
+            obs = execute_tool(name, tool_args, workspace, env_dir, tasks_dir)
+            observations.append(obs)
+            if name == 'finish':
+                finished = True
+        messages.append({'role': 'user', 'content': '\n\n'.join(observations)})
+    return {'iterations': iter_n, 'messages': messages, 'finished': finished}
