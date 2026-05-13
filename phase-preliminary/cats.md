@@ -69,13 +69,15 @@ Do all eleven steps for ONE test case, then start the next.
 
      The FULL suite is a coarser gate, NOT a per-cycle gate. It runs
      before pushing a chain of cycles, at session boundary, in CI,
-     and on a schedule. The reason for the relaxation: when the
-     suite includes live-LLM tests (single test = 5+ minutes), a
-     full-suite gate every cycle either freezes the cadence or
-     drives the agent to silently skip slow tests (the worst
-     outcome). The full-suite gate at coarser intervals catches
-     cross-module drift TIA misses; TIA catches everything the
-     immediate change breaks.
+     and on a schedule. The relaxation exists because forge's primary
+     motivation is **time-to-market** — cycle cadence is the lever
+     that controls how many CATS iterations fit in a session, and a
+     gate that takes 13+ minutes per cycle (with live-LLM tests in
+     scope) destroys cadence. The alternative — silently skipping
+     slow tests — is worse: it hides regressions in exactly the
+     expensive integration paths we most want to keep green. TIA
+     catches everything the immediate change breaks; the full-suite
+     gate at coarser intervals catches cross-module drift TIA misses.
 
      Implementations of TIA:
        - **Manual**: agent identifies imports of changed modules,
