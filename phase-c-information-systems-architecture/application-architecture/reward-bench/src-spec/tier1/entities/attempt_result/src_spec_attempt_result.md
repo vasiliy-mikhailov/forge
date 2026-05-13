@@ -8,6 +8,7 @@ Fields (aligning with SPEC.md Tier 1 `AttemptResult` schema):
 
   games                   tuple[GameResult, ...]
   stagnation_sec          float
+  hard_wall_sec           float
   mean_score              float
   median_score            float
   std_score               float
@@ -34,3 +35,8 @@ represent unchanging facts about a finished attempt.
 SPEC.md §"Per-game stagnation detector" (default 60 s). The
 attempt record carries the value that applied to the run so later
 analysis can distinguish attempts with different settings.
+
+`hard_wall_sec` is the outer runaway-protection cap from
+SPEC.md §"Per-game stagnation detector" (default `0` = disabled).
+The attempt record carries the cap that applied so later analysis
+can distinguish attempts run with vs without the safety net.

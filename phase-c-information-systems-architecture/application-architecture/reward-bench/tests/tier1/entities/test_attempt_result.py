@@ -40,3 +40,18 @@ def test_when_attempt_result_constructed_with_stagnation_sec_then_field_preserve
 
     # Assert
     assert r.stagnation_sec == 60.0
+
+
+def test_when_attempt_result_constructed_with_hard_wall_sec_then_field_preserved():
+    # Arrange (empty-games attempt; only hard_wall_sec varies)
+
+    # Act
+    r = AttemptResult(
+        mean_score=0.0, median_score=0.0, std_score=0.0,
+        max_max_tile=2, n_games=0, aggregate_walltime_sec=0.0,
+        seeds=(),
+        hard_wall_sec=1800.0,
+    )
+
+    # Assert
+    assert r.hard_wall_sec == 1800.0

@@ -19,3 +19,4 @@ class AttemptResult:
     seeds: Tuple[int, ...]
     games: Tuple[GameResult, ...] = field(default_factory=tuple)
     stagnation_sec: float = 60.0
+    hard_wall_sec: float = 0.0
