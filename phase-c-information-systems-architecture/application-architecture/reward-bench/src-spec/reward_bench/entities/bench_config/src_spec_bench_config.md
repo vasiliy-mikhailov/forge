@@ -14,6 +14,7 @@ this entity is the Python embodiment of those defaults.
 | `temperature`    | `float` | `0.7`     | Stage-1 author-loop sampling temperature.                        |
 | `max_no_improve` | `int`   | `999999`  | Reject `finish` if dev_runner score did not improve in N turns.  |
 | `finish_floor`   | `float` | `0.0`     | Reject `finish` if dev_runner score is below this floor.         |
+| `hard_wall_sec`  | `float` | `0.0`     | Aggregate walltime cap (cycle 23 score_submission knob). 0 = disabled (per ADR 0003 + 0006).         |
 
 Notes on what is NOT in `BenchConfig`:
 
@@ -21,7 +22,7 @@ Notes on what is NOT in `BenchConfig`:
 - Condenser `model_id` is decided at the wiring layer; per
   [ADR 0001](../../../../docs/adr/0001-condenser-uses-same-model-as-bench.md)
   it equals the bench model's `id`.
-- `hard_wall_sec` lives on `AttemptResult` (per-attempt outer cap).
+- `hard_wall_sec` is now a BenchConfig field (cycle 24) AND an AttemptResult observation field. Input lives on config; output reflects what cap applied to a given run.
   Default 0 (disabled), per SPEC.md.
 
 ## Properties

@@ -18,6 +18,7 @@ def test_when_bench_config_constructed_with_defaults_then_adr_0003_values_apply(
     assert cfg.temperature == 0.7
     assert cfg.max_no_improve == 999999
     assert cfg.finish_floor == 0.0
+    assert cfg.hard_wall_sec == 0.0  # cycle 24: ADR 0003 disabled default
     with pytest.raises(dataclasses.FrozenInstanceError):
         cfg.max_iters = 0  # type: ignore[misc]
 
@@ -40,3 +41,18 @@ def test_when_bench_config_constructed_with_overrides_then_overrides_apply():
     assert cfg.temperature == 0.0
     assert cfg.max_no_improve == 5
     assert cfg.finish_floor == 1000.0
+
+
+def test_when_bench_config_constructed_with_hard_wall_sec_override_then_field_preserved():
+    """Cycle 24: hard_wall_sec override survives the constructor.
+
+    Companion default pin lives in
+    test_when_bench_config_constructed_with_defaults_then_adr_0003_values_apply.
+    """
+    # Arrange (no fixtures — pure dataclass construct)
+
+    # Act
+    cfg = BenchConfig(hard_wall_sec=60.0)
+
+    # Assert
+    assert cfg.hard_wall_sec == 60.0
