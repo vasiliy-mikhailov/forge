@@ -157,6 +157,11 @@ def main(
         return _sentinel_attempt_result(f'no submission at {submission_path}')
     except AttributeError as e:
         return _sentinel_attempt_result(str(e))
+    except SyntaxError as e:
+        # Model wrote non-Python content (e.g. HTML, pseudocode). Per ADR
+        # 0002 sentinel-on-malformed pattern, extended to cover SyntaxError
+        # discovered live with temperature=0.7 cycle-22 campaign run.
+        return _sentinel_attempt_result(f'submission has SyntaxError: {e}')
 
     adapter = GameBoard2048Adapter()
     result = score_submission(SolverCls, seeds, adapter)

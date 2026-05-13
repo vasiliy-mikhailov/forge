@@ -87,3 +87,33 @@ def test_when_build_condenser_called_with_target_then_returns_llm_condenser_for_
     # Assert
     assert isinstance(condenser, LlmCondenser)
     assert condenser.model_id == target.id  # per ADR 0001
+
+
+def test_when_main_loads_submission_with_syntax_error_then_sentinel_emitted(monkeypatch):
+    """Cycle 22.6 (no-silent-fix): real-system T=0.7 SyntaxError bug.
+
+    Pins that main emits sentinel for syntactically invalid submission.py,
+    not just for missing Solver class or missing file."""
+    from src.reward_bench.frameworks import main as main_mod
+    from src.tier1.entities.attempt_result import AttemptResult
+
+    # Arrange: monkeypatch run_loop to write a syntactically invalid file
+    # and short-circuit ensure_serving so we never touch vLLM.
+    def fake_run_loop(*, workspace, **kwargs):
+        (workspace / 'submission.py').write_text('</body>\n')
+
+    monkeypatch.setattr(main_mod, 'ensure_serving',
+                        lambda: 'http://stub')
+    monkeypatch.setattr(main_mod, 'run_loop', fake_run_loop)
+    monkeypatch.setenv('VLLM_API_KEY', 'stub')
+
+    # Act
+    result = main_mod.main(
+        model_id='qwen3.6-27b-awq',
+        config=BenchConfig(max_iters=1, n_trials=1, temperature=0.0),
+    )
+
+    # Assert: sentinel emitted, no crash
+    assert isinstance(result, AttemptResult)
+    assert result.n_games == 0
+    assert result.games == ()
