@@ -6,6 +6,7 @@ currently-implemented mode. Lifted verbatim from _bak/bin/agent_loop.py
 """
 import json
 import re
+from pathlib import Path
 
 
 _TOOL_BLOCK_RE = re.compile(r'```tool\b\s*\n(.*?)\n```', re.DOTALL)
@@ -18,6 +19,47 @@ def parse_tool_calls(reply):
         obj = json.loads(body)
         out.append((obj['name'], obj['args']))
     return out
+
+
+def _trim(s, n=4000):
+    if len(s) <= n:
+        return s
+    return s[: n - 200] + f"\n... [truncated, total {len(s)} chars]"
+
+
+def _virt_to_host(virt, workspace, env_dir, tasks_dir):
+    """Resolve a model-supplied virtual path to a host path. Returns None if
+    the path doesn't sit under one of the allowed virtual roots."""
+    if not virt:
+        return None
+    p = virt.strip()
+    while '//' in p:
+        p = p.replace('//', '/')
+    for prefix, root in (('/workspace', workspace), ('/env', env_dir), ('/tasks', tasks_dir)):
+        if p == prefix or p.startswith(prefix + '/'):
+            tail = p[len(prefix):].lstrip('/')
+            host = (Path(root) / tail).resolve() if tail else Path(root).resolve()
+            # Defence-in-depth: post-resolve check to block ../ escapes
+            if not str(host).startswith(str(Path(root).resolve())):
+                return None
+            return host
+    return None
+
+
+def execute_tool(name, args, workspace, env_dir, tasks_dir):
+    """Run one tool. Returns observation text the model will see next turn."""
+    if name == 'view':
+        virt = args.get('path', '')
+        host = _virt_to_host(virt, workspace, env_dir, tasks_dir)
+        if host is None:
+            return f'<error>view: path must start with /workspace, /env, or /tasks (got {virt!r})</error>'
+        if not host.exists():
+            return f'<error>view: file not found: {virt}</error>'
+        try:
+            return f'<view path="{virt}">\n{_trim(host.read_text())}\n</view>'
+        except Exception as e:
+            return f'<error>view: {e}</error>'
+    return f'<error>unknown tool: {name}</error>'
 
 
 SYSTEM_PROMPT = """You are an expert Python engineer competing in reward-bench Tier 1 — the 2048 FSM-solver task.
