@@ -3,22 +3,24 @@
 See src-spec/reward_bench/frameworks/main/src_spec_main.md.
 
 Wires the model registry, the tier1 inference container, the agent
-loop, the harness, the GameBoard adapter, and the score_submission
-use case into a single end-to-end run that emits an AttemptResult.
+loop, the harness, the GameBoard adapter, the score_submission use
+case, and the LlmCondenser into a single end-to-end run that emits
+an AttemptResult.
 
-Robust to malformed model output: when the agent loop produces a
-submission without a `Solver` class (or no submission at all), main
-emits a sentinel AttemptResult per ADR 0002.
-
-Default knob panel is BenchConfig() per ADR 0003 (500 iters, T=0.7).
-Tests pass an explicit BenchConfig with smaller values to bound wall
-time."""
+Per ADR 0001, the condenser uses the same vLLM endpoint and model
+as the bench target. Per ADR 0002, malformed submissions yield a
+sentinel AttemptResult. Per ADR 0003, the default BenchConfig
+applies 500 iters / T=0.7."""
+import json
 import os
 import tempfile
+import urllib.request
 from pathlib import Path
-from typing import Iterable
+from typing import Iterable, Tuple
 
+from src.reward_bench.adapters.llm_condenser import LlmCondenser
 from src.reward_bench.entities.bench_config import BenchConfig
+from src.reward_bench.entities.condenser_config import CondenserConfig
 from src.reward_bench.entities.model_target import ModelTarget
 from src.reward_bench.use_cases.model_registry import MODEL_REGISTRY
 from src.tier1.adapters.game_board_2048 import GameBoard2048Adapter
@@ -32,6 +34,10 @@ from src.tier1.use_cases.score_submission import score_submission
 REPO = Path(__file__).resolve().parents[4]
 ENV_DIR = REPO / 'tasks' / '2048'
 TASKS_DIR = REPO / 'tasks'
+
+# Legacy _bak defaults, also reflected in ADR 0003 implementation pointers.
+_CONDENSER_TRIGGER_TOKENS = 40000
+_CONDENSER_KEEP_RECENT = 8
 
 
 def _pick_model(model_id: str) -> ModelTarget:
@@ -58,6 +64,48 @@ def _sentinel_attempt_result(reason: str) -> AttemptResult:
     )
 
 
+def _build_summarise(base_url: str, api_key: str, served_name: str):
+    """Construct a callable that posts older turns to the bench vLLM endpoint
+    and returns the resulting summary string. Per ADR 0001, served_name is
+    the same as the bench target."""
+    def summarise(older_turns: Tuple[dict, ...]) -> str:
+        prompt = [
+            {'role': 'system',
+             'content': 'Summarise the following agent-loop turns concisely. '
+                        'Preserve key facts about the task, the current '
+                        'submission state, dev_runner results, and any errors. '
+                        'Be terse — bullet points are fine.'},
+            {'role': 'user',
+             'content': json.dumps(list(older_turns), ensure_ascii=False)},
+        ]
+        payload = json.dumps({
+            'model': served_name,
+            'messages': prompt,
+            'max_tokens': 4096,
+            'temperature': 0.0,
+        }).encode()
+        req = urllib.request.Request(
+            f'{base_url}/v1/chat/completions',
+            data=payload,
+            headers={
+                'Content-Type': 'application/json',
+                'Authorization': f'Bearer {api_key}',
+            },
+        )
+        with urllib.request.urlopen(req, timeout=120) as r:
+            data = json.loads(r.read())
+        return data['choices'][0]['message']['content']
+
+    return summarise
+
+
+def _build_condenser(target: ModelTarget, base_url: str, api_key: str) -> LlmCondenser:
+    """Construct an LlmCondenser for the bench target per ADR 0001 — same
+    model serves both bench-target inference and condensing."""
+    summarise = _build_summarise(base_url, api_key, target.served_name)
+    return LlmCondenser(summarise=summarise, model_id=target.id)
+
+
 def main(
     model_id: str = 'qwen3.6-27b-awq',
     seeds: Iterable[int] = range(1000, 1020),
@@ -75,6 +123,15 @@ def main(
     print(f'[bench] model={target.id} workspace={workspace} '
           f'max_iters={config.max_iters} temperature={config.temperature}')
 
+    condenser = _build_condenser(target, base_url, api_key)
+    condenser_config = CondenserConfig(
+        trigger_tokens=_CONDENSER_TRIGGER_TOKENS,
+        keep_recent=_CONDENSER_KEEP_RECENT,
+        model_id=target.id,
+    )
+    def condense(messages):
+        return condenser.condense(messages, condenser_config)
+
     run_loop(
         workspace=workspace,
         env_dir=ENV_DIR,
@@ -82,6 +139,7 @@ def main(
         vllm_base_url=base_url,
         vllm_api_key=api_key,
         max_iters=config.max_iters,
+        condense=condense,
         temperature=config.temperature,
     )
 

@@ -64,3 +64,26 @@ def test_when_main_invoked_with_max_iters_one_then_sentinel_emitted():
     assert result.n_games == 0, (
         f'expected sentinel n_games=0 with max_iters=1, got {result.n_games}'
     )
+
+
+def test_when_build_condenser_called_with_target_then_returns_llm_condenser_for_same_model_per_adr_0001():
+    """Cycle 19: pin the wiring of LlmCondenser to the bench target per ADR 0001."""
+    from src.reward_bench.adapters.llm_condenser import LlmCondenser
+    from src.reward_bench.entities.model_target import ModelTarget
+    from src.reward_bench.frameworks.main import _build_condenser
+
+    # Arrange
+    target = ModelTarget(
+        id='qwen3.6-27b-awq',
+        hf_path='cyankiwi/Qwen3.6-27B-AWQ-INT4',
+        served_name='qwen3.6-27b-awq',
+        max_model_len=131072,
+        tool_call_parser='qwen3_coder',
+    )
+
+    # Act
+    condenser = _build_condenser(target, 'http://stub', 'unused')
+
+    # Assert
+    assert isinstance(condenser, LlmCondenser)
+    assert condenser.model_id == target.id  # per ADR 0001
