@@ -59,6 +59,19 @@ def execute_tool(name, args, workspace, env_dir, tasks_dir):
             return f'<view path="{virt}">\n{_trim(host.read_text())}\n</view>'
         except Exception as e:
             return f'<error>view: {e}</error>'
+
+    if name == 'write_file':
+        virt = args.get('path', '')
+        content = args.get('content', '')
+        host = _virt_to_host(virt, workspace, env_dir, tasks_dir)
+        if host is None:
+            return f'<error>write_file: path must start with /workspace (got {virt!r})</error>'
+        if not str(host).startswith(str(Path(workspace).resolve())):
+            return f'<error>write_file: writes only allowed under /workspace (got {virt!r})</error>'
+        host.parent.mkdir(parents=True, exist_ok=True)
+        host.write_text(content)
+        return f'<ok>wrote {len(content)} chars to {virt}</ok>'
+
     return f'<error>unknown tool: {name}</error>'
 
 

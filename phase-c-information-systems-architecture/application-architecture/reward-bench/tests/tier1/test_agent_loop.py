@@ -75,3 +75,22 @@ def test_when_view_tool_executed_then_returns_file_contents(tmp_path):
     assert '<view path="/tasks/2048/SKILL_tier1.md">' in result, f'view header missing: {result[:200]!r}'
     skill_head = (REPO / 'tasks/2048/SKILL_tier1.md').read_text()[:50]
     assert skill_head in result, f'file head not in observation: {result[:300]!r}'
+
+
+def test_when_write_file_tool_executed_then_writes_to_workspace(tmp_path):
+    # Arrange
+    workspace = tmp_path / 'workspace'
+    workspace.mkdir()
+    env_dir = REPO / 'tasks/2048'
+    tasks_dir = REPO / 'tasks'
+    content = "from __future__ import annotations\nVALUE = 42\n"
+    args = {'path': '/workspace/submission.py', 'content': content}
+
+    # Act
+    result = execute_tool('write_file', args, workspace, env_dir, tasks_dir)
+
+    # Assert
+    target = workspace / 'submission.py'
+    assert target.exists(), f'file not written; observation: {result!r}'
+    assert target.read_text() == content, f'contents differ; observation: {result!r}'
+    assert '<ok>' in result and '/workspace/submission.py' in result, f'unexpected observation: {result!r}'
