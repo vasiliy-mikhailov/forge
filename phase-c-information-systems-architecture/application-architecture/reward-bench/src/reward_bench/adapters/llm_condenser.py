@@ -6,15 +6,27 @@ Per reward-bench/docs/adr/0001-condenser-uses-same-model-as-bench.md, the
 wiring layer supplies a `summarise` callable backed by the bench-model vLLM
 endpoint.
 
-Chat-template invariant: most chat templates (including qwen3.6) require
-the system message to be the FIRST message AND require AT MOST ONE system
-message. So the summary is APPENDED to the existing system message's
-content — never inserted as a second system message. This is the cycle-20
-correction of cycle 18's contract that surfaced when the bench actually
-ran end-to-end against vLLM."""
+Two gates control when compaction fires (both must hold):
+
+1. **Token gate** — `total_estimated_tokens > config.trigger_tokens`.
+   Token count is estimated as `sum(len(content) // 4)` — a cheap
+   4-chars-per-token heuristic. Without this gate the condenser
+   over-fires on short turns and inflates wall time.
+2. **Count gate** — `len(messages) > 1 + config.keep_recent`. Without
+   this there is nothing structurally to compact.
+
+When both gates pass, older turns (between the system message and
+the `keep_recent` window) are summarised and the summary is APPENDED
+to the existing system message's content (chat-template invariant —
+qwen3.6 requires exactly one system message at position 0)."""
 from typing import Callable, Tuple
 
 from src.reward_bench.entities.condenser_config import CondenserConfig
+
+
+def _estimate_tokens(messages: Tuple[dict, ...]) -> int:
+    """4-chars-per-token heuristic across message contents."""
+    return sum(len(m.get('content', '')) // 4 for m in messages)
 
 
 class LlmCondenser:
@@ -34,7 +46,10 @@ class LlmCondenser:
         config: CondenserConfig,
     ) -> Tuple[dict, ...]:
         n = len(messages)
+        # Both gates must pass.
         if n <= 1 + config.keep_recent:
+            return tuple(messages)
+        if _estimate_tokens(messages) <= config.trigger_tokens:
             return tuple(messages)
         system = messages[0]
         recent = tuple(messages[-config.keep_recent:])

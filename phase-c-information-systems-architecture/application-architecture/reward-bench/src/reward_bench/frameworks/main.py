@@ -35,8 +35,14 @@ REPO = Path(__file__).resolve().parents[4]
 ENV_DIR = REPO / 'tasks' / '2048'
 TASKS_DIR = REPO / 'tasks'
 
-# Legacy _bak defaults, also reflected in ADR 0003 implementation pointers.
-_CONDENSER_TRIGGER_TOKENS = 40000
+# Condenser trigger sized for the 128K context budget. With
+# max_model_len=131072 and reserved output budget max_tokens=32768, the
+# effective input budget is ~98304 tokens. We trigger at ~80% of that so
+# the model has room to swing without compacting prematurely. Legacy _bak
+# used 40000 (conservative for a smaller secondary GPU); our setup runs
+# the same 128K model for both bench and condenser per ADR 0001 so the
+# higher trigger is safe.
+_CONDENSER_TRIGGER_TOKENS = 80000
 _CONDENSER_KEEP_RECENT = 8
 
 

@@ -37,3 +37,31 @@ def test_when_llm_condenser_compacts_then_summary_appended_to_system_message_and
     # summarise called with the 4 older turns
     assert len(calls) == 1
     assert len(calls[0]) == 4
+
+
+def test_when_llm_condenser_called_with_short_messages_then_pass_through_regardless_of_count():
+    """Cycle 21: token-aware gate; message count alone must not trigger compaction."""
+    # Arrange: 20 short messages (well below trigger_tokens=1000)
+    messages = tuple(
+        {'role': 'user' if i % 2 == 0 else 'assistant', 'content': f'm{i}'}
+        for i in range(20)
+    )
+    # Prepend a system message
+    messages = ({'role': 'system', 'content': 'sys'},) + messages
+
+    config = CondenserConfig(
+        trigger_tokens=1000, keep_recent=2,
+        model_id='qwen3.6-27b-awq',
+    )
+    calls = []
+    def stub_summarise(older_turns):
+        calls.append(older_turns)
+        return 'unused'
+
+    # Act
+    condenser = LlmCondenser(summarise=stub_summarise, model_id='qwen3.6-27b-awq')
+    result = condenser.condense(messages, config)
+
+    # Assert: pass-through; summarise never called
+    assert result == messages, f'expected pass-through, got {len(result)} messages'
+    assert calls == [], f'summarise should not be called below trigger; calls={calls}'
