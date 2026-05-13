@@ -8,13 +8,17 @@ use case into a single end-to-end run that emits an AttemptResult.
 
 Robust to malformed model output: when the agent loop produces a
 submission without a `Solver` class (or no submission at all), main
-emits a sentinel AttemptResult(n_games=0, games=(), mean_score=0.0)
-instead of crashing."""
+emits a sentinel AttemptResult per ADR 0002.
+
+Default knob panel is BenchConfig() per ADR 0003 (500 iters, T=0.7).
+Tests pass an explicit BenchConfig with smaller values to bound wall
+time."""
 import os
 import tempfile
 from pathlib import Path
 from typing import Iterable
 
+from src.reward_bench.entities.bench_config import BenchConfig
 from src.reward_bench.entities.model_target import ModelTarget
 from src.reward_bench.use_cases.model_registry import MODEL_REGISTRY
 from src.tier1.adapters.game_board_2048 import GameBoard2048Adapter
@@ -41,8 +45,7 @@ def _pick_model(model_id: str) -> ModelTarget:
 
 
 def _sentinel_attempt_result(reason: str) -> AttemptResult:
-    """Empty AttemptResult emitted when the submission is malformed.
-    n_games=0, games=(), mean_score=0.0 mark the shape-error case."""
+    """Empty AttemptResult emitted when the submission is malformed (ADR 0002)."""
     print(f'[bench] submission shape error: {reason}')
     return AttemptResult(
         mean_score=0.0,
@@ -58,15 +61,19 @@ def _sentinel_attempt_result(reason: str) -> AttemptResult:
 def main(
     model_id: str = 'qwen3.6-27b-awq',
     seeds: Iterable[int] = range(1000, 1020),
-    max_iters: int = 30,
+    config: BenchConfig = BenchConfig(),
 ) -> AttemptResult:
-    """Run the bench end-to-end and emit an AttemptResult."""
+    """Run the bench end-to-end and emit an AttemptResult.
+
+    `config` defaults to ADR 0003 (500 iters, T=0.7); tests pass a
+    smaller config to keep wall time bounded."""
     target = _pick_model(model_id)
     base_url = ensure_serving()
     api_key = os.environ['VLLM_API_KEY']
 
     workspace = Path(tempfile.mkdtemp(prefix='reward-bench-main-'))
-    print(f'[bench] model={target.id} workspace={workspace}')
+    print(f'[bench] model={target.id} workspace={workspace} '
+          f'max_iters={config.max_iters} temperature={config.temperature}')
 
     run_loop(
         workspace=workspace,
@@ -74,7 +81,8 @@ def main(
         tasks_dir=TASKS_DIR,
         vllm_base_url=base_url,
         vllm_api_key=api_key,
-        max_iters=max_iters,
+        max_iters=config.max_iters,
+        temperature=config.temperature,
     )
 
     submission_path = workspace / 'submission.py'

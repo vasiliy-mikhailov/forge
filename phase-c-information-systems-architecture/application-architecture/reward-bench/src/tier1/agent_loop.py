@@ -244,7 +244,7 @@ def _identity_condense(messages):
 
 
 def run_loop(workspace, env_dir, tasks_dir, vllm_base_url, vllm_api_key,
-             max_iters, condense=_identity_condense):
+             max_iters, condense=_identity_condense, temperature=0.0):
     """Drive the interactive agent loop for at most max_iters turns.
 
     `condense` is an opaque callable that takes the message tuple and
@@ -253,6 +253,11 @@ def run_loop(workspace, env_dir, tasks_dir, vllm_base_url, vllm_api_key,
     src-spec/tier1/agent_loop/src_spec_when_run_loop_called_with_condense_callable_*
     for the seam contract; see reward-bench/docs/adr/0001 for the
     same-model decision used by the concrete LlmCondenser adapter.
+
+    `temperature` is the Stage-1 author-loop sampling temperature
+    passed through to `_call_model`. Default 0.0 (deterministic) for
+    test isolation; the bench orchestrator (`main()`) passes
+    `BenchConfig.temperature` per ADR 0003 (0.7 for exploration).
 
     Returns {iterations, messages, finished}.
     """
@@ -265,7 +270,8 @@ def run_loop(workspace, env_dir, tasks_dir, vllm_base_url, vllm_api_key,
     while iter_n < max_iters and not finished:
         iter_n += 1
         messages = list(condense(tuple(messages)))
-        reply = _call_model(vllm_base_url, vllm_api_key, messages)
+        reply = _call_model(vllm_base_url, vllm_api_key, messages,
+                            temperature=temperature)
         messages.append({'role': 'assistant', 'content': reply})
         tool_calls = parse_tool_calls(reply)
         if not tool_calls:

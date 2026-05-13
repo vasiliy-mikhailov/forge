@@ -1,41 +1,46 @@
 # `src/reward_bench/frameworks/main.py`
 
-`main` is the bench's composition root — the outermost layer that
-wires concrete adapters to use cases, runs the agent loop against a
-live vLLM endpoint, and emits an `AttemptResult`.
+`main` is the bench's composition root — wires concrete adapters to
+use cases, runs the agent loop against a live vLLM endpoint, emits
+an `AttemptResult`.
 
 ## Function
 
     def main(
         model_id: str = 'qwen3.6-27b-awq',
         seeds: Iterable[int] = range(1000, 1020),
-        max_iters: int = 30,
+        config: BenchConfig = BenchConfig(),
     ) -> AttemptResult
+
+The `config` parameter is the [ADR 0003](../../../../docs/adr/0003-bench-defaults-500-iters-10-trials-temp-0.7.md)
+knob panel — `max_iters`, `temperature`, `n_trials`,
+`max_no_improve`, `finish_floor`. Default `BenchConfig()` yields the
+ADR 0003 defaults; tests pass smaller values for fast runs.
 
 ## Steps
 
 1. Look `model_id` up in `MODEL_REGISTRY`; fail loudly if missing.
-2. Call `ensure_serving()` to guarantee the lab vLLM container is up
-   and return its base URL.
-3. Create a workspace directory and run `agent_loop.run_loop()`
-   against the model — produces `submission.py` in the workspace.
-4. Try to `harness.load_submission()` the file and access
-   `module.Solver`. On `AttributeError` (no `Solver` class) or
-   `FileNotFoundError` (no submission written), return a sentinel
-   `AttemptResult(n_games=0, games=(), mean_score=0.0, ...)` so
-   the bench never crashes on malformed model output.
-5. Happy path: instantiate `GameBoard2048Adapter`; call
-   `score_submission(solver_factory=Solver, seeds=seeds, env=adapter)`.
-6. Print key fields of the `AttemptResult` to stdout for the human
-   "watch the bench run" experience.
-7. Return the `AttemptResult`.
+2. Call `ensure_serving()` to guarantee the lab vLLM container is up.
+3. Create a workspace; run `agent_loop.run_loop(...,
+   max_iters=config.max_iters, temperature=config.temperature)`.
+4. Try to `load_submission`; access `module.Solver`. On
+   `AttributeError` (no `Solver`) or `FileNotFoundError` (no
+   submission file), return a sentinel `AttemptResult(n_games=0,
+   games=(), ...)`. Per
+   [ADR 0002](../../../../docs/adr/0002-main-emits-sentinel-on-malformed-submission.md).
+5. Happy path: `score_submission(Solver, seeds,
+   GameBoard2048Adapter())` produces a populated `AttemptResult`.
+6. Print key fields; return.
 
-## Layering
+## Knob propagation
 
-This file is the only place that imports across all four reward-
-bench layers AND across modules into tier1's transitional root
-files (`tier1/inference.py`, `tier1/agent_loop.py`, `tier1/harness.py`).
-Cross-module reach is acceptable in the composition root.
+- `config.max_iters` → `agent_loop.run_loop(max_iters=...)`.
+- `config.temperature` → `agent_loop.run_loop(temperature=...)` →
+  `_call_model(temperature=...)`.
+- `config.n_trials` is NOT used here — that's the multi-trial use
+  case's job (future cycle).
+- `config.max_no_improve`, `config.finish_floor` — not yet enforced
+  inside `agent_loop` (future cycle).
 
 ## Entry point
 
@@ -44,4 +49,5 @@ Cross-module reach is acceptable in the composition root.
     from src.reward_bench.frameworks.main import main
     main()
 
-so `python -m src.reward_bench` runs the bench from the repo root.
+`python -m src.reward_bench` runs the bench with the ADR 0003
+defaults. Tests pass an explicit `config` to keep wall time bounded.
