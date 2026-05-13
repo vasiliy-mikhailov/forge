@@ -198,6 +198,29 @@ Example:
       <-> tests-spec/adapters/game_board_2048/test_spec_*.md
       <-> tests/adapters/test_game_board_2048.py
 
+### Cross-cutting test folders (architecture/, clean_arch/)
+
+The two cross-cutting test folders pin properties of the codebase
+itself, not a single source file. There is no "source file under
+test" for an ast-walking dependency-direction test or a layered
+wire-up test. The second-level name therefore uses the **test file
+stem with the `test_` prefix dropped** — the same drop-the-`test_`
+rule, applied to the test file when there is no source file to point
+at.
+
+Example:
+
+    tests/architecture/test_dependency_direction.py
+      <-> tests-spec/architecture/dependency_direction/test_spec_*.md
+
+    tests/clean_arch/test_score_submission_wired.py
+      <-> tests-spec/clean_arch/score_submission_wired/test_spec_*.md
+
+The result: tests-spec/ is ALWAYS two levels deep. A test spec
+sitting directly under tests-spec/<layer>/ with no per-source-file
+folder is a violation, regardless of whether the layer is a clean-arch
+layer or a cross-cutting test group. The rule applies uniformly.
+
 The hierarchy buys three things:
 
   - Directory listing answers "what specifies module X?" with one
