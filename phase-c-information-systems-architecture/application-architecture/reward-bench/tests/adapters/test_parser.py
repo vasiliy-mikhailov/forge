@@ -1,6 +1,6 @@
-"""Tier 1 parser tests. See src-spec/tier1/src_spec_when_reply_*.md
-and tests-spec/tier1/test_spec_when_reply_*.md."""
-from src.tier1.parser import extract_python, has_fenced_python_block
+"""Tier 1 parser tests. See src-spec/adapters/parser/src_spec_when_reply_*.md
+and tests-spec/adapters/parser/test_spec_when_reply_*.md."""
+from src.adapters.parser import extract_python, has_fenced_python_block
 
 
 def test_when_reply_inspected_then_contains_one_fenced_python_block(skill_tier1_reply):

@@ -1,4 +1,4 @@
-"""Tier 1 reply parsing. See src-spec/tier1/src_spec_when_reply_*.md."""
+"""Tier 1 reply parsing. See src-spec/adapters/parser/src_spec_when_reply_*.md."""
 import re
 
 

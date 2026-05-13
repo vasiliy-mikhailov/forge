@@ -5,7 +5,7 @@ fenced reply parses as valid Python.
 
 - **Arrange**: session-scoped `skill_tier1_reply` fixture (live model
   call, shared across L3.2–L6.2).
-- **Act**: call `src.tier1.parser.extract_python(reply)` to get the
+- **Act**: call `src.adapters.parser.extract_python(reply)` to get the
   fence body, then `compile(source, '<solver-submission>', 'exec')`.
 - **Assert**: `compile` returns a code object (does not raise
   `SyntaxError`).
