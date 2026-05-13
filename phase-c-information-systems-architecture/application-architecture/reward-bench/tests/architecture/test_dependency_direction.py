@@ -13,6 +13,12 @@ _FORBIDDEN_FOR_ENTITIES = (
     'src.use_cases', 'src.adapters', 'src.frameworks',
 )
 
+_FORBIDDEN_FOR_USE_CASES = (
+    'urllib', 'http', 'requests', 'httpx', 'aiohttp',
+    'subprocess', 'docker', 'os', 'socket',
+    'src.adapters', 'src.frameworks',
+)
+
 
 def _collect_imports(py_file):
     tree = ast.parse(py_file.read_text())
@@ -39,6 +45,24 @@ def test_when_entities_imports_inspected_then_only_pure_imports_allowed():
         imports = _collect_imports(f)
         for imp in imports:
             for forbidden in _FORBIDDEN_FOR_ENTITIES:
+                assert not imp.startswith(forbidden), (
+                    f'{f.relative_to(REPO)}: forbidden import {imp!r} '
+                    f'(starts with {forbidden!r})'
+                )
+
+
+def test_when_use_cases_imports_inspected_then_no_outer_imports():
+    # Arrange
+    use_cases_dir = REPO / 'src' / 'use_cases'
+    assert use_cases_dir.is_dir(), f'{use_cases_dir} does not exist'
+    files = [p for p in use_cases_dir.rglob('*.py') if p.name != '__init__.py']
+    assert files, f'no use case .py files under {use_cases_dir}'
+
+    # Act + Assert per file
+    for f in files:
+        imports = _collect_imports(f)
+        for imp in imports:
+            for forbidden in _FORBIDDEN_FOR_USE_CASES:
                 assert not imp.startswith(forbidden), (
                     f'{f.relative_to(REPO)}: forbidden import {imp!r} '
                     f'(starts with {forbidden!r})'
