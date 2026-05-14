@@ -46,6 +46,34 @@ config × model cell.
   - Suggests qwen3.6-27b-awq has a plateau ~3000-3500 at our prompts
     that bigger budgets do not break.
 
+### Cycle 29 campaign (after cycles 27+28+29 sentinels)
+
+- **Config**: `BenchConfig(max_iters=100, n_trials=3, temperature=0.7,
+  hard_wall_sec=60.0)`
+- **Per-trial mean**: `[5932.4, 0.4, 0.0]`
+- **Aggregate**: `mean_of_means=1977.6 best_mean=5932.4 worst_mean=0.0`
+- **Max tile**: **1024** (best single game; 2x prior peak of 512)
+- **Walltime**: 558 s (9:18 for 3 trials)
+- **Artifact**: `experiments/2026-05-13-iters100-T07-n3.json`
+- **Notes**:
+  - Best single trial **5932.4** — first time clearly above the
+    cycle-12-22 plateau (3000-3500). Same trial hit **max_tile=1024**.
+  - Trials 2 and 3 collapsed (0.4 and 0.0) because of two real-system
+    bugs reproduced live and fixed in the same campaign:
+    - Trial 2: `Solver.move()` called undefined transitions trigger
+      `to_opening()` -> cycle 28 sentinel.
+    - Trial 3: `Solver.__init__()` called undefined transitions trigger
+      `start()` -> cycle 29 sentinel.
+    + a SyntaxError in trial 3's final submission.py (ADR-0002 sentinel).
+  - Mean-of-means (1977.6) is DROP vs cycle-22 (3144.4) because two of
+    three trials collapsed. The best-mean lift (5932 vs 3575, +66%) is
+    the real signal — the model CAN do significantly better when it
+    doesn't break the transitions API.
+  - Sentinels did exactly what ADR 0002 + cycle 27/28/29 demand: the
+    leaderboard still got a 3-trial data point instead of a no-data
+    crash. This is the test-spec-backed artifact rule paying off.
+
+
 ## Reference baselines
 
 ### `tasks/2048/baselines/reference_fsm.py` (hand-written)
