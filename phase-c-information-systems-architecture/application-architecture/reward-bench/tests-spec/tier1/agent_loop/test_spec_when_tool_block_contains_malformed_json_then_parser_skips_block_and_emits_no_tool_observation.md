@@ -1,9 +1,7 @@
 # `test_when_tool_block_contains_malformed_json_then_parser_skips_block_and_emits_no_tool_observation`
 
-Pins the **tool-call parser robustness** seam. Per [hypothesis #9](
-../../../../docs/hypotheses_agent_loop_regression.md) (added live
-during cycle 50 measurement), the [legacy parser](
-../../../../src/tier1/legacy_agent_loop.py) wraps `json.loads` in
+Pins the **tool-call parser robustness** seam. The parser wraps
+`json.loads` in
 `try/except json.JSONDecodeError` plus a `rstrip(', \t\n')` fallback,
 then `continue`s past the bad block. Our parser raises
 `JSONDecodeError` which crashes the entire trial in

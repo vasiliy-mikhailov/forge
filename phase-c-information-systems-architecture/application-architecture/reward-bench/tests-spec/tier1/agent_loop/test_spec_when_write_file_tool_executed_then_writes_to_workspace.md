@@ -2,10 +2,11 @@
 
 **Status**: `write_file` is a LEGACY tool per [ADR 0008](../../../../docs/adr/0008-docker-sandboxed-execute-submission-tool.md).
 The active tool for shipping a submission is `execute_submission`.
-`write_file` is retained behind `--legacy-write-file` for one
-transitional cycle so existing tests + the `legacy_agent_loop.py`
-blessed runner (per [ADR 0007](../../../../docs/adr/0007-per-model-bench-uses-blessed-runner-until-agent-loop-bisect.md))
-keep working until ADR 0007 is superseded.
+`write_file` is retained behind `--legacy-write-file` for the
+transitional period defined by [ADR 0008](../../../../docs/adr/0008-docker-sandboxed-execute-submission-tool.md).
+ADR 0007 was superseded in cycle 67/68 once the active loop reached
+parity; the legacy `write_file` tool is kept available for
+backward-compatibility tests only.
 
 When ADR 0007 is superseded, this test_spec MAY be retired (along
 with the `write_file` tool implementation). Until then it pins the

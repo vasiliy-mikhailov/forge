@@ -5,7 +5,7 @@
 - `SYSTEM_PROMPT` — the system message that instructs the model on
   the fenced-block JSON tool format with `view` / `bash` / `write_file` /
   `finish` tools, the ralph loop, and the dev_runner workflow.
-  Lifted verbatim from `_bak/bin/agent_loop.py` (May 2026 production
+  Defined in `src/tier1/agent_loop.py` (May 2026 production
   campaign that produced the historical ~15.9k mean score on
   Qwen3.6-27B-AWQ).
 - `FIRST_USER` — the first user message that bootstraps the task,

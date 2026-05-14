@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted (2026-05-14). Active.
+Superseded by cycle 67 (2026-05-14). The active `src/tier1/agent_loop.py` reached parity per cycle 67 (canonical mean=15,918 on qwen3.6-27b-awq, beating the legacy reference of 11,734). The blessed-runner workaround is no longer needed. Cycle 68 deleted `src/tier1/legacy_agent_loop.py`, `_bak/`, the per-model bak-runner test, and `docs/hypotheses_agent_loop_regression.md`.
 
 ## Context
 

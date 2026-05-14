@@ -11,7 +11,7 @@ parse / execute / iterate cycle has real input to test against.
 
 - **Arrange**: `vllm_base_url` fixture; bench API key; `SYSTEM_PROMPT`
   and `FIRST_USER` strings imported from `src.tier1.agent_loop`
-  (verbatim from `_bak/bin/agent_loop.py:361`); `max_tokens=32768`,
+  (see `src/tier1/agent_loop.py` SYSTEM_PROMPT); `max_tokens=12288`,
   `temperature=0.0`.
 - **Act**: single `POST /v1/chat/completions`, HTTP timeout 600 s.
 - **Assert**: response status is `200` AND `choices[0].message.content`

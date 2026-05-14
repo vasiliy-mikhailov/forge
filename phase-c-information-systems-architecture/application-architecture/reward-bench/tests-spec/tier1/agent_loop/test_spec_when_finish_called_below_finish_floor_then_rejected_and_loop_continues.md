@@ -1,10 +1,9 @@
 # `test_when_finish_called_below_finish_floor_then_rejected_and_loop_continues`
 
-Pins the **finish-floor** seam in `run_loop`. Per [hypothesis #2](
-../../../../docs/hypotheses_agent_loop_regression.md), the [legacy
-loop](../../../../src/tier1/legacy_agent_loop.py) rejects `finish`
-when `best_dev_mean < finish_floor` (default 7211 = the reference_fsm
-baseline). When rejected, the tool observation is a clear error
+Pins the **finish-floor** seam in `run_loop`. The loop rejects
+`finish` when `best_dev_mean < finish_floor` (default 7211 = the
+reference_fsm baseline). When rejected, the tool observation is a
+clear error
 message and the loop CONTINUES — the model is forced to:
 
 1. Actually obtain a dev MEAN signal before claiming done.

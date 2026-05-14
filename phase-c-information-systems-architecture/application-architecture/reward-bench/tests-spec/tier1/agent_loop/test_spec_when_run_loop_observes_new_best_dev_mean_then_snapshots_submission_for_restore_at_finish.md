@@ -1,9 +1,8 @@
 # `test_when_run_loop_observes_new_best_dev_mean_then_snapshots_submission_for_restore_at_finish`
 
-Pins the **best-snapshot + restore** seam in `run_loop`. Per
-[hypothesis #1](../../../../docs/hypotheses_agent_loop_regression.md)
-the [legacy loop](../../../../src/tier1/legacy_agent_loop.py) tracks
-the best dev_runner MEAN seen so far, snapshots `submission.py` to
+Pins the **best-snapshot + restore** seam in `run_loop`. The
+loop tracks the best dev_runner MEAN seen so far, snapshots
+`submission.py` to
 `submission.best.py` when a new best is observed, and at `finish`
 restores `submission.best.py` over `submission.py` so the scoring
 phase sees the high-water mark — not whatever the model wrote last.

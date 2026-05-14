@@ -86,7 +86,7 @@ def test_when_campaign_run_with_iters100_T07_n3_then_artifact_written_with_requi
     assert len(loaded['per_trial_protocol_valid']) == 3
     assert any(loaded['per_trial_protocol_valid']), (
         f"0/3 trials produced a protocol-valid submission. "
-        f"Active loop regression — see "
-        f"docs/hypotheses_agent_loop_regression.md. "
+        f"Active loop regression — campaign produced no "
+        f"protocol-valid Solver submission. "
         f"per_trial_protocol_valid={loaded['per_trial_protocol_valid']}"
     )

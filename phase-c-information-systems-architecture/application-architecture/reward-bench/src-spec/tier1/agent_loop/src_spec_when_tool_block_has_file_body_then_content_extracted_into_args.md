@@ -11,4 +11,4 @@ Documented separator is `===FILE_BODY===` (per `SYSTEM_PROMPT` in
 For blocks without the separator, behavior is unchanged: body is
 JSON-only.
 
-Lifted from `_bak/bin/agent_loop.py:202-238`.
+Implementation in `src/tier1/agent_loop.py::parse_tool_calls`.

@@ -10,16 +10,16 @@
     {stderr}
     </bash>
 
-Constraints (lifted from `_bak/bin/agent_loop.py:49-59` and `132-154`):
+Constraints (see `src/tier1/agent_loop.py`):
 
 - The command MUST start with one of the prefixes in
-  `ALLOWED_BASH_PREFIXES` (verbatim from `_bak`: `python3 /tasks/2048/dev_runner.py /workspace/submission.py`,
+  `ALLOWED_BASH_PREFIXES`: `python3 /tasks/2048/dev_runner.py /workspace/submission.py`,
   `ls /workspace`, `ls /tasks`, `ls /env`, `cat /workspace/submission.py`,
   `head /workspace/submission.py`, `cat /tasks/2048/SKILL_tier1.md`,
   `cat /env/env_2048.py`, plus a `python` variant of dev_runner).
 - Virtual paths `/workspace`, `/tasks`, `/env` inside the command are
   translated to their host equivalents before exec.
-- 120 s timeout per call (lifted from _bak).
+- 120 s timeout per call.
 - `PYTHONPATH` includes `env_dir` so dev_runner's `import env_2048`
   resolves.
 
