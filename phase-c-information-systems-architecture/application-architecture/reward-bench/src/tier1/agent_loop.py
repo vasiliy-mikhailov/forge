@@ -205,6 +205,13 @@ def execute_tool(name, args, workspace, env_dir, tasks_dir):
 
 _DEV_SEEDS = (1, 2, 3, 4, 5)
 
+# Cycle 70: aggregate wall-time cap for the dev feedback path. Passed
+# through to score_submission's hard_wall_sec; per-game cap derives
+# from remaining budget (cycle 27 daemon-thread timeout). Without this,
+# a slow Solver (e.g. cycle 69's expectimax(depth=4) with deepcopy)
+# wedges the ralph loop. Monkeypatched small in tests.
+DEV_HARD_WALL_S = 30.0
+
 
 def _execute_submission(body, workspace, tasks_dir):
     """ADR 0008 dispatcher. Always returns a JSON-string observation;
@@ -246,61 +253,62 @@ def _execute_submission(body, workspace, tasks_dir):
         obs['protocol_violations'].extend(violations)
         return '<observation>' + _json.dumps(obs) + '</observation>'
 
-    # Play dev seeds via the GameBoard adapter (cycle 28 + 29 sentinels
-    # propagate into per_seed err fields naturally).
-    env_path = Path(tasks_dir) / '2048'
-    if str(env_path) not in _sys.path:
-        _sys.path.insert(0, str(env_path))
+    # Cycle 70: delegate per-game scoring to the canonical scorer. The
+    # cycle-58 inline game loop is gone — the dev feedback path now
+    # inherits the cycle 23/27 hard_wall_sec + per-game daemon-thread
+    # timeout and the cycle 28/29 solver-error sentinels. Fixes cycle
+    # 69's wedge (model wrote expectimax depth=4 → inline loop ground
+    # for hours; canonical scorer sentinels under DEV_HARD_WALL_S).
+    from src.tier1.use_cases.score_submission import score_submission
+    from src.tier1.adapters.game_board_2048 import GameBoard2048Adapter
     try:
-        from env import GameBoard  # noqa: E402
-    except Exception as e:
-        obs['protocol_violations'].append(f'env load failed: {type(e).__name__}: {e}')
+        _attempt = score_submission(
+            solver_factory=module.Solver,
+            seeds=_DEV_SEEDS,
+            env=GameBoard2048Adapter(),
+            hard_wall_sec=DEV_HARD_WALL_S,
+        )
+    except Exception as e:  # defence-in-depth: dispatcher must never raise
+        obs['protocol_violations'].append(
+            f'score_submission failed: {type(e).__name__}: {e}'
+        )
         return '<observation>' + _json.dumps(obs) + '</observation>'
 
-    Solver = module.Solver
-    scores = []
-    max_tiles = []
-    t_total_start = _t.monotonic()
-    for seed in _DEV_SEEDS:
-        t0 = _t.monotonic()
-        try:
-            solver = Solver()
-            b = GameBoard(seed=seed)
-            moves = 0
-            err = None
-            while not b.is_terminal() and moves < 3000:
-                try:
-                    a = solver.move(b.board)
-                    b.do_action(a)
-                except Exception as e:
-                    err = f'{type(e).__name__}: {e}'
-                    break
-                moves += 1
-            entry = {
-                'seed': int(seed),
-                'score': int(b.score),
-                'max_tile': int(b.max_tile),
-                'moves': int(moves),
-                'state': str(b.state) if b.state in ('won', 'lost') else 'lost',
-                'walltime_sec': round(_t.monotonic() - t0, 4),
-                'err': err,
-            }
-        except Exception as e:
-            entry = {
-                'seed': int(seed),
-                'score': 0, 'max_tile': 0, 'moves': 0,
-                'state': 'crashed',
-                'walltime_sec': round(_t.monotonic() - t0, 4),
-                'err': f'{type(e).__name__}: {e}',
-            }
-        obs['per_seed'].append(entry)
-        scores.append(entry['score'])
-        max_tiles.append(entry['max_tile'])
-    obs['walltime_sec_total'] = round(_t.monotonic() - t_total_start, 4)
-    obs['mean'] = (sum(scores) / len(scores)) if scores else 0.0
-    obs['median'] = sorted(scores)[len(scores) // 2] if scores else 0
-    obs['max_tile_best'] = max(max_tiles) if max_tiles else 0
+    # Thin AttemptResult -> observation transform. Preserves the cycle-63
+    # parser contract (mean/median/per_seed/max_tile_best/walltime_sec_total).
+    per_seed = []
+    for _g in _attempt.games:
+        per_seed.append({
+            'seed': int(_g.seed),
+            'score': int(_g.score),
+            'max_tile': int(_g.max_tile),
+            'moves': int(_g.moves),
+            'state': str(_g.final_state),
+            'walltime_sec': round(_g.walltime_sec, 4),
+            'err': _err_for_final_state(_g.final_state),
+        })
+    obs['per_seed'] = per_seed
+    obs['mean'] = float(_attempt.mean_score)
+    obs['median'] = float(_attempt.median_score)
+    obs['max_tile_best'] = int(_attempt.max_max_tile)
+    obs['walltime_sec_total'] = round(_attempt.aggregate_walltime_sec, 4)
     return '<observation>' + _json.dumps(obs) + '</observation>'
+
+
+def _err_for_final_state(final_state):
+    """Cycle 70: map GameResult.final_state to the optional `err` field
+    in the execute_submission per_seed observation. None for happy
+    states; descriptive string for sentinel states so the model can
+    read why a per_seed entry is degenerate."""
+    if final_state in ('won', 'lost'):
+        return None
+    if final_state == 'walltime_exceeded':
+        return 'walltime_exceeded (per-game cap from DEV_HARD_WALL_S budget)'
+    if final_state == 'solver_error':
+        return 'solver_error (Solver raised in __init__ or move)'
+    if final_state == 'stagnated':
+        return 'stagnated (no progress detected)'
+    return f'sentinel: {final_state}'
 
 
 

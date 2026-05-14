@@ -1214,3 +1214,79 @@ def test_when_system_prompt_inspected_then_advertises_execute_submission_as_prim
     assert 1000 <= len(SYSTEM_PROMPT) <= 6000, (
         f'SYSTEM_PROMPT length {len(SYSTEM_PROMPT)} outside [1000, 6000]'
     )
+
+
+def test_when_execute_submission_called_with_slow_solver_then_per_seed_reports_walltime_exceeded(tmp_path, monkeypatch):
+    """Cycle 70: dev-path inherits wall-time protection via canonical scorer.
+
+    Real-world repro from cycle 69 verification bench: model wrote
+    expectimax(depth=4) Solver; _execute_submission's inline game loop
+    wedged for hours. Now delegates to score_submission which has
+    cycle 23 hard_wall_sec + cycle 27 per-game daemon-thread timeout
+    + cycle 28/29 sentinels. The wedge is impossible by construction."""
+    import json
+    import time
+    from src.tier1 import agent_loop
+    from src.tier1.agent_loop import execute_tool
+
+    # Shrink the dev wall-time cap so the test stays fast.
+    monkeypatch.setattr(agent_loop, 'DEV_HARD_WALL_S', 0.5)
+
+    workspace = tmp_path / 'ws'; workspace.mkdir()
+    env_dir = tmp_path / 'env'; env_dir.mkdir()
+    from pathlib import Path as _P
+    tasks_dir = _P(
+        '/home/vmihaylov/forge/phase-c-information-systems-architecture/'
+        'application-architecture/reward-bench/tasks'
+    )
+    if not tasks_dir.exists():
+        pytest.skip('tasks/ not present in this sandbox')
+
+    # Sleep is conditional: validate_submission_protocol calls move() once
+    # on an empty board; sleeping there would dominate the test wall-time.
+    # Sleep only when called with a non-empty board (i.e. inside a real game).
+    body = (
+        'import time\n'
+        'class Solver:\n'
+        '    def __init__(self): pass\n'
+        '    def move(self, board):\n'
+        '        if any(any(row) for row in board):\n'
+        '            time.sleep(2.0)\n'
+        "        return 'S'\n"
+    )
+
+    t0 = time.monotonic()
+    obs = execute_tool('execute_submission', {'content': body},
+                       workspace, env_dir, tasks_dir)
+    elapsed = time.monotonic() - t0
+
+    # Bounded wall-time. Without cycle 70 this wedges for many seconds
+    # per move x many moves x 5 seeds. With cycle 70 + DEV_HARD_WALL_S=0.5
+    # the canonical scorer sentinels the first game (daemon thread join
+    # times out), all later seeds get walltime_exceeded immediately.
+    assert elapsed < 15.0, (
+        f'execute_submission took {elapsed:.1f}s, should be bounded '
+        f'by DEV_HARD_WALL_S + abandoned-thread slack'
+    )
+
+    body_json = obs
+    if body_json.startswith('<observation>') and body_json.endswith('</observation>'):
+        body_json = body_json[len('<observation>'):-len('</observation>')]
+    payload = json.loads(body_json.strip())
+
+    assert payload['protocol_violations'] == [], (
+        f"slow Solver is protocol-valid; got {payload['protocol_violations']}"
+    )
+    assert isinstance(payload['per_seed'], list)
+    assert len(payload['per_seed']) >= 1
+    states = [s['state'] for s in payload['per_seed']]
+    walltime_exceeded = [s for s in payload['per_seed']
+                         if s['state'] == 'walltime_exceeded']
+    assert len(walltime_exceeded) >= 1, (
+        f'expected >=1 walltime_exceeded sentinel; got states={states}'
+    )
+
+    # Schema preserved for cycle-63 parser.
+    assert isinstance(payload['mean'], (int, float))
+    assert payload['mean'] == payload['mean']  # not NaN
+    assert isinstance(payload['max_tile_best'], int)

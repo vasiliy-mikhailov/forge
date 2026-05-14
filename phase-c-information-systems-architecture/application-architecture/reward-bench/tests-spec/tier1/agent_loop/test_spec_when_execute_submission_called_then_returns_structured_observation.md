@@ -9,6 +9,18 @@ observation, model iterates.
 This cycle implements the dispatcher contract HOST-SIDE; the Docker
 isolation per ADR 0006 layer 2 is cycle 60.
 
+
+**Cycle 70**: this dispatcher delegates the per-game game loop to
+[`score_submission`](../../../../src/tier1/use_cases/score_submission.py)
+(cycle 23/27/28/29 hard_wall_sec + per-game daemon timeout +
+solver-error / walltime-exceeded sentinels). The cycle-58 inline
+game loop is gone; the observation schema below is preserved by a
+thin `AttemptResult` → observation-JSON transform so the cycle-63
+parser keeps working. `per_seed.state` now ranges over the canonical
+scorer's `final_state` values: `won`, `lost`, `walltime_exceeded`,
+`solver_error`, `stagnated`.
+
+
 The observation is a string (the tool protocol returns text); the
 string is a single-line JSON object so the model can parse it
 deterministically.
