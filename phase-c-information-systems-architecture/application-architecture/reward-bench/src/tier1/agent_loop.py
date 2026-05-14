@@ -316,30 +316,58 @@ Tool calls go in fenced code blocks tagged `tool` with a JSON body. One or more 
   Read a file (paths must start with /workspace, /env, or /tasks).
 
 ```tool
-{"name": "write_file", "args": {"path": "/workspace/submission.py"}}
+{"name": "execute_submission", "args": {}}
 ===FILE_BODY===
 from __future__ import annotations
-import math
-... your full file, raw, no JSON escaping ...
+from transitions import Machine
+class Solver:
+    def __init__(self): ...
+    def move(self, board: list[list[int]]) -> str:
+        return 'W'
 ```
-  Overwrite a file under /workspace. Inside the SAME ```tool block, after a
-  line containing exactly `===FILE_BODY===`, put the file content as raw
-  text. NO JSON escaping — newlines, quotes, backslashes all literal. The
-  `===FILE_BODY===` separator is REQUIRED to start the content region.
-  Everything between that line and the closing ``` becomes the file body.
-  IMPORTANT: do NOT use `===FILE_BODY===` anywhere inside the file body
-  itself — it's a parser separator, not a section marker.
+  PRIMARY TOOL (per ADR 0008). Emit your FULL submission body inline
+  after the `===FILE_BODY===` separator (NO JSON escaping — newlines,
+  quotes, backslashes all literal). The bench writes the body into a
+  sandboxed Docker container, runs dev_runner on 5 dev seeds, and
+  returns a structured JSON observation:
 
-```tool
-{"name": "bash", "args": {"cmd": "python3 /tasks/2048/dev_runner.py /workspace/submission.py"}}
-```
-  Run an allow-listed command. The dev_runner gives you fast feedback (5
-  dev-seed games, ~1-5 s total). Use python3 — `python` is not available.
+      <observation>{"protocol_violations": [...], "per_seed": [...],
+                    "mean": <float>, "max_tile_best": <int>,
+                    "walltime_sec_total": <float>}</observation>
+
+  - protocol_violations: empty when your code follows the
+    SKILL_tier1.md contract (class Solver + move(board) -> W/A/S/D).
+    Non-empty = your submission was rejected; fix and resubmit.
+  - per_seed: per-game record with score, max_tile, moves, state, err.
+    Empty list when protocol_violations non-empty.
+  - mean: dev-seed mean score. Use this as your improvement signal.
+
+  Call repeatedly: each call writes the body fresh; previous body
+  is discarded. IMPORTANT: do NOT use `===FILE_BODY===` anywhere
+  inside the file body itself — it's a parser separator.
 
 ```tool
 {"name": "finish", "args": {"note": "why you're done"}}
 ```
-  Stop. Whatever is at /workspace/submission.py at finish time gets scored.
+  Stop. The body of your most recent successful execute_submission
+  (with non-empty per_seed) is promoted to /workspace/submission.py
+  and scored on canonical seeds (different from dev seeds).
+
+LEGACY TOOLS (kept behind --legacy-write-file until ADR 0007 is
+superseded; prefer execute_submission):
+
+```tool
+{"name": "write_file", "args": {"path": "/workspace/submission.py"}}
+===FILE_BODY===
+... your full file ...
+```
+  Legacy: overwrite a file under /workspace. Use execute_submission instead.
+
+```tool
+{"name": "bash", "args": {"cmd": "python3 /tasks/2048/dev_runner.py /workspace/submission.py"}}
+```
+  Legacy: run dev_runner against the file written by write_file.
+  Use execute_submission instead (single tool, sandboxed, structured output).
 
 You are in a ralph loop: write → bash dev_runner → observe → refine → repeat
 until finished or budget exhausted. Be deliberate — quality matters more than

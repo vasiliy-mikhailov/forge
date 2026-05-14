@@ -1190,3 +1190,27 @@ def test_when_loop_ends_then_last_successful_execute_submission_body_promoted_to
         f'expected GOOD body (last successful execute_submission); got:\n'
         f'{actual!r}'
     )
+
+
+
+def test_when_system_prompt_inspected_then_advertises_execute_submission_as_primary_tool():
+    """Cycle 66: per ADR 0008, SYSTEM_PROMPT must advertise execute_submission."""
+    from src.tier1.agent_loop import SYSTEM_PROMPT
+
+    # Required tool advertisements
+    assert 'execute_submission' in SYSTEM_PROMPT, (
+        "SYSTEM_PROMPT must advertise execute_submission per ADR 0008. "
+        f"first 200 chars: {SYSTEM_PROMPT[:200]!r}"
+    )
+    assert 'view' in SYSTEM_PROMPT, 'SYSTEM_PROMPT must advertise view'
+    assert 'finish' in SYSTEM_PROMPT, 'SYSTEM_PROMPT must advertise finish'
+
+    # Required spec pointer
+    assert '/tasks/2048/SKILL_tier1.md' in SYSTEM_PROMPT, (
+        'SYSTEM_PROMPT must point the model at the SKILL spec file'
+    )
+
+    # Length sanity
+    assert 1000 <= len(SYSTEM_PROMPT) <= 6000, (
+        f'SYSTEM_PROMPT length {len(SYSTEM_PROMPT)} outside [1000, 6000]'
+    )
