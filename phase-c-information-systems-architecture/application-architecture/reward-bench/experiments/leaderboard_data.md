@@ -73,6 +73,29 @@ config × model cell.
     leaderboard still got a 3-trial data point instead of a no-data
     crash. This is the test-spec-backed artifact rule paying off.
 
+### Cycle 36 campaign (supervisor active, iters100)
+
+- **Config**: `BenchConfig(max_iters=100, n_trials=3, temperature=0.7,
+  hard_wall_sec=60.0, supervisor_every_k=10)` — supervisor consults
+  LlmSupervisor (ADR 0001+0005) every 10 iters and forces a finish on
+  stop_recommended.
+- **Per-trial mean**: `[3809.0, 0.0, 6261.0]`
+- **Aggregate**: `mean_of_means=3356.7 best_mean=6261.0 worst_mean=0.0`
+- **Max tile**: **1024** (best trial)
+- **Walltime**: 583 s (9:42 for 3 trials)
+- **Artifact**: `experiments/2026-05-13-iters100-T07-n3.json`
+- **Notes**:
+  - **best_mean lift: 5932 -> 6261 (+5.5%)** with supervisor wired.
+    First trial saw a clear improvement; trial 3 even higher.
+  - Trial 2 SyntaxError sentinel (ADR 0002) again — submission was
+    invalid Python. Supervisor doesn't help submissions that don't
+    parse.
+  - Walltime is +5% over cycle-29 (583 vs 558 s) — supervisor adds
+    ~10 LLM calls per 100 iters. Net cost trivial.
+  - Plateau-stop never fired in this run (no trial finished early via
+    the supervisor) — at max_iters=100 the model is still climbing
+    when iters run out, not plateauing.
+
 
 ## Reference baselines
 

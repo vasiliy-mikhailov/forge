@@ -6,17 +6,18 @@
     "temperature": 0.7,
     "max_no_improve": 999999,
     "finish_floor": 0.0,
-    "hard_wall_sec": 60.0
+    "hard_wall_sec": 60.0,
+    "supervisor_every_k": 10
   },
   "n_trials": 3,
   "per_trial_mean": [
-    5932.4,
-    0.4,
-    0.0
+    3809.0,
+    0.0,
+    6261.0
   ],
-  "mean_of_means": 1977.5999999999997,
-  "best_mean": 5932.4,
+  "mean_of_means": 3356.6666666666665,
+  "best_mean": 6261.0,
   "worst_mean": 0.0,
   "max_max_tile": 1024,
-  "aggregate_walltime_sec": 0.5909681288758293
+  "aggregate_walltime_sec": 2.324925996013917
 }
