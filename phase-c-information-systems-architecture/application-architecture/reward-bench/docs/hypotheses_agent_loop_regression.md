@@ -36,12 +36,42 @@ delta).
 | 48 | #1 best-snapshot+restore | LANDED | UNTESTABLE — model never ran dev_runner during the campaign measurement, so the snapshot path never fired. Needs the model to call dev_runner first. |
 | 50 | #2 finish-floor (7211) | LANDED | Loop CORRECTLY rejects premature finish (verified live: 2x finish-rejected harness markers in campaign 17). But the model spent 100 iters writing code without ever calling dev_runner — the rejection alone doesn't force dev_runner usage. Result: trial 1 SyntaxError sentinel. |
 | 51 | #9 parser robustness | LANDED | Loop no longer crashes on malformed tool JSON. Defensive fix; not the score lever. |
+| 52 | #7 max_tokens=12288 | LANDED | NO score lift. Same campaign shape: model writes Gym-style `def solve(grid) -> int` over 57+ iters without calling dev_runner. The tighter reply cap did NOT change the prompt-following behaviour. |
 
 **Key finding from cycle-51 measurement (campaign 17):** the model in our active loop wrote 100 iterations of code but NEVER called `bash python3 /tasks/2048/dev_runner.py /workspace/submission.py` even when finish was rejected. Legacy loop's model uses dev_runner naturally — there must be a behaviour difference in HOW we present the rejection or HOW we shape replies.
 
 Best guess: hypothesis #7 (`max_tokens=12288` vs ours `32768`) — legacy's tighter cap forces the model to be more decisive per turn, possibly making it choose dev_runner instead of writing long code-only replies. Worth trying next.
 
 Alternative: the model needs a stronger nudge in the finish-rejected observation, e.g. "STOP writing more code — run dev_runner NOW".
+
+## Deeper analysis after cycles 48-52
+
+Five hypotheses landed in code, only one (cycle 50 finish-floor) had a
+verifiable on-the-wire effect (the harness `finish rejected` marker
+fired live). None moved the canonical-eval score off zero because the
+underlying behaviour gap remains: **the model under our active loop
+writes Gym-style API submissions (`def solve(grid) -> int`) instead
+of the SKILL_tier1-mandated `class Solver` + `move(self, board) ->
+'W'/'A'/'S'/'D'`. Under the legacy loop the same model writes the
+correct API after reading SKILL_tier1.md.**
+
+Since SYSTEM_PROMPT + FIRST_USER are now byte-identical to legacy's
+(cycles 39 + 47), the gap must be in:
+
+- **A. The condenser hook** (cycle 35 wired LlmCondenser into main()).
+  Legacy ran in cycle 40 WITHOUT the condenser. The condenser sends
+  separate completion requests; that may pollute the model's
+  conversational state OR rewrite the FIRST_USER content past a
+  certain turn count.
+- **B. The supervisor hook** (cycle 33 wired SupervisorPort). Legacy
+  has no supervisor.
+- **C. Bash/write_file/finish observation formatting differences**.
+- **D. The order in which observations vs tool calls vs reply text
+  reach the model**.
+
+Recommended next experiment: run the active loop WITHOUT the condenser
+and supervisor hooks (set supervisor_every_k=0 and use NullCondenser).
+If the model then behaves like under legacy, we know the culprit.
 
 ## How to use this list
 
