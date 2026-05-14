@@ -12,6 +12,11 @@ This is the test-backed replacement for the deleted ad-hoc
 **artifacts-come-from-tests** rule, every leaderboard data point
 must come from a pytest test that pins its shape.
 
+`supervisor_every_k=10` was added in cycle 36 — every 10 iters the
+bench LLM is asked (via LlmSupervisor) to judge plateau from the
+real dev_runner sweep, and the agent loop terminates early on
+stop_recommended=True. See ADR 0005.
+
 `hard_wall_sec=60` was added in cycle 26 to bound the per-trial
 score_submission walltime (per ADR 0006 layer 1). Without this knob
 the cycle-22 attempt hung 34+ minutes on a slow Solver. With it,
