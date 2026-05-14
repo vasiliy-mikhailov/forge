@@ -168,6 +168,43 @@ runner because cycle 40 proved a ~40 percent regression in our
 | Model | Seed | T | Iters | Mean | Median | Max | Min | Top tile | Artifact |
 |---|---|---|---|---|---|---|---|---|---|
 
+### Cycle 67 active-loop campaign (ADR 0008 end-to-end live)
+
+Trial 1: **mean_score=15,918.6 median=17,016 max_tile=2048 n_games=20**
+
+This is the first canonical-seed score on the ACTIVE
+`src/tier1/agent_loop.py` that BEATS the legacy `legacy_agent_loop.py`
+reference (cycle 40: 11,734). Achieved against qwen3.6-27b-awq under
+the same vLLM endpoint, same SKILL_tier1.md contract.
+
+Approaches the user-stated target ("close to 15k") and matches the
+historical mistral-small-24b 15,920 figure from `_bak`'s legacy
+campaign.
+
+**Closes the cycle-40 regression.** The bisect produced 9 landed
+fixes:
+  - cycle 48: best-snapshot + restore
+  - cycle 50: finish-floor enforcement
+  - cycle 51: parser robustness
+  - cycle 52: max_tokens=12288 (matching legacy)
+  - cycle 53: protocol validator
+  - cycle 58: execute_submission tool dispatcher (ADR 0008 primary)
+  - cycle 63: parser reads execute_submission JSON observation
+  - cycle 65: finish-time body promotion to submission.py
+  - cycle 66: SYSTEM_PROMPT advertises execute_submission as primary
+
+Live evidence the model is iterating productively:
+  iter 9  → new best dev MEAN=5063
+  iter 10 → 5737
+  iter 12 → 11697
+  iter 13 → 15611
+  iter 14 → 18005
+  finish → canonical mean=15,918
+
+ADR 0007 (legacy blessed runner) is on track to be superseded once
+trials 2/3 confirm consistency. Docker isolation (ADR 0006 layer 2)
+is the remaining hardening cycle.
+
 ## Reference baselines
 
 ### `tasks/2048/baselines/reference_fsm.py` (hand-written)
