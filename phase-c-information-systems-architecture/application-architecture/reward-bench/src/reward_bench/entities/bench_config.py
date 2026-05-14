@@ -22,3 +22,4 @@ class BenchConfig:
     max_no_improve: int = 999999
     finish_floor: float = 0.0
     hard_wall_sec: float = 0.0
+    supervisor_every_k: int = 0  # cycle 35: ADR 0005 cadence; 0 = disabled

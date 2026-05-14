@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import Iterable, Tuple
 
 from src.reward_bench.adapters.llm_condenser import LlmCondenser
+from src.reward_bench.adapters.llm_supervisor import LlmSupervisor
 from src.reward_bench.entities.bench_config import BenchConfig
 from src.reward_bench.entities.condenser_config import CondenserConfig
 from src.reward_bench.entities.model_target import ModelTarget
@@ -112,6 +113,38 @@ def _build_condenser(target: ModelTarget, base_url: str, api_key: str) -> LlmCon
     return LlmCondenser(summarise=summarise, model_id=target.id)
 
 
+def _build_ask(base_url: str, api_key: str, served_name: str):
+    """Cycle 35: bind a one-shot LLM completion against the bench endpoint.
+
+    The supervisor uses this to ask the bench model (per ADR 0001) to
+    judge plateau from sweep data."""
+    def ask(prompt: str) -> str:
+        body = json.dumps({
+            'model': served_name,
+            'messages': [{'role': 'user', 'content': prompt}],
+            'temperature': 0.0,
+            'max_tokens': 512,
+        }).encode()
+        req = urllib.request.Request(
+            f'{base_url}/v1/chat/completions',
+            data=body, method='POST',
+            headers={
+                'Content-Type': 'application/json',
+                'Authorization': f'Bearer {api_key}',
+            },
+        )
+        with urllib.request.urlopen(req, timeout=60) as r:
+            data = json.loads(r.read())
+        return data['choices'][0]['message']['content']
+    return ask
+
+
+def _build_supervisor(target: ModelTarget, base_url: str, api_key: str) -> LlmSupervisor:
+    """Cycle 35: same-model supervisor per ADR 0001 + ADR 0005."""
+    ask = _build_ask(base_url, api_key, target.served_name)
+    return LlmSupervisor(ask=ask, model_id=target.id)
+
+
 def main(
     model_id: str = 'qwen3.6-27b-awq',
     seeds: Iterable[int] = range(1000, 1020),
@@ -138,6 +171,7 @@ def main(
     def condense(messages):
         return condenser.condense(messages, condenser_config)
 
+    supervisor = _build_supervisor(target, base_url, api_key)
     run_loop(
         workspace=workspace,
         env_dir=ENV_DIR,
@@ -147,6 +181,8 @@ def main(
         max_iters=config.max_iters,
         condense=condense,
         temperature=config.temperature,
+        supervisor=supervisor,
+        supervisor_every_k=config.supervisor_every_k,
     )
 
     submission_path = workspace / 'submission.py'

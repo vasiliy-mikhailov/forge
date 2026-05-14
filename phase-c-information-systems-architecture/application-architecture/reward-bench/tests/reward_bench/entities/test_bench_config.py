@@ -56,3 +56,11 @@ def test_when_bench_config_constructed_with_hard_wall_sec_override_then_field_pr
 
     # Assert
     assert cfg.hard_wall_sec == 60.0
+
+
+
+def test_when_bench_config_default_then_supervisor_every_k_is_zero():
+    """Cycle 35: ADR 0005 cadence knob. Default 0 keeps cycle-12 behavior."""
+    from src.reward_bench.entities.bench_config import BenchConfig
+    assert BenchConfig().supervisor_every_k == 0
+    assert BenchConfig(supervisor_every_k=10).supervisor_every_k == 10

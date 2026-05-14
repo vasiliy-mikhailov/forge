@@ -164,3 +164,56 @@ def test_when_main_invoked_then_config_hard_wall_sec_passed_to_score_submission(
         f'hard_wall_sec not forwarded; '
         f'kwargs={captured["calls"][0]["kwargs"]}'
     )
+
+
+
+def test_when_main_invoked_then_config_supervisor_every_k_passed_to_run_loop(monkeypatch, tmp_path):
+    """Cycle 35: pin the BenchConfig.supervisor_every_k + LlmSupervisor
+    -> run_loop wiring."""
+    from src.reward_bench.frameworks import main as main_mod
+    from src.reward_bench.use_cases.supervisor_port import SupervisorPort
+    from src.tier1.entities.attempt_result import AttemptResult
+    from src.tier1.entities.game_result import GameResult
+
+    # Arrange — short-circuit serving + score_submission; recording run_loop.
+    monkeypatch.setattr(main_mod, 'ensure_serving',
+                        lambda: 'http://stub')
+    monkeypatch.setenv('VLLM_API_KEY', 'stub')
+
+    captured = {'kwargs': None}
+    def fake_run_loop(*, workspace, **kwargs):
+        captured['kwargs'] = kwargs
+        (workspace / 'submission.py').write_text(
+            'class Solver:\n'
+            '    def move(self, board):\n'
+            "        return 'W'\n"
+        )
+    monkeypatch.setattr(main_mod, 'run_loop', fake_run_loop)
+
+    def stub_score_submission(*args, **kwargs):
+        return AttemptResult(
+            mean_score=0.0, median_score=0.0, std_score=0.0,
+            max_max_tile=2, n_games=1, aggregate_walltime_sec=0.0,
+            games=(GameResult(seed=1, score=0, max_tile=2, moves=0,
+                              final_state='lost', walltime_sec=0.0),),
+        )
+    monkeypatch.setattr(main_mod, 'score_submission', stub_score_submission)
+
+    # Act
+    main_mod.main(
+        model_id='qwen3.6-27b-awq',
+        config=BenchConfig(max_iters=1, n_trials=1, temperature=0.0,
+                           hard_wall_sec=0.0, supervisor_every_k=7),
+    )
+
+    # Assert
+    assert captured['kwargs'] is not None, 'run_loop not invoked'
+    assert captured['kwargs'].get('supervisor_every_k') == 7, (
+        f"supervisor_every_k not forwarded; "
+        f"kwargs={captured['kwargs']}"
+    )
+    supervisor = captured['kwargs'].get('supervisor')
+    assert supervisor is not None, 'supervisor kwarg missing'
+    assert isinstance(supervisor, SupervisorPort), (
+        f"supervisor does not satisfy SupervisorPort; got {type(supervisor).__name__}"
+    )
