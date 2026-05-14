@@ -393,9 +393,15 @@ is your best version, not the latest experimental one."""
 FIRST_USER = "Start the task. Read /tasks/2048/SKILL_tier1.md to learn the constraints, then optionally /env/env_2048.py for env details, then write your submission to /workspace/submission.py and iterate. Use the fenced-block JSON tool format the system prompt described."
 
 
-def _call_model(vllm_base_url, vllm_api_key, messages, max_tokens=12288, temperature=0.0):
+def _call_model(vllm_base_url, vllm_api_key, messages, max_tokens=12288, temperature=0.0,
+                model_id='qwen3.6-27b-awq'):
+    # Cycle 74: model_id is the served name vLLM advertises. Default
+    # preserves cycle-11 hardcoded behaviour for back-compat with old
+    # callers; main()/run_loop now pass the target.served_name through
+    # so a swapped container actually gets the right model name in
+    # the payload (otherwise vLLM returns HTTP 404).
     payload = json.dumps({
-        'model': 'qwen3.6-27b-awq',
+        'model': model_id,
         'messages': messages,
         'max_tokens': max_tokens,
         'temperature': temperature,
@@ -422,7 +428,7 @@ def run_loop(workspace, env_dir, tasks_dir, vllm_base_url, vllm_api_key,
              max_iters, condense=_identity_condense, temperature=0.0,
              supervisor=None, supervisor_every_k=0,
              agent_loop_wall_sec=0.0, max_no_tool_call_iters=0,
-             finish_floor=0.0):
+             finish_floor=0.0, model_id='qwen3.6-27b-awq'):
     """Drive the interactive agent loop for at most max_iters turns.
 
     `condense` is an opaque callable that takes the message tuple and
@@ -478,7 +484,7 @@ def run_loop(workspace, env_dir, tasks_dir, vllm_base_url, vllm_api_key,
         iter_n += 1
         messages = list(condense(tuple(messages)))
         reply = _call_model(vllm_base_url, vllm_api_key, messages,
-                            temperature=temperature)
+                            temperature=temperature, model_id=model_id)
         messages.append({'role': 'assistant', 'content': reply})
         tool_calls = parse_tool_calls(reply)
         if not tool_calls:

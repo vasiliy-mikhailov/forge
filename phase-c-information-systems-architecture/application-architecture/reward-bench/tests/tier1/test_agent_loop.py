@@ -1290,3 +1290,65 @@ def test_when_execute_submission_called_with_slow_solver_then_per_seed_reports_w
     assert isinstance(payload['mean'], (int, float))
     assert payload['mean'] == payload['mean']  # not NaN
     assert isinstance(payload['max_tile_best'], int)
+
+
+
+def test_when_call_model_invoked_then_payload_model_field_matches_served_name(monkeypatch):
+    """Cycle 74: _call_model must use model_id in the payload, not the
+    hardcoded cycle-11 'qwen3.6-27b-awq'.
+
+    Real-world repro: cycle 72 smoke after cycle 73 fix. Container
+    swapped to qwen3.6-27b-fp8; payload still said 'qwen3.6-27b-awq';
+    vLLM returned HTTP 404."""
+    import io
+    import json as _json
+    import urllib.request
+
+    from src.tier1 import agent_loop
+
+    captured = {}
+
+    class _StopHere(RuntimeError):
+        pass
+
+    class _FakeResponse:
+        def __init__(self):
+            pass
+        def __enter__(self):
+            return self
+        def __exit__(self, *a):
+            return False
+        def read(self):
+            # Return a minimally valid chat-completion response so
+            # the caller doesn't crash on the parse, but we'll
+            # short-circuit before this with the captured payload.
+            return _json.dumps({
+                "choices": [{"message": {"content": "ok"}}]
+            }).encode()
+
+    def fake_urlopen(req, timeout=None):
+        captured["data"] = req.data
+        return _FakeResponse()
+
+    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+
+    out = agent_loop._call_model(
+        vllm_base_url="http://stub",
+        vllm_api_key="k",
+        messages=[{"role": "user", "content": "hi"}],
+        model_id="qwen3.6-27b-fp8",
+    )
+
+    assert "data" in captured, "_call_model did not call urlopen"
+    payload = _json.loads(captured["data"].decode())
+    assert payload["model"] == "qwen3.6-27b-fp8", (
+        f"_call_model put model={payload['model']!r} in payload; "
+        f"should have used the model_id kwarg"
+    )
+
+    # Back-compat: default keeps cycle-11 historical value so old
+    # callers (some tests) don't break silently.
+    sig = agent_loop._call_model.__defaults__
+    assert "qwen3.6-27b-awq" in sig or any(
+        "qwen3.6-27b-awq" == d for d in sig
+    ), f"cycle-74 changed the default model_id; expected back-compat"

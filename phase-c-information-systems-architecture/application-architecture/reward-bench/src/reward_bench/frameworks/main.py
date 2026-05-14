@@ -190,6 +190,9 @@ def main(
         supervisor=supervisor,
         supervisor_every_k=config.supervisor_every_k,
         finish_floor=config.finish_floor,  # cycle 50 / hypothesis #2
+        model_id=target.served_name,       # cycle 74: don't ask vLLM for AWQ
+                                           # when the container serves something
+                                           # else; otherwise HTTP 404.
     )
 
     submission_path = workspace / 'submission.py'
