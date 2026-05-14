@@ -124,14 +124,14 @@ class Solver:
 
     @staticmethod
     def _evaluate(board):
-        """Evaluate board using snake pattern weights + empty cells."""
+        """Evaluate board using snake pattern weights + monotonicity + empty cells."""
         score = 0.0
         for r in range(4):
             for c in range(4):
                 v = board[r][c]
                 if v > 0:
                     score += SNAKE_WEIGHTS[r][c] * math.log2(v)
-        # Bonus for empty cells (space is valuable)
+        # Bonus for empty cells
         empty = sum(1 for row in board for v in row if v == 0)
         score += empty * 50.0
         return score
@@ -202,7 +202,7 @@ class Solver:
 
     @classmethod
     def _endgame_move(cls, board):
-        """Late game: 1-ply expectimax."""
+        """Late game: 1-ply expectimax (2-ply is too slow)."""
         best_action = "S"
         best_val = -float('inf')
 

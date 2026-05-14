@@ -156,6 +156,18 @@ the model is NOT the bottleneck. Our pipeline broke; _bak's didn't.
 Next: cycle 41 — bisect what diverged between _bak/bin/agent_loop.py
 and src/tier1/agent_loop.py.
 
+## Multi-model per-model bench (cycle 41+, _bak/bin/agent_loop.py runner)
+
+Per-model leaderboard cells produced by
+`tests/reward_bench/frameworks/campaigns/test_per_model_bak_runner.py`
+(cycle 41). Each row = one model x one seed, scored on canonical
+seeds 1000-1019. High variance — `_bak`'s `agent_loop.py` is the
+runner because cycle 40 proved a ~40 percent regression in our
+`src/tier1/agent_loop.py`.
+
+| Model | Seed | T | Iters | Mean | Median | Max | Min | Top tile | Artifact |
+|---|---|---|---|---|---|---|---|---|---|
+
 ## Reference baselines
 
 ### `tasks/2048/baselines/reference_fsm.py` (hand-written)
@@ -183,3 +195,4 @@ and src/tier1/agent_loop.py.
 Knob tuning alone may NOT close the gap. Cycle-22 data suggests the
 model plateaus around 3000-3500; supervisor + better prompts +
 restart-on-plateau may be required.
+| `qwen3.6-27b-awq` | 1 | 0.7 | 200 | 2551 | 2432 | 4948 | 992 | 256 | `2026-05-14-qwen3.6-27b-awq-bak-runner.json` |
