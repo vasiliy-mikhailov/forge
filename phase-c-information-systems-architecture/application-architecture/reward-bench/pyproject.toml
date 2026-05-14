@@ -1,5 +1,6 @@
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 markers = [
+  "smoke: ADR 0009 multi-model smoke bench",
     "campaign: long-running live-model campaign tests; opt-in via -m campaign",
 ]
