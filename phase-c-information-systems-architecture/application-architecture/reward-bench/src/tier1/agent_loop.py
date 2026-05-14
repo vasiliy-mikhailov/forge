@@ -51,6 +51,29 @@ def _trim(s, n=4000):
     return s[: n - 200] + f"\n... [truncated, total {len(s)} chars]"
 
 
+# Cycle 34: dev_runner emits a summary line shaped like
+#   MEAN=5000.0  MEDIAN=4800.0  max-tile-best=512  (1.5s total)
+# This regex extracts mean, max_tile, walltime to feed the supervisor
+# sweep per ADR 0005. None when no match (the caller emits a zero-filled
+# placeholder so n_samples == iter_count).
+_DEV_RUNNER_SUMMARY_RE = re.compile(
+    r"MEAN=([0-9]+(?:\.[0-9]+)?)\s+"
+    r"MEDIAN=[0-9]+(?:\.[0-9]+)?\s+"
+    r"max-tile-best=([0-9]+)\s+"
+    r"\(([0-9]+(?:\.[0-9]+)?)s total\)"
+)
+
+
+def _parse_dev_runner_summary(obs_text):
+    """Return (mean_score, max_tile, walltime_sec) or None if obs_text
+    has no dev_runner summary line."""
+    m = _DEV_RUNNER_SUMMARY_RE.search(obs_text)
+    if m is None:
+        return None
+    return (float(m.group(1)), int(m.group(2)), float(m.group(3)))
+
+
+
 def _virt_to_host(virt, workspace, env_dir, tasks_dir):
     """Resolve a model-supplied virtual path to a host path. Returns None if
     the path doesn't sit under one of the allowed virtual roots."""
@@ -279,6 +302,8 @@ def run_loop(workspace, env_dir, tasks_dir, vllm_base_url, vllm_api_key,
     ]
     finished = False
     iter_n = 0
+    # Cycle 34: accumulator for supervisor sweep samples per ADR 0005.
+    _sweep_samples = []
     while iter_n < max_iters and not finished:
         iter_n += 1
         messages = list(condense(tuple(messages)))
@@ -298,6 +323,18 @@ def run_loop(workspace, env_dir, tasks_dir, vllm_base_url, vllm_api_key,
             if name == 'finish':
                 finished = True
         messages.append({'role': 'user', 'content': '\n\n'.join(observations)})
+        # Cycle 34: parse the iteration's observations for a dev_runner
+        # summary line; record a Sample or a zero-filled placeholder.
+        _parsed = None
+        for _obs in observations:
+            _parsed = _parse_dev_runner_summary(_obs)
+            if _parsed is not None:
+                break
+        if _parsed is None:
+            _sweep_samples.append((iter_n, 0.0, 0, 0.0))
+        else:
+            _mean, _max_tile, _walltime = _parsed
+            _sweep_samples.append((iter_n, _mean, _max_tile, _walltime))
         # Cycle 33 (ADR 0005): supervisor hook. Every K iters, ask the
         # supervisor whether to stop. We feed it a minimal per-iter sample
         # `(iter_n, 0.0, 0, 0.0)` for now — cycle 34 will parse real
@@ -306,7 +343,7 @@ def run_loop(workspace, env_dir, tasks_dir, vllm_base_url, vllm_api_key,
                 and supervisor_every_k > 0
                 and iter_n % supervisor_every_k == 0
                 and not finished):
-            sweep = tuple((i, 0.0, 0, 0.0) for i in range(1, iter_n + 1))
+            sweep = tuple(_sweep_samples)
             decision = supervisor.judge(sweep)
             if decision.stop_recommended:
                 messages.append({

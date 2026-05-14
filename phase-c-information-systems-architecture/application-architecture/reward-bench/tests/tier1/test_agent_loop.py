@@ -349,3 +349,107 @@ def test_when_supervisor_every_k_zero_then_supervisor_not_consulted(monkeypatch,
         f"supervisor consulted {judge_counter['n']} times with k=0 default"
     )
     assert result['finished'] is True  # via the normal finish path
+
+
+
+def test_when_dev_runner_output_observed_then_sample_recorded_into_supervisor_sweep(monkeypatch, tmp_path):
+    """Cycle 34: pin dev_runner parser feeding real samples to supervisor."""
+    from src.tier1 import agent_loop as al
+    from src.reward_bench.entities.supervisor_decision import SupervisorDecision
+
+    # Arrange — model emits a bash tool call; execute_tool returns a
+    # dev_runner-shaped summary line.
+    def fake_call_model(*args, **kwargs):
+        return (
+            "```tool\n"
+            "{\"name\": \"bash\", "
+            "\"args\": {\"cmd\": \"python3 /tasks/2048/dev_runner.py /workspace/submission.py\"}}\n"
+            "```"
+        )
+    monkeypatch.setattr(al, '_call_model', fake_call_model)
+
+    def fake_execute_tool(name, args, *_, **__):
+        return (
+            "=== dev-runner ===\n"
+            "  seed= 1  score=5000  max_tile= 512  moves=999  state=lost (1.5s)\n"
+            "\n  MEAN=5000.0  MEDIAN=4800.0  max-tile-best=512  (1.5s total)"
+        )
+    monkeypatch.setattr(al, 'execute_tool', fake_execute_tool)
+
+    captured = {'sweeps': []}
+    class _RecordingSupervisor:
+        def judge(self, sweep):
+            captured['sweeps'].append(sweep)
+            return SupervisorDecision(
+                plateau=False, stop_recommended=False, reasoning='recorded',
+            )
+
+    workspace = tmp_path / 'ws'; workspace.mkdir()
+    env_dir = tmp_path / 'env'; env_dir.mkdir()
+    tasks_dir = tmp_path / 'tasks'; tasks_dir.mkdir()
+
+    # Act
+    al.run_loop(
+        workspace=workspace, env_dir=env_dir, tasks_dir=tasks_dir,
+        vllm_base_url='http://stub', vllm_api_key='stub',
+        max_iters=1,
+        supervisor=_RecordingSupervisor(),
+        supervisor_every_k=1,
+    )
+
+    # Assert
+    assert len(captured['sweeps']) == 1, (
+        f"supervisor consulted {len(captured['sweeps'])} times, expected 1"
+    )
+    sweep = captured['sweeps'][0]
+    assert len(sweep) == 1, f"sweep len = {len(sweep)}, expected 1"
+    iter_no, mean_score, max_tile, walltime_sec = sweep[0]
+    assert iter_no == 1, f"iter_no={iter_no}"
+    assert mean_score == 5000.0, f"mean_score={mean_score}"
+    assert max_tile == 512, f"max_tile={max_tile}"
+    assert walltime_sec == 1.5, f"walltime_sec={walltime_sec}"
+
+
+def test_when_no_dev_runner_line_then_supervisor_sweep_has_placeholder_sample(monkeypatch, tmp_path):
+    """No dev_runner output -> placeholder sample (preserves n_samples
+    == iter_count). Sample fields are zero-filled."""
+    from src.tier1 import agent_loop as al
+    from src.reward_bench.entities.supervisor_decision import SupervisorDecision
+
+    def fake_call_model(*args, **kwargs):
+        return (
+            "```tool\n"
+            "{\"name\": \"view\", \"args\": {\"path\": \"/workspace\"}}\n"
+            "```"
+        )
+    monkeypatch.setattr(al, '_call_model', fake_call_model)
+
+    captured = {'sweeps': []}
+    class _RecordingSupervisor:
+        def judge(self, sweep):
+            captured['sweeps'].append(sweep)
+            return SupervisorDecision(
+                plateau=False, stop_recommended=False, reasoning='ok',
+            )
+
+    workspace = tmp_path / 'ws'; workspace.mkdir()
+    env_dir = tmp_path / 'env'; env_dir.mkdir()
+    tasks_dir = tmp_path / 'tasks'; tasks_dir.mkdir()
+
+    # Act
+    al.run_loop(
+        workspace=workspace, env_dir=env_dir, tasks_dir=tasks_dir,
+        vllm_base_url='http://stub', vllm_api_key='stub',
+        max_iters=1,
+        supervisor=_RecordingSupervisor(),
+        supervisor_every_k=1,
+    )
+
+    # Assert — exactly one placeholder sample with zeros
+    sweep = captured['sweeps'][0]
+    assert len(sweep) == 1
+    iter_no, mean_score, max_tile, walltime_sec = sweep[0]
+    assert iter_no == 1
+    assert mean_score == 0.0
+    assert max_tile == 0
+    assert walltime_sec == 0.0
