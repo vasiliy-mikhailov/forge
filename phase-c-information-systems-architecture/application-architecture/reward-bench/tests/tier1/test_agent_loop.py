@@ -708,3 +708,30 @@ def test_when_parse_tool_calls_given_non_dict_root_then_skipped():
     body = "```tool\n[1,2,3]\n```"
     out = parse_tool_calls(body)
     assert out == []
+
+
+
+def test_when_call_model_invoked_then_max_tokens_matches_legacy_budget(monkeypatch):
+    """Cycle 52 / hypothesis #7: _call_model uses max_tokens=12288."""
+    import json
+    from src.tier1 import agent_loop as al
+
+    captured = {'payload': None}
+    class _MockResp:
+        status = 200
+        def __enter__(self): return self
+        def __exit__(self, *a): return False
+        def read(self):
+            return b'{"choices":[{"message":{"content":"ok"}}]}'
+    def fake_urlopen(req, timeout=600):
+        captured['payload'] = json.loads(req.data.decode())
+        return _MockResp()
+    monkeypatch.setattr(al.urllib.request, 'urlopen', fake_urlopen)
+
+    al._call_model('http://stub', 'stub', [{'role': 'user', 'content': 'hi'}])
+
+    assert captured['payload'] is not None, 'urlopen not intercepted'
+    assert captured['payload']['max_tokens'] == 12288, (
+        f"max_tokens should be 12288 (legacy budget); got "
+        f"{captured['payload']['max_tokens']}"
+    )

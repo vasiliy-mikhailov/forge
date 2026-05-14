@@ -224,7 +224,7 @@ is your best version, not the latest experimental one."""
 FIRST_USER = "Start the task. Read /tasks/2048/SKILL_tier1.md to learn the constraints, then optionally /env/env_2048.py for env details, then write your submission to /workspace/submission.py and iterate. Use the fenced-block JSON tool format the system prompt described."
 
 
-def _call_model(vllm_base_url, vllm_api_key, messages, max_tokens=32768, temperature=0.0):
+def _call_model(vllm_base_url, vllm_api_key, messages, max_tokens=12288, temperature=0.0):
     payload = json.dumps({
         'model': 'qwen3.6-27b-awq',
         'messages': messages,
