@@ -83,8 +83,32 @@ _DEV_RUNNER_SUMMARY_RE = re.compile(
 
 
 def _parse_dev_runner_summary(obs_text):
-    """Return (mean_score, max_tile, walltime_sec) or None if obs_text
-    has no dev_runner summary line."""
+    """Return (mean_score, max_tile, walltime_sec) or None.
+
+    Cycle 34: matches the legacy bash dev_runner stdout summary line.
+    Cycle 63 (ADR 0008): ALSO matches the execute_submission JSON
+    observation wrapped in <observation>...</observation> so the active
+    tool feeds the same best_dev_mean / supervisor sweep / finish-floor
+    accumulators as the legacy path.
+    """
+    # Active path (ADR 0008): JSON observation.
+    if "<observation>" in obs_text:
+        try:
+            import json as _json
+            start = obs_text.index("<observation>") + len("<observation>")
+            end = obs_text.index("</observation>", start)
+            payload = _json.loads(obs_text[start:end])
+            if not isinstance(payload, dict):
+                pass
+            elif payload.get("per_seed"):
+                mean = float(payload.get("mean", 0.0))
+                max_tile = int(payload.get("max_tile_best", 0))
+                walltime = float(payload.get("walltime_sec_total", 0.0))
+                return (mean, max_tile, walltime)
+            # Empty per_seed (protocol violation / SyntaxError) => no parse.
+        except (ValueError, KeyError):
+            pass
+    # Legacy path: bash dev_runner stdout regex.
     m = _DEV_RUNNER_SUMMARY_RE.search(obs_text)
     if m is None:
         return None

@@ -1015,3 +1015,67 @@ def test_when_execute_submission_called_with_syntax_error_body_then_observation_
     )
     assert payload['per_seed'] == []
     assert payload['mean'] == 0
+
+
+
+def test_when_execute_submission_observation_observed_then_mean_feeds_best_dev_mean_tracker(monkeypatch, tmp_path):
+    """Cycle 63: pin active-path equivalent of cycle-34 parser."""
+    from src.tier1 import agent_loop as al
+    from src.reward_bench.entities.supervisor_decision import SupervisorDecision
+
+    workspace = tmp_path / 'ws'; workspace.mkdir()
+    env_dir = tmp_path / 'env'; env_dir.mkdir()
+    tasks_dir = tmp_path / 'tasks'; tasks_dir.mkdir()
+    (workspace / 'submission.py').write_text('# placeholder')
+
+    script = iter([
+        # iter 1: execute_submission returning mean=1000
+        '```tool\n{"name": "execute_submission", "args": {}}\n===FILE_BODY===\n# code v1\n```',
+        # iter 2: execute_submission returning mean=500 (worse)
+        '```tool\n{"name": "execute_submission", "args": {}}\n===FILE_BODY===\n# code v2\n```',
+        # iter 3: finish
+        '```tool\n{"name": "finish", "args": {"note": "done"}}\n```',
+    ])
+    def fake_call_model(*args, **kwargs):
+        return next(script)
+    monkeypatch.setattr(al, '_call_model', fake_call_model)
+
+    obs_iter = iter([
+        '<observation>{"protocol_violations": [], "per_seed": [{"seed":1,"score":1000,"max_tile":256}], "mean": 1000.0, "median": 1000, "max_tile_best": 256, "walltime_sec_total": 1.5}</observation>',
+        '<observation>{"protocol_violations": [], "per_seed": [{"seed":1,"score":500,"max_tile":128}], "mean": 500.0, "median": 500, "max_tile_best": 128, "walltime_sec_total": 0.8}</observation>',
+    ])
+    def fake_execute_tool(name, args, ws_arg, *_, **__):
+        if name == 'execute_submission':
+            return next(obs_iter)
+        if name == 'finish':
+            return '<finish>ok</finish>'
+        return '<ok>'
+    monkeypatch.setattr(al, 'execute_tool', fake_execute_tool)
+
+    captured = {'sweeps': []}
+    class _RecordingSupervisor:
+        def judge(self, sweep):
+            captured['sweeps'].append(sweep)
+            return SupervisorDecision(
+                plateau=False, stop_recommended=False, reasoning='ok',
+            )
+
+    al.run_loop(
+        workspace=workspace, env_dir=env_dir, tasks_dir=tasks_dir,
+        vllm_base_url='http://stub', vllm_api_key='stub',
+        max_iters=10,
+        supervisor=_RecordingSupervisor(),
+        supervisor_every_k=1,
+    )
+
+    # Cycle 34 sweep contract: each iter's sample is in the latest sweep.
+    assert captured['sweeps'], 'supervisor never called'
+    last_sweep = captured['sweeps'][-1]
+    means = [s[1] for s in last_sweep]
+    assert 1000.0 in means, f'1000.0 not in sweep means {means} — active parser silent'
+    assert 500.0 in means, f'500.0 not in sweep means {means}'
+
+    # Cycle 48 best-snapshot: workspace/submission.best.py should exist
+    # because we observed a new best (1000) on iter 1.
+    best_path = workspace / 'submission.best.py'
+    assert best_path.exists(), 'cycle-48 best-snapshot did not fire — best_dev_mean was never set'
