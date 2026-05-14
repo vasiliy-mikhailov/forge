@@ -116,3 +116,87 @@ def test_when_bench_provisions_inference_then_qwen3_6_27b_awq_serves_with_128k_c
     assert 'qwen3.6-27b-awq' in ids, f'served={ids}'
     matching = [m for m in models['data'] if m['id'] == 'qwen3.6-27b-awq'][0]
     assert matching['max_model_len'] >= 131072, f'max_model_len={matching["max_model_len"]}'
+
+
+
+def test_when_ensure_serving_model_called_with_target_then_docker_run_invoked_with_target_params(monkeypatch):
+    """Cycle 42: pin the docker run argv shape for model-swap provisioning."""
+    from src.tier1 import inference as inf
+    from src.reward_bench.entities.model_target import ModelTarget
+
+    target = ModelTarget(
+        id='devstral-small-2-24b',
+        hf_path='Firworks/Devstral-Small-2-24B-Instruct-2512-nvfp4',
+        served_name='devstral-small-2-24b',
+        max_model_len=131072,
+        tool_call_parser='mistral',
+    )
+
+    # Record every docker call; produce stateful responses simulating
+    # "no container -> after run, container exists at 172.18.0.42".
+    captured = []
+    state = {'brought_up': False}
+    class _Resp:
+        def __init__(self, stdout='', returncode=0):
+            self.stdout = stdout
+            self.returncode = returncode
+            self.stderr = ''
+    def fake_run(cmd, **kwargs):
+        captured.append(list(cmd))
+        # inspect IP: empty until container is "brought up".
+        if cmd[:2] == ['docker', 'inspect']:
+            return _Resp(stdout='172.18.0.42\n' if state['brought_up'] else '')
+        # ps -a — empty (no container yet).
+        if 'ps' in cmd:
+            return _Resp(stdout='')
+        # docker rm -f — no-op.
+        if cmd[:3] == ['docker', 'rm', '-f']:
+            return _Resp()
+        # docker run — flip the flag.
+        if cmd[:2] == ['docker', 'run']:
+            state['brought_up'] = True
+            return _Resp()
+        return _Resp()
+    monkeypatch.setattr(inf.subprocess, 'run', fake_run)
+
+    # Mock urllib so /v1/models returns served_name in body immediately.
+    class _MockResp:
+        status = 200
+        def __init__(self, body):
+            self._body = body
+        def __enter__(self):
+            return self
+        def __exit__(self, *a):
+            return False
+        def read(self):
+            return self._body
+    def fake_urlopen(req, timeout=5):
+        return _MockResp(f'{{"data": [{{"id": "{target.served_name}"}}]}}'.encode())
+    monkeypatch.setattr(inf.urllib.request, 'urlopen', fake_urlopen)
+
+    monkeypatch.setenv('VLLM_API_KEY', 'stub')
+
+    # Act
+    url = inf.ensure_serving_model(target)
+
+    # Assert: URL well-formed
+    assert '172.18.0.42:8000' in url, f'unexpected URL: {url}'
+
+    # Assert: docker run invoked with target params
+    run_cmds = [c for c in captured if c[:2] == ['docker', 'run']]
+    assert run_cmds, f'no docker run cmd captured; got {captured!r}'
+    run_argv = run_cmds[0]
+    joined = ' '.join(run_argv)
+    assert target.hf_path in joined, f'hf_path missing from {joined}'
+    assert f'--served-model-name {target.served_name}' in joined or (
+        '--served-model-name' in run_argv and
+        target.served_name in run_argv
+    )
+    assert f'--max-model-len {target.max_model_len}' in joined or (
+        '--max-model-len' in run_argv and
+        str(target.max_model_len) in run_argv
+    )
+    assert f'--tool-call-parser {target.tool_call_parser}' in joined or (
+        '--tool-call-parser' in run_argv and
+        target.tool_call_parser in run_argv
+    )
