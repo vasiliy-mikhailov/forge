@@ -531,3 +531,65 @@ def test_when_first_user_inspected_then_matches_bak_freeform_variant():
         f"len(actual)={len(FIRST_USER)} len(expected)={len(expected)}\n"
         f"first 200 chars actual: {FIRST_USER[:200]!r}"
     )
+
+
+
+def test_when_run_loop_observes_new_best_dev_mean_then_snapshots_submission_for_restore_at_finish(monkeypatch, tmp_path):
+    """Cycle 48 / hypothesis #1: best-snapshot + restore.
+
+    Model regresses mid-trial: writes good submission, then worse one,
+    then finishes. Active loop currently scores the LATEST = worse one.
+    Legacy loop restores the best snapshot for scoring."""
+    from src.tier1 import agent_loop as al
+
+    workspace = tmp_path / 'ws'; workspace.mkdir()
+    env_dir = tmp_path / 'env'; env_dir.mkdir()
+    tasks_dir = tmp_path / 'tasks'; tasks_dir.mkdir()
+    submission = workspace / 'submission.py'
+
+    script = iter([
+        # iter 1: write good
+        '```tool\n{"name": "write_file", "args": {"path": "/workspace/submission.py"}}\n===FILE_BODY===\n# A\n```',
+        # iter 2: run dev_runner (best MEAN=1000)
+        '```tool\n{"name": "bash", "args": {"cmd": "python3 /tasks/2048/dev_runner.py /workspace/submission.py"}}\n```',
+        # iter 3: write worse
+        '```tool\n{"name": "write_file", "args": {"path": "/workspace/submission.py"}}\n===FILE_BODY===\n# B\n```',
+        # iter 4: run dev_runner (MEAN=500, no new best)
+        '```tool\n{"name": "bash", "args": {"cmd": "python3 /tasks/2048/dev_runner.py /workspace/submission.py"}}\n```',
+        # iter 5: finish
+        '```tool\n{"name": "finish", "args": {"note": "done"}}\n```',
+    ])
+    def fake_call_model(*args, **kwargs):
+        return next(script)
+    monkeypatch.setattr(al, '_call_model', fake_call_model)
+
+    dev_outs = iter([
+        "  MEAN=1000.0  MEDIAN=1000.0  max-tile-best=256  (0.0s total)",
+        "  MEAN=500.0  MEDIAN=500.0  max-tile-best=128  (0.0s total)",
+    ])
+    def fake_execute_tool(name, args, ws_arg, *_, **__):
+        if name == 'write_file':
+            (ws_arg / 'submission.py').write_text(args.get('content', ''))
+            return '<ok>wrote</ok>'
+        if name == 'bash':
+            return next(dev_outs)
+        if name == 'finish':
+            return '<finish>ok</finish>'
+        return '<ok>'
+    monkeypatch.setattr(al, 'execute_tool', fake_execute_tool)
+
+    result = al.run_loop(
+        workspace=workspace, env_dir=env_dir, tasks_dir=tasks_dir,
+        vllm_base_url='http://stub', vllm_api_key='stub',
+        max_iters=10,
+    )
+
+    assert result['finished'] is True, f"loop should finish, got {result!r}"
+    final = submission.read_text()
+    assert final == '# A', (
+        f"submission.py should be restored to best-snapshot '# A' at finish; "
+        f"got {final!r}. Active loop scores LATEST, not best-MEAN snapshot."
+    )
+    best = workspace / 'submission.best.py'
+    assert best.exists(), 'submission.best.py should have been written'
+    assert best.read_text() == '# A'

@@ -7,6 +7,7 @@ currently-implemented mode. Lifted verbatim from _bak/bin/agent_loop.py
 import json
 import os
 import re
+import shutil
 import subprocess
 import urllib.request
 from pathlib import Path
@@ -274,6 +275,13 @@ def run_loop(workspace, env_dir, tasks_dir, vllm_base_url, vllm_api_key,
     import time as _t_loop
     _loop_start = _t_loop.monotonic()
     _consecutive_no_tool_iters = 0
+    # Cycle 48 / hypothesis #1: best-snapshot + restore. Track best dev MEAN
+    # seen so far; snapshot submission.py -> submission.best.py on new best;
+    # restore the snapshot over submission.py at finish so canonical scoring
+    # sees the high-water mark, not whatever the model wrote last.
+    _best_dev_mean = None
+    _best_snapshot_path = workspace / 'submission.best.py'
+    _submission_path = workspace / 'submission.py'
     while iter_n < max_iters and not finished:
         _iter_start = _t_loop.monotonic()
         iter_n += 1
@@ -319,6 +327,16 @@ def run_loop(workspace, env_dir, tasks_dir, vllm_base_url, vllm_api_key,
         else:
             _mean, _max_tile, _walltime = _parsed
             _sweep_samples.append((iter_n, _mean, _max_tile, _walltime))
+            # Cycle 48 / hypothesis #1: best-snapshot. New best dev MEAN ->
+            # copy current submission.py to submission.best.py.
+            if (_best_dev_mean is None or _mean > _best_dev_mean) and _submission_path.exists():
+                _best_dev_mean = _mean
+                try:
+                    shutil.copyfile(_submission_path, _best_snapshot_path)
+                    print(f'[harness] new best dev MEAN={_mean} (snapshot=True)',
+                          flush=True)
+                except Exception:
+                    pass
         # Cycle 33 (ADR 0005): supervisor hook. Every K iters, ask the
         # supervisor whether to stop. We feed it a minimal per-iter sample
         # `(iter_n, 0.0, 0, 0.0)` for now — cycle 34 will parse real
@@ -350,4 +368,14 @@ def run_loop(workspace, env_dir, tasks_dir, vllm_base_url, vllm_api_key,
                     ),
                 })
                 finished = True
+    # Cycle 48 / hypothesis #1: restore best snapshot over submission.py
+    # so canonical scoring sees the best version the model produced this trial.
+    if _best_snapshot_path.exists():
+        try:
+            shutil.copyfile(_best_snapshot_path, _submission_path)
+            print(f'[harness] restored submission.best.py '
+                  f'(dev MEAN={_best_dev_mean}) to submission.py for scoring',
+                  flush=True)
+        except Exception:
+            pass
     return {'iterations': iter_n, 'messages': messages, 'finished': finished}
