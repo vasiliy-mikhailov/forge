@@ -870,3 +870,102 @@ def test_when_first_reply_at_campaign_temperature_then_majority_views_skill_or_w
         f'Prompt is unreliable at campaign temperature. '
         f'passes={passes} failures={failures}'
     )
+
+
+
+def test_when_execute_submission_called_with_valid_solver_body_then_returns_per_seed_observation(tmp_path):
+    """Cycle 58: pin the happy-path execute_submission observation."""
+    import json
+    from src.tier1.agent_loop import execute_tool
+
+    workspace = tmp_path / 'ws'; workspace.mkdir()
+    env_dir = tmp_path / 'env'; env_dir.mkdir()
+    # Use the real tasks/2048 for the dev_runner the dispatcher invokes.
+    from pathlib import Path as _P
+    tasks_dir = _P('/home/vmihaylov/forge/phase-c-information-systems-architecture/'
+                   'application-architecture/reward-bench/tasks')
+    if not tasks_dir.exists():
+        pytest.skip('tasks/ not present in this sandbox')
+
+    body = (
+        "class Solver:\n"
+        "    def __init__(self): pass\n"
+        "    def move(self, board):\n"
+        "        return 'W'\n"
+    )
+
+    obs = execute_tool('execute_submission', {'content': body},
+                        workspace, env_dir, tasks_dir)
+    # Strip any surrounding tags and parse the JSON.
+    body_json = obs
+    if body_json.startswith('<observation>') and body_json.endswith('</observation>'):
+        body_json = body_json[len('<observation>'):-len('</observation>')]
+    payload = json.loads(body_json.strip())
+
+    assert payload['protocol_violations'] == [], (
+        f'valid Solver should yield no violations; got {payload["protocol_violations"]}'
+    )
+    assert isinstance(payload['per_seed'], list)
+    assert len(payload['per_seed']) >= 1, 'dev seeds should have produced at least one game'
+    for entry in payload['per_seed']:
+        for key in ('seed', 'score', 'max_tile', 'moves', 'state', 'walltime_sec'):
+            assert key in entry, f'per_seed entry missing {key}'
+    assert payload['mean'] == payload['mean']  # not NaN
+    assert payload['mean'] >= 0
+    assert payload['max_tile_best'] >= 2
+
+
+def test_when_execute_submission_called_with_gym_style_body_then_observation_has_protocol_violation(tmp_path):
+    """Cycle 58: pin the Gym-style failure into structured observation."""
+    import json
+    from src.tier1.agent_loop import execute_tool
+    workspace = tmp_path / 'ws'; workspace.mkdir()
+    env_dir = tmp_path / 'env'; env_dir.mkdir()
+    from pathlib import Path as _P
+    tasks_dir = _P('/home/vmihaylov/forge/phase-c-information-systems-architecture/'
+                   'application-architecture/reward-bench/tasks')
+    if not tasks_dir.exists():
+        pytest.skip('tasks/ not present in this sandbox')
+
+    body = (
+        "def solve(state):\n"
+        "    return 0\n"
+    )
+    obs = execute_tool('execute_submission', {'content': body},
+                        workspace, env_dir, tasks_dir)
+    body_json = obs
+    if body_json.startswith('<observation>') and body_json.endswith('</observation>'):
+        body_json = body_json[len('<observation>'):-len('</observation>')]
+    payload = json.loads(body_json.strip())
+    assert len(payload['protocol_violations']) >= 1, (
+        f'Gym-style should be flagged; got {payload}'
+    )
+    assert any('Solver' in v for v in payload['protocol_violations'])
+    assert payload['per_seed'] == []
+    assert payload['mean'] == 0
+
+
+def test_when_execute_submission_called_with_syntax_error_body_then_observation_has_syntax_violation(tmp_path):
+    """Cycle 58: pin the SyntaxError failure into structured observation."""
+    import json
+    from src.tier1.agent_loop import execute_tool
+    workspace = tmp_path / 'ws'; workspace.mkdir()
+    env_dir = tmp_path / 'env'; env_dir.mkdir()
+    from pathlib import Path as _P
+    tasks_dir = _P('/home/vmihaylov/forge/phase-c-information-systems-architecture/'
+                   'application-architecture/reward-bench/tasks')
+    if not tasks_dir.exists():
+        pytest.skip('tasks/ not present in this sandbox')
+
+    body = 'class Solver: def __init__(self): pass def move(self, board): return W\n'  # broken
+    obs = execute_tool('execute_submission', {'content': body},
+                        workspace, env_dir, tasks_dir)
+    body_json = obs
+    if body_json.startswith('<observation>') and body_json.endswith('</observation>'):
+        body_json = body_json[len('<observation>'):-len('</observation>')]
+    payload = json.loads(body_json.strip())
+    assert any('SyntaxError' in v for v in payload['protocol_violations']), (
+        f'SyntaxError should be flagged; got {payload}'
+    )
+    assert payload['per_seed'] == []
+    assert payload['mean'] == 0

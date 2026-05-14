@@ -168,7 +168,116 @@ def execute_tool(name, args, workspace, env_dir, tasks_dir):
         note = args.get('note', '')
         return f'<finish>{note}</finish>'
 
+    if name == 'execute_submission':
+        # Cycle 58 / ADR 0008: ralph-loop atomic primitive. Model emits the
+        # full submission body inline; we score on dev seeds (1..5) and
+        # return a structured JSON observation. Docker isolation per ADR
+        # 0006 layer 2 is a future cycle; this implementation is host-side.
+        body = args.get('content', '')
+        return _execute_submission(body, workspace, tasks_dir)
+
     return f'<error>unknown tool: {name}</error>'
+
+
+_DEV_SEEDS = (1, 2, 3, 4, 5)
+
+
+def _execute_submission(body, workspace, tasks_dir):
+    """ADR 0008 dispatcher. Always returns a JSON-string observation;
+    NEVER raises (failures land in protocol_violations / per_seed errors)."""
+    import json as _json
+    import sys as _sys
+    import time as _t
+    import importlib.util as _ilu
+    obs = {
+        'protocol_violations': [],
+        'per_seed': [],
+        'mean': 0.0,
+        'median': 0,
+        'max_tile_best': 0,
+        'walltime_sec_total': 0.0,
+    }
+    sub_path = Path(workspace) / 'submission.py'
+    try:
+        sub_path.write_text(body)
+    except Exception as e:
+        obs['protocol_violations'].append(f'write failed: {type(e).__name__}: {e}')
+        return '<observation>' + _json.dumps(obs) + '</observation>'
+
+    # Load + validate protocol.
+    try:
+        spec = _ilu.spec_from_file_location('execute_submission_module', str(sub_path))
+        module = _ilu.module_from_spec(spec)
+        spec.loader.exec_module(module)
+    except SyntaxError as e:
+        obs['protocol_violations'].append(f'SyntaxError: {e}')
+        return '<observation>' + _json.dumps(obs) + '</observation>'
+    except Exception as e:
+        obs['protocol_violations'].append(f'load failed: {type(e).__name__}: {e}')
+        return '<observation>' + _json.dumps(obs) + '</observation>'
+
+    from src.tier1.harness import validate_submission_protocol
+    violations = validate_submission_protocol(module)
+    if violations:
+        obs['protocol_violations'].extend(violations)
+        return '<observation>' + _json.dumps(obs) + '</observation>'
+
+    # Play dev seeds via the GameBoard adapter (cycle 28 + 29 sentinels
+    # propagate into per_seed err fields naturally).
+    env_path = Path(tasks_dir) / '2048'
+    if str(env_path) not in _sys.path:
+        _sys.path.insert(0, str(env_path))
+    try:
+        from env import GameBoard  # noqa: E402
+    except Exception as e:
+        obs['protocol_violations'].append(f'env load failed: {type(e).__name__}: {e}')
+        return '<observation>' + _json.dumps(obs) + '</observation>'
+
+    Solver = module.Solver
+    scores = []
+    max_tiles = []
+    t_total_start = _t.monotonic()
+    for seed in _DEV_SEEDS:
+        t0 = _t.monotonic()
+        try:
+            solver = Solver()
+            b = GameBoard(seed=seed)
+            moves = 0
+            err = None
+            while not b.is_terminal() and moves < 3000:
+                try:
+                    a = solver.move(b.board)
+                    b.do_action(a)
+                except Exception as e:
+                    err = f'{type(e).__name__}: {e}'
+                    break
+                moves += 1
+            entry = {
+                'seed': int(seed),
+                'score': int(b.score),
+                'max_tile': int(b.max_tile),
+                'moves': int(moves),
+                'state': str(b.state) if b.state in ('won', 'lost') else 'lost',
+                'walltime_sec': round(_t.monotonic() - t0, 4),
+                'err': err,
+            }
+        except Exception as e:
+            entry = {
+                'seed': int(seed),
+                'score': 0, 'max_tile': 0, 'moves': 0,
+                'state': 'crashed',
+                'walltime_sec': round(_t.monotonic() - t0, 4),
+                'err': f'{type(e).__name__}: {e}',
+            }
+        obs['per_seed'].append(entry)
+        scores.append(entry['score'])
+        max_tiles.append(entry['max_tile'])
+    obs['walltime_sec_total'] = round(_t.monotonic() - t_total_start, 4)
+    obs['mean'] = (sum(scores) / len(scores)) if scores else 0.0
+    obs['median'] = sorted(scores)[len(scores) // 2] if scores else 0
+    obs['max_tile_best'] = max(max_tiles) if max_tiles else 0
+    return '<observation>' + _json.dumps(obs) + '</observation>'
+
 
 
 SYSTEM_PROMPT = """You are an expert Python engineer competing in reward-bench Tier 1 — the 2048 FSM-solver task.
