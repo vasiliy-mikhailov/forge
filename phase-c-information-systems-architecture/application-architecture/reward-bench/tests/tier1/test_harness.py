@@ -39,3 +39,72 @@ def test_when_solver_class_instantiated_then_exposes_callable_move(skill_tier1_r
     # Assert
     assert isinstance(instance, module.Solver), 'Solver() did not return a Solver'
     assert callable(move), 'Solver instance has no callable move attribute'
+
+
+
+def test_when_submission_validated_then_valid_solver_returns_empty_tuple(tmp_path):
+    """Cycle 53: pin the canonical valid-submission shape."""
+    from src.tier1.harness import load_submission, validate_submission_protocol
+    p = tmp_path / 'submission.py'
+    p.write_text(
+        'class Solver:\n'
+        '    def __init__(self):\n'
+        '        pass\n'
+        '    def move(self, board):\n'
+        "        return 'W'\n"
+    )
+    mod = load_submission(p)
+    violations = validate_submission_protocol(mod)
+    assert violations == (), f'expected no violations; got {violations!r}'
+
+
+def test_when_submission_validated_then_gym_style_returns_solver_violation(tmp_path):
+    """Cycle 53: pin the Gym-style failure mode (what the model wrote)."""
+    from src.tier1.harness import load_submission, validate_submission_protocol
+    p = tmp_path / 'submission.py'
+    p.write_text(
+        'def solve(grid):\n'
+        '    return 0\n'
+    )
+    mod = load_submission(p)
+    violations = validate_submission_protocol(mod)
+    assert len(violations) >= 1, 'expected at least one violation'
+    assert any('Solver' in v for v in violations), (
+        f'expected a Solver-class violation; got {violations!r}'
+    )
+
+
+def test_when_submission_validated_then_wrong_move_return_returns_action_violation(tmp_path):
+    """Cycle 53: pin the return-shape violation."""
+    from src.tier1.harness import load_submission, validate_submission_protocol
+    p = tmp_path / 'submission.py'
+    p.write_text(
+        'class Solver:\n'
+        '    def __init__(self):\n'
+        '        pass\n'
+        '    def move(self, board):\n'
+        '        return 0\n'  # wrong: int instead of str
+    )
+    mod = load_submission(p)
+    violations = validate_submission_protocol(mod)
+    assert any('W' in v and 'A' in v for v in violations) or any(
+        'str' in v.lower() for v in violations
+    ), f'expected return-type violation; got {violations!r}'
+
+
+def test_when_submission_validated_then_missing_move_returns_method_violation(tmp_path):
+    """Cycle 53: pin the missing-method violation."""
+    from src.tier1.harness import load_submission, validate_submission_protocol
+    p = tmp_path / 'submission.py'
+    p.write_text(
+        'class Solver:\n'
+        '    def __init__(self):\n'
+        '        pass\n'
+        '    def select_action(self, observation):\n'
+        "        return 'W'\n"
+    )
+    mod = load_submission(p)
+    violations = validate_submission_protocol(mod)
+    assert any('move' in v for v in violations), (
+        f'expected a move-method violation; got {violations!r}'
+    )

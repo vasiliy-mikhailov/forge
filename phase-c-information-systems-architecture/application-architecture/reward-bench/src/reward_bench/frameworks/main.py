@@ -27,7 +27,7 @@ from src.reward_bench.use_cases.model_registry import MODEL_REGISTRY
 from src.tier1.adapters.game_board_2048 import GameBoard2048Adapter
 from src.tier1.agent_loop import run_loop
 from src.tier1.entities.attempt_result import AttemptResult
-from src.tier1.harness import load_submission
+from src.tier1.harness import load_submission, validate_submission_protocol
 from src.tier1.inference import ensure_serving
 from src.tier1.use_cases.score_submission import score_submission
 
@@ -189,16 +189,25 @@ def main(
     submission_path = workspace / 'submission.py'
     try:
         module = load_submission(submission_path)
-        SolverCls = module.Solver  # may raise AttributeError
     except FileNotFoundError:
         return _sentinel_attempt_result(f'no submission at {submission_path}')
-    except AttributeError as e:
-        return _sentinel_attempt_result(str(e))
     except SyntaxError as e:
         # Model wrote non-Python content (e.g. HTML, pseudocode). Per ADR
         # 0002 sentinel-on-malformed pattern, extended to cover SyntaxError
         # discovered live with temperature=0.7 cycle-22 campaign run.
         return _sentinel_attempt_result(f'submission has SyntaxError: {e}')
+    # Cycle 53: explicit submission-protocol validation per
+    # tasks/2048/SKILL_tier1.md (class Solver + move(self, board)->W/A/S/D).
+    # Replaces the ad-hoc AttributeError sentinel from cycles 28/29 with a
+    # named contract check; the violation strings are surfaced into the
+    # artifact via the sentinel reason so observability distinguishes
+    # protocol violations from runtime crashes.
+    violations = validate_submission_protocol(module)
+    if violations:
+        return _sentinel_attempt_result(
+            f'submission protocol violation: {violations[0]}'
+        )
+    SolverCls = module.Solver
 
     adapter = GameBoard2048Adapter()
     result = score_submission(SolverCls, seeds, adapter, hard_wall_sec=config.hard_wall_sec)
