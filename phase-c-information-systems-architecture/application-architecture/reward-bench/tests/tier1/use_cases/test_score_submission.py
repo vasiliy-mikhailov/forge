@@ -108,3 +108,47 @@ def test_when_score_submission_called_with_slow_env_then_returns_within_aggregat
     exceeded = [g for g in result.games if g.final_state == 'walltime_exceeded']
     assert len(exceeded) >= 1
     assert result.hard_wall_sec == 0.3
+
+
+class _HangingEnv:
+    """Stub env: play_one_game(seed=1) hangs (simulates cycle-26 bug).
+    Other seeds return immediately."""
+    def play_one_game(self, solver, seed):
+        if seed == 1:
+            _time.sleep(1000)  # would hang the test process pre-fix
+        return GameResult(seed=seed, score=10, max_tile=4, moves=2,
+                          final_state='lost', walltime_sec=0.001)
+
+
+def test_when_score_submission_called_with_env_that_hangs_one_game_then_returns_within_aggregate_walltime_budget():
+    """Cycle 27 (no-silent-fix): pin per-game preemption.
+
+    Cycle 23s aggregate cap fires only BETWEEN games — a single hanging
+    play_one_game blocks the cap. This test demands score_submission
+    return within the budget even when ONE game hangs."""
+    # Arrange
+    env = _HangingEnv()
+
+    # Act
+    captured = _run_with_timeout(
+        lambda: score_submission(
+            solver_factory=lambda: object(),
+            seeds=[1, 2, 3],
+            env=env,
+            hard_wall_sec=0.3,
+        ),
+        timeout=1.0,
+    )
+
+    # Assert
+    assert captured['exc'] is None, f'score_submission raised: {captured["exc"]!r}'
+    assert captured['done'], (
+        'score_submission did not return within 1.0 s budget — '
+        'per-game preemption not honoured (reproduces cycle-26 hang).'
+    )
+    result = captured['value']
+    assert result.walltime_exceeded is True
+    assert result.games[0].final_state == 'walltime_exceeded', (
+        f'first game (the hung one) should be sentinel; got '
+        f'{result.games[0].final_state!r}'
+    )
