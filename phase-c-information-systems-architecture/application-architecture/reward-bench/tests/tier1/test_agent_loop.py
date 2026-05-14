@@ -792,6 +792,25 @@ def test_when_first_reply_received_then_views_skill_spec_or_writes_protocol_vali
     if name == 'view' and args.get('path') == '/tasks/2048/SKILL_tier1.md':
         return  # Model is reading the spec — good behaviour.
 
+    if name == 'execute_submission':
+        # ADR 0008 active path: body inline, no path argument.
+        body = args.get('content', '')
+        sub = tmp_path / 'submission.py'
+        sub.write_text(body)
+        try:
+            mod = load_submission(sub)
+        except SyntaxError as e:
+            pytest.fail(
+                f'First execute_submission body had SyntaxError: {e}. '
+                f'Prompt is broken.'
+            )
+        violations = validate_submission_protocol(mod)
+        assert violations == (), (
+            f'First execute_submission body violates SKILL_tier1.md '
+            f'protocol. Violations: {violations}. Prompt is broken.'
+        )
+        return
+
     if name == 'write_file' and args.get('path') == '/workspace/submission.py':
         body = args.get('content', '')
         sub = tmp_path / 'submission.py'
@@ -856,6 +875,22 @@ def test_when_first_reply_at_campaign_temperature_then_majority_views_skill_or_w
         name, args = tool_calls[0]
         if name == 'view' and args.get('path') == '/tasks/2048/SKILL_tier1.md':
             passes.append(trial)
+            continue
+        if name == 'execute_submission':
+            body = args.get('content', '')
+            sub = tmp_path / f'execsub_t{trial}.py'
+            sub.write_text(body)
+            try:
+                mod = load_submission(sub)
+                violations = validate_submission_protocol(mod)
+                if violations == ():
+                    passes.append(trial)
+                    continue
+                failures.append(
+                    f'trial {trial}: execute_submission violations={violations}'
+                )
+            except SyntaxError as e:
+                failures.append(f'trial {trial}: execute_submission SyntaxError {e}')
             continue
         if name == 'write_file' and args.get('path') == '/workspace/submission.py':
             body = args.get('content', '')
