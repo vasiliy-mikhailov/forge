@@ -511,3 +511,23 @@ def test_when_agent_loop_wall_sec_exceeded_then_run_loop_returns_partial_result(
         f"loop ran full budget; got {result['iterations']}"
     )
     assert result['finished'] is False
+
+
+
+def test_when_first_user_inspected_then_matches_bak_freeform_variant():
+    """Cycle 39: pin FIRST_USER to _bak's freeform variant.
+
+    See tests-spec/tier1/agent_loop/test_spec_when_first_user_inspected_*."""
+    from src.tier1.agent_loop import FIRST_USER
+
+    expected = (
+        "Start the task. Read /tasks/2048/SKILL_tier1.md to learn the "
+        "constraints, then optionally /env/env_2048.py for env details, "
+        "then write your submission to /workspace/submission.py and iterate. "
+        "Use the fenced-block JSON tool format the system prompt described."
+    )
+    assert FIRST_USER == expected, (
+        f"FIRST_USER drifted from _bak freeform variant.\n"
+        f"len(actual)={len(FIRST_USER)} len(expected)={len(expected)}\n"
+        f"first 200 chars actual: {FIRST_USER[:200]!r}"
+    )
