@@ -73,6 +73,31 @@ config × model cell.
     leaderboard still got a 3-trial data point instead of a no-data
     crash. This is the test-spec-backed artifact rule paying off.
 
+### Cycle 37 campaign (5x iters lever, supervisor active)
+
+- **Config**: `BenchConfig(max_iters=500, n_trials=3, temperature=0.7,
+  hard_wall_sec=120, supervisor_every_k=20)`
+- **Per-trial mean**: `[0.0, 0.0, 6525.2]`
+- **Aggregate**: `mean_of_means=2175.1 best_mean=6525.2 worst_mean=0.0`
+- **Max tile**: **1024** (best trial)
+- **Walltime**: 549 s (9:09 for 3 trials)
+- **Artifact**: `experiments/2026-05-14-iters500-T07-n3.json`
+- **Notes**:
+  - **5x iters lever only delivered +4% best_mean (6261 -> 6525)**.
+    The model is NOT productively using max_iters>100.
+  - Trial 1: scoring hit `hard_wall_sec=120` walltime — the submission
+    was so slow per move that 20 games at 120s aggregate cap meant
+    most seeds returned `walltime_exceeded` sentinel.
+  - Trial 2: 0.0 (broken solver, sentinel).
+  - Wall time per trial collapsed from ~5 min (iters100) to ~3 min
+    (iters500). This means trials are FINISHING EARLY, not running
+    long. Cause unknown without per-iter telemetry — drives cycle 38
+    stall-detection telemetry.
+  - **Conclusion**: bumping `max_iters` alone is NOT the path to
+    `_bak`'s 15920. The model needs a different lever — likely a
+    smarter Solver prompt template OR a better condenser OR
+    multi-stage author + reviewer roles.
+
 ### Cycle 36 campaign (supervisor active, iters100)
 
 - **Config**: `BenchConfig(max_iters=100, n_trials=3, temperature=0.7,

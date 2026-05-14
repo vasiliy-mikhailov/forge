@@ -453,3 +453,61 @@ def test_when_no_dev_runner_line_then_supervisor_sweep_has_placeholder_sample(mo
     assert mean_score == 0.0
     assert max_tile == 0
     assert walltime_sec == 0.0
+
+
+
+def test_when_max_no_tool_call_iters_exceeded_then_run_loop_terminates(monkeypatch, tmp_path):
+    """Cycle 38: K consecutive no-tool-call iters break the loop."""
+    from src.tier1 import agent_loop as al
+
+    def fake_call_model(*args, **kwargs):
+        return "I'm thinking about this but not emitting a tool block."
+    monkeypatch.setattr(al, '_call_model', fake_call_model)
+
+    workspace = tmp_path / 'ws'; workspace.mkdir()
+    env_dir = tmp_path / 'env'; env_dir.mkdir()
+    tasks_dir = tmp_path / 'tasks'; tasks_dir.mkdir()
+
+    result = al.run_loop(
+        workspace=workspace, env_dir=env_dir, tasks_dir=tasks_dir,
+        vllm_base_url='http://stub', vllm_api_key='stub',
+        max_iters=100,
+        max_no_tool_call_iters=3,
+    )
+
+    assert result['iterations'] == 3, (
+        f"expected stop at iter 3, got {result['iterations']}"
+    )
+    assert result['finished'] is False
+
+
+def test_when_agent_loop_wall_sec_exceeded_then_run_loop_returns_partial_result(monkeypatch, tmp_path):
+    """Cycle 38: wall-time budget mirrors score_submission.hard_wall_sec."""
+    import time as _time
+    from src.tier1 import agent_loop as al
+
+    def fake_call_model(*args, **kwargs):
+        _time.sleep(0.3)
+        return (
+            "```tool\n"
+            "{\"name\": \"view\", \"args\": {\"path\": \"/workspace\"}}\n"
+            "```"
+        )
+    monkeypatch.setattr(al, '_call_model', fake_call_model)
+
+    workspace = tmp_path / 'ws'; workspace.mkdir()
+    env_dir = tmp_path / 'env'; env_dir.mkdir()
+    tasks_dir = tmp_path / 'tasks'; tasks_dir.mkdir()
+
+    result = al.run_loop(
+        workspace=workspace, env_dir=env_dir, tasks_dir=tasks_dir,
+        vllm_base_url='http://stub', vllm_api_key='stub',
+        max_iters=100,
+        agent_loop_wall_sec=0.5,
+    )
+
+    assert result['iterations'] >= 1
+    assert result['iterations'] < 100, (
+        f"loop ran full budget; got {result['iterations']}"
+    )
+    assert result['finished'] is False

@@ -268,7 +268,8 @@ def _identity_condense(messages):
 
 def run_loop(workspace, env_dir, tasks_dir, vllm_base_url, vllm_api_key,
              max_iters, condense=_identity_condense, temperature=0.0,
-             supervisor=None, supervisor_every_k=0):
+             supervisor=None, supervisor_every_k=0,
+             agent_loop_wall_sec=0.0, max_no_tool_call_iters=0):
     """Drive the interactive agent loop for at most max_iters turns.
 
     `condense` is an opaque callable that takes the message tuple and
@@ -304,7 +305,12 @@ def run_loop(workspace, env_dir, tasks_dir, vllm_base_url, vllm_api_key,
     iter_n = 0
     # Cycle 34: accumulator for supervisor sweep samples per ADR 0005.
     _sweep_samples = []
+    # Cycle 38: stall detection state.
+    import time as _t_loop
+    _loop_start = _t_loop.monotonic()
+    _consecutive_no_tool_iters = 0
     while iter_n < max_iters and not finished:
+        _iter_start = _t_loop.monotonic()
         iter_n += 1
         messages = list(condense(tuple(messages)))
         reply = _call_model(vllm_base_url, vllm_api_key, messages,
@@ -315,7 +321,20 @@ def run_loop(workspace, env_dir, tasks_dir, vllm_base_url, vllm_api_key,
             obs = ('<error>no tool calls found in your reply. Each tool call '
                    'must be in a fenced code block tagged `tool`.</error>')
             messages.append({'role': 'user', 'content': obs})
+            _consecutive_no_tool_iters += 1
+            # Cycle 38: heartbeat for the no-tool-call path too.
+            print(f'[run_loop] iter {iter_n}/{max_iters} '
+                  f'tool_calls=0 no_tool_streak={_consecutive_no_tool_iters} '
+                  f'dt={_t_loop.monotonic() - _iter_start:.2f}s', flush=True)
+            if (max_no_tool_call_iters > 0
+                    and _consecutive_no_tool_iters >= max_no_tool_call_iters):
+                # No-progress stall: model emitting prose only for K iters.
+                break
+            if (agent_loop_wall_sec > 0
+                    and _t_loop.monotonic() - _loop_start >= agent_loop_wall_sec):
+                break
             continue
+        _consecutive_no_tool_iters = 0
         observations = []
         for name, tool_args in tool_calls:
             obs = execute_tool(name, tool_args, workspace, env_dir, tasks_dir)
@@ -339,6 +358,18 @@ def run_loop(workspace, env_dir, tasks_dir, vllm_base_url, vllm_api_key,
         # supervisor whether to stop. We feed it a minimal per-iter sample
         # `(iter_n, 0.0, 0, 0.0)` for now — cycle 34 will parse real
         # dev_runner output into mean_score / max_tile.
+        # Cycle 38: heartbeat after tool execution.
+        print(f'[run_loop] iter {iter_n}/{max_iters} '
+              f'tool_calls={len(tool_calls)} finished={finished} '
+              f'dt={_t_loop.monotonic() - _iter_start:.2f}s '
+              f'total={_t_loop.monotonic() - _loop_start:.1f}s', flush=True)
+        # Cycle 38: agent-loop wall-time budget (mirrors ADR 0006 layer 1
+        # but for the AGENT phase). Checked BETWEEN iterations to bound
+        # total wall time on a stuck or runaway loop.
+        if (agent_loop_wall_sec > 0
+                and _t_loop.monotonic() - _loop_start >= agent_loop_wall_sec
+                and not finished):
+            break
         if (supervisor is not None
                 and supervisor_every_k > 0
                 and iter_n % supervisor_every_k == 0
