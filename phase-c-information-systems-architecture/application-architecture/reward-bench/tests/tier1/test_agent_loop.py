@@ -1141,3 +1141,52 @@ def test_when_finish_called_below_finish_floor_via_execute_submission_then_rejec
     assert rejected_count >= 2, (
         f'expected at least 2 finish-rejected observations; got {rejected_count}'
     )
+
+
+
+def test_when_loop_ends_then_last_successful_execute_submission_body_promoted_to_workspace_submission_py(monkeypatch, tmp_path):
+    """Cycle 65 / ADR 0008 finish-time promotion: the last successful
+    execute_submission body becomes workspace/submission.py at finish."""
+    from src.tier1 import agent_loop as al
+
+    workspace = tmp_path / 'ws'; workspace.mkdir()
+    env_dir = tmp_path / 'env'; env_dir.mkdir()
+    tasks_dir = tmp_path / 'tasks'; tasks_dir.mkdir()
+
+    GOOD = '# good body v1\nclass Solver:\n    def move(self, b): return "W"\n'
+    BAD = '# bad body v2 (no Solver class)\ndef solve(grid): return 0\n'
+
+    script = iter([
+        '```tool\n{"name": "execute_submission", "args": {}}\n===FILE_BODY===\n' + GOOD + '```',
+        '```tool\n{"name": "execute_submission", "args": {}}\n===FILE_BODY===\n' + BAD + '```',
+        '```tool\n{"name": "finish", "args": {"note": "done"}}\n```',
+    ])
+    def fake_call_model(*args, **kwargs):
+        return next(script)
+    monkeypatch.setattr(al, '_call_model', fake_call_model)
+
+    obs_iter = iter([
+        '<observation>{"protocol_violations": [], "per_seed": [{"seed":1,"score":1000,"max_tile":256}], "mean": 1000.0, "median": 1000, "max_tile_best": 256, "walltime_sec_total": 0.5}</observation>',
+        '<observation>{"protocol_violations": ["no Solver class"], "per_seed": [], "mean": 0.0, "median": 0, "max_tile_best": 0, "walltime_sec_total": 0.0}</observation>',
+    ])
+    def fake_execute_tool(name, args, ws_arg, *_, **__):
+        if name == 'execute_submission':
+            return next(obs_iter)
+        if name == 'finish':
+            return '<finish>ok</finish>'
+        return '<ok>'
+    monkeypatch.setattr(al, 'execute_tool', fake_execute_tool)
+
+    al.run_loop(
+        workspace=workspace, env_dir=env_dir, tasks_dir=tasks_dir,
+        vllm_base_url='http://stub', vllm_api_key='stub',
+        max_iters=10,
+    )
+
+    sub = workspace / 'submission.py'
+    assert sub.exists(), 'finish-time promotion did not write submission.py'
+    actual = sub.read_text()
+    assert actual == GOOD, (
+        f'expected GOOD body (last successful execute_submission); got:\n'
+        f'{actual!r}'
+    )

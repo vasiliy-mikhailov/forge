@@ -433,6 +433,10 @@ def run_loop(workspace, env_dir, tasks_dir, vllm_base_url, vllm_api_key,
     _best_dev_mean = None
     _best_snapshot_path = workspace / 'submission.best.py'
     _submission_path = workspace / 'submission.py'
+    # Cycle 65 / ADR 0008 finish-time promotion: remember the last
+    # execute_submission body whose observation had per_seed != [] so it
+    # can be written to workspace/submission.py at end-of-loop.
+    _last_successful_execute_body = None
     while iter_n < max_iters and not finished:
         _iter_start = _t_loop.monotonic()
         iter_n += 1
@@ -485,6 +489,12 @@ def run_loop(workspace, env_dir, tasks_dir, vllm_base_url, vllm_api_key,
                     continue
             obs = execute_tool(name, tool_args, workspace, env_dir, tasks_dir)
             observations.append(obs)
+            # Cycle 65: track last successful execute_submission body for
+            # finish-time promotion per ADR 0008.
+            if name == 'execute_submission':
+                _body_candidate = tool_args.get('content', '')
+                if _body_candidate and _execute_submission_observation_is_successful(obs):
+                    _last_successful_execute_body = _body_candidate
             if name == 'finish':
                 finished = True
         messages.append({'role': 'user', 'content': '\n\n'.join(observations)})
@@ -556,4 +566,36 @@ def run_loop(workspace, env_dir, tasks_dir, vllm_base_url, vllm_api_key,
                   flush=True)
         except Exception:
             pass
+    # Cycle 65 / ADR 0008 finish-time promotion: write the last successful
+    # execute_submission body to workspace/submission.py so canonical
+    # scoring (which reads exactly that path) sees it.
+    if _last_successful_execute_body is not None:
+        try:
+            # Ensure trailing newline (PEP-8 / Python convention). The
+            # tool-call body parser strips the final \\n adjacent to the
+            # closing ``` fence; restore it on promotion.
+            _body = _last_successful_execute_body
+            if not _body.endswith(chr(10)):
+                _body = _body + chr(10)
+            _submission_path.write_text(_body)
+            print('[harness] promoted last successful execute_submission body '
+                  'to workspace/submission.py for canonical scoring',
+                  flush=True)
+        except Exception:
+            pass
     return {'iterations': iter_n, 'messages': messages, 'finished': finished}
+
+
+def _execute_submission_observation_is_successful(obs):
+    """Cycle 65 helper: ADR 0008 says 'successful' = per_seed != [].
+    Returns False on any parse failure (defensive)."""
+    if '<observation>' not in obs:
+        return False
+    try:
+        import json as _json
+        start = obs.index('<observation>') + len('<observation>')
+        end = obs.index('</observation>', start)
+        payload = _json.loads(obs[start:end])
+        return isinstance(payload, dict) and bool(payload.get('per_seed'))
+    except Exception:
+        return False
