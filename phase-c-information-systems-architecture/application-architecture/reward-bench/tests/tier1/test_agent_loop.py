@@ -1,4 +1,5 @@
 """Tier 1 interactive agent loop tests. See src-spec/tier1/ and tests-spec/tier1/."""
+import pytest
 import json
 import tempfile
 import urllib.request
@@ -734,4 +735,138 @@ def test_when_call_model_invoked_then_max_tokens_matches_legacy_budget(monkeypat
     assert captured['payload']['max_tokens'] == 12288, (
         f"max_tokens should be 12288 (legacy budget); got "
         f"{captured['payload']['max_tokens']}"
+    )
+
+
+
+@pytest.mark.live
+def test_when_first_reply_received_then_views_skill_spec_or_writes_protocol_valid_solver(tmp_path):
+    """Cycle 56: prompt validation. The active SYSTEM_PROMPT + FIRST_USER
+    must drive the model to either view SKILL_tier1.md or write a
+    protocol-valid Solver in its FIRST reply. RED-driven prompt engineering.
+    """
+    import os, subprocess
+    from src.tier1.agent_loop import (
+        SYSTEM_PROMPT, FIRST_USER, _call_model, parse_tool_calls,
+    )
+    from src.tier1.harness import load_submission, validate_submission_protocol
+
+    api_key = os.environ.get('VLLM_API_KEY')
+    if not api_key:
+        pytest.skip('VLLM_API_KEY not set')
+    # Resolve the active vLLM IP
+    out = subprocess.run(
+        ['docker', 'inspect', 'reward-bench-vllm', '--format',
+         '{{(index .NetworkSettings.Networks "proxy-net").IPAddress}}'],
+        capture_output=True, text=True,
+    )
+    ip = out.stdout.strip()
+    if not ip:
+        pytest.skip('reward-bench-vllm container not running')
+    base_url = f'http://{ip}:8000'
+
+    messages = [
+        {'role': 'system', 'content': SYSTEM_PROMPT},
+        {'role': 'user', 'content': FIRST_USER},
+    ]
+    reply = _call_model(base_url, api_key, messages, temperature=0.0)
+    tool_calls = parse_tool_calls(reply)
+
+    assert tool_calls, (
+        f'First reply emitted no parseable tool calls. Prompt is broken. '
+        f'Reply (first 500 chars): {reply[:500]!r}'
+    )
+    name, args = tool_calls[0]
+
+    if name == 'view' and args.get('path') == '/tasks/2048/SKILL_tier1.md':
+        return  # Model is reading the spec — good behaviour.
+
+    if name == 'write_file' and args.get('path') == '/workspace/submission.py':
+        body = args.get('content', '')
+        sub = tmp_path / 'submission.py'
+        sub.write_text(body)
+        try:
+            mod = load_submission(sub)
+        except SyntaxError as e:
+            pytest.fail(
+                f'First reply wrote submission.py with SyntaxError: {e}. '
+                f'Prompt is broken.'
+            )
+        violations = validate_submission_protocol(mod)
+        assert violations == (), (
+            f'First reply wrote a submission that violates SKILL_tier1.md '
+            f'protocol. Violations: {violations}. Prompt is broken.'
+        )
+        return
+
+    pytest.fail(
+        f'First reply neither views /tasks/2048/SKILL_tier1.md nor writes a '
+        f'protocol-valid /workspace/submission.py. '
+        f'Got: name={name!r} args={args!r}. Prompt is broken.'
+    )
+
+
+
+@pytest.mark.live
+def test_when_first_reply_at_campaign_temperature_then_majority_views_skill_or_writes_valid_solver(tmp_path):
+    """Cycle 56 (campaign-T variant): repeat the same assertion at
+    temperature=0.7 (campaign default per ADR 0003) across N=5 trials.
+    Assert at least 3/5 pass. This is what the actual campaign sees.
+    """
+    import os, subprocess
+    from src.tier1.agent_loop import (
+        SYSTEM_PROMPT, FIRST_USER, _call_model, parse_tool_calls,
+    )
+    from src.tier1.harness import load_submission, validate_submission_protocol
+    api_key = os.environ.get('VLLM_API_KEY')
+    if not api_key:
+        pytest.skip('VLLM_API_KEY not set')
+    out = subprocess.run(
+        ['docker', 'inspect', 'reward-bench-vllm', '--format',
+         '{{(index .NetworkSettings.Networks "proxy-net").IPAddress}}'],
+        capture_output=True, text=True,
+    )
+    ip = out.stdout.strip()
+    if not ip:
+        pytest.skip('reward-bench-vllm container not running')
+    base_url = f'http://{ip}:8000'
+    messages = [
+        {'role': 'system', 'content': SYSTEM_PROMPT},
+        {'role': 'user', 'content': FIRST_USER},
+    ]
+    passes = []
+    failures = []
+    for trial in range(5):
+        reply = _call_model(base_url, api_key, messages, temperature=0.7)
+        tool_calls = parse_tool_calls(reply)
+        if not tool_calls:
+            failures.append(f'trial {trial}: no tool calls')
+            continue
+        name, args = tool_calls[0]
+        if name == 'view' and args.get('path') == '/tasks/2048/SKILL_tier1.md':
+            passes.append(trial)
+            continue
+        if name == 'write_file' and args.get('path') == '/workspace/submission.py':
+            body = args.get('content', '')
+            sub = tmp_path / f'submission_t{trial}.py'
+            sub.write_text(body)
+            try:
+                mod = load_submission(sub)
+                violations = validate_submission_protocol(mod)
+                if violations == ():
+                    passes.append(trial)
+                    continue
+                failures.append(
+                    f'trial {trial}: write_file violations={violations}'
+                )
+            except SyntaxError as e:
+                failures.append(f'trial {trial}: SyntaxError {e}')
+            continue
+        failures.append(
+            f'trial {trial}: first call name={name!r} args={args!r}'
+        )
+    assert len(passes) >= 3, (
+        f'At T=0.7 only {len(passes)}/5 first-replies are protocol-correct. '
+        f'Prompt is unreliable at campaign temperature. '
+        f'passes={passes} failures={failures}'
     )
