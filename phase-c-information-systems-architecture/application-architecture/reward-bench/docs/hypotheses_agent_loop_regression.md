@@ -29,6 +29,20 @@ delta).
 | 9 | **Tool-call parser robustness**: legacy wraps `json.loads(json_part)` in try/except + a `rstrip(', \t\n')` fallback, then `continue` (skip the malformed block). Our parser raises `JSONDecodeError` on the first bad block — crashes the entire trial. Discovered live during cycle-50 measurement. | `test_when_tool_block_contains_malformed_json_then_parser_skips_block_and_emits_no_tool_observation` | **🔥 trial-crashing — must land before re-measuring cycles 48 + 50** |
 | 8 | **Context-budget pruning**: legacy has explicit `_check_context_guardrail` + pruning past 200K tokens. Our loop relies entirely on the condenser hook. Different semantics on overflow. | `test_when_messages_token_estimate_exceeds_context_budget_then_older_turns_pruned` | Marginal unless trial hits the budget |
 
+## Measurements so far (cycles 48-51)
+
+| Cycle | Hypothesis | Status | Effect on canonical-eval score |
+|---|---|---|---|
+| 48 | #1 best-snapshot+restore | LANDED | UNTESTABLE — model never ran dev_runner during the campaign measurement, so the snapshot path never fired. Needs the model to call dev_runner first. |
+| 50 | #2 finish-floor (7211) | LANDED | Loop CORRECTLY rejects premature finish (verified live: 2x finish-rejected harness markers in campaign 17). But the model spent 100 iters writing code without ever calling dev_runner — the rejection alone doesn't force dev_runner usage. Result: trial 1 SyntaxError sentinel. |
+| 51 | #9 parser robustness | LANDED | Loop no longer crashes on malformed tool JSON. Defensive fix; not the score lever. |
+
+**Key finding from cycle-51 measurement (campaign 17):** the model in our active loop wrote 100 iterations of code but NEVER called `bash python3 /tasks/2048/dev_runner.py /workspace/submission.py` even when finish was rejected. Legacy loop's model uses dev_runner naturally — there must be a behaviour difference in HOW we present the rejection or HOW we shape replies.
+
+Best guess: hypothesis #7 (`max_tokens=12288` vs ours `32768`) — legacy's tighter cap forces the model to be more decisive per turn, possibly making it choose dev_runner instead of writing long code-only replies. Worth trying next.
+
+Alternative: the model needs a stronger nudge in the finish-rejected observation, e.g. "STOP writing more code — run dev_runner NOW".
+
 ## How to use this list
 
 For each row (in order):
