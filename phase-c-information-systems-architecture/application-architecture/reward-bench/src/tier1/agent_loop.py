@@ -244,7 +244,8 @@ def _identity_condense(messages):
 
 
 def run_loop(workspace, env_dir, tasks_dir, vllm_base_url, vllm_api_key,
-             max_iters, condense=_identity_condense, temperature=0.0):
+             max_iters, condense=_identity_condense, temperature=0.0,
+             supervisor=None, supervisor_every_k=0):
     """Drive the interactive agent loop for at most max_iters turns.
 
     `condense` is an opaque callable that takes the message tuple and
@@ -258,6 +259,17 @@ def run_loop(workspace, env_dir, tasks_dir, vllm_base_url, vllm_api_key,
     passed through to `_call_model`. Default 0.0 (deterministic) for
     test isolation; the bench orchestrator (`main()`) passes
     `BenchConfig.temperature` per ADR 0003 (0.7 for exploration).
+
+    `supervisor` (cycle 33, ADR 0005): optional SupervisorPort impl
+    consulted every `supervisor_every_k` iterations to judge whether
+    the agent has plateaued. When the supervisor returns
+    `stop_recommended=True`, the loop terminates early with
+    `finished=True` and a synthetic note carrying the supervisor's
+    reasoning.
+
+    `supervisor_every_k` (cycle 33): consult cadence. Default 0 means
+    NEVER consult (cycle-12 behavior; no change for existing campaigns
+    that pass no supervisor or pass NullSupervisor).
 
     Returns {iterations, messages, finished}.
     """
@@ -286,4 +298,23 @@ def run_loop(workspace, env_dir, tasks_dir, vllm_base_url, vllm_api_key,
             if name == 'finish':
                 finished = True
         messages.append({'role': 'user', 'content': '\n\n'.join(observations)})
+        # Cycle 33 (ADR 0005): supervisor hook. Every K iters, ask the
+        # supervisor whether to stop. We feed it a minimal per-iter sample
+        # `(iter_n, 0.0, 0, 0.0)` for now — cycle 34 will parse real
+        # dev_runner output into mean_score / max_tile.
+        if (supervisor is not None
+                and supervisor_every_k > 0
+                and iter_n % supervisor_every_k == 0
+                and not finished):
+            sweep = tuple((i, 0.0, 0, 0.0) for i in range(1, iter_n + 1))
+            decision = supervisor.judge(sweep)
+            if decision.stop_recommended:
+                messages.append({
+                    'role': 'user',
+                    'content': (
+                        f'<supervisor>stop_recommended=True. '
+                        f'reasoning: {decision.reasoning}</supervisor>'
+                    ),
+                })
+                finished = True
     return {'iterations': iter_n, 'messages': messages, 'finished': finished}

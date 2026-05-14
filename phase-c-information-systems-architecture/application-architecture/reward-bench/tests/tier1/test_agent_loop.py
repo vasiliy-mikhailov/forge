@@ -251,3 +251,101 @@ def test_when_run_loop_called_with_condense_callable_then_condense_invoked_befor
     roles = [m['role'] for m in first_call_messages]
     assert 'system' in roles
     assert 'user' in roles
+
+
+
+def test_when_supervisor_recommends_stop_then_run_loop_terminates_early(monkeypatch, tmp_path):
+    """Cycle 33: pin supervisor-hook seam in run_loop.
+
+    Stub supervisor returns stop_recommended=True on every judge call;
+    with supervisor_every_k=1 the loop should exit after iter 1."""
+    from src.tier1 import agent_loop as al
+    from src.reward_bench.entities.supervisor_decision import SupervisorDecision
+
+    # Arrange — stub model returns a syntactically-valid `view` tool call.
+    call_counter = {'n': 0}
+    def fake_call_model(*args, **kwargs):
+        call_counter['n'] += 1
+        return (
+            "```tool\n"
+            "{\"name\": \"view\", \"args\": {\"path\": \"/workspace\"}}\n"
+            "```"
+        )
+    monkeypatch.setattr(al, '_call_model', fake_call_model)
+
+    class _StubStopSupervisor:
+        def judge(self, sweep):
+            return SupervisorDecision(
+                plateau=True, stop_recommended=True, reasoning='stub stop',
+            )
+
+    workspace = tmp_path / 'ws'; workspace.mkdir()
+    env_dir = tmp_path / 'env'; env_dir.mkdir()
+    tasks_dir = tmp_path / 'tasks'; tasks_dir.mkdir()
+
+    # Act
+    result = al.run_loop(
+        workspace=workspace, env_dir=env_dir, tasks_dir=tasks_dir,
+        vllm_base_url='http://stub', vllm_api_key='stub',
+        max_iters=10,
+        supervisor=_StubStopSupervisor(),
+        supervisor_every_k=1,
+    )
+
+    # Assert
+    assert result['iterations'] == 1, (
+        f"expected iter==1 (supervisor stopped after first), got "
+        f"{result['iterations']}"
+    )
+    assert result['finished'] is True
+    assert call_counter['n'] == 1
+    last_msg_text = ''.join(
+        m.get('content', '') for m in result['messages'][-3:]
+    )
+    assert 'stub stop' in last_msg_text, (
+        f"supervisor reasoning not surfaced into final messages: "
+        f"{last_msg_text!r}"
+    )
+
+
+def test_when_supervisor_every_k_zero_then_supervisor_not_consulted(monkeypatch, tmp_path):
+    """Default supervisor_every_k=0 must keep cycle-12 behavior — supervisor
+    is NEVER consulted, no behavior change for existing campaigns."""
+    from src.tier1 import agent_loop as al
+    from src.reward_bench.entities.supervisor_decision import SupervisorDecision
+
+    # Arrange — model emits a finish call on the first turn so the loop
+    # exits cleanly via the normal path, not via supervisor.
+    def fake_call_model(*args, **kwargs):
+        return (
+            "```tool\n"
+            "{\"name\": \"finish\", \"args\": {\"note\": \"done\"}}\n"
+            "```"
+        )
+    monkeypatch.setattr(al, '_call_model', fake_call_model)
+
+    judge_counter = {'n': 0}
+    class _CountingSupervisor:
+        def judge(self, sweep):
+            judge_counter['n'] += 1
+            return SupervisorDecision(
+                plateau=False, stop_recommended=False, reasoning='nope',
+            )
+
+    workspace = tmp_path / 'ws'; workspace.mkdir()
+    env_dir = tmp_path / 'env'; env_dir.mkdir()
+    tasks_dir = tmp_path / 'tasks'; tasks_dir.mkdir()
+
+    # Act — pass a supervisor but leave supervisor_every_k at default (0).
+    result = al.run_loop(
+        workspace=workspace, env_dir=env_dir, tasks_dir=tasks_dir,
+        vllm_base_url='http://stub', vllm_api_key='stub',
+        max_iters=3,
+        supervisor=_CountingSupervisor(),
+    )
+
+    # Assert — supervisor never asked.
+    assert judge_counter['n'] == 0, (
+        f"supervisor consulted {judge_counter['n']} times with k=0 default"
+    )
+    assert result['finished'] is True  # via the normal finish path
