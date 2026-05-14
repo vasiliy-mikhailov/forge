@@ -31,15 +31,32 @@ _BODY_SPLIT_RE = re.compile(r'\n===FILE_BODY===\s*\n', re.DOTALL)
 
 
 def parse_tool_calls(reply):
+    """Cycle 51 / hypothesis #9: defensive parser. Bad JSON in one block
+    must not abort the iteration — return [] for that block so the loop
+    treats it as 'no tool calls' and the model gets another turn."""
     out = []
     for m in _TOOL_BLOCK_RE.finditer(reply):
         raw = m.group(1)
         parts = _BODY_SPLIT_RE.split(raw, maxsplit=1)
         json_part = parts[0].strip()
         body_part = parts[1] if len(parts) == 2 else None
-        obj = json.loads(json_part)
-        name = obj['name']
-        args = dict(obj.get('args') or {})
+        try:
+            obj = json.loads(json_part)
+        except json.JSONDecodeError:
+            # Legacy fallback: strip trailing commas/whitespace and retry.
+            try:
+                obj = json.loads(json_part.rstrip(', \t\n'))
+            except json.JSONDecodeError:
+                continue
+        if not isinstance(obj, dict):
+            continue
+        name = str(obj.get('name', '')).strip()
+        if not name:
+            continue
+        raw_args = obj.get('args') or {}
+        if not isinstance(raw_args, dict):
+            raw_args = {}
+        args = dict(raw_args)
         if body_part is not None:
             args['content'] = body_part
         out.append((name, args))

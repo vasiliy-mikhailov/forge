@@ -672,3 +672,39 @@ def test_when_finish_floor_zero_then_any_finish_accepted(monkeypatch, tmp_path):
     )
     assert result['finished'] is True
     assert result['iterations'] == 1
+
+
+
+def test_when_parse_tool_calls_given_malformed_json_then_returns_empty_list_without_raising():
+    """Cycle 51 / hypothesis #9: parse_tool_calls must be defensive."""
+    from src.tier1.agent_loop import parse_tool_calls
+    bad = (
+        "```tool\n"
+        '{"name": "view", "args": {"path": "/x"}}\n'
+        "extra text after JSON\n"
+        "```"
+    )
+    # Pre-fix this raises json.JSONDecodeError. Post-fix it returns [].
+    out = parse_tool_calls(bad)
+    assert out == [], f"expected [] from malformed block, got {out!r}"
+
+
+def test_when_parse_tool_calls_given_trailing_comma_then_recovers_via_rstrip():
+    """Legacy fallback: rstrip(', \\t\\n') lets trailing comma parse."""
+    from src.tier1.agent_loop import parse_tool_calls
+    body = (
+        "```tool\n"
+        '{"name": "view", "args": {"path": "/x"}},\n'  # trailing comma
+        "```"
+    )
+    out = parse_tool_calls(body)
+    assert len(out) == 1, f"expected 1 tool call (rstrip fallback), got {out!r}"
+    assert out[0][0] == 'view'
+
+
+def test_when_parse_tool_calls_given_non_dict_root_then_skipped():
+    """Reply with `[1,2,3]` (not a dict) must skip, not crash."""
+    from src.tier1.agent_loop import parse_tool_calls
+    body = "```tool\n[1,2,3]\n```"
+    out = parse_tool_calls(body)
+    assert out == []
