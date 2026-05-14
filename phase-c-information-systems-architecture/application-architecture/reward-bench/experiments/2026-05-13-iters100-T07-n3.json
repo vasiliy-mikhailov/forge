@@ -11,18 +11,18 @@
   },
   "n_trials": 3,
   "per_trial_mean": [
-    0.0,
-    0.0,
-    0.0
+    122.6,
+    15307.0,
+    9375.8
   ],
   "per_trial_protocol_valid": [
-    false,
+    true,
     true,
     true
   ],
-  "mean_of_means": 0.0,
-  "best_mean": 0.0,
-  "worst_mean": 0.0,
-  "max_max_tile": 0,
-  "aggregate_walltime_sec": 0.0
+  "mean_of_means": 8268.466666666665,
+  "best_mean": 15307.0,
+  "worst_mean": 122.6,
+  "max_max_tile": 2048,
+  "aggregate_walltime_sec": 62.422053374000825
 }

@@ -205,6 +205,50 @@ ADR 0007 (legacy blessed runner) is on track to be superseded once
 trials 2/3 confirm consistency. Docker isolation (ADR 0006 layer 2)
 is the remaining hardening cycle.
 
+### Cycle 71 active-loop campaign (post-cycle-70 verification, 3 trials)
+
+After cycle 70 deleted the duplicate game loop in `_execute_submission`
+(delegates to canonical `score_submission` use case), re-ran
+`test_iters100_T07_n3` on `qwen3.6-27b-awq` to verify the refactor
+did not regress the active loop.
+
+Per-trial: **[122.6, 15307.0, 9375.8]**
+  - mean_of_means = 8268.5
+  - best_mean = 15307.0
+  - worst_mean = 122.6
+  - max_max_tile = 2048 across all trials
+
+**Trial 2 = 15,307** is the cleanest result and confirms parity with
+cycle 67's 15,918 (within 4% noise). Cycle 70 refactor verified.
+
+**Trial 1 = 122.6** is a real-world repro of a NEW issue cycle 71
+exposed: dev-path / canonical-path budget asymmetry. The model wrote
+a Solver fast enough for the dev path's 30s/5seeds ≈ 6s/seed budget
+but slow on canonical's 60s/20seeds ≈ 3s/seed budget. canonical
+walltime_sec=60.0 (cap hit) and median=0 means most games
+walltime_exceeded'd. The dev signal misled the model into calling
+`finish()` on a Solver that doesn't survive canonical scoring.
+
+This is the motivation for **cycle 72**: derive `DEV_HARD_WALL_S`
+from the canonical config so dev's per-game budget MATCHES canonical's
+(currently 60×5/20 = 15s for the default campaign), making the dev
+signal honest by construction.
+
+Live evidence that **cycle 70 mechanisms fired correctly**:
+  - trial 1, 2, 3: no execute_submission wedge (cycle-69 bug
+    impossible by construction).
+  - trial 3: cycle-48 best-snapshot restore observed live —
+    `restored submission.best.py (dev MEAN=14696.0) to submission.py
+    for scoring` (model wrote a worse final submission; harness
+    restored the best one).
+  - all trials: cycle-65 finish-time promotion fired.
+  - canonical scoring on trials 2 + 3 completed in 1.1–1.3s (vs
+    trial 1's 60s cap) — the canonical scorer's per-game timeout
+    is doing its job too.
+
+Artifact: `experiments/2026-05-13-iters100-T07-n3.json`.
+Commit: cycle 70 = 17ef812 (the refactor).
+
 ## Reference baselines
 
 ### `tasks/2048/baselines/reference_fsm.py` (hand-written)
