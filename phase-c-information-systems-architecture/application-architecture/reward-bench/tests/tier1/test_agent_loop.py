@@ -1079,3 +1079,65 @@ def test_when_execute_submission_observation_observed_then_mean_feeds_best_dev_m
     # because we observed a new best (1000) on iter 1.
     best_path = workspace / 'submission.best.py'
     assert best_path.exists(), 'cycle-48 best-snapshot did not fire — best_dev_mean was never set'
+
+
+
+def test_when_finish_called_below_finish_floor_via_execute_submission_then_rejected_and_loop_continues(monkeypatch, tmp_path):
+    """Cycle 64: finish-floor via the ADR-0008 active data source.
+
+    Mirrors cycle-50's finish-floor test but uses execute_submission's
+    JSON observation (mean field) instead of bash dev_runner stdout."""
+    from src.tier1 import agent_loop as al
+
+    workspace = tmp_path / 'ws'; workspace.mkdir()
+    env_dir = tmp_path / 'env'; env_dir.mkdir()
+    tasks_dir = tmp_path / 'tasks'; tasks_dir.mkdir()
+    (workspace / 'submission.py').write_text('# placeholder')
+
+    script = iter([
+        # iter 1: finish — no prior execute_submission, best unknown
+        '```tool\n{"name": "finish", "args": {"note": "skipping"}}\n```',
+        # iter 2: execute_submission with mean=100 (below floor)
+        '```tool\n{"name": "execute_submission", "args": {}}\n===FILE_BODY===\n# v1\n```',
+        # iter 3: finish — best=100 < floor=200, rejected
+        '```tool\n{"name": "finish", "args": {"note": "good enough"}}\n```',
+        # iter 4: execute_submission with mean=500 (above floor)
+        '```tool\n{"name": "execute_submission", "args": {}}\n===FILE_BODY===\n# v2\n```',
+        # iter 5: finish — best=500 > floor=200, accepted
+        '```tool\n{"name": "finish", "args": {"note": "finally"}}\n```',
+    ])
+    def fake_call_model(*args, **kwargs):
+        return next(script)
+    monkeypatch.setattr(al, '_call_model', fake_call_model)
+
+    obs_iter = iter([
+        '<observation>{"protocol_violations": [], "per_seed": [{"seed":1,"score":100,"max_tile":64}], "mean": 100.0, "median": 100, "max_tile_best": 64, "walltime_sec_total": 0.3}</observation>',
+        '<observation>{"protocol_violations": [], "per_seed": [{"seed":1,"score":500,"max_tile":256}], "mean": 500.0, "median": 500, "max_tile_best": 256, "walltime_sec_total": 0.5}</observation>',
+    ])
+    def fake_execute_tool(name, args, ws_arg, *_, **__):
+        if name == 'execute_submission':
+            return next(obs_iter)
+        if name == 'finish':
+            return '<finish>ok</finish>'
+        return '<ok>'
+    monkeypatch.setattr(al, 'execute_tool', fake_execute_tool)
+
+    result = al.run_loop(
+        workspace=workspace, env_dir=env_dir, tasks_dir=tasks_dir,
+        vllm_base_url='http://stub', vllm_api_key='stub',
+        max_iters=10,
+        finish_floor=200.0,
+    )
+
+    assert result['iterations'] == 5, (
+        f'expected stop at iter 5 (2 rejected finishes + accepted); '
+        f'got iter={result["iterations"]}'
+    )
+    assert result['finished'] is True
+    rejected_count = sum(
+        1 for m in result['messages']
+        if m['role'] == 'user' and 'finish rejected' in m.get('content', '')
+    )
+    assert rejected_count >= 2, (
+        f'expected at least 2 finish-rejected observations; got {rejected_count}'
+    )
