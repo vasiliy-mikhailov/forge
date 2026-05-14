@@ -28,7 +28,7 @@ from src.tier1.adapters.game_board_2048 import GameBoard2048Adapter
 from src.tier1.agent_loop import run_loop
 from src.tier1.entities.attempt_result import AttemptResult
 from src.tier1.harness import load_submission, validate_submission_protocol
-from src.tier1.inference import ensure_serving
+from src.tier1.inference import ensure_serving_model
 from src.tier1.use_cases.score_submission import score_submission
 
 
@@ -156,7 +156,12 @@ def main(
     `config` defaults to ADR 0003 (500 iters, T=0.7); tests pass a
     smaller config to keep wall time bounded."""
     target = _pick_model(model_id)
-    base_url = ensure_serving()
+    # Cycle 73: pass the picked ModelTarget through so the lab vLLM
+    # container is (re)provisioned for THIS model. Before cycle 73,
+    # this was the bare cycle-11 ensure_serving() which hardcoded AWQ
+    # and silently overrode any earlier ensure_serving_model(target)
+    # call — uncovered live during cycle 72's multi-model smoke.
+    base_url = ensure_serving_model(target)
     api_key = os.environ['VLLM_API_KEY']
 
     workspace = Path(tempfile.mkdtemp(prefix='reward-bench-main-'))

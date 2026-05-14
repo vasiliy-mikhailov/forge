@@ -1,4 +1,5 @@
 """End-to-end bench test. See tests-spec/reward_bench/frameworks/main/."""
+import pytest
 from src.reward_bench.entities.bench_config import BenchConfig
 from src.tier1.entities.attempt_result import AttemptResult
 
@@ -102,8 +103,8 @@ def test_when_main_loads_submission_with_syntax_error_then_sentinel_emitted(monk
     def fake_run_loop(*, workspace, **kwargs):
         (workspace / 'submission.py').write_text('</body>\n')
 
-    monkeypatch.setattr(main_mod, 'ensure_serving',
-                        lambda: 'http://stub')
+    monkeypatch.setattr(main_mod, 'ensure_serving_model',
+                        lambda target: 'http://stub')
     monkeypatch.setattr(main_mod, 'run_loop', fake_run_loop)
     monkeypatch.setenv('VLLM_API_KEY', 'stub')
 
@@ -126,8 +127,8 @@ def test_when_main_invoked_then_config_hard_wall_sec_passed_to_score_submission(
     from src.tier1.entities.game_result import GameResult
 
     # Arrange — short-circuit serving + agent loop + adapter.
-    monkeypatch.setattr(main_mod, 'ensure_serving',
-                        lambda: 'http://stub')
+    monkeypatch.setattr(main_mod, 'ensure_serving_model',
+                        lambda target: 'http://stub')
     monkeypatch.setenv('VLLM_API_KEY', 'stub')
 
     def fake_run_loop(*, workspace, **kwargs):
@@ -176,8 +177,8 @@ def test_when_main_invoked_then_config_supervisor_every_k_passed_to_run_loop(mon
     from src.tier1.entities.game_result import GameResult
 
     # Arrange — short-circuit serving + score_submission; recording run_loop.
-    monkeypatch.setattr(main_mod, 'ensure_serving',
-                        lambda: 'http://stub')
+    monkeypatch.setattr(main_mod, 'ensure_serving_model',
+                        lambda target: 'http://stub')
     monkeypatch.setenv('VLLM_API_KEY', 'stub')
 
     captured = {'kwargs': None}
@@ -217,3 +218,51 @@ def test_when_main_invoked_then_config_supervisor_every_k_passed_to_run_loop(mon
     assert isinstance(supervisor, SupervisorPort), (
         f"supervisor does not satisfy SupervisorPort; got {type(supervisor).__name__}"
     )
+
+
+
+def test_when_main_invoked_then_uses_ensure_serving_model_with_picked_target(monkeypatch):
+    """Cycle 73: main() must wire the picked ModelTarget through to
+    ensure_serving_model (cycle 42), not the legacy ensure_serving().
+
+    Real-world repro: cycle 72 multi-model smoke. main() was calling
+    ensure_serving() which hardcodes AWQ, silently overriding the
+    test's ensure_serving_model(target) swap. Every smoke ran against
+    AWQ regardless of parameter."""
+    from src.reward_bench.frameworks import main as main_module
+    from src.reward_bench.entities.bench_config import BenchConfig
+
+    captured = {}
+
+    def fail_legacy(*args, **kwargs):
+        raise AssertionError(
+            "main called the legacy ensure_serving() — should call "
+            "ensure_serving_model(target) per cycle 73."
+        )
+
+    def stop_after_correct_call(target):
+        captured["target"] = target
+        raise RuntimeError(f"test marker — saw correct call with {target.id}")
+
+    # If main still imports the legacy name, patch it to fail loudly.
+    if hasattr(main_module, "ensure_serving"):
+        monkeypatch.setattr(main_module, "ensure_serving", fail_legacy)
+    # The fix: main should import ensure_serving_model and use it.
+    if hasattr(main_module, "ensure_serving_model"):
+        monkeypatch.setattr(main_module, "ensure_serving_model", stop_after_correct_call)
+    else:
+        pytest.fail(
+            "main does not import ensure_serving_model yet; cycle 73 fix not in place"
+        )
+
+    with pytest.raises(RuntimeError, match="test marker"):
+        main_module.main(
+            model_id="qwen3.6-27b-fp8",
+            config=BenchConfig(max_iters=1, n_trials=1, hard_wall_sec=60.0),
+        )
+
+    assert "target" in captured, "ensure_serving_model was never called"
+    target = captured["target"]
+    assert target.id == "qwen3.6-27b-fp8", target.id
+    assert target.served_name == "qwen3.6-27b-fp8", target.served_name
+    assert target.hf_path == "Qwen/Qwen3.6-27B-FP8", target.hf_path
