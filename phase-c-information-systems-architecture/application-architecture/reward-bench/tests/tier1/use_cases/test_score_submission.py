@@ -152,3 +152,51 @@ def test_when_score_submission_called_with_env_that_hangs_one_game_then_returns_
         f'first game (the hung one) should be sentinel; got '
         f'{result.games[0].final_state!r}'
     )
+
+
+
+class _NeverCalledEnv:
+    """Stub env whose play_one_game should never be reached because
+    solver_factory crashes first."""
+    def play_one_game(self, solver, seed):
+        raise AssertionError(
+            'play_one_game should not be reached when solver_factory raises'
+        )
+
+
+def _crashing_factory():
+    """Stub solver_factory: raises AttributeError on every call —
+    reproduces campaign10 (Solver.__init__ crash)."""
+    raise AttributeError("'start' does not exist on <Machine@stub>")
+
+
+def test_when_solver_factory_raises_then_returns_game_result_with_final_state_solver_error():
+    """Cycle 29 (no-silent-fix): score_submission catches solver_factory
+    runtime errors and emits per-seed GameResult(final_state='solver_error')
+    instead of propagating.
+
+    Reproduces campaign10: AttributeError inside Solver.__init__() escaped
+    score_submission and failed the campaign with no partial leaderboard."""
+    # Arrange
+    env = _NeverCalledEnv()
+
+    # Act
+    result = score_submission(
+        solver_factory=_crashing_factory,
+        seeds=[1, 2, 3],
+        env=env,
+        hard_wall_sec=1.0,
+    )
+
+    # Assert
+    assert result.n_games == 3, f'expected 3 sentinels; got {result.n_games}'
+    for g in result.games:
+        assert g.final_state == 'solver_error', (
+            f"seed {g.seed} expected 'solver_error' sentinel; "
+            f"got {g.final_state!r}"
+        )
+        assert g.score == 0
+        assert g.moves == 0
+    assert result.walltime_exceeded is False, (
+        'solver_factory crash is not a walltime bug'
+    )

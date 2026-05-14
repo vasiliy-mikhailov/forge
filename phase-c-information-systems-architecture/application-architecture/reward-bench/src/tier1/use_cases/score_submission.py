@@ -46,6 +46,32 @@ def _walltime_exceeded_sentinel(seed: int) -> GameResult:
     )
 
 
+def _solver_error_sentinel(seed: int) -> GameResult:
+    """Cycle 29: per-seed sentinel when solver_factory() raises.
+
+    Reproduces campaign10 shape: Solver.__init__ AttributeError. The
+    factory crash is uniform across seeds, but emitting one sentinel
+    per seed preserves the n_games == len(seeds) artifact contract.
+    See tests-spec/tier1/use_cases/score_submission/
+    test_spec_when_solver_factory_raises_..."""
+    return GameResult(
+        seed=seed, score=0, max_tile=2, moves=0,
+        final_state='solver_error', walltime_sec=0.0,
+    )
+
+
+def _build_solver_or_none(solver_factory):
+    """Cycle 29: call solver_factory() with sentinel-on-crash.
+
+    Returns the solver on success, None on Exception. Callers MUST
+    emit _solver_error_sentinel for the current seed when this
+    returns None."""
+    try:
+        return solver_factory()
+    except Exception:
+        return None
+
+
 def _play_with_timeout(env, solver, seed, timeout) -> Optional[GameResult]:
     """Run env.play_one_game in a daemon thread; return the result if it
     completes within `timeout`, else None.
@@ -90,6 +116,13 @@ def score_submission(
     seeds_tuple = tuple(seeds)
     games_list = []
     for seed in seeds_tuple:
+        # Cycle 29: build solver with sentinel-on-crash BEFORE entering
+        # play_one_game. A failing __init__ is uniform across seeds but
+        # we still emit one sentinel per seed (preserves n_games shape).
+        solver = _build_solver_or_none(solver_factory)
+        if solver is None:
+            games_list.append(_solver_error_sentinel(seed))
+            continue
         if hard_wall_sec > 0:
             remaining = hard_wall_sec - (time.monotonic() - start)
             if remaining <= 0:
@@ -97,14 +130,14 @@ def score_submission(
                 games_list.append(_walltime_exceeded_sentinel(seed))
                 continue
             # Cycle 27: per-game cap = remaining aggregate budget.
-            game = _play_with_timeout(env, solver_factory(), seed, timeout=remaining)
+            game = _play_with_timeout(env, solver, seed, timeout=remaining)
             if game is None:
                 # This game alone burned the rest of the budget.
                 games_list.append(_walltime_exceeded_sentinel(seed))
                 continue
             games_list.append(game)
         else:
-            games_list.append(env.play_one_game(solver_factory(), seed))
+            games_list.append(env.play_one_game(solver, seed))
     games = tuple(games_list)
     scores = [g.score for g in games]
     max_tiles = [g.max_tile for g in games]
