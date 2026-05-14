@@ -20,7 +20,7 @@ from src.reward_bench.use_cases.model_registry import MODEL_REGISTRY
 
 
 REPO = Path(__file__).resolve().parents[4]
-BAK_AGENT = REPO / '_bak' / 'bin' / 'agent_loop.py'
+RUNNER = REPO / 'src' / 'tier1' / 'legacy_agent_loop.py'  # ADR 0007
 CANONICAL_SEEDS = list(range(1000, 1020))
 
 
@@ -105,7 +105,7 @@ def test_when_per_model_bench_run_with_bak_runner_then_canonical_artifact_emitte
     temperature = float(os.environ.get('BENCH_TEMPERATURE', '0.7'))
 
     cmd = [
-        'python3', '-u', str(BAK_AGENT),
+        'python3', '-u', str(RUNNER),
         '--shim', base_url,
         '--api-key', api_key,
         '--model', model.served_name,
@@ -132,7 +132,7 @@ def test_when_per_model_bench_run_with_bak_runner_then_canonical_artifact_emitte
     payload = {
         'model_id': model.id,
         'served_name': model.served_name,
-        'runner': '_bak/bin/agent_loop.py',
+        'runner': 'src/tier1/legacy_agent_loop.py',
         'seed': seed,
         'temperature': temperature,
         'max_iters': max_iters,
@@ -154,7 +154,7 @@ def test_when_per_model_bench_run_with_bak_runner_then_canonical_artifact_emitte
                 'max_iters', 'n_canonical_games', 'scores',
                 'mean', 'median', 'max', 'min', 'max_max_tile'):
         assert key in on_disk, f'missing key {key}'
-    assert on_disk['runner'] == '_bak/bin/agent_loop.py'
+    assert on_disk['runner'] == 'src/tier1/legacy_agent_loop.py'
     assert on_disk['n_canonical_games'] == 20
     assert len(on_disk['scores']) == 20
     for k in ('mean', 'median', 'max', 'min', 'max_max_tile'):

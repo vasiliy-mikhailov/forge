@@ -15,7 +15,7 @@ cycle 39 prompt revert).
 
 In cycle 40 we discovered a real regression. Two reproducible facts:
 
-1. The legacy script at `_bak/bin/agent_loop.py` ran unmodified
+1. The legacy script (now promoted in cycle 47 to `src/tier1/legacy_agent_loop.py`) ran unmodified
    against the current vLLM endpoint (qwen3.6-27b-awq) produces
    `mean_score=10847 / 11734 / 3406` across three seeds — matching
    the historical 2026-05-05 stage2 result of `10884`.
@@ -39,7 +39,7 @@ cells. We have two unsatisfactory options:
 A third option:
 
 - **C. Score with the legacy loop pinned as a "blessed runner".**
-  Run `_bak/bin/agent_loop.py` as a subprocess from the per-model
+  Run `src/tier1/legacy_agent_loop.py` as a subprocess from the per-model
   test. Numbers match the historical reference. The legacy loop is
   text-stable (no further commits planned) so reproducibility is
   preserved.
@@ -48,7 +48,7 @@ A third option:
 
 Adopt option C. Until the regression in `src/tier1/agent_loop.py` is
 bisected, per-model bench data points are produced by invoking the
-legacy `_bak/bin/agent_loop.py` as a subprocess. The legacy loop is
+legacy `src/tier1/legacy_agent_loop.py` as a subprocess. The legacy loop is
 **the BLESSED RUNNER** for the purpose of multi-model leaderboard
 production.
 
