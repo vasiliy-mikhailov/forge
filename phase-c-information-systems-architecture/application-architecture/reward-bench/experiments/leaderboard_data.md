@@ -122,6 +122,40 @@ config × model cell.
     when iters run out, not plateauing.
 
 
+### Cycle 40 reproduction (_bak/bin/agent_loop.py, qwen3.6-27b-awq)
+
+User question: 'why did _bak get 15k?' Investigation:
+
+1. The leaderboard's 15920 was the legacy mistral-small-24b multi-trial
+   campaign (`/mnt/.../experiments/2026-05-08-campaign-mistral-small-24b-trial8/`).
+   NOT qwen3.6-27b-awq.
+
+2. _bak's actual qwen3.6-27b-awq single-trial best was 10884
+   (`/mnt/.../experiments/2026-05-05-qwen3.6-27b-awq-int4-tier1/`).
+
+3. Cycle 36-37 in OUR src/tier1/agent_loop.py: best 6525. That's a
+   ~40 percent regression vs same model under _bak's loop. ROOT CAUSE
+   suspected in our prompt drift OR loop wiring — needs cycle 41 bisect.
+
+Reproduction with _bak/bin/agent_loop.py UNMODIFIED (just edited
+context-budget-tokens=100000 to fit the new 128K vLLM), same vLLM
+endpoint, same model, three trials with seeds 1/2/3 in parallel,
+max_iters=100/200, temperature=0.7:
+
+| Trial | Mean | Median | Max | Top tiles |
+|-------|------|--------|-----|-----------|
+| v2 (seed=1) | 10847 | 10284 | 28064 | 2048 x3 |
+| t2 (seed=2) | 11734 | 12208 | 22224 | 2048 |
+| t3 (seed=3) | 3406  | 3124  | 6084  | 512 |
+
+best_mean = 11734  mean_of_means = 8662  max_single = 28064
+
+Two of three trials cleanly beat _bak's 10884 baseline. This confirms
+the model is NOT the bottleneck. Our pipeline broke; _bak's didn't.
+
+Next: cycle 41 — bisect what diverged between _bak/bin/agent_loop.py
+and src/tier1/agent_loop.py.
+
 ## Reference baselines
 
 ### `tasks/2048/baselines/reference_fsm.py` (hand-written)
