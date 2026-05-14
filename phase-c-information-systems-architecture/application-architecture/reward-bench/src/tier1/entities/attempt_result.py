@@ -21,3 +21,4 @@ class AttemptResult:
     hard_wall_sec: float = 0.0
     stagnated_any: bool = False
     walltime_exceeded: bool = False
+    solver_protocol_valid: bool = True  # cycle 55

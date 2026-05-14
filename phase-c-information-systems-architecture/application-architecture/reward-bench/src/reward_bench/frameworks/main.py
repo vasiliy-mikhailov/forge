@@ -57,7 +57,7 @@ def _pick_model(model_id: str) -> ModelTarget:
     )
 
 
-def _sentinel_attempt_result(reason: str) -> AttemptResult:
+def _sentinel_attempt_result(reason: str, *, protocol_invalid: bool = False) -> AttemptResult:
     """Empty AttemptResult emitted when the submission is malformed (ADR 0002)."""
     print(f'[bench] submission shape error: {reason}')
     return AttemptResult(
@@ -68,6 +68,7 @@ def _sentinel_attempt_result(reason: str) -> AttemptResult:
         n_games=0,
         aggregate_walltime_sec=0.0,
         games=(),
+        solver_protocol_valid=not protocol_invalid,
     )
 
 
@@ -205,7 +206,8 @@ def main(
     violations = validate_submission_protocol(module)
     if violations:
         return _sentinel_attempt_result(
-            f'submission protocol violation: {violations[0]}'
+            f'submission protocol violation: {violations[0]}',
+            protocol_invalid=True,
         )
     SolverCls = module.Solver
 

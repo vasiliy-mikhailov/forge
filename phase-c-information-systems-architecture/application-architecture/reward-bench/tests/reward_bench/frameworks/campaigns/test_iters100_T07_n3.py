@@ -42,11 +42,13 @@ def test_when_campaign_run_with_iters100_T07_n3_then_artifact_written_with_requi
         runner=main,
     )
     per_trial_mean = [t.mean_score for t in trials]
+    per_trial_protocol_valid = [bool(t.solver_protocol_valid) for t in trials]
     data = {
         'model_id': 'qwen3.6-27b-awq',
         'config': asdict(CONFIG),
         'n_trials': len(trials),
         'per_trial_mean': per_trial_mean,
+        'per_trial_protocol_valid': per_trial_protocol_valid,
         'mean_of_means': sum(per_trial_mean) / len(per_trial_mean),
         'best_mean': max(per_trial_mean),
         'worst_mean': min(per_trial_mean),
@@ -77,3 +79,14 @@ def test_when_campaign_run_with_iters100_T07_n3_then_artifact_written_with_requi
         )
     assert isinstance(loaded['max_max_tile'], int)
     assert loaded['max_max_tile'] >= 0
+    # Cycle 55: regression guard — at least one trial MUST produce a
+    # submission that satisfies the SKILL_tier1.md protocol. Closes the
+    # CATS hole where shape-only checks passed on all-Gym-style trials.
+    assert 'per_trial_protocol_valid' in loaded
+    assert len(loaded['per_trial_protocol_valid']) == 3
+    assert any(loaded['per_trial_protocol_valid']), (
+        f"0/3 trials produced a protocol-valid submission. "
+        f"Active loop regression — see "
+        f"docs/hypotheses_agent_loop_regression.md. "
+        f"per_trial_protocol_valid={loaded['per_trial_protocol_valid']}"
+    )
