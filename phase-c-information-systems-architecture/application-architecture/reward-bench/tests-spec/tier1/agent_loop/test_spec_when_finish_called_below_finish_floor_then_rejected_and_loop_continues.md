@@ -7,23 +7,35 @@ when `best_dev_mean < finish_floor` (default 7211 = the reference_fsm
 baseline). When rejected, the tool observation is a clear error
 message and the loop CONTINUES — the model is forced to:
 
-1. Actually call `bash python3 /tasks/2048/dev_runner.py ...` before
-   claiming done.
+1. Actually obtain a dev MEAN signal before claiming done.
 2. Iterate until its submission scores above the floor.
 
 Cycle 49 discovered the active loop without this guardrail lets the
-model write a Solver-less Gym-style submission and call finish on
-turn 1, which sentinels the trial. Cycle-48 best-snapshot can never
-fire because the model never ran dev_runner.
+model write a Solver-less submission and call `finish` on turn 1,
+which sentinels the trial. Cycle-48 best-snapshot can never fire
+because the model never produced dev-mean data.
 
-- **Arrange**: stub `_call_model` to emit a scripted sequence:
-    1. `finish` (no prior dev_runner — best_dev_mean unknown)
-    2. `bash dev_runner` returning `MEAN=100`
-    3. `finish` (best_dev_mean=100 < floor=200)
-    4. `bash dev_runner` returning `MEAN=500`
-    5. `finish` (best_dev_mean=500 > floor=200) — accepted.
-  monkeypatch `execute_tool` to return dev_runner outputs on bash and
-  ok on write/finish.
+The data source for `best_dev_mean` depends on which tool the model
+uses:
+
+- **Active path** ([ADR 0008](../../../../docs/adr/0008-docker-sandboxed-execute-submission-tool.md)):
+  `execute_submission` returns a structured JSON observation whose
+  `mean` field updates `best_dev_mean`.
+- **Legacy path** (deprecated; behind `--legacy-write-file`): `bash
+  python3 /tasks/2048/dev_runner.py /workspace/submission.py` whose
+  parsed stdout MEAN line updates `best_dev_mean`. The cycle-34
+  parser already understands this format.
+
+Both paths feed the same `best_dev_mean` accumulator and the same
+finish-floor check.
+
+- **Arrange**: stub `_call_model` to emit a scripted sequence under
+  EITHER active or legacy tool:
+    1. `finish` (no prior dev-mean — best unknown)
+    2. dev-mean source returning `mean=100` (below floor)
+    3. `finish` (best=100 < floor=200)
+    4. dev-mean source returning `mean=500` (above floor)
+    5. `finish` (best=500 > floor=200) — accepted.
 - **Act**: `run_loop(..., max_iters=10, finish_floor=200.0)`.
 - **Assert**:
   - `result['iterations'] == 5` (loop ran past 2 rejected finishes).

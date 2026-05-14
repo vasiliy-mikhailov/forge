@@ -163,22 +163,39 @@ Status: planned. Not currently implemented.
 ### Interactive — tool-using agent loop
 
 The model is given a workspace, an env module, and a tool protocol. It
-reads files (view), runs shell commands (bash), writes the submission
-file, and signals completion (finish). The loop runs up to a per-attempt
-iteration cap or until the model calls finish. The submission file
-present in the workspace at finish time is the one that gets scored.
+reads files (view), submits code for evaluation (execute_submission),
+and signals completion (finish). The loop runs up to a per-attempt
+iteration cap or until the model calls finish. The submission body
+from the most recent successful `execute_submission` call is what gets
+scored at finish time (the bench promotes it into the final
+`/workspace/submission.py`).
 
 Tool-call wire format: each call is one fenced block in the assistant
 reply:
 
     ```tool
-    {"name": "<view|bash|finish>", "args": {<...>}}
+    {"name": "<active-tool-name>", "args": {<...>}}
     ```
 
-Per-call semantics:
-  - view(path)   read file contents into the next prompt.
-  - bash(cmd)    run cmd in the sandbox; stdout/stderr into the next prompt.
-  - finish(note) end the loop; current submission file is scored.
+Active tool set (per [ADR 0008](docs/adr/0008-docker-sandboxed-execute-submission-tool.md)):
+  - view(path)              read file contents into the next prompt.
+  - execute_submission(content) write the submission body into a
+                            sandboxed `reward-bench-tier${TIER}` Docker
+                            container, run the dev-runner, return a
+                            structured JSON observation
+                            (per-seed scores, max-tile, protocol
+                            violations, runtime tracebacks).
+  - finish(note)            end the loop; the most recent
+                            execute_submission body is promoted to
+                            `/workspace/submission.py` for canonical
+                            scoring.
+
+Legacy tool set (kept behind `--legacy-write-file` for one transitional
+cycle; will be removed when [ADR 0007](docs/adr/0007-per-model-bench-uses-blessed-runner-until-agent-loop-bisect.md)
+is superseded):
+  - bash(cmd)               run cmd on the host (NOT sandboxed);
+                            stdout/stderr into the next prompt.
+  - write_file(path)        overwrite a file under /workspace/.
 
 The parser that decodes assistant replies into (name, args) tuples is
 specified in spec/parser.md.

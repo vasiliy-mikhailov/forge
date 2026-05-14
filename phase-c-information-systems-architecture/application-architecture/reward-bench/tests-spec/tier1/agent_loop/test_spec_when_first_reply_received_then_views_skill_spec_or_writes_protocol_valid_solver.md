@@ -1,22 +1,28 @@
 # `test_when_first_reply_received_then_views_skill_spec_or_writes_protocol_valid_solver`
 
-The **prompt is software**: per the user CATS principle that surfaced
-in cycle 56, the SYSTEM_PROMPT + FIRST_USER pair MUST cause the model
-under test to either:
+The **prompt is software**: per [ADR 0008](../../../../docs/adr/0008-docker-sandboxed-execute-submission-tool.md)
+and the cycle-56 CATS principle, the `SYSTEM_PROMPT + FIRST_USER` pair
+MUST cause the model under test to either:
 
   (a) **view** `/tasks/2048/SKILL_tier1.md` to read the protocol — or
-  (b) directly **write_file** a `/workspace/submission.py` whose body
-      passes [`validate_submission_protocol`](../../../../src/tier1/harness.py)
-      (class Solver + move(self, board) -> 'W'|'A'|'S'|'D')
+  (b) directly emit a protocol-valid Solver via:
+      - **`execute_submission`** (the active tool per ADR 0008) with a
+        body whose load+validate yields no
+        [`validate_submission_protocol`](../../../../src/tier1/harness.py)
+        violations, OR
+      - **`write_file`** with `path == '/workspace/submission.py'`
+        whose contents pass `validate_submission_protocol` (legacy
+        path, retained behind `--legacy-write-file` until ADR 0007
+        is superseded).
 
 on the FIRST reply. If neither happens, the prompt is broken — the
 test goes RED and we iterate on the prompt until GREEN.
 
-This closes the user-identified gap from cycle 54: cycle 53's
-validator only flagged invalid submissions AFTER the run; cycle 55's
-campaign guard only flagged campaigns where ALL trials failed. Cycle
-56 catches the bug at the source — the prompt itself failing to
-instruct the model into reading the spec.
+This closes the gap from cycle 54: cycle 53's validator only flagged
+invalid submissions AFTER the run; cycle 55's campaign guard only
+flagged campaigns where ALL trials failed. Cycle 56 catches the bug
+at the source — the prompt itself failing to instruct the model to
+read the spec.
 
 - **Arrange**: import `SYSTEM_PROMPT`, `FIRST_USER`, `_call_model`,
   `parse_tool_calls`, `validate_submission_protocol`,
@@ -27,8 +33,10 @@ instruct the model into reading the spec.
   - At least one tool call returned.
   - First tool call is either:
       - `view` with `path == '/tasks/2048/SKILL_tier1.md'`, OR
+      - `execute_submission` with `args['content']` body that
+        load+validate yields no violations, OR
       - `write_file` with `path == '/workspace/submission.py'`
-        AND a `content` body whose load+validate yields no violations.
+        AND body that load+validate yields no violations.
 
 Pytest marker: `@pytest.mark.live` — opt-in, requires
 `VLLM_API_KEY` and a healthy vLLM at `reward-bench-vllm`.

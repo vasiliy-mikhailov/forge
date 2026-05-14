@@ -76,6 +76,25 @@ pattern with a single sandboxed tool:
   - `runtime_traceback: '...'` (per-game Solver crash)
   - `exit_code != 0` only on infrastructure errors (Docker unreachable)
 
+### Finish-time promotion to `/workspace/submission.py`
+
+Cycle 59 audit gap. `execute_submission` writes the body to a transient
+path inside the Docker container, NOT to host `/workspace/submission.py`.
+But canonical scoring (`GameBoard2048Adapter`) reads
+`/workspace/submission.py` at finish time.
+
+Resolution: the bench remembers the LAST submission body that produced
+a non-error observation (any `execute_submission` call whose JSON
+contained `per_seed != []`). At `finish`, the bench writes that body
+to `/workspace/submission.py`. If no successful execute_submission ever
+ran, an empty file is written and the canonical scoring path emits its
+existing `submission protocol violation: ...` sentinel (cycle 53).
+
+This makes the test_spec
+[`test_when_run_loop_produces_submission_then_solver_move_returns_one_of_wasd`](../../tests-spec/tier1/agent_loop/test_spec_when_run_loop_produces_submission_then_solver_move_returns_one_of_wasd.md)
+stay meaningful under ADR 0008 — workspace/submission.py at loop end
+is exactly the model's best successful dev-time body.
+
 ### Removed surfaces
 
 - `write_file` (deprecated for tier 1) — no longer the way to ship a
