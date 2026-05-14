@@ -1,0 +1,128 @@
+# ADR 0008 — Docker-sandboxed `execute_submission` tool replaces `write_file` + `bash dev_runner`
+
+## Status
+
+Accepted (2026-05-14). Active. Supersedes the host-side dev_runner
+contract from cycles 12-56 for tier-1 evaluation.
+
+## Context
+
+The current tier-1 ralph loop has the model write `submission.py`
+to the host workspace via `write_file`, then optionally invoke
+`bash python3 /tasks/2048/dev_runner.py /workspace/submission.py`
+to score it on dev seeds. Cycle 56 measurements (and the user
+observation at cycle 57 design) showed problems with this shape:
+
+1. **The model can write any number of files under `/workspace/`** —
+   helper files, its own dev_runner.py copies, its own test
+   scaffolding. This proliferation distracts from the canonical
+   contract (`/workspace/submission.py` is the only file scored).
+2. **The model often doesn't call `dev_runner`** — it writes code
+   and calls `finish` without observing the actual reward signal
+   (observed in cycles 49, 51, 54, 56 active-loop campaigns).
+3. **Two distinct surfaces (write_file + bash) for one logical
+   action (compile + score)** — splits responsibility, makes
+   feedback noisier, makes the ralph-loop unit unclear.
+4. **The host-side dev_runner is not sandboxed** — it runs in the
+   bench process. Per [SPEC.md](../../SPEC.md), tier-1 scoring is
+   supposed to happen in a `reward-bench-tier1` Docker container
+   (`--network=none`, immutable image, /env + /workspace + /reports
+   mounts). Today only the FINAL scoring step uses Docker (via
+   `GameBoard2048Adapter`) — the dev-runner-during-ralph-loop
+   doesn't.
+
+## Decision
+
+Replace the current "model writes submission.py to host + bash dev_runner"
+pattern with a single sandboxed tool:
+
+    ```tool
+    {"name": "execute_submission", "args": {}}
+    ===FILE_BODY===
+    from __future__ import annotations
+    from transitions import Machine
+    class Solver:
+        def __init__(self): ...
+        def move(self, board): return 'W'
+    ```
+
+### Tool contract
+
+- **Input** — the model emits the FULL submission body inline (same
+  fenced-body shape as today's `write_file`). No path required; the
+  body IS the submission.
+- **Action** — the bench:
+  1. Writes the body to a transient path inside the tier-1 Docker
+     image (`reward-bench-tier1:${VERSION}`).
+  2. Runs the canonical `dev_runner.py` against it inside the
+     container (`--network=none`, deterministic seed list).
+  3. Parses dev_runner's structured output.
+- **Output** — JSON observation returned to the model:
+    {
+      "exit_code": 0,
+      "per_seed": [{"seed": 1, "score": 1024, "max_tile": 256,
+                    "moves": 312, "state": "lost",
+                    "walltime_sec": 0.4, "err": null}, ...],
+      "mean": 870.0, "median": 928,
+      "max_tile_best": 256,
+      "walltime_sec_total": 2.1,
+      "protocol_violations": [],
+      "runtime_traceback": null
+    }
+- **Error shapes** — `execute_submission` NEVER raises. Failure modes
+  surface in the structured output:
+  - `protocol_violations: ['no Solver class', ...]` (cycle-53
+    validator integrated)
+  - `runtime_traceback: '...'` (per-game Solver crash)
+  - `exit_code != 0` only on infrastructure errors (Docker unreachable)
+
+### Removed surfaces
+
+- `write_file` (deprecated for tier 1) — no longer the way to ship a
+  submission. Model can still use it for transient drafts but the
+  scoring is decoupled.
+- `bash dev_runner` (deprecated for tier 1) — replaced by
+  `execute_submission`.
+
+### Final scoring is unchanged
+
+The canonical 20-seed scoring (`score_submission` →
+`GameBoard2048Adapter`) STILL runs in the same Docker tier-1
+container. `execute_submission` is the dev-time feedback variant;
+final scoring is the held-out variant on different seeds.
+
+## Consequences
+
+- **Cleaner ralph loop unit**: one tool call → one structured
+  observation. Model can't proliferate auxiliary files in
+  `/workspace/`.
+- **Aligns with SPEC.md**: dev runs are sandboxed exactly like final
+  scoring. No host execution drift.
+- **Better observability**: structured per-seed output is logged in
+  the trace; cycle-56's per-trial protocol-violations field becomes
+  a first-class field of every dev run.
+- **Migration path**: `write_file` stays available behind a
+  `--legacy-write-file` flag for one transitional cycle; the active
+  loop's SYSTEM_PROMPT example is updated to show
+  `execute_submission` instead of `write_file` + `bash`.
+- **ADR 0006 layer 2 dependency**: the `reward-bench-tier1` image
+  must be built and pullable. Implementation cycles will need to
+  finalise the Dockerfile + immutable tag scheme already sketched in
+  ADR 0006.
+
+## Related
+
+- [ADR 0002](0002-main-emits-sentinel-on-malformed-submission.md) —
+  sentinel-on-malformed-submission. `execute_submission` carries the
+  sentinel reasons into its structured output instead of needing a
+  separate AttemptResult shortcut.
+- [ADR 0006](0006-sandboxed-scoring-docker-tier1-and-walltime-budget.md)
+  — docker tier-1 + walltime budget. `execute_submission` is the
+  dev-time application of ADR 0006's runner layer.
+- [ADR 0007](0007-per-model-bench-uses-blessed-runner-until-agent-loop-bisect.md)
+  — blessed runner. Once `execute_submission` lands, the
+  active loop should reach parity with legacy and ADR 0007 can be
+  superseded.
+- Task #7 in the open task list: "Wire SPEC.md Docker-sandbox:
+  runner_canonical.py inside reward-bench-tier1 container" — this
+  ADR is the design preamble.
