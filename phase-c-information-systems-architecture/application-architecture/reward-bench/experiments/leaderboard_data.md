@@ -196,3 +196,4 @@ Knob tuning alone may NOT close the gap. Cycle-22 data suggests the
 model plateaus around 3000-3500; supervisor + better prompts +
 restart-on-plateau may be required.
 | `qwen3.6-27b-awq` | 1 | 0.7 | 200 | 2551 | 2432 | 4948 | 992 | 256 | `2026-05-14-qwen3.6-27b-awq-bak-runner.json` |
+| `qwen3.5-27b-nvfp4` | 1 | 0.7 | 200 | 8705 | 7624 | 16852 | 2776 | 1024 | `2026-05-14-qwen3.5-27b-nvfp4-bak-runner.json` |
