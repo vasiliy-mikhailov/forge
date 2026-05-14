@@ -1,6 +1,6 @@
-"""Per-model bench data point using _bak/bin/agent_loop.py as blessed runner.
+"""Per-model bench data point. See ADR 0007 for the blessed-runner choice.
 
-See tests-spec/reward_bench/frameworks/campaigns/test_spec_when_per_model_bench_run_with_bak_runner_*.md.
+See tests-spec/reward_bench/frameworks/campaigns/test_spec_when_per_model_bench_run_then_canonical_artifact_emitted.md.
 
 Run: BENCH_MODEL_ID=qwen3.6-27b-awq pytest -m campaign tests/reward_bench/frameworks/campaigns/test_per_model_bak_runner.py -v -s
 
