@@ -593,3 +593,82 @@ def test_when_run_loop_observes_new_best_dev_mean_then_snapshots_submission_for_
     best = workspace / 'submission.best.py'
     assert best.exists(), 'submission.best.py should have been written'
     assert best.read_text() == '# A'
+
+
+
+def test_when_finish_called_below_finish_floor_then_rejected_and_loop_continues(monkeypatch, tmp_path):
+    """Cycle 50 / hypothesis #2: finish-floor rejects premature finish."""
+    from src.tier1 import agent_loop as al
+
+    workspace = tmp_path / 'ws'; workspace.mkdir()
+    env_dir = tmp_path / 'env'; env_dir.mkdir()
+    tasks_dir = tmp_path / 'tasks'; tasks_dir.mkdir()
+
+    script = iter([
+        # iter 1: try to finish — should be rejected (no dev_runner yet)
+        '```tool\n{"name": "finish", "args": {"note": "skipping"}}\n```',
+        # iter 2: run dev_runner — MEAN=100 (below floor)
+        '```tool\n{"name": "bash", "args": {"cmd": "python3 /tasks/2048/dev_runner.py /workspace/submission.py"}}\n```',
+        # iter 3: try to finish — best=100 < floor=200, rejected
+        '```tool\n{"name": "finish", "args": {"note": "good enough"}}\n```',
+        # iter 4: run dev_runner — MEAN=500 (above floor)
+        '```tool\n{"name": "bash", "args": {"cmd": "python3 /tasks/2048/dev_runner.py /workspace/submission.py"}}\n```',
+        # iter 5: try to finish — best=500 > floor=200, accepted
+        '```tool\n{"name": "finish", "args": {"note": "finally"}}\n```',
+    ])
+    def fake_call_model(*args, **kwargs):
+        return next(script)
+    monkeypatch.setattr(al, '_call_model', fake_call_model)
+
+    dev_outs = iter([
+        "  MEAN=100.0  MEDIAN=100.0  max-tile-best=64  (0.0s total)",
+        "  MEAN=500.0  MEDIAN=500.0  max-tile-best=256  (0.0s total)",
+    ])
+    def fake_execute_tool(name, args, ws_arg, *_, **__):
+        if name == 'bash':
+            return next(dev_outs)
+        if name == 'finish':
+            return '<finish>ok</finish>'
+        return '<ok>'
+    monkeypatch.setattr(al, 'execute_tool', fake_execute_tool)
+
+    result = al.run_loop(
+        workspace=workspace, env_dir=env_dir, tasks_dir=tasks_dir,
+        vllm_base_url='http://stub', vllm_api_key='stub',
+        max_iters=10,
+        finish_floor=200.0,
+    )
+
+    assert result['iterations'] == 5, (
+        f'loop should ran past 2 rejected finishes; got iter={result["iterations"]}'
+    )
+    assert result['finished'] is True
+    # Check observations contain rejection.
+    rejected_count = sum(
+        1 for m in result['messages']
+        if m['role'] == 'user' and 'finish rejected' in m.get('content', '')
+    )
+    assert rejected_count >= 1, (
+        f'no finish-rejected observation found in messages; got {rejected_count}'
+    )
+
+
+def test_when_finish_floor_zero_then_any_finish_accepted(monkeypatch, tmp_path):
+    """Default finish_floor=0 preserves cycle-12 behaviour — no rejection."""
+    from src.tier1 import agent_loop as al
+
+    workspace = tmp_path / 'ws'; workspace.mkdir()
+    env_dir = tmp_path / 'env'; env_dir.mkdir()
+    tasks_dir = tmp_path / 'tasks'; tasks_dir.mkdir()
+
+    def fake_call_model(*args, **kwargs):
+        return '```tool\n{"name": "finish", "args": {"note": "done"}}\n```'
+    monkeypatch.setattr(al, '_call_model', fake_call_model)
+
+    result = al.run_loop(
+        workspace=workspace, env_dir=env_dir, tasks_dir=tasks_dir,
+        vllm_base_url='http://stub', vllm_api_key='stub',
+        max_iters=10,
+    )
+    assert result['finished'] is True
+    assert result['iterations'] == 1

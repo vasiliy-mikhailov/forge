@@ -235,7 +235,8 @@ def _identity_condense(messages):
 def run_loop(workspace, env_dir, tasks_dir, vllm_base_url, vllm_api_key,
              max_iters, condense=_identity_condense, temperature=0.0,
              supervisor=None, supervisor_every_k=0,
-             agent_loop_wall_sec=0.0, max_no_tool_call_iters=0):
+             agent_loop_wall_sec=0.0, max_no_tool_call_iters=0,
+             finish_floor=0.0):
     """Drive the interactive agent loop for at most max_iters turns.
 
     `condense` is an opaque callable that takes the message tuple and
@@ -310,6 +311,28 @@ def run_loop(workspace, env_dir, tasks_dir, vllm_base_url, vllm_api_key,
         _consecutive_no_tool_iters = 0
         observations = []
         for name, tool_args in tool_calls:
+            # Cycle 50 / hypothesis #2: finish-floor enforcement. Reject
+            # `finish` when best_dev_mean is below the floor; force the
+            # model to keep iterating until it scores above the baseline.
+            if name == 'finish' and finish_floor > 0:
+                _best_str = (str(_best_dev_mean) if _best_dev_mean is not None
+                             else 'unknown (no dev_runner yet)')
+                if _best_dev_mean is None or _best_dev_mean < finish_floor:
+                    rejected = (
+                        f'<error>finish rejected: best dev MEAN so far is '
+                        f'{_best_str}, which is below the finish_floor '
+                        f'({finish_floor}). You must produce a submission '
+                        f'scoring above this floor before finishing. '
+                        f'Run `bash python3 /tasks/2048/dev_runner.py '
+                        f'/workspace/submission.py` to test, then refine '
+                        f'your FSM until dev MEAN exceeds {finish_floor}.'
+                        f'</error>'
+                    )
+                    observations.append(rejected)
+                    print(f'[harness] finish rejected '
+                          f'(best_dev_mean={_best_str} < floor={finish_floor})',
+                          flush=True)
+                    continue
             obs = execute_tool(name, tool_args, workspace, env_dir, tasks_dir)
             observations.append(obs)
             if name == 'finish':
@@ -329,14 +352,19 @@ def run_loop(workspace, env_dir, tasks_dir, vllm_base_url, vllm_api_key,
             _sweep_samples.append((iter_n, _mean, _max_tile, _walltime))
             # Cycle 48 / hypothesis #1: best-snapshot. New best dev MEAN ->
             # copy current submission.py to submission.best.py.
-            if (_best_dev_mean is None or _mean > _best_dev_mean) and _submission_path.exists():
+            if _best_dev_mean is None or _mean > _best_dev_mean:
                 _best_dev_mean = _mean
-                try:
-                    shutil.copyfile(_submission_path, _best_snapshot_path)
-                    print(f'[harness] new best dev MEAN={_mean} (snapshot=True)',
+                if _submission_path.exists():
+                    try:
+                        shutil.copyfile(_submission_path, _best_snapshot_path)
+                        print(f'[harness] new best dev MEAN={_mean} (snapshot=True)',
+                              flush=True)
+                    except Exception:
+                        pass
+                else:
+                    print(f'[harness] new best dev MEAN={_mean} '
+                          f'(snapshot=False, no submission.py)',
                           flush=True)
-                except Exception:
-                    pass
         # Cycle 33 (ADR 0005): supervisor hook. Every K iters, ask the
         # supervisor whether to stop. We feed it a minimal per-iter sample
         # `(iter_n, 0.0, 0, 0.0)` for now — cycle 34 will parse real

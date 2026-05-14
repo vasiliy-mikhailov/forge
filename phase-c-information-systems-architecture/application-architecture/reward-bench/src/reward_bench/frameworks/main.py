@@ -183,6 +183,7 @@ def main(
         temperature=config.temperature,
         supervisor=supervisor,
         supervisor_every_k=config.supervisor_every_k,
+        finish_floor=config.finish_floor,  # cycle 50 / hypothesis #2
     )
 
     submission_path = workspace / 'submission.py'

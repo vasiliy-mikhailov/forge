@@ -26,6 +26,7 @@ CONFIG = BenchConfig(
     temperature=0.7,
     hard_wall_sec=60.0,        # cycle 26: per-trial scoring cap, ADR 0006 layer 1
     supervisor_every_k=10,     # cycle 36: ADR 0005 plateau-detection consult cadence
+    finish_floor=7211.0,       # cycle 50 / hypothesis #2: reference_fsm baseline
 )
 
 
