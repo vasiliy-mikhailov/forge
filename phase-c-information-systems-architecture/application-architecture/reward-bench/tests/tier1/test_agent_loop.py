@@ -515,22 +515,33 @@ def test_when_agent_loop_wall_sec_exceeded_then_run_loop_returns_partial_result(
 
 
 
-def test_when_first_user_inspected_then_matches_bak_freeform_variant():
-    """Cycle 39: pin FIRST_USER to _bak's freeform variant.
+def test_when_first_user_inspected_then_includes_skill_spec_reference_and_active_tool_hint():
+    """Cycle 61 supersedes cycle-39 literal-equality pin: shape contract.
 
-    See tests-spec/tier1/agent_loop/test_spec_when_first_user_inspected_*."""
+    Per ADR 0008, FIRST_USER must (1) tell the model to read the SKILL
+    spec, and (2) mention either the active execute_submission tool or
+    the legacy /workspace/submission.py path. See
+    tests-spec/tier1/agent_loop/test_spec_when_first_user_inspected_*."""
     from src.tier1.agent_loop import FIRST_USER
 
-    expected = (
-        "Start the task. Read /tasks/2048/SKILL_tier1.md to learn the "
-        "constraints, then optionally /env/env_2048.py for env details, "
-        "then write your submission to /workspace/submission.py and iterate. "
-        "Use the fenced-block JSON tool format the system prompt described."
+    # Requirement 1: must reference the SKILL spec file.
+    assert '/tasks/2048/SKILL_tier1.md' in FIRST_USER, (
+        f"FIRST_USER must instruct the model to read SKILL_tier1.md. "
+        f"first 300 chars: {FIRST_USER[:300]!r}"
     )
-    assert FIRST_USER == expected, (
-        f"FIRST_USER drifted from _bak freeform variant.\n"
-        f"len(actual)={len(FIRST_USER)} len(expected)={len(expected)}\n"
-        f"first 200 chars actual: {FIRST_USER[:200]!r}"
+
+    # Requirement 2: must hint at active (ADR 0008) OR legacy tool.
+    mentions_active = 'execute_submission' in FIRST_USER
+    mentions_legacy = '/workspace/submission.py' in FIRST_USER
+    assert mentions_active or mentions_legacy, (
+        f"FIRST_USER must mention either 'execute_submission' (active per "
+        f"ADR 0008) or '/workspace/submission.py' (legacy). "
+        f"first 300 chars: {FIRST_USER[:300]!r}"
+    )
+
+    # Requirement 3: reasonable length (not empty, not code stub injection).
+    assert 50 <= len(FIRST_USER) <= 1200, (
+        f"FIRST_USER length {len(FIRST_USER)} outside [50, 1200]"
     )
 
 
