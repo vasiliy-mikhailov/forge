@@ -658,6 +658,72 @@ The reason: a spec file that fails to render is a spec file the
 agent and the user cannot read. Plain-text-with-indentation that
 collapses in Markdown is a near-invisible drift.
 
+## Specs are language-agnostic
+
+`test_spec_*.md` and `src_spec_*.md` files describe contracts that
+implementations satisfy. The contract MUST be expressible without
+naming the implementation language. Python `Protocol`, Go `interface`,
+TypeScript `interface`, and Rust `trait` should all be valid targets
+for the same spec.
+
+Rules:
+
+- Describe the **behaviour** ("a `ModelClient` sends messages and
+  returns a reply containing content plus a structured tool_calls
+  list"), not the syntax (do NOT write "a Python class implementing
+  `typing.Protocol`...").
+- Describe the **types in prose or table form**, not as a language
+  literal (do NOT write "`def call(messages: list[dict], *, tools:
+  list[dict] | None = None) -> AssistantReply`"). Prefer:
+
+      `call(messages, tools)` accepts a sequence of message objects
+      (each `{role, content}`) and an optional tool-schema sequence;
+      returns a reply object with fields `content` (string) and
+      `tool_calls` (sequence of tool-call objects, possibly empty).
+
+- Cross-reference the implementation file path so the reader can jump
+  from the language-agnostic contract to the current binding.
+
+- When a contract spans a network boundary (HTTP, gRPC, queue
+  message), include an **OpenAPI fragment** inline. OpenAPI is the
+  one language-agnostic IDL allowed inside a Markdown spec; it
+  carries enough detail for an implementer in any language to build
+  a conforming client or server. Embed it as a fenced ` ```yaml `
+  block.
+
+Example: a port for an LLM chat call MAY be sketched in OpenAPI:
+
+```yaml
+openapi: 3.1.0
+components:
+  schemas:
+    AssistantReply:
+      type: object
+      required: [content, tool_calls]
+      properties:
+        content: { type: string }
+        tool_calls:
+          type: array
+          items: { $ref: '#/components/schemas/ToolCall' }
+paths:
+  /chat/completions:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ChatRequest' }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AssistantReply' }
+```
+
+The point: a spec must remain useful when the implementation is
+re-platformed (Python -> Go, monolith -> service, in-process port
+-> HTTP). Code references and runnable examples may still be
+language-specific — they are illustrations, not the contract.
+
 ## File naming convention
 
 Per-behavior spec files are named after the test they justify:
