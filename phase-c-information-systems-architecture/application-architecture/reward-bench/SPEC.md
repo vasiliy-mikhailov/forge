@@ -266,6 +266,24 @@ make reward-bench-clean
     forever — admin-driven cleanup).
 ```
 
+### Implementation extras
+
+The Makefile additionally exposes operational helpers that are NOT
+part of this contract — they evolved during development and stay
+alongside the spec targets for convenience:
+
+- `make smoke-tier1` — run the reference FSM through Stage 2 + Stage 3
+  without an LLM. Used for CI/regression: builds the tier-1 image,
+  plays 20 reference-FSM games, asserts mean_score and replay match.
+- `make shim ROOT=<dir> PORT=<n>` — start the OpenAI-compatible Claude
+  shim for fixture/dev runs without GPU.
+- `make claude-fixture-tier1 RUN_ID=<x> SHIM=<url>` — drive the agent
+  loop through the shim (Claude-in-the-loop fixture).
+
+`make reward-battery` is currently a stub that exits non-zero — full
+models.yml iteration is queued as a backlog item (cycle 94+). Cycle
+78 ran the equivalent sweep manually via 22 per-model CATS tasks.
+
 ## Per-game stagnation detector
 
 Stage 2 budgets are **per-game**, not per-attempt. Each game runs as long as it's making progress; "progress" means `game.score` increased OR `game.max_tile` increased. If neither has changed for `REWARD_BENCH_STAGNATION_SEC` seconds (default 60), the game ends with `final_state="stagnated"`. The score accumulated up to that point is kept.

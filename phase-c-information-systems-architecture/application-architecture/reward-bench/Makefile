@@ -1,5 +1,10 @@
 # reward-bench/Makefile — agentic comprehensiveness benchmark.
 # Per ADR 0029 + SPEC.md.
+#
+# Cycle 93: target names aligned to SPEC.md §Make targets. Implementation
+# extras (smoke-tier1, shim, claude-fixture-tier1) kept alongside as
+# operational aids. `reward-battery` deferred to cycle 94 (needs
+# models.yml iteration logic).
 
 include $(shell git rev-parse --show-toplevel)/common.mk
 
@@ -20,35 +25,71 @@ EXPERIMENTS := $(STORAGE_ROOT)/labs/reward-bench/experiments
 # make line: `make smoke-tier1 STAGNATION_SEC=120`.
 STAGNATION_SEC ?= 60
 
-.PHONY: help build-tier1 smoke-tier1 shim claude-fixture-tier1 attempt clean
+# CLI defaults for `make reward-bench`.
+TIER ?= 1
+TASK ?= 2048
+
+.PHONY: help \
+        reward-bench reward-battery reward-bench-build reward-bench-down reward-bench-clean \
+        smoke-tier1 shim claude-fixture-tier1
 
 help:
 	@echo "reward-bench — agentic comprehensiveness benchmark"
 	@echo ""
-	@echo "Build:"
-	@echo "  make build-tier1                    Build the Stage-2 sandbox image (tier 1)"
+	@echo "SPEC.md §Make targets:"
+	@echo "  make reward-bench MODEL=<id> [TIER=1] [TASK=2048]"
+	@echo "                                      Run one attempt for one (model,tier,task) cell."
+	@echo "  make reward-battery TIER=<N> [FILTER=<regex>]"
+	@echo "                                      [DEFERRED to cycle 94] Iterate over models.yml."
+	@echo "  make reward-bench-build             Build the per-tier sandbox image (tier 1 today)."
+	@echo "  make reward-bench-down              No-op; included for symmetry with other labs."
+	@echo "  make reward-bench-clean DAYS=N      Delete experiment artifacts older than N days."
 	@echo ""
-	@echo "Smoke (no model needed; uses reference solver):"
+	@echo "Implementation extras (not in SPEC.md):"
 	@echo "  make smoke-tier1                    Run the reference FSM through Stage 2 + Stage 3."
 	@echo "                                      Must produce mean_score ~7000, replay match."
-	@echo ""
-	@echo "Fixture (Claude in the loop, no GPU):"
+	@echo "                                      Useful for CI/regression — no LLM needed."
 	@echo "  make shim ROOT=/tmp/rb-shim PORT=8765"
 	@echo "                                      Start the OpenAI-compatible Claude shim."
 	@echo "  make claude-fixture-tier1 RUN_ID=<x> SHIM=http://localhost:8765/v1"
 	@echo "                                      Run the minimal agent loop against the shim."
-	@echo ""
-	@echo "Attempt (real model):"
-	@echo "  make attempt MODEL=<id> TIER=1 TASK=2048"
-	@echo "                                      Run one full attempt for one (model,tier,task)."
-	@echo ""
-	@echo "Cleanup:"
-	@echo "  make clean DAYS=N                   Delete experiment artifacts older than N days."
 
-build-tier1:
+# ---- SPEC.md §Make targets ----
+
+reward-bench:
+	@if [ -z "$(MODEL)" ]; then \
+	  echo "error: MODEL=<id> required. e.g. make reward-bench MODEL=qwen3.6-27b-awq" >&2; \
+	  exit 2; \
+	fi
+	@echo "[reward-bench] MODEL=$(MODEL) TIER=$(TIER) TASK=$(TASK)"
+	python3 -c "from src.reward_bench.frameworks.main import main; \
+	            result = main(model_id='$(MODEL)'); \
+	            print(result)"
+
+reward-battery:
+	@echo "[reward-bench] reward-battery: DEFERRED to cycle 94." >&2
+	@echo "  Spec calls for iterating wiki-compiler/configs/models.yml with" >&2
+	@echo "  bench_tier != skip; cycle 78 did this manually via per-model tasks." >&2
+	@echo "  Track: SPEC.md §Make targets gap; backlog cycle 94." >&2
+	@exit 1
+
+reward-bench-build:
 	docker build -t $(TIER1_IMAGE) -f Dockerfile.tier1 .
+	@echo "[reward-bench-build] tier 1 image $(TIER1_IMAGE) built."
+	@echo "  TIERS 2-4 deferred: per SPEC.md tier 2-4 are queued backlog."
 
-smoke-tier1: build-tier1
+reward-bench-down:
+	@# Per SPEC.md: no-op (no long-running containers); included for
+	@# symmetry. We tear down stragglers if any exist.
+	@docker ps --filter "name=reward-bench-tier" -q | xargs -r docker stop
+	@echo "[reward-bench-down] ok (no long-running containers expected)."
+
+reward-bench-clean:
+	@find $(EXPERIMENTS) -mindepth 1 -maxdepth 1 -type d -mtime +$${DAYS:-0} -print -exec rm -rf {} +
+
+# ---- Implementation extras ----
+
+smoke-tier1: reward-bench-build
 	@mkdir -p $(EXPERIMENTS)/smoke-tier1-reference
 	@echo "Running reference FSM through Stage 2 (stagnation=$(STAGNATION_SEC)s)..."
 	docker run --rm \
@@ -67,5 +108,23 @@ smoke-tier1: build-tier1
 shim:
 	python3 bin/claude_shim.py --root $(ROOT) --port $(PORT)
 
-clean:
-	@find $(EXPERIMENTS) -mindepth 1 -maxdepth 1 -type d -mtime +$${DAYS:-0} -print -exec rm -rf {} +
+claude-fixture-tier1:
+	@if [ -z "$(RUN_ID)" ] || [ -z "$(SHIM)" ]; then \
+	  echo "error: RUN_ID=<x> SHIM=<base-url> required" >&2; \
+	  exit 2; \
+	fi
+	@echo "[claude-fixture-tier1] RUN_ID=$(RUN_ID) SHIM=$(SHIM)"
+	@echo "  TODO: agent-loop fixture entry-point. Tracked alongside reward-battery (cycle 94)."
+	@exit 1
+
+# ---- Deprecated aliases (cycle 93 transitional; remove in a later cycle) ----
+
+.PHONY: build-tier1 attempt clean
+build-tier1: reward-bench-build
+	@echo "[deprecated] use 'reward-bench-build' (cycle 93)."
+
+attempt: reward-bench
+	@echo "[deprecated] use 'reward-bench' (cycle 93)."
+
+clean: reward-bench-clean
+	@echo "[deprecated] use 'reward-bench-clean' (cycle 93)."
