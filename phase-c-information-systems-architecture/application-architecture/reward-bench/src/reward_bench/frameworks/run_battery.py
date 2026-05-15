@@ -145,3 +145,153 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":  # pragma: no cover
     sys.exit(main())
+
+
+
+# ============================================================
+# Cycle 102: resumable canonical bench
+# ============================================================
+
+_CANONICAL_DATE_STAMP = None  # set lazily; YYYY-MM-DD at startup time.
+
+
+def _today_stamp() -> str:
+    """YYYY-MM-DD for the artifact filename. Module-scoped so a
+    single sweep keeps the same date even if it crosses midnight."""
+    global _CANONICAL_DATE_STAMP
+    if _CANONICAL_DATE_STAMP is None:
+        from datetime import date
+        _CANONICAL_DATE_STAMP = date.today().isoformat()
+    return _CANONICAL_DATE_STAMP
+
+
+def canonical_artifact_path(model_id: str, trial: int,
+                            experiments_root: Path | str | None = None) -> Path:
+    """Per-(model, trial) artifact path. Existence = (model, trial) done."""
+    root = Path(experiments_root) if experiments_root is not None else (
+        Path("/home/vmihaylov/forge/phase-c-information-systems-architecture/"
+             "application-architecture/reward-bench/experiments")
+    )
+    return root / f"{_today_stamp()}-bench-{model_id}-trial{trial}.json"
+
+
+def run_canonical_battery(
+    n_trials: int = 10,
+    max_iters: int = 500,
+    temperature: float = 0.7,
+    seeds: list[int] | None = None,
+    registry_path: Path | str | None = None,
+    filter_regex: str | None = None,
+    experiments_root: Path | str | None = None,
+    runner: callable = None,
+) -> list[dict]:
+    """ADR 0003 canonical campaign: 500 iters × 10 trials × T=0.7
+    across every model in MODEL_REGISTRY (filtered by `bench_skip`).
+
+    Resumable: on each (model, trial) the driver checks for an existing
+    artifact; if present, skips. Ctrl-C halts in-flight without losing
+    completed (model, trial) artifacts.
+
+    Returns the list of artifact dicts (one per completed trial,
+    including ones skipped because they already existed).
+    """
+    import json
+    from datetime import date
+    from dataclasses import asdict
+
+    if registry_path is None:
+        registry_path = _DEFAULT_REGISTRY
+    if seeds is None:
+        seeds = list(range(1000, 1020))
+
+    models = load_models(registry_path)
+    picks = select_battery(models, filter_regex=filter_regex)
+
+    if not picks:
+        print("[canonical-battery] no models matched; nothing to do.", flush=True)
+        return []
+
+    # Default runner: run main() with the canonical config.
+    if runner is None:
+        from src.reward_bench.entities.bench_config import BenchConfig
+        from src.reward_bench.frameworks.main import main as _bench_main
+
+        def runner(model_id: str, trial: int) -> dict:
+            config = BenchConfig(
+                max_iters=max_iters,
+                n_trials=1,
+                temperature=temperature,
+            )
+            result = _bench_main(model_id=model_id, seeds=seeds,
+                                 config=config)
+            # AttemptResult -> json-friendly dict.
+            return {
+                "model_id": model_id,
+                "trial": trial,
+                "config": {
+                    "max_iters": max_iters, "n_trials_total": n_trials,
+                    "temperature": temperature, "seeds": list(seeds),
+                },
+                "mean_score": float(result.mean_score),
+                "median_score": float(result.median_score),
+                "std_score": float(result.std_score),
+                "max_max_tile": int(result.max_max_tile),
+                "n_games": int(result.n_games),
+                "aggregate_walltime_sec": float(result.aggregate_walltime_sec),
+                "best_dev_mean": (None if result.best_dev_mean is None
+                                  else float(result.best_dev_mean)),
+                "games": [
+                    {"seed": int(g.seed), "score": int(g.score),
+                     "max_tile": int(g.max_tile), "moves": int(g.moves),
+                     "final_state": str(g.final_state),
+                     "walltime_sec": float(g.walltime_sec)}
+                    for g in result.games
+                ],
+            }
+
+    out: list[dict] = []
+    total = len(picks) * n_trials
+    done = 0
+    started = date.today().isoformat()
+    print(f"[canonical-battery] start {started} | "
+          f"{len(picks)} model(s) × {n_trials} trial(s) = {total} runs",
+          flush=True)
+
+    for mi, model in enumerate(picks, 1):
+        mid = str(model["id"])
+        for trial in range(n_trials):
+            artifact = canonical_artifact_path(mid, trial,
+                                               experiments_root=experiments_root)
+            if artifact.exists():
+                done += 1
+                print(f"  [{done}/{total}] {mid} trial {trial}  SKIP (already done)",
+                      flush=True)
+                try:
+                    out.append(json.loads(artifact.read_text()))
+                except Exception:
+                    pass
+                continue
+
+            print(f"  [{done + 1}/{total}] {mid} trial {trial}  RUN ...",
+                  flush=True)
+            try:
+                payload = runner(mid, trial)
+            except KeyboardInterrupt:
+                print(f"  [{done + 1}/{total}] {mid} trial {trial}  "
+                      f"INTERRUPTED — artifact NOT written; re-run to resume",
+                      flush=True)
+                raise
+
+            artifact.parent.mkdir(parents=True, exist_ok=True)
+            artifact.write_text(json.dumps(payload, indent=2))
+            done += 1
+            print(f"  [{done}/{total}] {mid} trial {trial}  "
+                  f"DONE mean={payload.get('mean_score', '?'):.1f} "
+                  f"n_games={payload.get('n_games', '?')}",
+                  flush=True)
+            out.append(payload)
+
+    print(f"[canonical-battery] complete {date.today().isoformat()} | "
+          f"{done}/{total} runs accounted for",
+          flush=True)
+    return out
