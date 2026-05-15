@@ -17,10 +17,27 @@ _TOOL_BLOCK_RE = re.compile(r'```tool\b\s*\n(.*?)\n```', re.DOTALL)
 _BODY_SPLIT_RE = re.compile(r'\n===FILE_BODY===\s*\n', re.DOTALL)
 
 
-def parse_tool_calls(reply):
-    """Cycle 51 / hypothesis #9: defensive parser. Bad JSON in one block
-    must not abort the iteration — return [] for that block so the loop
-    treats it as 'no tool calls' and the model gets another turn."""
+def parse_tool_calls(reply, structured_tool_calls=None):
+    """Extract (name, args) tuples from an assistant message.
+
+    Two surfaces:
+      1. Text-fenced format (cycle 9/58 protocol — qwen/gemma/llama):
+         ```tool
+         {"name": "...", "args": {...}}
+         [===FILE_BODY===\n raw body \n]
+         ```
+         Parsed out of `reply` (the assistant message.content string).
+      2. OpenAI-structured `tool_calls` (ADR 0010 / cycle 83 —
+         mistral/devstral/gpt-oss with vLLM --tool-call-parser):
+         [{"id":"x","type":"function",
+           "function":{"name":"...","arguments":"...JSON..."}}, ...]
+         Parsed out of `structured_tool_calls` when the text-fenced pass
+         finds nothing. We do NOT mix the two surfaces in a single
+         reply — a model is one or the other.
+
+    Cycle 51 / hypothesis #9: defensive — bad JSON in one block must
+    not abort the iteration; we skip and move on.
+    """
     out = []
     for m in _TOOL_BLOCK_RE.finditer(reply):
         raw = m.group(1)
@@ -47,6 +64,35 @@ def parse_tool_calls(reply):
         if body_part is not None:
             args['content'] = body_part
         out.append((name, args))
+
+    # Cycle 83 / ADR 0010: structured-tool-calls fallback.
+    # Only fires when text-fenced extraction yielded nothing, so a
+    # model that mixes both surfaces still prefers its text-fenced
+    # contract (cycle 9/58 default).
+    if not out and structured_tool_calls:
+        for tc in structured_tool_calls:
+            if not isinstance(tc, dict):
+                continue
+            fn = tc.get('function') or {}
+            if not isinstance(fn, dict):
+                continue
+            name = str(fn.get('name', '')).strip()
+            if not name:
+                continue
+            raw_args = fn.get('arguments')
+            # arguments is JSON-as-string per OpenAI tool-use spec.
+            args = {}
+            if isinstance(raw_args, str):
+                try:
+                    parsed = json.loads(raw_args)
+                except json.JSONDecodeError:
+                    parsed = None
+                if isinstance(parsed, dict):
+                    args = parsed
+            elif isinstance(raw_args, dict):
+                # Some vLLM versions emit dict directly (non-strict mode).
+                args = dict(raw_args)
+            out.append((name, args))
     return out
 
 
@@ -348,7 +394,14 @@ def _call_model(vllm_base_url, vllm_api_key, messages, max_tokens=12288, tempera
     )
     with urllib.request.urlopen(req, timeout=600) as r:
         data = json.loads(r.read())
-    return data['choices'][0]['message']['content']
+    # Cycle 83 / ADR 0010: surface BOTH text content and the
+    # OpenAI-structured tool_calls so the agent loop can dispatch
+    # the Mistral / Devstral / GPT-OSS special-token format too.
+    msg = data['choices'][0]['message']
+    return {
+        'content': msg.get('content') or '',
+        'tool_calls': msg.get('tool_calls') or [],
+    }
 
 
 def _identity_condense(messages):
@@ -418,8 +471,15 @@ def run_loop(workspace, env_dir, tasks_dir, vllm_base_url, vllm_api_key,
         messages = list(condense(tuple(messages)))
         reply = _call_model(vllm_base_url, vllm_api_key, messages,
                             temperature=temperature, model_id=model_id)
-        messages.append({'role': 'assistant', 'content': reply})
-        tool_calls = parse_tool_calls(reply)
+        # Cycle 83 back-compat shim: mocked _call_model in old tests
+        # returns a bare string. Wrap so the rest of the loop is
+        # uniform (cycle 83 contract is dict-with-content+tool_calls).
+        if isinstance(reply, str):
+            reply = {'content': reply, 'tool_calls': []}
+        _content = reply.get('content', '') or ''
+        _structured = reply.get('tool_calls') or []
+        messages.append({'role': 'assistant', 'content': _content})
+        tool_calls = parse_tool_calls(_content, structured_tool_calls=_structured)
         if not tool_calls:
             obs = ('<error>no tool calls found in your reply. Each tool call '
                    'must be in a fenced code block tagged `tool`.</error>')

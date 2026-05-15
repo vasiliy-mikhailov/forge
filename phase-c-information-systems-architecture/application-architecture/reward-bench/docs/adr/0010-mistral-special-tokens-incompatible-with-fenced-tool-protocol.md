@@ -5,6 +5,14 @@
 Accepted (cycle 82, after cycle 78 smoke v2 sweep observed two
 mistral-family models smoke-FAIL with zero tool-call extractions).
 
+Resolved by cycle 83: parse_tool_calls now falls back to
+OpenAI-structured message.tool_calls when the text-fenced
+extraction yields nothing. _call_model returns both content and
+tool_calls so the agent loop dispatches Mistral / Devstral /
+GPT-OSS without protocol changes for the existing qwen / gemma /
+llama path. Spec pin:
+[test_spec_when_reply_has_structured_tool_calls_but_no_fenced_blocks_then_parser_extracts_them](../../tests-spec/tier1/agent_loop/test_spec_when_reply_has_structured_tool_calls_but_no_fenced_blocks_then_parser_extracts_them.md).
+
 ## Context
 
 The bench's [tool-call protocol](../../src/tier1/agent_loop.py) (cycle
@@ -74,9 +82,9 @@ We do NOT change the bench protocol in this ADR — the protocol is a
 public contract used by all other registry models. Instead we record
 the incompatibility and the path forward.
 
-## Path forward (future cycle, not landed in cycle 82)
+## Path forward (landed in cycle 83)
 
-A future cycle will extend
+Cycle 83 extended
 [`parse_tool_calls`](../../src/tier1/agent_loop.py) and
 [`_call_model`](../../src/tier1/agent_loop.py) so that:
   1. `_call_model` returns BOTH `message.content` (string) and

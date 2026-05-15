@@ -1352,3 +1352,100 @@ def test_when_run_loop_observes_first_positive_dev_mean_with_smoke_early_stop_th
         f'_call_model should have been called exactly once; '
         f'got {call_count["n"]}'
     )
+
+
+
+def test_when_reply_has_structured_tool_calls_but_no_fenced_blocks_then_parser_extracts_them():
+    """Cycle 83 / ADR 0010: mistral / devstral / gpt-oss surface tool
+    calls via OpenAI-structured message.tool_calls instead of fenced
+    text. parse_tool_calls falls back to the structured field."""
+    from src.tier1.agent_loop import parse_tool_calls
+
+    # Mistral-style: content empty, tool call in the structured field.
+    reply = ""
+    structured = [{
+        "id": "call_abc",
+        "type": "function",
+        "function": {
+            "name": "execute_submission",
+            "arguments": '{"content": "class Solver:\\n    def move(self, b): return \'W\'"}',
+        },
+    }]
+
+    calls = parse_tool_calls(reply, structured_tool_calls=structured)
+
+    assert len(calls) == 1, f"expected 1 structured call, got {calls}"
+    name, args = calls[0]
+    assert name == "execute_submission", f"name={name!r}"
+    assert args.get("content", "").startswith("class Solver:"), (
+        f"content not extracted: args={args!r}"
+    )
+
+
+def test_when_reply_has_both_fenced_and_structured_then_fenced_wins():
+    """Cycle 83: fenced format is the default cycle-9/58 protocol;
+    structured is purely a fallback when fenced yields zero."""
+    from src.tier1.agent_loop import parse_tool_calls
+
+    reply = (
+        "```tool\n"
+        '{"name": "execute_submission", "args": {}}\n'
+        "===FILE_BODY===\n"
+        "# fenced body\n"
+        "```"
+    )
+    structured = [{
+        "id": "x",
+        "type": "function",
+        "function": {"name": "finish", "arguments": '{"note": "from structured"}'},
+    }]
+
+    calls = parse_tool_calls(reply, structured_tool_calls=structured)
+
+    assert len(calls) == 1, f"fenced should win solo; got {calls}"
+    name, args = calls[0]
+    assert name == "execute_submission"
+    assert args["content"].startswith("# fenced body")
+
+
+def test_when_structured_arguments_malformed_then_args_default_to_empty():
+    """Cycle 83 defensive: bad JSON in structured arguments must not
+    raise; we emit (name, {}) so the dispatcher's protocol-violation
+    path handles it instead of crashing the run loop."""
+    from src.tier1.agent_loop import parse_tool_calls
+
+    structured = [{
+        "type": "function",
+        "function": {"name": "execute_submission", "arguments": "{not json"},
+    }]
+
+    calls = parse_tool_calls("", structured_tool_calls=structured)
+
+    assert calls == [("execute_submission", {})], f"got {calls}"
+
+
+def test_when_structured_arguments_is_dict_then_used_directly():
+    """Cycle 83: some vLLM versions emit arguments as a dict (non-strict
+    mode) rather than a JSON string. parse_tool_calls accepts both."""
+    from src.tier1.agent_loop import parse_tool_calls
+
+    structured = [{
+        "type": "function",
+        "function": {
+            "name": "finish",
+            "arguments": {"note": "done"},
+        },
+    }]
+
+    calls = parse_tool_calls("", structured_tool_calls=structured)
+
+    assert calls == [("finish", {"note": "done"})], f"got {calls}"
+
+
+def test_when_structured_tool_calls_empty_then_returns_empty_list():
+    """Empty structured list + empty content -> no tool calls (no crash)."""
+    from src.tier1.agent_loop import parse_tool_calls
+
+    assert parse_tool_calls("") == []
+    assert parse_tool_calls("", structured_tool_calls=[]) == []
+    assert parse_tool_calls("", structured_tool_calls=None) == []
