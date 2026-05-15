@@ -10,12 +10,12 @@
     "supervisor_every_k": 0,
     "smoke_early_stop": true
   },
-  "best_dev_mean": null,
+  "best_dev_mean": 0.0,
   "mean_score": 0.0,
   "median_score": 0.0,
-  "max_max_tile": 0,
-  "n_games": 0,
-  "aggregate_walltime_sec": 0.0,
+  "max_max_tile": 2,
+  "n_games": 20,
+  "aggregate_walltime_sec": 60.02455428603571,
   "solver_protocol_valid": true,
   "smoke_passed": false
 }

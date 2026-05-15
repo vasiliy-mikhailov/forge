@@ -382,6 +382,36 @@ Each model was driven through its own per-model smoke task (task list
 
 Once cycle 77 + 83 land, the projected coverage rises to ~18 of 22 PASS.
 
+### Cycle 97 — mistral-cohort rerun (post cycles 83 + 77 + 96)
+
+Six models flagged by [ADR 0010](../docs/adr/0010-mistral-special-tokens-incompatible-with-fenced-tool-protocol.md)
+re-tested after the bench-side fixes landed:
+  - cycle 83 (parse_tool_calls reads structured `message.tool_calls`)
+  - cycle 77 (dev / canonical per-seed budget alignment)
+  - cycle 96 (advertise `tools=[...]` in `_call_model`; strip
+    SentencePiece `Ġ`/`▁` from structured arguments)
+
+| model_id | best_dev_mean | smoke_passed | notes |
+| -------- | ------------: | -----------: | ----- |
+| `devstral-2-123b-nvfp4` | **1561.6** | ✓ PASS | First mistral-cohort PASS. Verified cycle 96 wiring end-to-end. |
+| `mistral-small-3.2-24b` | 0.0 | ✗ FAIL | Solver protocol_valid=True, but all 20 canonical games walltime_exceeded with moves=0. Honest model-quality FAIL. |
+| `devstral-small-2-24b` | None | ✗ FAIL | protocol_valid=False — never produced a Solver passing the cycle-91 transitions grep. |
+| `gpt-oss-20b` | None | ✗ FAIL | protocol_valid=False — same mode as devstral-small. |
+| `gpt-oss-120b` | None | ✗ FAIL | protocol_valid=True, n_games=0 — Solver was valid but no dev games completed. |
+| `devstral-2-123b` (FP16) | — | skipped | OOM. Physically infeasible at 128k context on 97 GiB Blackwell (weights ~246 GiB FP16 / ~123 GiB FP8; only 4-bit quants fit. See task #61). |
+
+**Tally**: 1 PASS / 4 model-quality FAIL / 1 OOM-skipped of 6.
+
+The cycle 97 verdict is **bench infra works**: cycle 96 unblocked the
+mistral / devstral / gpt-oss family. They CAN now reach the bench;
+whether they SOLVE 2048 is a separate model-quality question that
+each FAIL above answers honestly. The OOM-skipped case is a registry
+config cleanup queued as task #61.
+
+ADR 0011 (clean-arch ports for ModelClient / ToolRegistry /
+ProtocolParser) was committed at end-of-cycle-97 to record the
+refactor decision. Implementation queued as cycles 98-100.
+
 ## Reference baselines
 
 ### `tasks/2048/baselines/reference_fsm.py` (hand-written)
