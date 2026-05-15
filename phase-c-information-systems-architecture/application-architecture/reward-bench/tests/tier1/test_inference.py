@@ -1,3 +1,4 @@
+import pytest
 """Tier 1 end-to-end tests against live qwen3.6-27b-awq.
 See src-spec/tier1/ (per-behavior src_spec_when_*.md files).
 See tests-spec/tier1/ (per-behavior test_spec_when_*.md files)."""
@@ -66,6 +67,7 @@ def test_when_chat_completion_sent_then_response_has_non_empty_content(vllm_base
     assert content, 'empty content'
 
 
+@pytest.mark.live
 def test_when_skill_tier1_prompt_sent_then_reply_completes_within_5_min(vllm_base_url, vllm_api_key):
     from pathlib import Path
     # Arrange

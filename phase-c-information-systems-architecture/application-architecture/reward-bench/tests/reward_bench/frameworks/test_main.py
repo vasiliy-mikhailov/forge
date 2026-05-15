@@ -29,6 +29,7 @@ def test_when_main_invoked_with_qwen3_6_27b_awq_then_attempt_result_emitted():
         assert len(result.games) == 0
 
 
+@pytest.mark.live
 def test_when_main_invoked_with_qwen3_6_27b_awq_then_solver_class_scored_20_games():
     # Arrange
     from src.reward_bench.frameworks.main import main

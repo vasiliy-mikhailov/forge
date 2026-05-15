@@ -143,6 +143,7 @@ def test_when_run_loop_invoked_with_one_iter_cap_then_returns_one_turn_history(
     )
 
 
+@pytest.mark.live
 def test_when_run_loop_produces_submission_then_solver_move_returns_one_of_wasd(
         tmp_path, vllm_base_url, vllm_api_key):
     from src.tier1.harness import load_submission
@@ -1603,4 +1604,55 @@ def test_when_structured_arguments_contains_sentencepiece_space_then_stripped_be
     calls = parse_tool_calls("", structured_tool_calls=structured)
     assert calls == [("view", {"path": "SKILL_tier1.md"})], (
         f"U+2581 variant parse failed: {calls}"
+    )
+
+
+
+def test_when_execute_submission_solver_init_raises_then_protocol_violation_names_exception(
+        tmp_path):
+    """Cycle 100: probe surfaces __init__ exception as protocol_violation.
+    The cycle 99a live run found qwen3.6-27b-awq emits tuple-form
+    transitions that the library rejects; pre-cycle-100 the error was
+    invisible to the model. Now the actual TypeError shows up."""
+    import json as _json
+    from src.tier1.agent_loop import _execute_submission
+
+    # Solver whose __init__ calls Machine with tuple transitions —
+    # the exact failure mode observed live.
+    body = (
+        "from transitions import Machine\n"
+        "class Solver:\n"
+        "    states = ['a', 'b']\n"
+        "    transitions = [('go', 'a', 'b')]  # tuple form — library rejects\n"
+        "    def __init__(self):\n"
+        "        self.machine = Machine(\n"
+        "            model=self, states=self.states,\n"
+        "            transitions=self.transitions, initial='a',\n"
+        "        )\n"
+        "    def move(self, board):\n"
+        "        return 'W'\n"
+    )
+    workspace = tmp_path / 'ws'; workspace.mkdir()
+    tasks_dir = tmp_path / 'tasks'; tasks_dir.mkdir()
+
+    obs = _execute_submission(body, workspace, tasks_dir)
+
+    assert '<observation>' in obs
+    payload = _json.loads(
+        obs[obs.index('<observation>') + len('<observation>'):
+            obs.index('</observation>')]
+    )
+    assert payload['protocol_violations'], (
+        f'expected non-empty protocol_violations; got {payload}'
+    )
+    assert any('Solver() raised at construction' in v
+               for v in payload['protocol_violations']), (
+        f'no probe violation in {payload["protocol_violations"]}'
+    )
+    assert any('TypeError' in v
+               for v in payload['protocol_violations']), (
+        f'TypeError not named in violations: {payload["protocol_violations"]}'
+    )
+    assert payload['per_seed'] == [], (
+        f'canonical scorer should not have run; got per_seed={payload["per_seed"]}'
     )

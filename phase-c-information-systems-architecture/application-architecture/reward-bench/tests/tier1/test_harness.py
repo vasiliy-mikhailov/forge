@@ -1,3 +1,4 @@
+import pytest
 """Tier 1 harness tests. See src-spec/tier1/ and tests-spec/tier1/."""
 import inspect
 import tempfile
@@ -27,6 +28,7 @@ def test_when_extracted_module_loaded_then_exposes_class_solver(skill_tier1_repl
     assert inspect.isclass(module.Solver), 'Solver is not a class'
 
 
+@pytest.mark.live
 def test_when_solver_class_instantiated_then_exposes_callable_move(skill_tier1_reply):
     # Arrange
     submission = _write_submission(skill_tier1_reply)

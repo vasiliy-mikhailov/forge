@@ -2,5 +2,6 @@
 testpaths = ["tests"]
 markers = [
   "smoke: ADR 0009 multi-model smoke bench",
-    "campaign: long-running live-model campaign tests; opt-in via -m campaign",
+  "campaign: long-running live-model campaign tests; opt-in via -m campaign",
+  "live: test requires live vLLM serving + VLLM_API_KEY; opt-in via -m live (slow)",
 ]
