@@ -280,9 +280,12 @@ alongside the spec targets for convenience:
 - `make claude-fixture-tier1 RUN_ID=<x> SHIM=<url>` — drive the agent
   loop through the shim (Claude-in-the-loop fixture).
 
-`make reward-battery` is currently a stub that exits non-zero — full
-models.yml iteration is queued as a backlog item (cycle 94+). Cycle
-78 ran the equivalent sweep manually via 22 per-model CATS tasks.
+`make reward-battery TIER=<N> [FILTER=<regex>]` is implemented by
+[`src/reward_bench/frameworks/run_battery.py`](src/reward_bench/frameworks/run_battery.py)
+(cycle 94). It reads the wiki-compiler models.yml registry, drops
+entries with `bench_skip: True`, optionally narrows by a regex on
+`id`, and invokes `make reward-bench MODEL=<id> TIER=<N>` per pick
+— the codified version of cycle 78's manual 22-model sweep.
 
 ## Per-game stagnation detector
 

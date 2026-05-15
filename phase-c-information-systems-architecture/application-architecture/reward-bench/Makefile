@@ -39,8 +39,8 @@ help:
 	@echo "SPEC.md §Make targets:"
 	@echo "  make reward-bench MODEL=<id> [TIER=1] [TASK=2048]"
 	@echo "                                      Run one attempt for one (model,tier,task) cell."
-	@echo "  make reward-battery TIER=<N> [FILTER=<regex>]"
-	@echo "                                      [DEFERRED to cycle 94] Iterate over models.yml."
+	@echo "  make reward-battery TIER=<N> [FILTER=<regex>] [TASK=2048]"
+	@echo "                                      Iterate reward-bench over models.yml (cycle 94)."
 	@echo "  make reward-bench-build             Build the per-tier sandbox image (tier 1 today)."
 	@echo "  make reward-bench-down              No-op; included for symmetry with other labs."
 	@echo "  make reward-bench-clean DAYS=N      Delete experiment artifacts older than N days."
@@ -67,11 +67,13 @@ reward-bench:
 	            print(result)"
 
 reward-battery:
-	@echo "[reward-bench] reward-battery: DEFERRED to cycle 94." >&2
-	@echo "  Spec calls for iterating wiki-compiler/configs/models.yml with" >&2
-	@echo "  bench_tier != skip; cycle 78 did this manually via per-model tasks." >&2
-	@echo "  Track: SPEC.md §Make targets gap; backlog cycle 94." >&2
-	@exit 1
+	@if [ -z "$(TIER)" ]; then \
+	  echo "error: TIER=<n> required for reward-battery" >&2; exit 2; \
+	fi
+	@echo "[reward-battery] TIER=$(TIER) TASK=$(TASK) FILTER=$(FILTER)"
+	python3 -m src.reward_bench.frameworks.run_battery \
+	  --tier $(TIER) --task $(TASK) \
+	  $(if $(FILTER),--filter $(FILTER),)
 
 reward-bench-build:
 	docker build -t $(TIER1_IMAGE) -f Dockerfile.tier1 .
