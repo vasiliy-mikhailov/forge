@@ -29,7 +29,7 @@ MODEL_REGISTRY = (
                 served_name='qwen3-32b-fp8', max_model_len=40960,  # cycle 74: actual model max
                 tool_call_parser='qwen3_xml'),
     ModelTarget(id='qwen3-32b-nvfp4', hf_path='nvidia/Qwen3-32B-NVFP4',
-                served_name='qwen3-32b-nvfp4', max_model_len=131072,
+                served_name='qwen3-32b-nvfp4', max_model_len=40960,  # cycle 81: same as fp8 sibling
                 tool_call_parser='qwen3_xml'),
     ModelTarget(id='devstral-small-2-24b',
                 hf_path='Firworks/Devstral-Small-2-24B-Instruct-2512-nvfp4',

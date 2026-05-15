@@ -5,7 +5,7 @@ Pins the **smoke screen** per [ADR 0009 v3](
 for `ModelTarget(id='qwen3-32b-nvfp4',
 hf_path='nvidia/Qwen3-32B-NVFP4',
 served_name='qwen3-32b-nvfp4',
-max_model_len=131072,
+max_model_len=40960,
 tool_call_parser='qwen3_xml')`.
 
 Test name retains the historical filename for git continuity;
