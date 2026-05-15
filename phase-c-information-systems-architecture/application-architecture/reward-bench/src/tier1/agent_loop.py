@@ -18,87 +18,38 @@ _BODY_SPLIT_RE = re.compile(r'\n===FILE_BODY===\s*\n', re.DOTALL)
 
 
 def parse_tool_calls(reply, structured_tool_calls=None):
-    """Extract (name, args) tuples from an assistant message.
+    """Cycle 98 / ADR 0011: delegates to CompositeParser.
 
-    Two surfaces:
-      1. Text-fenced format (cycle 9/58 protocol — qwen/gemma/llama):
-         ```tool
-         {"name": "...", "args": {...}}
-         [===FILE_BODY===\n raw body \n]
-         ```
-         Parsed out of `reply` (the assistant message.content string).
-      2. OpenAI-structured `tool_calls` (ADR 0010 / cycle 83 —
-         mistral/devstral/gpt-oss with vLLM --tool-call-parser):
-         [{"id":"x","type":"function",
-           "function":{"name":"...","arguments":"...JSON..."}}, ...]
-         Parsed out of `structured_tool_calls` when the text-fenced pass
-         finds nothing. We do NOT mix the two surfaces in a single
-         reply — a model is one or the other.
+    Accepts the legacy (str, list|None) shape AND the cycle-83 + cycle-96
+    composite reply shape. Constructs an `AssistantReply` dict and runs
+    the production-default parser pair (fenced-text + structured-openai).
 
-    Cycle 51 / hypothesis #9: defensive — bad JSON in one block must
-    not abort the iteration; we skip and move on.
+    The two-surface contract from cycles 9/58/83/96 lives in the
+    parser adapters now; this function is a thin compatibility shim.
     """
-    out = []
-    for m in _TOOL_BLOCK_RE.finditer(reply):
-        raw = m.group(1)
-        parts = _BODY_SPLIT_RE.split(raw, maxsplit=1)
-        json_part = parts[0].strip()
-        body_part = parts[1] if len(parts) == 2 else None
-        try:
-            obj = json.loads(json_part)
-        except json.JSONDecodeError:
-            # Legacy fallback: strip trailing commas/whitespace and retry.
-            try:
-                obj = json.loads(json_part.rstrip(', \t\n'))
-            except json.JSONDecodeError:
-                continue
-        if not isinstance(obj, dict):
-            continue
-        name = str(obj.get('name', '')).strip()
-        if not name:
-            continue
-        raw_args = obj.get('args') or {}
-        if not isinstance(raw_args, dict):
-            raw_args = {}
-        args = dict(raw_args)
-        if body_part is not None:
-            args['content'] = body_part
-        out.append((name, args))
+    from src.ports.protocol_parser import AssistantReply
+    from src.adapters.parsers.fenced_text_parser import FencedTextParser
+    from src.adapters.parsers.structured_openai_parser import StructuredOpenAIParser
+    from src.adapters.parsers.composite_parser import CompositeParser
 
-    # Cycle 83 / ADR 0010: structured-tool-calls fallback.
-    # Only fires when text-fenced extraction yielded nothing, so a
-    # model that mixes both surfaces still prefers its text-fenced
-    # contract (cycle 9/58 default).
-    if not out and structured_tool_calls:
-        for tc in structured_tool_calls:
-            if not isinstance(tc, dict):
-                continue
-            fn = tc.get('function') or {}
-            if not isinstance(fn, dict):
-                continue
-            name = str(fn.get('name', '')).strip()
-            if not name:
-                continue
-            raw_args = fn.get('arguments')
-            # arguments is JSON-as-string per OpenAI tool-use spec.
-            args = {}
-            if isinstance(raw_args, str):
-                # Cycle 96: vLLM mistral tokenizer leaks U+0120 (Ġ,
-                # SentencePiece space) into the rendered JSON. Strip
-                # before parsing; this is a no-op on well-formed JSON.
-                cleaned = raw_args.replace('\u0120', ' ').replace('\u2581', ' ')
-                try:
-                    parsed = json.loads(cleaned)
-                except json.JSONDecodeError:
-                    parsed = None
-                if isinstance(parsed, dict):
-                    args = parsed
-            elif isinstance(raw_args, dict):
-                # Some vLLM versions emit dict directly (non-strict mode).
-                args = dict(raw_args)
-            out.append((name, args))
-    return out
+    # Normalize the caller's input into an AssistantReply.
+    if isinstance(reply, dict):
+        # Cycle 83+: reply is already shaped {'content': str, 'tool_calls': list}.
+        ar: AssistantReply = {
+            'content': reply.get('content', '') or '',
+            'tool_calls': reply.get('tool_calls') or (structured_tool_calls or []),
+        }
+    else:
+        # Legacy: reply is a bare content string (most tests).
+        ar = {
+            'content': reply or '',
+            'tool_calls': structured_tool_calls or [],
+        }
 
+    parser = CompositeParser([FencedTextParser(), StructuredOpenAIParser()])
+    calls = parser.extract(ar)
+    # Return list[tuple] for back-compat with callers that unpack tuples.
+    return [(c.name, c.args) for c in calls]
 
 def _trim(s, n=4000):
     if len(s) <= n:
