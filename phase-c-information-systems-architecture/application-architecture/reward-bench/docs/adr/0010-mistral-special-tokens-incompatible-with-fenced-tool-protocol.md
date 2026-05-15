@@ -5,7 +5,7 @@
 Accepted (cycle 82, after cycle 78 smoke v2 sweep observed two
 mistral-family models smoke-FAIL with zero tool-call extractions).
 
-Resolved by cycle 83: parse_tool_calls now falls back to
+Partially resolved by cycle 83 (see cycle-95 amendment below): parse_tool_calls now falls back to
 OpenAI-structured message.tool_calls when the text-fenced
 extraction yields nothing. _call_model returns both content and
 tool_calls so the agent loop dispatches Mistral / Devstral /
@@ -115,3 +115,34 @@ first as "when reply has structured tool_calls but no fenced blocks,
 - [ADR 0009](0009-multi-model-smoke-bench-convention.md) — smoke convention.
 - [ADR 0008](0008-docker-sandboxed-execute-submission-tool.md) — execute_submission dispatcher.
 - [cycle 78 umbrella](../../experiments/leaderboard_data.md) — smoke v2 results.
+
+
+## Cycle 95 finding — fallback is necessary but not sufficient
+
+Cycle 95 attempted to verify the mistral cohort smoke-PASSes after
+cycle 83. It does NOT — for a different reason than cycle 78. With
+`--tool-call-parser mistral` enabled, vLLM only extracts `[TOOL_CALLS]`
+special-token output into `message.tool_calls` when the request
+advertises the available tools via the OpenAI `tools=[...]` array.
+The bench never passes `tools`; it relies on `SYSTEM_PROMPT` alone.
+Result: mistral correctly answers "I don't have the tools needed"
+and emits zero structured tool_calls. Cycle 83's fallback parser is
+correct code but has nothing to parse.
+
+Diagnostic from cycle 95 (mistral-small-3.2-24b, 29 iters before
+abort):
+  - all 29 iters: `tool_calls=0`, `no_tool_streak=29`.
+  - direct curl confirmed `message.tool_calls == []` and content =
+    "I don't have the tools needed to assist with that."
+  - `docker inspect reward-bench-vllm` shows `--tool-call-parser
+    mistral` correctly applied.
+
+Path forward (cycle 96, queued):
+  1. Define OpenAI tool schemas for `view`, `execute_submission`,
+     `finish`.
+  2. `_call_model` passes `tools=TOOLS_SCHEMA` per-request.
+  3. Regression-test that qwen / gemma / llama still emit text-fenced
+     blocks when `tools` is advertised (the schemas shouldn't suppress
+     their existing behaviour — content-fenced parser stays the
+     default; structured tool_calls remain the fallback).
+  4. Rerun cycle 95 smoke v2 against the 6 affected models.
