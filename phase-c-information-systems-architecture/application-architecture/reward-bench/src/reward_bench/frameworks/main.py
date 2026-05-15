@@ -224,7 +224,7 @@ def main(
     # with positive dev_mean, the smoke contract (ADR 0009 v3) is
     # satisfied; canonical scoring is pure overhead. Return a synthetic
     # AttemptResult carrying just best_dev_mean.
-    _best_dev_mean = _run_loop_result.get('best_dev_mean')
+    _best_dev_mean = (_run_loop_result or {}).get('best_dev_mean')
     if config.smoke_early_stop and _best_dev_mean is not None and _best_dev_mean > 0:
         print(f'[bench] smoke-mode canonical-skip: best_dev_mean='
               f'{_best_dev_mean} (per ADR 0009 v3 / cycle 80)')
@@ -241,7 +241,7 @@ def main(
     # assert on the "first working code" signal rather than the
     # canonical second-stage score.
     import dataclasses as _dc
-    result = _dc.replace(result, best_dev_mean=_run_loop_result.get('best_dev_mean'))
+    result = _dc.replace(result, best_dev_mean=(_run_loop_result or {}).get('best_dev_mean'))
 
     print(f'[bench] mean_score={result.mean_score:.1f} '
           f'median={result.median_score:.1f} '
