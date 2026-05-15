@@ -190,13 +190,6 @@ Active tool set (per [ADR 0008](docs/adr/0008-docker-sandboxed-execute-submissio
                             `/workspace/submission.py` for canonical
                             scoring.
 
-Legacy tool set (kept behind `--legacy-write-file` for one transitional
-cycle; will be removed when [ADR 0007](docs/adr/0007-per-model-bench-uses-blessed-runner-until-agent-loop-bisect.md)
-is superseded):
-  - bash(cmd)               run cmd on the host (NOT sandboxed);
-                            stdout/stderr into the next prompt.
-  - write_file(path)        overwrite a file under /workspace/.
-
 The parser that decodes assistant replies into (name, args) tuples is
 specified in spec/parser.md.
 

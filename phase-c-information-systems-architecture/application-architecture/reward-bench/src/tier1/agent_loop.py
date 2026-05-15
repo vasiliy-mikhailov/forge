@@ -8,22 +8,9 @@ import json
 import os
 import re
 import shutil
-import subprocess
 import urllib.request
 from pathlib import Path
 
-
-ALLOWED_BASH_PREFIXES = (
-    "python /tasks/2048/dev_runner.py /workspace/submission.py",
-    "python3 /tasks/2048/dev_runner.py /workspace/submission.py",
-    "ls /workspace",
-    "ls /tasks",
-    "ls /env",
-    "cat /workspace/submission.py",
-    "head /workspace/submission.py",
-    "cat /tasks/2048/SKILL_tier1.md",
-    "cat /env/env_2048.py",
-)
 
 
 _TOOL_BLOCK_RE = re.compile(r'```tool\b\s*\n(.*?)\n```', re.DOTALL)
@@ -148,45 +135,6 @@ def execute_tool(name, args, workspace, env_dir, tasks_dir):
             return f'<view path="{virt}">\n{_trim(host.read_text())}\n</view>'
         except Exception as e:
             return f'<error>view: {e}</error>'
-
-    if name == 'write_file':
-        virt = args.get('path', '')
-        content = args.get('content', '')
-        host = _virt_to_host(virt, workspace, env_dir, tasks_dir)
-        if host is None:
-            return f'<error>write_file: path must start with /workspace (got {virt!r})</error>'
-        if not str(host).startswith(str(Path(workspace).resolve())):
-            return f'<error>write_file: writes only allowed under /workspace (got {virt!r})</error>'
-        host.parent.mkdir(parents=True, exist_ok=True)
-        host.write_text(content)
-        return f'<ok>wrote {len(content)} chars to {virt}</ok>'
-
-    if name == 'bash':
-        virt_cmd = args.get('cmd', '').strip()
-        if not any(virt_cmd.startswith(p) for p in ALLOWED_BASH_PREFIXES):
-            return ('<error>bash: command not on allow-list. Allowed prefixes:\n'
-                    + '\n'.join(f'  {p}' for p in ALLOWED_BASH_PREFIXES)
-                    + f'\nReceived: {virt_cmd}</error>')
-        cmd = virt_cmd
-        for prefix, root in (('/workspace', workspace), ('/tasks', tasks_dir), ('/env', env_dir)):
-            cmd = cmd.replace(prefix, str(Path(root).resolve()))
-        env = os.environ.copy()
-        env['PYTHONPATH'] = f"{Path(env_dir).resolve()}:" + env.get('PYTHONPATH', '')
-        try:
-            result = subprocess.run(
-                cmd, shell=True, capture_output=True, text=True, timeout=120,
-                cwd=str(workspace), env=env,
-            )
-            stdout = _trim(result.stdout)
-            stderr = _trim(result.stderr)
-            return (f'<bash exit={result.returncode}>\n'
-                    f'--- stdout ---\n{stdout}\n'
-                    f'--- stderr ---\n{stderr}\n'
-                    f'</bash>')
-        except subprocess.TimeoutExpired:
-            return '<error>bash: timed out after 120s</error>'
-        except Exception as e:
-            return f'<error>bash: {e}</error>'
 
     if name == 'finish':
         note = args.get('note', '')
@@ -361,23 +309,7 @@ class Solver:
   (with non-empty per_seed) is promoted to /workspace/submission.py
   and scored on canonical seeds (different from dev seeds).
 
-LEGACY TOOLS (kept behind --legacy-write-file until ADR 0007 is
-superseded; prefer execute_submission):
-
-```tool
-{"name": "write_file", "args": {"path": "/workspace/submission.py"}}
-===FILE_BODY===
-... your full file ...
-```
-  Legacy: overwrite a file under /workspace. Use execute_submission instead.
-
-```tool
-{"name": "bash", "args": {"cmd": "python3 /tasks/2048/dev_runner.py /workspace/submission.py"}}
-```
-  Legacy: run dev_runner against the file written by write_file.
-  Use execute_submission instead (single tool, sandboxed, structured output).
-
-You are in a ralph loop: write → bash dev_runner → observe → refine → repeat
+You are in a ralph loop: execute_submission → observe → refine → repeat
 until finished or budget exhausted. Be deliberate — quality matters more than
 turn count. READ THE SKILL SPEC FIRST so you understand the FSM contract,
 allowed imports, and anti-cheat rules.
@@ -622,7 +554,10 @@ def run_loop(workspace, env_dir, tasks_dir, vllm_base_url, vllm_api_key,
     # Cycle 65 / ADR 0008 finish-time promotion: write the last successful
     # execute_submission body to workspace/submission.py so canonical
     # scoring (which reads exactly that path) sees it.
-    if _last_successful_execute_body is not None:
+    # Cycle 92: only fire as a fallback when cycle-48 best-snapshot
+    # restore did NOT run. Otherwise we silently overwrite the best
+    # body with the last (potentially regressed) body.
+    if _last_successful_execute_body is not None and not _best_snapshot_path.exists():
         try:
             # Ensure trailing newline (PEP-8 / Python convention). The
             # tool-call body parser strips the final \\n adjacent to the

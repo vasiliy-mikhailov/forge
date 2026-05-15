@@ -8,7 +8,7 @@ existing pipeline:
 
 If the test goes red, the failure mode tells us which seam broke:
 
-- `submission.py` missing → the model never emitted a `write_file`
+- `submission.py` missing → the model never emitted a successful `execute_submission`
   call within the budget.
 - Submission loads but `Solver` missing or constructor raises → the
   model wrote a syntactically valid module that doesn't satisfy the

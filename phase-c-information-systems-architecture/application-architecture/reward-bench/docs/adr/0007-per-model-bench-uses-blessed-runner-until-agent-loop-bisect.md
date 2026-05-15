@@ -1,5 +1,10 @@
 # ADR 0007 — Per-model bench uses a "blessed runner" until the agent_loop regression is bisected
 
+**Status**: Superseded by [ADR 0008](0008-docker-sandboxed-execute-submission-tool.md) as of cycle 92 (2026-05-15). The active `execute_submission` loop has reached and exceeded
+legacy parity (cycle 71: 15.9k mean on Qwen3.6-27B-AWQ; cycle 78 smoke v2 sweep of all 22
+models). Legacy `write_file` + `bash` tools have been removed from `execute_tool`.
+
+
 ## Status
 
 Superseded by cycle 67 (2026-05-14). The active `src/tier1/agent_loop.py` reached parity per cycle 67 (canonical mean=15,918 on qwen3.6-27b-awq, beating the legacy reference of 11,734). The blessed-runner workaround is no longer needed. Cycle 68 deleted `src/tier1/legacy_agent_loop.py`, `_bak/`, the per-model bak-runner test, and `docs/hypotheses_agent_loop_regression.md`.

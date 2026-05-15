@@ -95,13 +95,14 @@ This makes the test_spec
 stay meaningful under ADR 0008 — workspace/submission.py at loop end
 is exactly the model's best successful dev-time body.
 
-### Removed surfaces
+### Removed surfaces (cycle 92)
 
-- `write_file` (deprecated for tier 1) — no longer the way to ship a
-  submission. Model can still use it for transient drafts but the
-  scoring is decoupled.
-- `bash dev_runner` (deprecated for tier 1) — replaced by
-  `execute_submission`.
+- `write_file` — REMOVED from `execute_tool` dispatch and from
+  SYSTEM_PROMPT. No longer accepted as a tool name.
+- `bash dev_runner` — REMOVED. The host-execution path is gone;
+  `execute_submission` is the only sandboxed dev-time loop.
+- `ALLOWED_BASH_PREFIXES` constant removed; `subprocess` import removed
+  from agent_loop.
 
 ### Final scoring is unchanged
 
@@ -120,10 +121,11 @@ final scoring is the held-out variant on different seeds.
 - **Better observability**: structured per-seed output is logged in
   the trace; cycle-56's per-trial protocol-violations field becomes
   a first-class field of every dev run.
-- **Migration path**: `write_file` stays available behind a
-  `--legacy-write-file` flag for one transitional cycle; the active
-  loop's SYSTEM_PROMPT example is updated to show
-  `execute_submission` instead of `write_file` + `bash`.
+- **Migration path (completed cycle 92)**: legacy `write_file` + `bash`
+  tools removed from `execute_tool` dispatch; SYSTEM_PROMPT advertises
+  only `view` / `execute_submission` / `finish`. Cycle 71 confirmed
+  parity (15.9k mean on Qwen3.6-27B-AWQ via `execute_submission`);
+  cycle 78 smoke v2 sweep of all 22 models confirmed durability.
 - **ADR 0006 layer 2 dependency**: the `reward-bench-tier1` image
   must be built and pullable. Implementation cycles will need to
   finalise the Dockerfile + immutable tag scheme already sketched in

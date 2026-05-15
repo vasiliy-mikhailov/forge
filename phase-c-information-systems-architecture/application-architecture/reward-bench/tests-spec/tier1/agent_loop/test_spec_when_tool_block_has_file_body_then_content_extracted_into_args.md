@@ -9,14 +9,14 @@ tuple, exactly as documented in `SYSTEM_PROMPT`.
   shape:
 
       ```tool
-      {"name": "write_file", "args": {"path": "/workspace/submission.py"}}
+      {"name": "execute_submission", "args": {}}
       ===FILE_BODY===
       from __future__ import annotations
       SOLVER = 42
       ```
 
 - **Act**: `parse_tool_calls(reply)`.
-- **Assert**: exactly one tuple `('write_file', args)` where
+- **Assert**: exactly one tuple `('execute_submission', args)` where
   `args["path"] == "/workspace/submission.py"` and `args["content"]`
   starts with `from __future__ import annotations`.
 

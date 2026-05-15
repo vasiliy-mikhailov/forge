@@ -64,9 +64,11 @@ def test_when_tool_block_parsed_then_yields_name_and_args(tool_protocol_reply):
 
 def test_when_tool_block_has_file_body_then_content_extracted_into_args():
     # Arrange — production-shape reply (per SYSTEM_PROMPT contract).
+    # Cycle 92: switched example from legacy write_file to active
+    # execute_submission tool (ADR 0008). FILE_BODY parser unchanged.
     reply = (
         '```tool\n'
-        '{"name": "write_file", "args": {"path": "/workspace/submission.py"}}\n'
+        '{"name": "execute_submission", "args": {}}\n'
         '===FILE_BODY===\n'
         'from __future__ import annotations\n'
         'SOLVER = 42\n'
@@ -79,8 +81,7 @@ def test_when_tool_block_has_file_body_then_content_extracted_into_args():
     # Assert
     assert len(calls) == 1
     name, args = calls[0]
-    assert name == 'write_file'
-    assert args['path'] == '/workspace/submission.py'
+    assert name == 'execute_submission'
     assert args['content'].startswith('from __future__ import annotations'), (
         f'content unexpected: {args.get("content")!r}'
     )
@@ -103,24 +104,6 @@ def test_when_view_tool_executed_then_returns_file_contents(tmp_path):
     assert skill_head in result, f'file head not in observation: {result[:300]!r}'
 
 
-def test_when_write_file_tool_executed_then_writes_to_workspace(tmp_path):
-    # Arrange
-    workspace = tmp_path / 'workspace'
-    workspace.mkdir()
-    env_dir = REPO / 'tasks/2048'
-    tasks_dir = REPO / 'tasks'
-    content = "from __future__ import annotations\nVALUE = 42\n"
-    args = {'path': '/workspace/submission.py', 'content': content}
-
-    # Act
-    result = execute_tool('write_file', args, workspace, env_dir, tasks_dir)
-
-    # Assert
-    target = workspace / 'submission.py'
-    assert target.exists(), f'file not written; observation: {result!r}'
-    assert target.read_text() == content, f'contents differ; observation: {result!r}'
-    assert '<ok>' in result and '/workspace/submission.py' in result, f'unexpected observation: {result!r}'
-
 
 def test_when_finish_tool_executed_then_returns_finish_signal(tmp_path):
     # Arrange
@@ -137,24 +120,6 @@ def test_when_finish_tool_executed_then_returns_finish_signal(tmp_path):
     assert result.startswith('<finish>') and result.endswith('</finish>'), f'unexpected: {result!r}'
     assert 'all done' in result, f'note missing: {result!r}'
 
-
-def test_when_bash_tool_executed_with_allowed_cmd_then_returns_stdout(tmp_path):
-    # Arrange
-    workspace = tmp_path / 'workspace'
-    workspace.mkdir()
-    # Put a sentinel file in workspace so `ls /workspace` has output.
-    (workspace / 'submission.py').write_text('# sentinel\n')
-    env_dir = REPO / 'tasks/2048'
-    tasks_dir = REPO / 'tasks'
-    args = {'cmd': 'ls /workspace'}
-
-    # Act
-    result = execute_tool('bash', args, workspace, env_dir, tasks_dir)
-
-    # Assert
-    assert '<bash exit=0>' in result, f'no successful bash header: {result!r}'
-    assert '--- stdout ---' in result, f'no stdout section: {result!r}'
-    assert 'submission.py' in result, f'sentinel not in stdout: {result!r}'
 
 
 def test_when_run_loop_invoked_with_one_iter_cap_then_returns_one_turn_history(
@@ -549,9 +514,11 @@ def test_when_first_user_inspected_then_includes_skill_spec_reference_and_active
 def test_when_run_loop_observes_new_best_dev_mean_then_snapshots_submission_for_restore_at_finish(monkeypatch, tmp_path):
     """Cycle 48 / hypothesis #1: best-snapshot + restore.
 
-    Model regresses mid-trial: writes good submission, then worse one,
-    then finishes. Active loop currently scores the LATEST = worse one.
-    Legacy loop restores the best snapshot for scoring."""
+    Cycle 92 rewrite: legacy write_file + bash dev_runner are gone
+    (ADR 0008); the active loop uses `execute_submission` exclusively.
+    Semantics unchanged: on a new best dev_mean the body is snapshotted
+    to submission.best.py; at finish the best snapshot is promoted to
+    submission.py for canonical scoring."""
     from src.tier1 import agent_loop as al
 
     workspace = tmp_path / 'ws'; workspace.mkdir()
@@ -560,31 +527,28 @@ def test_when_run_loop_observes_new_best_dev_mean_then_snapshots_submission_for_
     submission = workspace / 'submission.py'
 
     script = iter([
-        # iter 1: write good
-        '```tool\n{"name": "write_file", "args": {"path": "/workspace/submission.py"}}\n===FILE_BODY===\n# A\n```',
-        # iter 2: run dev_runner (best MEAN=1000)
-        '```tool\n{"name": "bash", "args": {"cmd": "python3 /tasks/2048/dev_runner.py /workspace/submission.py"}}\n```',
-        # iter 3: write worse
-        '```tool\n{"name": "write_file", "args": {"path": "/workspace/submission.py"}}\n===FILE_BODY===\n# B\n```',
-        # iter 4: run dev_runner (MEAN=500, no new best)
-        '```tool\n{"name": "bash", "args": {"cmd": "python3 /tasks/2048/dev_runner.py /workspace/submission.py"}}\n```',
-        # iter 5: finish
+        # iter 1: execute_submission body=# A (best MEAN=1000)
+        '```tool\n{"name": "execute_submission", "args": {}}\n===FILE_BODY===\n# A\n```',
+        # iter 2: execute_submission body=# B (regression: MEAN=500)
+        '```tool\n{"name": "execute_submission", "args": {}}\n===FILE_BODY===\n# B\n```',
+        # iter 3: finish
         '```tool\n{"name": "finish", "args": {"note": "done"}}\n```',
     ])
     def fake_call_model(*args, **kwargs):
         return next(script)
     monkeypatch.setattr(al, '_call_model', fake_call_model)
 
-    dev_outs = iter([
-        "  MEAN=1000.0  MEDIAN=1000.0  max-tile-best=256  (0.0s total)",
-        "  MEAN=500.0  MEDIAN=500.0  max-tile-best=128  (0.0s total)",
+    obs_outs = iter([
+        '<observation>{"protocol_violations": [], "per_seed": [{"score": 1000}], "mean": 1000.0, "max_tile_best": 256, "walltime_sec_total": 0.0}</observation>',
+        '<observation>{"protocol_violations": [], "per_seed": [{"score": 500}], "mean": 500.0, "max_tile_best": 128, "walltime_sec_total": 0.0}</observation>',
     ])
     def fake_execute_tool(name, args, ws_arg, *_, **__):
-        if name == 'write_file':
+        if name == 'execute_submission':
+            # Mirror what the real tool does (cycle 65): write the body
+            # to workspace/submission.py and emit a JSON observation.
+            # snapshot-on-new-best is run_loop's job.
             (ws_arg / 'submission.py').write_text(args.get('content', ''))
-            return '<ok>wrote</ok>'
-        if name == 'bash':
-            return next(dev_outs)
+            return next(obs_outs)
         if name == 'finish':
             return '<finish>ok</finish>'
         return '<ok>'
@@ -600,7 +564,7 @@ def test_when_run_loop_observes_new_best_dev_mean_then_snapshots_submission_for_
     final = submission.read_text()
     assert final == '# A', (
         f"submission.py should be restored to best-snapshot '# A' at finish; "
-        f"got {final!r}. Active loop scores LATEST, not best-MEAN snapshot."
+        f"got {final!r}. Active loop must score best-MEAN snapshot, not LATEST."
     )
     best = workspace / 'submission.best.py'
     assert best.exists(), 'submission.best.py should have been written'
@@ -616,15 +580,17 @@ def test_when_finish_called_below_finish_floor_then_rejected_and_loop_continues(
     env_dir = tmp_path / 'env'; env_dir.mkdir()
     tasks_dir = tmp_path / 'tasks'; tasks_dir.mkdir()
 
+    # Cycle 92: rewrite from legacy bash dev_runner to execute_submission
+    # (ADR 0008). Same finish-floor semantics, structured JSON observations.
     script = iter([
-        # iter 1: try to finish — should be rejected (no dev_runner yet)
+        # iter 1: try to finish — rejected (no dev_mean yet)
         '```tool\n{"name": "finish", "args": {"note": "skipping"}}\n```',
-        # iter 2: run dev_runner — MEAN=100 (below floor)
-        '```tool\n{"name": "bash", "args": {"cmd": "python3 /tasks/2048/dev_runner.py /workspace/submission.py"}}\n```',
+        # iter 2: execute_submission — MEAN=100 (below floor)
+        '```tool\n{"name": "execute_submission", "args": {}}\n===FILE_BODY===\n# v1\n```',
         # iter 3: try to finish — best=100 < floor=200, rejected
         '```tool\n{"name": "finish", "args": {"note": "good enough"}}\n```',
-        # iter 4: run dev_runner — MEAN=500 (above floor)
-        '```tool\n{"name": "bash", "args": {"cmd": "python3 /tasks/2048/dev_runner.py /workspace/submission.py"}}\n```',
+        # iter 4: execute_submission — MEAN=500 (above floor)
+        '```tool\n{"name": "execute_submission", "args": {}}\n===FILE_BODY===\n# v2\n```',
         # iter 5: try to finish — best=500 > floor=200, accepted
         '```tool\n{"name": "finish", "args": {"note": "finally"}}\n```',
     ])
@@ -632,13 +598,14 @@ def test_when_finish_called_below_finish_floor_then_rejected_and_loop_continues(
         return next(script)
     monkeypatch.setattr(al, '_call_model', fake_call_model)
 
-    dev_outs = iter([
-        "  MEAN=100.0  MEDIAN=100.0  max-tile-best=64  (0.0s total)",
-        "  MEAN=500.0  MEDIAN=500.0  max-tile-best=256  (0.0s total)",
+    obs_outs = iter([
+        '<observation>{"protocol_violations": [], "per_seed": [{"score": 100}], "mean": 100.0, "max_tile_best": 64, "walltime_sec_total": 0.0}</observation>',
+        '<observation>{"protocol_violations": [], "per_seed": [{"score": 500}], "mean": 500.0, "max_tile_best": 256, "walltime_sec_total": 0.0}</observation>',
     ])
     def fake_execute_tool(name, args, ws_arg, *_, **__):
-        if name == 'bash':
-            return next(dev_outs)
+        if name == 'execute_submission':
+            (ws_arg / 'submission.py').write_text(args.get('content', ''))
+            return next(obs_outs)
         if name == 'finish':
             return '<finish>ok</finish>'
         return '<ok>'
@@ -811,27 +778,9 @@ def test_when_first_reply_received_then_views_skill_spec_or_writes_protocol_vali
         )
         return
 
-    if name == 'write_file' and args.get('path') == '/workspace/submission.py':
-        body = args.get('content', '')
-        sub = tmp_path / 'submission.py'
-        sub.write_text(body)
-        try:
-            mod = load_submission(sub)
-        except SyntaxError as e:
-            pytest.fail(
-                f'First reply wrote submission.py with SyntaxError: {e}. '
-                f'Prompt is broken.'
-            )
-        violations = validate_submission_protocol(mod)
-        assert violations == (), (
-            f'First reply wrote a submission that violates SKILL_tier1.md '
-            f'protocol. Violations: {violations}. Prompt is broken.'
-        )
-        return
-
     pytest.fail(
-        f'First reply neither views /tasks/2048/SKILL_tier1.md nor writes a '
-        f'protocol-valid /workspace/submission.py. '
+        f'First reply neither views /tasks/2048/SKILL_tier1.md nor emits a '
+        f'protocol-valid execute_submission. '
         f'Got: name={name!r} args={args!r}. Prompt is broken.'
     )
 
@@ -891,22 +840,6 @@ def test_when_first_reply_at_campaign_temperature_then_majority_views_skill_or_w
                 )
             except SyntaxError as e:
                 failures.append(f'trial {trial}: execute_submission SyntaxError {e}')
-            continue
-        if name == 'write_file' and args.get('path') == '/workspace/submission.py':
-            body = args.get('content', '')
-            sub = tmp_path / f'submission_t{trial}.py'
-            sub.write_text(body)
-            try:
-                mod = load_submission(sub)
-                violations = validate_submission_protocol(mod)
-                if violations == ():
-                    passes.append(trial)
-                    continue
-                failures.append(
-                    f'trial {trial}: write_file violations={violations}'
-                )
-            except SyntaxError as e:
-                failures.append(f'trial {trial}: SyntaxError {e}')
             continue
         failures.append(
             f'trial {trial}: first call name={name!r} args={args!r}'

@@ -10,28 +10,7 @@ MUST cause the model under test to either:
         body whose load+validate yields no
         [`validate_submission_protocol`](../../../../src/tier1/harness.py)
         violations, OR
-      - **`write_file`** with `path == '/workspace/submission.py'`
-        whose contents pass `validate_submission_protocol` (legacy
-        path, retained behind `--legacy-write-file` until ADR 0007
-        is superseded).
 
-on the FIRST reply. If neither happens, the prompt is broken — the
-test goes RED and we iterate on the prompt until GREEN.
-
-This closes the gap from cycle 54: cycle 53's validator only flagged
-invalid submissions AFTER the run; cycle 55's campaign guard only
-flagged campaigns where ALL trials failed. Cycle 56 catches the bug
-at the source — the prompt itself failing to instruct the model to
-read the spec.
-
-- **Arrange**: import `SYSTEM_PROMPT`, `FIRST_USER`, `_call_model`,
-  `parse_tool_calls`, `validate_submission_protocol`,
-  `load_submission`. Send the prompt pair to the live vLLM at
-  `temperature=0.0` (deterministic).
-- **Act**: parse the first reply into tool calls.
-- **Assert**:
-  - At least one tool call returned.
-  - First tool call is either:
       - `view` with `path == '/tasks/2048/SKILL_tier1.md'`, OR
       - `execute_submission` with `args['content']` body that
         load+validate yields no violations, OR

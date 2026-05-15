@@ -17,7 +17,7 @@ by the loop and canonical scoring emits its standard sentinel
 (cycle-53 protocol violation if file missing → "no submission" path).
 
 This works alongside cycle-48 best-snapshot: that mechanism copies
-the file produced by ANY write_file to .best.py. Cycle 65 is the
+the file produced by ANY write_file (legacy) to .best.py. Cycle 65 is the
 equivalent for the active path. The two are independent — using
 execute_submission, `_best_dev_mean` updates via cycle-63 parser, but
 `submission.best.py` may stay empty until cycle 65 also restores its

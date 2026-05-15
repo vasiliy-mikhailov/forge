@@ -3,7 +3,7 @@
 `src.tier1.agent_loop` exposes two module-level constants:
 
 - `SYSTEM_PROMPT` — the system message that instructs the model on
-  the fenced-block JSON tool format with `view` / `bash` / `write_file` /
+  the fenced-block JSON tool format with `view` / `execute_submission` /
   `finish` tools, the ralph loop, and the dev_runner workflow.
   Defined in `src/tier1/agent_loop.py` (May 2026 production
   campaign that produced the historical ~15.9k mean score on
