@@ -1,12 +1,16 @@
 # `test_when_smoke_bench_runs_on_nemotron_super_49b_v1_5_nvfp4_then_canonical_mean_above_zero`
 
-Pins the **smoke screen** per [ADR 0009 v2](
+Pins the **smoke screen** per [ADR 0009 v3](
 ../../../../docs/adr/0009-multi-model-smoke-bench-convention.md)
 for `ModelTarget(id='nemotron-super-49b-v1.5-nvfp4',
 hf_path='nvidia/Llama-3_3-Nemotron-Super-49B-v1_5-NVFP4',
 served_name='nemotron-super-49b-v1.5-nvfp4',
 max_model_len=131072,
 tool_call_parser='hermes')`.
+
+Test name retains the historical filename for git continuity;
+the asserted contract is now v3 (best_dev_mean > 0, NOT
+canonical_mean > 0).
 
 - **Arrange**: vLLM container `reward-bench-vllm` swapped to serve
   `nemotron-super-49b-v1.5-nvfp4` via
@@ -16,23 +20,23 @@ tool_call_parser='hermes')`.
   config=SMOKE_CONFIG)` with
   `SMOKE_CONFIG = BenchConfig(max_iters=100, n_trials=1,`
   `temperature=0.7, finish_floor=0.0, hard_wall_sec=60.0,`
-  `smoke_early_stop=True)` (cycle-76 ADR 0009 v2 — 100-iter
-  cap with bench-forced early-stop on first `dev_mean > 0`).
-- **Assert**: `result.mean_score > 0` — i.e. the model produced
-  a submission that played at least one canonical seed to a
-  non-zero score.
+  `smoke_early_stop=True)` (cycle 76, ADR 0009 v2 — 100-iter cap
+  with bench-forced early-stop on first `dev_mean > 0`).
+- **Assert (cycle 79, ADR 0009 v3)**: `(result.best_dev_mean or 0) > 0`
+  — i.e. the model produced AT LEAST ONE `execute_submission`
+  observation whose dev games scored above zero.
 
 - **Artifact**: `experiments/2026-05-15-smoke-nemotron-super-49b-v1.5-nvfp4.json`,
-  recording `model_id`, `config`, `mean_score`, `median_score`,
-  `max_max_tile`, `n_games`, `aggregate_walltime_sec`,
-  `solver_protocol_valid`.
+  recording `best_dev_mean` (PRIMARY signal), plus informational
+  `mean_score` (canonical), `median_score`, `max_max_tile`,
+  `n_games`, `aggregate_walltime_sec`, `solver_protocol_valid`.
 
-Per [ADR 0009 v2](../../../../docs/adr/0009-multi-model-smoke-bench-convention.md),
-a `canonical_mean == 0.0` result under the v2 convention is
-treated as a **bug signal**, not a model verdict — candidate
-causes: tool-call parser mismatch, tokenizer issue, dev/canonical
-budget asymmetry (cycle 77 deferred), payload data drift, etc.
-Each such FAIL triggers a per-model investigation cycle.
+Per ADR 0009 v3, a `best_dev_mean == 0` (or None) result is a
+BUG signal — candidate causes: tool-call parser mismatch, the
+model emitting only `view` / planning tools and never trying
+`execute_submission`, tokenizer truncation, payload drift,
+registry data drift. Each such FAIL triggers a per-model
+investigation cycle.
 
 Test code: parametrised in
 [`tests/reward_bench/frameworks/smoke/test_smoke_all_models.py`](../../../../tests/reward_bench/frameworks/smoke/test_smoke_all_models.py).

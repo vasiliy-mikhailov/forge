@@ -178,7 +178,7 @@ def main(
         return condenser.condense(messages, condenser_config)
 
     supervisor = _build_supervisor(target, base_url, api_key)
-    run_loop(
+    _run_loop_result = run_loop(
         workspace=workspace,
         env_dir=ENV_DIR,
         tasks_dir=TASKS_DIR,
@@ -222,6 +222,12 @@ def main(
 
     adapter = GameBoard2048Adapter()
     result = score_submission(SolverCls, seeds, adapter, hard_wall_sec=config.hard_wall_sec)
+    # Cycle 79 / ADR 0009 v3: surface best_dev_mean (from run_loop's
+    # execute_submission tracker) on AttemptResult so smoke tests can
+    # assert on the "first working code" signal rather than the
+    # canonical second-stage score.
+    import dataclasses as _dc
+    result = _dc.replace(result, best_dev_mean=_run_loop_result.get('best_dev_mean'))
 
     print(f'[bench] mean_score={result.mean_score:.1f} '
           f'median={result.median_score:.1f} '

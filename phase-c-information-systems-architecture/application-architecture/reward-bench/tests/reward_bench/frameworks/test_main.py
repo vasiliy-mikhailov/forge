@@ -266,3 +266,49 @@ def test_when_main_invoked_then_uses_ensure_serving_model_with_picked_target(mon
     assert target.id == "qwen3.6-27b-fp8", target.id
     assert target.served_name == "qwen3.6-27b-fp8", target.served_name
     assert target.hf_path == "Qwen/Qwen3.6-27B-FP8", target.hf_path
+
+
+def test_when_main_completes_then_attempt_result_best_dev_mean_matches_run_loop_return(monkeypatch, tmp_path):
+    """Cycle 79 / ADR 0009 v3: main passes run_loop's best_dev_mean
+    through into AttemptResult.
+
+    Mocks ensure_serving_model, run_loop, and score_submission so the
+    test is a pure wiring check (not an integration test)."""
+    from src.reward_bench.frameworks import main as main_mod
+    from src.tier1.entities.attempt_result import AttemptResult as AR
+
+    monkeypatch.setattr(main_mod, 'ensure_serving_model', lambda target: 'http://stub')
+    monkeypatch.setenv('VLLM_API_KEY', 'stub')
+
+    def fake_run_loop(*, workspace, **kwargs):
+        (workspace / 'submission.py').write_text(
+            'class Solver:\n'
+            '    def __init__(self): pass\n'
+            "    def move(self, board): return 'S'\n"
+        )
+        return {
+            'iterations': 5,
+            'messages': [],
+            'finished': True,
+            'best_dev_mean': 1234.5,
+        }
+    monkeypatch.setattr(main_mod, 'run_loop', fake_run_loop)
+
+    # Mock score_submission so the test doesn't actually play games.
+    def fake_score(*args, **kwargs):
+        return AR(
+            mean_score=42.0, median_score=42.0, std_score=0.0,
+            max_max_tile=16, n_games=20, aggregate_walltime_sec=0.1,
+        )
+    monkeypatch.setattr(main_mod, 'score_submission', fake_score)
+
+    result = main_mod.main(
+        model_id='qwen3.6-27b-awq',
+        config=BenchConfig(max_iters=1, n_trials=1, temperature=0.0),
+    )
+
+    assert isinstance(result, AR)
+    assert result.best_dev_mean == 1234.5, (
+        f'expected best_dev_mean=1234.5; got {result.best_dev_mean}'
+    )
+    assert result.mean_score == 42.0  # informational; not the smoke signal

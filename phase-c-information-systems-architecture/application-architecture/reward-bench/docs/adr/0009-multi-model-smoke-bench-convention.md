@@ -66,6 +66,34 @@ a verdict on the model's reasoning ability. Candidate root causes:
 Each smoke FAIL with `canonical_mean == 0` triggers a follow-up
 CATS cycle scoped to that model (or that family).
 
+## Decision delta v3 (cycle 79)
+
+v2 asserted `result.mean_score > 0` — the CANONICAL second-stage
+score on 20 canonical seeds. v3 changes the smoke success criterion
+to `result.best_dev_mean > 0` — the BEST `dev_mean` observed by any
+`execute_submission` observation during the agent loop.
+
+Rationale (user, cycle 79): smoke's question is *"did the model
+produce ANY working code?"*. That signal lives in `dev_mean` from
+`execute_submission`. Canonical scoring is the next-stage pipeline
+with different seeds and a different per-game budget; under cycle 71
+budget asymmetry it can show 0 even when a working solution already
+emerged. Pinning smoke on canonical adds a dependency on the
+canonical-stage's correctness, which is not what smoke is asking.
+
+Implementation:
+  + `AttemptResult.best_dev_mean: Optional[float] = None` (cycle 79).
+  + `run_loop` returns its tracked `_best_dev_mean` alongside
+    `iterations / messages / finished`.
+  + `main()` reads it and `dataclasses.replace`s the
+    `AttemptResult` to surface it.
+  + Smoke test asserts `(result.best_dev_mean or 0) > 0`. The
+    canonical `mean_score` is still recorded in the artifact for
+    informational purposes.
+
+Per-model smoke test_specs (regenerated cycle 79) document the
+new contract.
+
 ## Consequences
 
 + Strong models that need warmup (qwen3.6-27b-awq class) now have

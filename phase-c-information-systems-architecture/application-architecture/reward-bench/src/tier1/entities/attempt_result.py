@@ -22,3 +22,7 @@ class AttemptResult:
     stagnated_any: bool = False
     walltime_exceeded: bool = False
     solver_protocol_valid: bool = True  # cycle 55
+    best_dev_mean: float | None = None  # cycle 79 / ADR 0009 v3
+                                         # best dev_mean observed during the
+                                         # agent loop (from execute_submission).
+                                         # Used as the smoke success criterion.

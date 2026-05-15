@@ -636,7 +636,8 @@ def run_loop(workspace, env_dir, tasks_dir, vllm_base_url, vllm_api_key,
                   flush=True)
         except Exception:
             pass
-    return {'iterations': iter_n, 'messages': messages, 'finished': finished}
+    return {'iterations': iter_n, 'messages': messages,
+            'finished': finished, 'best_dev_mean': _best_dev_mean}
 
 
 def _execute_submission_observation_is_successful(obs):

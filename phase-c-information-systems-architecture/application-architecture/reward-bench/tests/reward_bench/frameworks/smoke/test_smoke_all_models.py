@@ -73,20 +73,23 @@ def test_when_smoke_bench_runs_on_model_then_canonical_mean_above_zero(target):
     payload = {
         "model_id": target.id,
         "config": asdict(SMOKE_CONFIG),
-        "mean_score": result.mean_score,
+        "best_dev_mean": result.best_dev_mean,   # cycle 79: PRIMARY signal
+        "mean_score": result.mean_score,          # canonical 2nd-stage; informational
         "median_score": result.median_score,
         "max_max_tile": result.max_max_tile,
         "n_games": result.n_games,
         "aggregate_walltime_sec": result.aggregate_walltime_sec,
         "solver_protocol_valid": result.solver_protocol_valid,
-        "smoke_passed": result.mean_score > 0,
+        "smoke_passed": (result.best_dev_mean or 0) > 0,
     }
     artifact.write_text(json.dumps(payload, indent=2))
 
-    # ADR 0009 contract: smoke-pass = mean_score > 0.
-    assert result.mean_score > 0, (
-        f"{target.id} smoke FAIL: mean_score={result.mean_score} "
+    # ADR 0009 v3 contract: smoke-pass = best_dev_mean > 0 (i.e. the
+    # model produced AT LEAST ONE execute_submission whose dev games
+    # scored above zero). Canonical is informational.
+    assert (result.best_dev_mean or 0) > 0, (
+        f"{target.id} smoke FAIL: best_dev_mean={result.best_dev_mean} "
+        f"canonical_mean={result.mean_score} "
         f"max_tile={result.max_max_tile} "
-        f"protocol_valid={result.solver_protocol_valid} "
-        f"walltime={result.aggregate_walltime_sec:.1f}s"
+        f"protocol_valid={result.solver_protocol_valid}"
     )
