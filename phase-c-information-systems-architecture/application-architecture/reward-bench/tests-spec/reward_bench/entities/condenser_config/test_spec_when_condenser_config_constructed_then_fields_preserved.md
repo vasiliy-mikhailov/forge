@@ -3,8 +3,10 @@
 Pins the `CondenserConfig` data contract — the orchestrator-side
 configuration for the context-compaction step described in SPEC.md
 ("A condenser summarises older turns when prompt + reserved output
-exceeds the budget"). Mirrors the `--condenser-*` flags from the
-legacy `_bak/bin/campaign_tier1.sh` script.
+exceeds the budget"). Fields parallel the cycle-21 condenser knobs
+(`trigger_tokens`, `keep_recent`, `model_id`) consumed by the active
+`LlmCondenser` adapter (per [ADR 0001](../../../../docs/adr/0001-condenser-uses-same-model-as-bench.md)
+same-model decision).
 
 - **Arrange**: import `CondenserConfig`.
 - **Act**: construct `CondenserConfig(trigger_tokens=40000,

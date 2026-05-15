@@ -3,8 +3,9 @@
 `run_bench_trials` is the multi-trial use case: it invokes a
 single-run `runner` (default: `main`) `config.n_trials` times and
 returns the resulting `AttemptResult`s as a tuple. This is the
-closest piece in our tree to `_bak/bin/campaign_tier1.sh`'s
-`N_TRIALS=10` loop.
+multi-trial driver layer for the
+[ADR 0003](../../../../docs/adr/0003-bench-defaults-500-iters-10-trials-temp-0.7.md)
+`n_trials=10` campaign default.
 
 ## Function
 
