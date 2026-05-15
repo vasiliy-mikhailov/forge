@@ -17,6 +17,7 @@ from src.tier1.agent_loop import (
 REPO = Path(__file__).resolve().parents[2]
 
 
+@pytest.mark.live
 def test_when_skill_prompt_sent_with_tool_protocol_then_reply_contains_tool_call_block(
         vllm_base_url, vllm_api_key):
     # Arrange
@@ -122,6 +123,7 @@ def test_when_finish_tool_executed_then_returns_finish_signal(tmp_path):
 
 
 
+@pytest.mark.live
 def test_when_run_loop_invoked_with_one_iter_cap_then_returns_one_turn_history(
         tmp_path, vllm_base_url, vllm_api_key):
     # Arrange
@@ -693,6 +695,7 @@ def test_when_parse_tool_calls_given_non_dict_root_then_skipped():
 
 
 
+@pytest.mark.no_fake
 def test_when_call_model_invoked_then_max_tokens_matches_legacy_budget(monkeypatch):
     """Cycle 52 / hypothesis #7: _call_model uses max_tokens=12288."""
     import json
@@ -855,6 +858,7 @@ def test_when_first_reply_at_campaign_temperature_then_majority_views_skill_or_w
 
 
 
+@pytest.mark.no_fake
 def test_when_execute_submission_called_with_valid_solver_body_then_returns_per_seed_observation(tmp_path):
     """Cycle 58: pin the happy-path execute_submission observation."""
     import json
@@ -897,6 +901,7 @@ def test_when_execute_submission_called_with_valid_solver_body_then_returns_per_
     assert payload['max_tile_best'] >= 2
 
 
+@pytest.mark.no_fake
 def test_when_execute_submission_called_with_gym_style_body_then_observation_has_protocol_violation(tmp_path):
     """Cycle 58: pin the Gym-style failure into structured observation."""
     import json
@@ -927,6 +932,7 @@ def test_when_execute_submission_called_with_gym_style_body_then_observation_has
     assert payload['mean'] == 0
 
 
+@pytest.mark.no_fake
 def test_when_execute_submission_called_with_syntax_error_body_then_observation_has_syntax_violation(tmp_path):
     """Cycle 58: pin the SyntaxError failure into structured observation."""
     import json
@@ -1152,6 +1158,7 @@ def test_when_system_prompt_inspected_then_advertises_execute_submission_as_prim
     )
 
 
+@pytest.mark.no_fake
 def test_when_execute_submission_called_with_slow_solver_then_per_seed_reports_walltime_exceeded(tmp_path, monkeypatch):
     """Cycle 70: dev-path inherits wall-time protection via canonical scorer.
 
@@ -1229,6 +1236,7 @@ def test_when_execute_submission_called_with_slow_solver_then_per_seed_reports_w
 
 
 
+@pytest.mark.no_fake
 def test_when_call_model_invoked_then_payload_model_field_matches_served_name(monkeypatch):
     """Cycle 74: _call_model must use model_id in the payload, not the
     hardcoded cycle-11 'qwen3.6-27b-awq'.
@@ -1536,6 +1544,7 @@ def test_when_execute_submission_called_without_dev_hard_wall_sec_then_module_de
 
 
 
+@pytest.mark.no_fake
 def test_when_call_model_invoked_then_payload_advertises_tool_schemas(monkeypatch):
     """Cycle 96 / ADR 0010 cycle-95 amendment: _call_model advertises
     tools so vLLM mistral / devstral / gpt-oss routes structured calls

@@ -121,6 +121,7 @@ def test_when_bench_provisions_inference_then_qwen3_6_27b_awq_serves_with_128k_c
 
 
 
+@pytest.mark.no_fake
 def test_when_ensure_serving_model_called_with_target_then_docker_run_invoked_with_target_params(monkeypatch):
     """Cycle 42: pin the docker run argv shape for model-swap provisioning."""
     from src.tier1 import inference as inf

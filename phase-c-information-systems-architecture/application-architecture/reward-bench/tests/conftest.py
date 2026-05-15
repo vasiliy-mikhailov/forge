@@ -6,7 +6,12 @@ Tests marked `@pytest.mark.live` get the real `VllmOpenAIClient`
 bound to the lab vLLM container instead — same test code, different
 injected dependency.
 
-There is NO env-variable flag. The dependency travels through the
+Cycle 101 / ADR 0012: a `FakeVllmServer` is also bound at the
+`urllib.request.urlopen` seam so live-by-nature tests (test_inference,
+skill_tier1_reply, tool_protocol_reply) run offline too. They get a
+canned `/v1/models` catalog and a canned `/v1/chat/completions` reply.
+
+There is NO env-variable flag. Dependencies travel through the
 fixture graph; that IS the DI seam.
 """
 import json
@@ -47,6 +52,17 @@ _DEFAULT_SCRIPT = (
     {'content': _DEFAULT_FINISH_REPLY, 'tool_calls': []},
 )
 
+# Default reply for the direct-urlopen path (test_inference + the
+# session-scoped reply fixtures). A fenced python block satisfies the
+# `skill_tier1_reply` parser tests; the chat tool-protocol replies use
+# `_DEFAULT_EXEC_REPLY` shape.
+_FAKE_FENCED_PYTHON_REPLY = (
+    "Here is the Solver module:\n\n"
+    "```python\n"
+    f"{_DEFAULT_SOLVER_BODY}\n"
+    "```"
+)
+
 
 # Synthetic observation a happy-path execute_submission would emit.
 _FAKE_EXEC_OBSERVATION = (
@@ -63,8 +79,7 @@ _FAKE_EXEC_OBSERVATION = (
 
 @pytest.fixture
 def fake_model_client_factory():
-    """Returns a factory `(script=None) -> FakeModelClient` so tests
-    can build a fake with a custom script."""
+    """Returns a factory `(script=None) -> FakeModelClient`."""
     from src.adapters.fakes.fake_model_client import FakeModelClient
     def factory(script=None):
         return FakeModelClient(script=script or _DEFAULT_SCRIPT)
@@ -72,17 +87,18 @@ def fake_model_client_factory():
 
 
 @pytest.fixture
+def fake_vllm_server_factory():
+    """Returns a factory `(**kwargs) -> FakeVllmServer`. Tests that need
+    custom canned replies build their own."""
+    from src.adapters.fakes.fake_vllm_server import FakeVllmServer
+    def factory(**kwargs):
+        return FakeVllmServer(**kwargs)
+    return factory
+
+
+@pytest.fixture
 def model_client(request, fake_model_client_factory):
-    """The default-bound ModelClient under test.
-
-    - When the test has `@pytest.mark.live`: returns a real
-      `VllmOpenAIClient` constructed against the lab vLLM container.
-    - Otherwise: returns a `FakeModelClient` with the canonical
-      happy-path script.
-
-    Either way, the test depends on this fixture by name. That is
-    the DI seam ADR 0014 demands.
-    """
+    """The default-bound ModelClient under test."""
     if request.node.get_closest_marker('live') is not None:
         from src.adapters.vllm_openai_client import VllmOpenAIClient
         from src.tier1.inference import ensure_serving
@@ -95,19 +111,30 @@ def model_client(request, fake_model_client_factory):
 
 @pytest.fixture(autouse=True)
 def _bind_model_client(request, monkeypatch, model_client):
-    """Autouse glue: wire the injected `model_client` into the seams
-    pre-cycle-99 code still touches (`_call_model`, `ensure_serving*`,
-    `execute_tool`). Cycle 99 will let run_loop take the port
-    directly, removing the need for this glue.
-
-    Live-marked tests skip the wiring so they hit the real seams.
+    """Autouse glue: wire the injected `model_client` AND a
+    `FakeVllmServer` into the seams pre-cycle-99 code still touches
+    (`_call_model`, `execute_tool`, `ensure_serving*`, plus
+    `urllib.request.urlopen` for direct /v1/* calls).
     """
-    if request.node.get_closest_marker('live') is not None:
-        # Live mode: don't intercept; the test hits real vLLM.
+    if (request.node.get_closest_marker('live') is not None
+            or request.node.get_closest_marker('no_fake') is not None):
         yield
         return
 
     from src.tier1 import agent_loop as al
+    from src.adapters.fakes.fake_vllm_server import FakeVllmServer
+
+    # FakeVllmServer: serves /v1/models + /v1/chat/completions.
+    # Default reply is a fenced-python block (satisfies parser tests
+    # AND most chat tests; tests that need a different shape can
+    # construct their own server via the factory and re-monkeypatch).
+    fake_server = FakeVllmServer(
+        default_reply={'content': _FAKE_FENCED_PYTHON_REPLY, 'tool_calls': []},
+    )
+    monkeypatch.setattr(
+        'urllib.request.urlopen',
+        lambda req, timeout=600: fake_server.urlopen(req, timeout=timeout),
+    )
 
     def fake_call_model(vllm_base_url, vllm_api_key, messages,
                         max_tokens=12288, temperature=0.0,
@@ -137,8 +164,8 @@ def _bind_model_client(request, monkeypatch, model_client):
         return f'<error>unknown tool: {name}</error>'
     monkeypatch.setattr(al, 'execute_tool', fake_execute_tool)
 
-    # Make sure tests that import inference.ensure_serving_model get
-    # a non-routable URL (and never block).
+    # ensure_serving / ensure_serving_model: return a non-routable URL
+    # (the FakeVllmServer intercepts urlopen, so the URL never matters).
     from src.tier1 import inference as inf
     monkeypatch.setattr(inf, 'ensure_serving',
                         lambda: 'http://fake:8000')
@@ -155,19 +182,37 @@ def _bind_model_client(request, monkeypatch, model_client):
 
 @pytest.fixture(scope='session')
 def vllm_api_key():
-    return os.environ['VLLM_API_KEY']
+    return os.environ.get('VLLM_API_KEY', 'fake-key')
 
 
 @pytest.fixture(scope='session')
 def vllm_base_url():
-    from src.tier1.inference import ensure_serving
-    return ensure_serving()
+    return 'http://fake:8000'   # autouse urlopen mock handles the real path
 
+
+@pytest.fixture
+def skill_tier1_reply():
+    """Default-bound: returns the fenced-python fake. Live tests get
+    the real model reply via the session-scoped live override below."""
+    return _FAKE_FENCED_PYTHON_REPLY
+
+
+@pytest.fixture
+def tool_protocol_reply():
+    """Default-bound: returns the fenced-tool fake."""
+    return _DEFAULT_EXEC_REPLY
+
+
+# Live session-scoped overrides — only consulted when a test explicitly
+# requests them AND has @pytest.mark.live. The autouse fixture's
+# early-yield branch bypasses the urlopen mock for live tests; these
+# session fixtures then perform real urlopen.
 
 @pytest.fixture(scope='session')
-def skill_tier1_reply(vllm_base_url, vllm_api_key):
-    """Live-only: cached one-shot reply for tests that grep the model's
-    fenced-python output."""
+def skill_tier1_reply_live(vllm_api_key):
+    """Live-only: one-shot real model reply to SKILL_tier1.md."""
+    from src.tier1.inference import ensure_serving
+    base_url = ensure_serving()
     repo = Path(__file__).resolve().parent.parent
     skill = (repo / 'tasks/2048/SKILL_tier1.md').read_text()
     payload = json.dumps({
@@ -177,11 +222,11 @@ def skill_tier1_reply(vllm_base_url, vllm_api_key):
              'content': 'You are a reward-bench Tier 1 author. Read the task spec and respond with the final Python module inside a single fenced python code block. No prose outside the fence.'},
             {'role': 'user', 'content': skill},
         ],
-        'max_tokens': 32768,
+        'max_tokens': 4096,
         'temperature': 0.0,
     }).encode()
     req = urllib.request.Request(
-        f'{vllm_base_url}/v1/chat/completions',
+        f'{base_url}/v1/chat/completions',
         data=payload,
         headers={
             'Content-Type': 'application/json',
@@ -194,20 +239,22 @@ def skill_tier1_reply(vllm_base_url, vllm_api_key):
 
 
 @pytest.fixture(scope='session')
-def tool_protocol_reply(vllm_base_url, vllm_api_key):
-    """Live-only: cached one-shot reply under the interactive protocol."""
+def tool_protocol_reply_live(vllm_api_key):
+    """Live-only: real model reply under the interactive protocol."""
+    from src.tier1.inference import ensure_serving
     from src.tier1.agent_loop import SYSTEM_PROMPT, FIRST_USER
+    base_url = ensure_serving()
     payload = json.dumps({
         'model': 'qwen3.6-27b-awq',
         'messages': [
             {'role': 'system', 'content': SYSTEM_PROMPT},
             {'role': 'user', 'content': FIRST_USER},
         ],
-        'max_tokens': 32768,
+        'max_tokens': 4096,
         'temperature': 0.0,
     }).encode()
     req = urllib.request.Request(
-        f'{vllm_base_url}/v1/chat/completions',
+        f'{base_url}/v1/chat/completions',
         data=payload,
         headers={
             'Content-Type': 'application/json',

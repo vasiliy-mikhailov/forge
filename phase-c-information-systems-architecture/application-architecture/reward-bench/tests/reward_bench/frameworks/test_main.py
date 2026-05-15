@@ -8,6 +8,7 @@ from src.tier1.entities.attempt_result import AttemptResult
 _FAST = BenchConfig(max_iters=120, n_trials=1, temperature=0.0)
 
 
+@pytest.mark.live
 def test_when_main_invoked_with_qwen3_6_27b_awq_then_attempt_result_emitted():
     # Arrange
     from src.reward_bench.frameworks.main import main
@@ -57,6 +58,7 @@ def test_when_main_invoked_with_qwen3_6_27b_awq_then_solver_class_scored_20_game
     assert result.mean_score >= 0.0
 
 
+@pytest.mark.live
 def test_when_main_invoked_with_max_iters_one_then_sentinel_emitted():
     # Arrange
     from src.reward_bench.frameworks.main import main
