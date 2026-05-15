@@ -67,7 +67,7 @@ the cap kicks in. For the cycle-22 observed hang, a 60 s cap would
 have terminated the campaign after the first game (~60 s) instead
 of running for 34+ minutes.
 
-### 2. Docker tier-1 sandbox (queued, cycle 27+)
+### 2. Docker tier-1 sandbox (queued; not yet implemented as of cycle 87)
 
 Replace `GameBoard2048Adapter` with `SandboxedScoreAdapter`:
 
@@ -170,7 +170,7 @@ heavy lookahead.
   `BenchConfig` first or a separate parameter; minimal-change
   pass-through via an explicit kwarg works for the campaign tests).
 
-### Layer 2 (queued, cycle 27+):
+### Layer 2 (queued; not yet implemented as of cycle 87):
 
 - `src/tier1/adapters/sandboxed_score.py` — Docker-invoking
   `GameEnvPort` impl.
@@ -184,7 +184,6 @@ heavy lookahead.
 ## Cross-references
 
 - SPEC.md §Architecture and §Container topology
-- `_bak/Dockerfile.tier1` (already in repo)
 - `tasks/2048/runner_canonical.py` (already in repo; not yet wired)
 - Lab ADR 0001 (same-model condenser — analogous "use the resource
   you already have" pattern)

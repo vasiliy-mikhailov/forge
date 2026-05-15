@@ -1,8 +1,11 @@
-# ADR 0009 v2: Multi-model smoke bench convention
+# ADR 0009 v3: Multi-model smoke bench convention
 
 ## Status
 
-Accepted v1 (cycle 72). Superseded by v2 (cycle 76).
+Accepted v1 (cycle 72) — max_iters=10, asserted on canonical mean.
+Superseded by v2 (cycle 76) — max_iters=100 + smoke_early_stop on first dev_mean > 0.
+Superseded by v3 (cycle 79 + 80) — smoke success criterion = best_dev_mean > 0
+(not canonical); canonical-skip in smoke mode for speed.
 
 ## Context
 
