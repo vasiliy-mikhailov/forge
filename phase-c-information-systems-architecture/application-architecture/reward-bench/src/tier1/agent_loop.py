@@ -104,55 +104,25 @@ def _parse_dev_runner_summary(obs_text):
 
 
 
-def _virt_to_host(virt, workspace, env_dir, tasks_dir):
-    """Resolve a model-supplied virtual path to a host path. Returns None if
-    the path doesn't sit under one of the allowed virtual roots."""
-    if not virt:
-        return None
-    p = virt.strip()
-    while '//' in p:
-        p = p.replace('//', '/')
-    for prefix, root in (('/workspace', workspace), ('/env', env_dir), ('/tasks', tasks_dir)):
-        if p == prefix or p.startswith(prefix + '/'):
-            tail = p[len(prefix):].lstrip('/')
-            host = (Path(root) / tail).resolve() if tail else Path(root).resolve()
-            # Defence-in-depth: post-resolve check to block ../ escapes
-            if not str(host).startswith(str(Path(root).resolve())):
-                return None
-            return host
-    return None
+from src.adapters.tier1_tool_registry import _virt_to_host  # noqa: F401
+
 
 
 def execute_tool(name, args, workspace, env_dir, tasks_dir,
                  dev_hard_wall_sec: float = None):
-    """Run one tool. Returns observation text the model will see next turn."""
-    if name == 'view':
-        virt = args.get('path', '')
-        host = _virt_to_host(virt, workspace, env_dir, tasks_dir)
-        if host is None:
-            return f'<error>view: path must start with /workspace, /env, or /tasks (got {virt!r})</error>'
-        if not host.exists():
-            return f'<error>view: file not found: {virt}</error>'
-        try:
-            return f'<view path="{virt}">\n{_trim(host.read_text())}\n</view>'
-        except Exception as e:
-            return f'<error>view: {e}</error>'
+    """Cycle 98c / ADR 0011: delegates to Tier1ToolRegistry.
 
-    if name == 'finish':
-        note = args.get('note', '')
-        return f'<finish>{note}</finish>'
-
-    if name == 'execute_submission':
-        # Cycle 58 / ADR 0008: ralph-loop atomic primitive. Model emits the
-        # full submission body inline; we score on dev seeds (1..5) and
-        # return a structured JSON observation. Docker isolation per ADR
-        # 0006 layer 2 is a future cycle; this implementation is host-side.
-        body = args.get('content', '')
-        return _execute_submission(body, workspace, tasks_dir,
-                                   dev_hard_wall_sec=dev_hard_wall_sec)
-
-    return f'<error>unknown tool: {name}</error>'
-
+    Kept as a function for back-compat with pre-cycle-98c callers
+    (run_loop, monkeypatched tests). Cycle 99 will let run_loop take
+    the ToolRegistry port directly so this shim goes away."""
+    from src.adapters.tier1_tool_registry import Tier1ToolRegistry
+    registry = Tier1ToolRegistry()
+    return registry.dispatch(name, args, {
+        'workspace': workspace,
+        'env_dir': env_dir,
+        'tasks_dir': tasks_dir,
+        'dev_hard_wall_sec': dev_hard_wall_sec,
+    })
 
 _DEV_SEEDS = (1, 2, 3, 4, 5)
 
@@ -278,79 +248,10 @@ def _err_for_final_state(final_state):
 # fenced-text protocol; passing tools as well does not suppress them
 # (their replies still come back in message.content fenced blocks, the
 # default branch of parse_tool_calls).
-TOOL_SCHEMAS = (
-    {
-        "type": "function",
-        "function": {
-            "name": "view",
-            "description": (
-                "Read a file from /workspace, /env, or /tasks into the "
-                "next assistant prompt. Use /tasks/2048/SKILL_tier1.md "
-                "first to learn the contract."
-            ),
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "path": {
-                        "type": "string",
-                        "description": (
-                            "Absolute path beginning with /workspace, "
-                            "/env, or /tasks."
-                        ),
-                    },
-                },
-                "required": ["path"],
-            },
-        },
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "execute_submission",
-            "description": (
-                "Write a submission body into a sandboxed tier-1 dev runner "
-                "and return per-seed scores. The body MUST be a Python "
-                "module with `class Solver` exposing `move(board) -> "
-                "'W'|'A'|'S'|'D'` and MUST import from transitions. "
-                "Returns a JSON observation with protocol_violations, "
-                "per_seed, mean, max_tile_best, walltime_sec_total."
-            ),
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "content": {
-                        "type": "string",
-                        "description": (
-                            "Full Python submission body. Will be written "
-                            "to /workspace/submission.py and executed."
-                        ),
-                    },
-                },
-                "required": ["content"],
-            },
-        },
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "finish",
-            "description": (
-                "End the loop. The body of the most recent successful "
-                "execute_submission is promoted to /workspace/submission.py "
-                "for canonical scoring."
-            ),
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "note": {
-                        "type": "string",
-                        "description": "Optional reasoning for stopping.",
-                    },
-                },
-            },
-        },
-    },
-)
+# Cycle 98c: schemas now live in src/adapters/tier1_tool_registry.py.
+# Re-exported for back-compat with pre-cycle-98c callers.
+from src.adapters.tier1_tool_registry import Tier1ToolRegistry as _Tier1Reg
+TOOL_SCHEMAS = _Tier1Reg().schemas
 
 
 SYSTEM_PROMPT = """You are an expert Python engineer competing in reward-bench Tier 1 — the 2048 FSM-solver task.
