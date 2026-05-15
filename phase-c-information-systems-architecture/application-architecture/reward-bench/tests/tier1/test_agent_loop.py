@@ -1530,3 +1530,75 @@ def test_when_execute_submission_called_without_dev_hard_wall_sec_then_module_de
         f'expected DEV_HARD_WALL_S default (={al.DEV_HARD_WALL_S}); '
         f'got {captured.get("hard_wall_sec")}'
     )
+
+
+
+def test_when_call_model_invoked_then_payload_advertises_tool_schemas(monkeypatch):
+    """Cycle 96 / ADR 0010 cycle-95 amendment: _call_model advertises
+    tools so vLLM mistral / devstral / gpt-oss routes structured calls
+    to message.tool_calls."""
+    import json as _json
+    from src.tier1 import agent_loop as al
+
+    captured = {}
+
+    class FakeResp:
+        def __init__(self, body): self._body = body
+        def read(self): return self._body
+        def __enter__(self): return self
+        def __exit__(self, *a): pass
+
+    def fake_urlopen(req, timeout=600):
+        captured["body"] = req.data
+        return FakeResp(
+            _json.dumps({"choices": [{"message": {
+                "content": "ok", "tool_calls": []}}]}).encode()
+        )
+
+    monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
+
+    al._call_model("http://stub", "k",
+                   [{"role": "user", "content": "x"}])
+
+    body = _json.loads(captured["body"])
+    assert "tools" in body, f"tools key missing; body keys: {list(body)}"
+    names = {entry["function"]["name"] for entry in body["tools"]}
+    assert names == {"view", "execute_submission", "finish"}, (
+        f"unexpected tools advertised: {names}"
+    )
+    for entry in body["tools"]:
+        assert entry["type"] == "function"
+        assert entry["function"]["name"], "empty function name"
+
+
+def test_when_structured_arguments_contains_sentencepiece_space_then_stripped_before_parsing():
+    """Cycle 96: vLLM mistral tokenizer leaks U+0120 / U+2581 into the
+    rendered JSON arguments. parse_tool_calls must strip them so
+    json.loads succeeds."""
+    from src.tier1.agent_loop import parse_tool_calls
+
+    # U+0120 between : and the value
+    structured = [{
+        "type": "function",
+        "function": {
+            "name": "view",
+            "arguments": '{"path":\u0120"SKILL_tier1.md"}',
+        },
+    }]
+    calls = parse_tool_calls("", structured_tool_calls=structured)
+    assert calls == [("view", {"path": "SKILL_tier1.md"})], (
+        f"unexpected parse: {calls}"
+    )
+
+    # U+2581 variant (alternate SentencePiece space)
+    structured = [{
+        "type": "function",
+        "function": {
+            "name": "view",
+            "arguments": '{"path":\u2581"SKILL_tier1.md"}',
+        },
+    }]
+    calls = parse_tool_calls("", structured_tool_calls=structured)
+    assert calls == [("view", {"path": "SKILL_tier1.md"})], (
+        f"U+2581 variant parse failed: {calls}"
+    )

@@ -83,8 +83,12 @@ def parse_tool_calls(reply, structured_tool_calls=None):
             # arguments is JSON-as-string per OpenAI tool-use spec.
             args = {}
             if isinstance(raw_args, str):
+                # Cycle 96: vLLM mistral tokenizer leaks U+0120 (Ġ,
+                # SentencePiece space) into the rendered JSON. Strip
+                # before parsing; this is a no-op on well-formed JSON.
+                cleaned = raw_args.replace('\u0120', ' ').replace('\u2581', ' ')
                 try:
-                    parsed = json.loads(raw_args)
+                    parsed = json.loads(cleaned)
                 except json.JSONDecodeError:
                     parsed = None
                 if isinstance(parsed, dict):
@@ -316,6 +320,88 @@ def _err_for_final_state(final_state):
 
 
 
+# Cycle 96 / ADR 0010 cycle-95 amendment: OpenAI-style tool advertisement.
+# Mistral / devstral / gpt-oss require tools=[...] in the request to emit
+# structured message.tool_calls; without it they answer "I do not have
+# the tools needed". qwen / gemma / llama already honor SYSTEM_PROMPT
+# fenced-text protocol; passing tools as well does not suppress them
+# (their replies still come back in message.content fenced blocks, the
+# default branch of parse_tool_calls).
+TOOL_SCHEMAS = (
+    {
+        "type": "function",
+        "function": {
+            "name": "view",
+            "description": (
+                "Read a file from /workspace, /env, or /tasks into the "
+                "next assistant prompt. Use /tasks/2048/SKILL_tier1.md "
+                "first to learn the contract."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "path": {
+                        "type": "string",
+                        "description": (
+                            "Absolute path beginning with /workspace, "
+                            "/env, or /tasks."
+                        ),
+                    },
+                },
+                "required": ["path"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "execute_submission",
+            "description": (
+                "Write a submission body into a sandboxed tier-1 dev runner "
+                "and return per-seed scores. The body MUST be a Python "
+                "module with `class Solver` exposing `move(board) -> "
+                "'W'|'A'|'S'|'D'` and MUST import from transitions. "
+                "Returns a JSON observation with protocol_violations, "
+                "per_seed, mean, max_tile_best, walltime_sec_total."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "content": {
+                        "type": "string",
+                        "description": (
+                            "Full Python submission body. Will be written "
+                            "to /workspace/submission.py and executed."
+                        ),
+                    },
+                },
+                "required": ["content"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "finish",
+            "description": (
+                "End the loop. The body of the most recent successful "
+                "execute_submission is promoted to /workspace/submission.py "
+                "for canonical scoring."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "note": {
+                        "type": "string",
+                        "description": "Optional reasoning for stopping.",
+                    },
+                },
+            },
+        },
+    },
+)
+
+
 SYSTEM_PROMPT = """You are an expert Python engineer competing in reward-bench Tier 1 — the 2048 FSM-solver task.
 
 You have read access to the task spec and the env source, and write access to /workspace.
@@ -393,6 +479,11 @@ def _call_model(vllm_base_url, vllm_api_key, messages, max_tokens=12288, tempera
         'messages': messages,
         'max_tokens': max_tokens,
         'temperature': temperature,
+        # Cycle 96: advertise tools so vLLM's per-model tool-call-parser
+        # (mistral / openai_oss / etc.) routes structured calls to
+        # message.tool_calls. Text-fenced models ignore tools and keep
+        # emitting fenced blocks in content (verified live).
+        'tools': list(TOOL_SCHEMAS),
     }).encode()
     req = urllib.request.Request(
         f'{vllm_base_url}/v1/chat/completions',
