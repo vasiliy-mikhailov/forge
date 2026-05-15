@@ -312,3 +312,47 @@ def test_when_main_completes_then_attempt_result_best_dev_mean_matches_run_loop_
         f'expected best_dev_mean=1234.5; got {result.best_dev_mean}'
     )
     assert result.mean_score == 42.0  # informational; not the smoke signal
+
+
+def test_when_main_invoked_in_smoke_mode_with_positive_dev_mean_then_skips_canonical_scoring(monkeypatch, tmp_path):
+    """Cycle 80 / ADR 0009 v3: in smoke mode (config.smoke_early_stop=True)
+    with run_loop returning best_dev_mean > 0, main() skips
+    score_submission entirely."""
+    from src.reward_bench.frameworks import main as main_mod
+    from src.tier1.entities.attempt_result import AttemptResult as AR
+
+    monkeypatch.setattr(main_mod, 'ensure_serving_model', lambda target: 'http://stub')
+    monkeypatch.setenv('VLLM_API_KEY', 'stub')
+
+    def fake_run_loop(*, workspace, **kwargs):
+        (workspace / 'submission.py').write_text(
+            'class Solver:\n'
+            '    def __init__(self): pass\n'
+            "    def move(self, board): return 'S'\n"
+        )
+        return {
+            'iterations': 14, 'messages': [], 'finished': True,
+            'best_dev_mean': 42.0,
+        }
+    monkeypatch.setattr(main_mod, 'run_loop', fake_run_loop)
+
+    score_calls = {'n': 0}
+    def fake_score(*a, **kw):
+        score_calls['n'] += 1
+        return AR(mean_score=999, median_score=999, std_score=0,
+                  max_max_tile=0, n_games=0, aggregate_walltime_sec=0)
+    monkeypatch.setattr(main_mod, 'score_submission', fake_score)
+
+    result = main_mod.main(
+        model_id='qwen3.6-27b-awq',
+        config=BenchConfig(max_iters=1, n_trials=1, temperature=0.0,
+                          smoke_early_stop=True),
+    )
+
+    assert score_calls['n'] == 0, (
+        f'score_submission was called {score_calls["n"]} times in '
+        f'smoke mode after positive dev_mean; expected 0 calls'
+    )
+    assert result.best_dev_mean == 42.0
+    assert result.mean_score == 0.0
+    assert result.n_games == 0

@@ -94,6 +94,18 @@ Implementation:
 Per-model smoke test_specs (regenerated cycle 79) document the
 new contract.
 
+### Cycle 80 optimisation: canonical-skip in smoke mode
+
+Once `smoke_early_stop` fires with `best_dev_mean > 0`, the smoke
+contract (v3 above) is already satisfied. The canonical
+second-stage scoring (20 games on canonical seeds, up to 60s
+budget) is pure overhead in smoke mode. Cycle 80 short-circuits:
+when `config.smoke_early_stop` is True and `run_loop` returned a
+positive `best_dev_mean`, `main()` returns an `AttemptResult`
+carrying just `best_dev_mean` and informational zeros for the
+other fields; `score_submission` is not called. Saves 60s+ per
+smoke model run.
+
 ## Consequences
 
 + Strong models that need warmup (qwen3.6-27b-awq class) now have

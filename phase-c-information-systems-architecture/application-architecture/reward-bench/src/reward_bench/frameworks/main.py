@@ -220,6 +220,20 @@ def main(
         )
     SolverCls = module.Solver
 
+    # Cycle 80: smoke-mode canonical-skip. Once smoke_early_stop fired
+    # with positive dev_mean, the smoke contract (ADR 0009 v3) is
+    # satisfied; canonical scoring is pure overhead. Return a synthetic
+    # AttemptResult carrying just best_dev_mean.
+    _best_dev_mean = _run_loop_result.get('best_dev_mean')
+    if config.smoke_early_stop and _best_dev_mean is not None and _best_dev_mean > 0:
+        print(f'[bench] smoke-mode canonical-skip: best_dev_mean='
+              f'{_best_dev_mean} (per ADR 0009 v3 / cycle 80)')
+        return AttemptResult(
+            mean_score=0.0, median_score=0.0, std_score=0.0,
+            max_max_tile=0, n_games=0, aggregate_walltime_sec=0.0,
+            best_dev_mean=_best_dev_mean,
+        )
+
     adapter = GameBoard2048Adapter()
     result = score_submission(SolverCls, seeds, adapter, hard_wall_sec=config.hard_wall_sec)
     # Cycle 79 / ADR 0009 v3: surface best_dev_mean (from run_loop's
