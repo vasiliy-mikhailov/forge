@@ -351,7 +351,8 @@ def run_loop(workspace, env_dir, tasks_dir, vllm_base_url, vllm_api_key,
              agent_loop_wall_sec=0.0, max_no_tool_call_iters=0,
              finish_floor=0.0, model_id='qwen3.6-27b-awq',
              smoke_early_stop=False, dev_hard_wall_sec: float = None,
-             max_tokens: int = 12288):
+             max_tokens: int = 12288,
+             model_client=None, tool_registry=None, protocol_parser=None):
     """Drive the interactive agent loop for at most max_iters turns.
 
     `condense` is an opaque callable that takes the message tuple and
@@ -406,9 +407,21 @@ def run_loop(workspace, env_dir, tasks_dir, vllm_base_url, vllm_api_key,
         _iter_start = _t_loop.monotonic()
         iter_n += 1
         messages = list(condense(tuple(messages)))
-        reply = _call_model(vllm_base_url, vllm_api_key, messages,
-                            temperature=temperature, model_id=model_id,
-                            max_tokens=max_tokens)
+        # Cycle 99 / ADR 0011 step 2: DI seam. When the caller
+        # passed an explicit model_client, use it directly;
+        # otherwise fall back to the module-level _call_model
+        # (which tests monkeypatch).
+        if model_client is not None:
+            _tools = (list(tool_registry.schemas) if tool_registry is not None
+                      else list(TOOL_SCHEMAS))
+            reply = model_client.call(
+                messages, tools=_tools, temperature=temperature,
+                max_tokens=max_tokens, model_id=model_id,
+            )
+        else:
+            reply = _call_model(vllm_base_url, vllm_api_key, messages,
+                                temperature=temperature, model_id=model_id,
+                                max_tokens=max_tokens)
         # Cycle 83 back-compat shim: mocked _call_model in old tests
         # returns a bare string. Wrap so the rest of the loop is
         # uniform (cycle 83 contract is dict-with-content+tool_calls).
@@ -417,7 +430,14 @@ def run_loop(workspace, env_dir, tasks_dir, vllm_base_url, vllm_api_key,
         _content = reply.get('content', '') or ''
         _structured = reply.get('tool_calls') or []
         messages.append({'role': 'assistant', 'content': _content})
-        tool_calls = parse_tool_calls(_content, structured_tool_calls=_structured)
+        # Cycle 99: when caller passes a protocol_parser, use it;
+        # otherwise fall back to the legacy module-level helper.
+        if protocol_parser is not None:
+            _ar = {'content': _content, 'tool_calls': _structured or []}
+            _calls = protocol_parser.extract(_ar)
+            tool_calls = [(c.name, c.args) for c in _calls]
+        else:
+            tool_calls = parse_tool_calls(_content, structured_tool_calls=_structured)
         if not tool_calls:
             obs = ('<error>no tool calls found in your reply. Each tool call '
                    'must be in a fenced code block tagged `tool`.</error>')
@@ -460,8 +480,17 @@ def run_loop(workspace, env_dir, tasks_dir, vllm_base_url, vllm_api_key,
                           f'(best_dev_mean={_best_str} < floor={finish_floor})',
                           flush=True)
                     continue
-            obs = execute_tool(name, tool_args, workspace, env_dir, tasks_dir,
-                               dev_hard_wall_sec=dev_hard_wall_sec)
+            # Cycle 99: when caller passes a tool_registry, dispatch
+            # via the port; otherwise fall back to module-level helper.
+            if tool_registry is not None:
+                obs = tool_registry.dispatch(name, tool_args, {
+                    'workspace': workspace, 'env_dir': env_dir,
+                    'tasks_dir': tasks_dir,
+                    'dev_hard_wall_sec': dev_hard_wall_sec,
+                })
+            else:
+                obs = execute_tool(name, tool_args, workspace, env_dir, tasks_dir,
+                                   dev_hard_wall_sec=dev_hard_wall_sec)
             observations.append(obs)
             # Cycle 65: track last successful execute_submission body for
             # finish-time promotion per ADR 0008.
