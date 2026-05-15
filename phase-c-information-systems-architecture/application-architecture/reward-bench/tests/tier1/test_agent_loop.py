@@ -1352,3 +1352,70 @@ def test_when_call_model_invoked_then_payload_model_field_matches_served_name(mo
     assert "qwen3.6-27b-awq" in sig or any(
         "qwen3.6-27b-awq" == d for d in sig
     ), f"cycle-74 changed the default model_id; expected back-compat"
+
+
+def test_when_run_loop_observes_first_positive_dev_mean_with_smoke_early_stop_then_terminates_with_finished_true(tmp_path, monkeypatch):
+    """Cycle 76 / ADR 0009 v2: smoke_early_stop forces finished=True on
+    the first execute_submission observation with dev_mean > 0.
+
+    Real-world driver: cycle 72 smoke discovered qwen3.6-27b-awq emits
+    its first execute_submission around iter 11-14; cycle 76 raises the
+    smoke cap to 100 iters but adds this early-stop so strong models
+    don't grind all 100 iters (cycle 71 trial 2 finished naturally at
+    iter 74 — early-stop would have exited at iter 14)."""
+    from src.tier1 import agent_loop
+
+    workspace = tmp_path / 'ws'; workspace.mkdir()
+    env_dir = tmp_path / 'env'; env_dir.mkdir()
+    tasks_dir = tmp_path / 'tasks'; tasks_dir.mkdir()
+
+    call_count = {'n': 0}
+    REPLY_WITH_EXEC = (
+        'Iterating now.\n'
+        '```tool\n'
+        '{"name": "execute_submission", "args": {}}\n'
+        '===FILE_BODY===\n'
+        "class Solver:\n"
+        "    def move(self, b): return 'S'\n"
+        '```\n'
+    )
+
+    def fake_call_model(*args, **kwargs):
+        call_count['n'] += 1
+        return REPLY_WITH_EXEC
+
+    def fake_execute_tool(name, args, ws, ed, td):
+        # Return a synthetic observation that the cycle-63 parser reads
+        # as dev_mean = 100.0 (first positive). Schema must match cycle-70
+        # _execute_submission output.
+        import json as _json
+        obs = {
+            'protocol_violations': [],
+            'per_seed': [{'seed': 1, 'score': 100, 'max_tile': 16, 'moves': 50,
+                          'state': 'lost', 'walltime_sec': 0.1, 'err': None}],
+            'mean': 100.0,
+            'median': 100.0,
+            'max_tile_best': 16,
+            'walltime_sec_total': 0.5,
+        }
+        return '<observation>' + _json.dumps(obs) + '</observation>'
+
+    monkeypatch.setattr(agent_loop, '_call_model', fake_call_model)
+    monkeypatch.setattr(agent_loop, 'execute_tool', fake_execute_tool)
+
+    result = agent_loop.run_loop(
+        workspace=workspace, env_dir=env_dir, tasks_dir=tasks_dir,
+        vllm_base_url='http://stub', vllm_api_key='stub',
+        max_iters=10, temperature=0.0,
+        smoke_early_stop=True,
+    )
+
+    assert result['finished'] is True, f'expected finished=True; got {result}'
+    assert result['iterations'] == 1, (
+        f'expected iter 1 exit on first positive dev_mean; '
+        f'got {result["iterations"]}'
+    )
+    assert call_count['n'] == 1, (
+        f'_call_model should have been called exactly once; '
+        f'got {call_count["n"]}'
+    )

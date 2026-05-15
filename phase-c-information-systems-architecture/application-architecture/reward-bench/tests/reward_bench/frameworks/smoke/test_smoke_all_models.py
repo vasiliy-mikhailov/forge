@@ -23,17 +23,22 @@ from src.tier1.inference import ensure_serving_model
 REPO = Path(__file__).resolve().parents[4]
 
 SMOKE_CONFIG = BenchConfig(
-    max_iters=10,
+    # Cycle 76 / ADR 0009 v2: raise max_iters from 10 to 100 to give
+    # slow-starter models (qwen3.6-27b-awq class, first submission at
+    # iter 11-14) a fair shot. The smoke_early_stop flag caps compute:
+    # bench forces finished=True on first dev_mean > 0.
+    max_iters=100,
     n_trials=1,
     temperature=0.7,
     finish_floor=0.0,
     hard_wall_sec=60.0,
     supervisor_every_k=0,
+    smoke_early_stop=True,
 )
 
 
 def _artifact_path(model_id: str) -> Path:
-    return REPO / "experiments" / f"2026-05-14-smoke-{model_id}.json"
+    return REPO / "experiments" / f"2026-05-15-smoke-{model_id}.json"
 
 
 @pytest.mark.smoke

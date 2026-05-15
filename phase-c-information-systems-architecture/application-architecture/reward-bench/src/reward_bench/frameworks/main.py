@@ -193,6 +193,7 @@ def main(
         model_id=target.served_name,       # cycle 74: don't ask vLLM for AWQ
                                            # when the container serves something
                                            # else; otherwise HTTP 404.
+        smoke_early_stop=config.smoke_early_stop,  # cycle 76 / ADR 0009 v2
     )
 
     submission_path = workspace / 'submission.py'

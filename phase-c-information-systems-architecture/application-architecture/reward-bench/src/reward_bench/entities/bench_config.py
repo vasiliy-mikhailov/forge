@@ -23,3 +23,9 @@ class BenchConfig:
     finish_floor: float = 0.0
     hard_wall_sec: float = 0.0
     supervisor_every_k: int = 0  # cycle 35: ADR 0005 cadence; 0 = disabled
+    smoke_early_stop: bool = False  # cycle 76: ADR 0009 v2; bench forces
+                                     # finished=True on first execute_submission
+                                     # observation with dev_mean > 0.
+    smoke_early_stop: bool = False  # cycle 76: ADR 0009 v2; bench forces
+                                     # finished=True on first execute_submission
+                                     # observation with dev_mean > 0.

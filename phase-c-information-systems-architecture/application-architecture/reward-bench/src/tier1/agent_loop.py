@@ -428,7 +428,8 @@ def run_loop(workspace, env_dir, tasks_dir, vllm_base_url, vllm_api_key,
              max_iters, condense=_identity_condense, temperature=0.0,
              supervisor=None, supervisor_every_k=0,
              agent_loop_wall_sec=0.0, max_no_tool_call_iters=0,
-             finish_floor=0.0, model_id='qwen3.6-27b-awq'):
+             finish_floor=0.0, model_id='qwen3.6-27b-awq',
+             smoke_early_stop=False):
     """Drive the interactive agent loop for at most max_iters turns.
 
     `condense` is an opaque callable that takes the message tuple and
@@ -567,6 +568,16 @@ def run_loop(workspace, env_dir, tasks_dir, vllm_base_url, vllm_api_key,
                     print(f'[harness] new best dev MEAN={_mean} '
                           f'(snapshot=False, no submission.py)',
                           flush=True)
+            # Cycle 76 / ADR 0009 v2: smoke mode bench-forced early-stop.
+            # As soon as ANY execute_submission yields dev_mean > 0, exit
+            # the loop with finished=True. Strong models would otherwise
+            # grind all 100 iters (cycle 71 trial 2 finished naturally at
+            # iter 74). Default off (regular bench unchanged).
+            if smoke_early_stop and _best_dev_mean is not None and _best_dev_mean > 0:
+                finished = True
+                print(f'[run_loop] smoke_early_stop fired at iter {iter_n} '
+                      f'with best dev MEAN={_best_dev_mean}',
+                      flush=True)
         # Cycle 33 (ADR 0005): supervisor hook. Every K iters, ask the
         # supervisor whether to stop. We feed it a minimal per-iter sample
         # `(iter_n, 0.0, 0, 0.0)` for now — cycle 34 will parse real
