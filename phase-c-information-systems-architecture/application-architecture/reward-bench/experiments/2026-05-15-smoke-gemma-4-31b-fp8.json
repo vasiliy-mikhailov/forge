@@ -1,0 +1,21 @@
+{
+  "model_id": "gemma-4-31b-fp8",
+  "config": {
+    "max_iters": 100,
+    "n_trials": 1,
+    "temperature": 0.7,
+    "max_no_improve": 999999,
+    "finish_floor": 0.0,
+    "hard_wall_sec": 60.0,
+    "supervisor_every_k": 0,
+    "smoke_early_stop": true
+  },
+  "best_dev_mean": 2212.8,
+  "mean_score": 0.0,
+  "median_score": 0.0,
+  "max_max_tile": 0,
+  "n_games": 0,
+  "aggregate_walltime_sec": 0.0,
+  "solver_protocol_valid": true,
+  "smoke_passed": true
+}

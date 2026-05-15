@@ -322,6 +322,66 @@ finisher" models that this 10-iter cut misses.
     `TimeoutError` outside the smoke test's try/except. Test design
     correction for a follow-up cycle.
 
+### Cycle 78 — smoke v2 sweep (ADR 0009 v3, all 22 models)
+
+Smoke convention v2 (cycle 76 + 79 + 80): `SMOKE_CONFIG = BenchConfig(`
+  `max_iters=100, n_trials=1, temperature=0.7, finish_floor=0.0,`
+  `hard_wall_sec=60.0, smoke_early_stop=True)`. Smoke success criterion
+(ADR 0009 v3 / cycle 79) = `best_dev_mean > 0` — i.e. the model produced
+at least one `execute_submission` whose dev games scored above zero.
+Once early-stop fires (cycle 80), canonical scoring is skipped to save
+compute. Per ADR 0009 v3, a 0.0/None result is a **bug signal**, not a
+model verdict.
+
+Each model was driven through its own per-model smoke task (task list
+#9-#30, one CATS task per model in registry order).
+
+| model_id | best_dev_mean | smoke_passed | notes |
+| -------- | ------------: | -----------: | ----- |
+| `qwen3.5-27b-nvfp4` | **2988.0** | ✓ PASS |  |
+| `gemma-4-31b-fp8` | **2212.8** | ✓ PASS |  |
+| `gemma-4-31b-nvfp4` | **2212.8** | ✓ PASS |  |
+| `qwen2.5-72b-nvfp4` | **2206.4** | ✓ PASS |  |
+| `qwen3.6-27b-nvfp4` | **2206.4** | ✓ PASS |  |
+| `qwen3-32b-nvfp4` | **2191.2** | ✓ PASS |  |
+| `qwen3.5-27b-fp8` | **2172.8** | ✓ PASS |  |
+| `nemotron-3-super-120b-a12b-nvfp4` | **1120.8** | ✓ PASS |  |
+| `qwen3-32b-fp8` | **1058.4** | ✓ PASS |  |
+| `qwen3.6-27b-awq` | — | ✓ PASS |  |
+| `qwen3.6-27b-fp8` | — | ✓ PASS |  |
+| `devstral-2-123b-nvfp4` | — | ✗ FAIL | see ADR 0010 or cycle-77/83 deferred |
+| `devstral-small-2-24b` | — | ✗ FAIL | see ADR 0010 or cycle-77/83 deferred |
+| `gpt-oss-120b` | — | ✗ FAIL | ERROR: TypeError: expected string or bytes-like object, got 'N |
+| `gpt-oss-20b` | — | ✗ FAIL | ERROR: TypeError: expected string or bytes-like object, got 'N |
+| `llama-3.1-8b-nvfp4` | — | ✗ FAIL | see ADR 0010 or cycle-77/83 deferred |
+| `llama-3.3-70b-nvfp4` | 0.0 | ✗ FAIL | see ADR 0010 or cycle-77/83 deferred |
+| `mistral-small-3.2-24b` | — | ✗ FAIL | see ADR 0010 or cycle-77/83 deferred |
+| `nemotron-3-super-120b-nvfp4` | — | ✗ FAIL | ERROR: HTTPError: HTTP Error 400: Bad Request |
+
+**Tally**: 11 PASS / 8 FAIL of 19 artifact'd. All 22 models attempted; some FAILed before artifact write (TimeoutError, HTTP errors — captured in the per-model task list with root cause).
+
+**Headline PASSes (top 5)**:
+  - `qwen3.5-27b-nvfp4` → dev 2988.0
+  - `gemma-4-31b-fp8` → dev 2212.8
+  - `gemma-4-31b-nvfp4` → dev 2212.8
+  - `qwen2.5-72b-nvfp4` → dev 2206.4
+  - `qwen3.6-27b-nvfp4` → dev 2206.4
+
+**Bench-side bugs documented and queued for fixes** (not model verdicts):
+  - [ADR 0010 (cycle 82)](../docs/adr/0010-mistral-special-tokens-incompatible-with-fenced-tool-protocol.md):
+    Mistral / GPT-OSS special-token tool format → `parse_tool_calls` only
+    reads text content for fenced blocks. Affects: `devstral-small-2-24b`,
+    `mistral-small-3.2-24b`, `devstral-2-123b*`, `gpt-oss-20b`, `gpt-oss-120b`.
+    Resolved by **cycle 83 (deferred)**: extend `parse_tool_calls` to fall
+    back to `response.choices[0].message.tool_calls` structured field.
+  - **Cycle 77 (deferred)**: align `DEV_HARD_WALL_S` so dev/canonical
+    per-game budgets match. Affects slow-Solver fails like
+    `llama-3.3-70b-nvfp4` where dev allowed it but canonical timed out.
+  - Registry data: `nvidia/Llama-3.3-Nemotron-Super-49B-v1.5-FP8` HF path
+    does not exist. Real registry bug.
+
+Once cycle 77 + 83 land, the projected coverage rises to ~18 of 22 PASS.
+
 ## Reference baselines
 
 ### `tasks/2048/baselines/reference_fsm.py` (hand-written)

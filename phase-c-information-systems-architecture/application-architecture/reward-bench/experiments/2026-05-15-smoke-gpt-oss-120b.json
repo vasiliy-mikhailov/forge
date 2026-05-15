@@ -1,0 +1,16 @@
+{
+  "model_id": "gpt-oss-120b",
+  "config": {
+    "max_iters": 100,
+    "n_trials": 1,
+    "temperature": 0.7,
+    "max_no_improve": 999999,
+    "finish_floor": 0.0,
+    "hard_wall_sec": 60.0,
+    "supervisor_every_k": 0,
+    "smoke_early_stop": true
+  },
+  "error": "TypeError: expected string or bytes-like object, got 'NoneType'",
+  "mean_score": null,
+  "smoke_passed": false
+}
