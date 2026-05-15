@@ -420,41 +420,24 @@ FIRST_USER = "Start the task. Read /tasks/2048/SKILL_tier1.md to learn the const
 
 def _call_model(vllm_base_url, vllm_api_key, messages, max_tokens=12288, temperature=0.0,
                 model_id='qwen3.6-27b-awq'):
-    # Cycle 74: model_id is the served name vLLM advertises. Default
-    # preserves cycle-11 hardcoded behaviour for back-compat with old
-    # callers; main()/run_loop now pass the target.served_name through
-    # so a swapped container actually gets the right model name in
-    # the payload (otherwise vLLM returns HTTP 404).
-    payload = json.dumps({
-        'model': model_id,
-        'messages': messages,
-        'max_tokens': max_tokens,
-        'temperature': temperature,
-        # Cycle 96: advertise tools so vLLM's per-model tool-call-parser
-        # (mistral / openai_oss / etc.) routes structured calls to
-        # message.tool_calls. Text-fenced models ignore tools and keep
-        # emitting fenced blocks in content (verified live).
-        'tools': list(TOOL_SCHEMAS),
-    }).encode()
-    req = urllib.request.Request(
-        f'{vllm_base_url}/v1/chat/completions',
-        data=payload,
-        headers={
-            'Content-Type': 'application/json',
-            'Authorization': f'Bearer {vllm_api_key}',
-        },
-    )
-    with urllib.request.urlopen(req, timeout=600) as r:
-        data = json.loads(r.read())
-    # Cycle 83 / ADR 0010: surface BOTH text content and the
-    # OpenAI-structured tool_calls so the agent loop can dispatch
-    # the Mistral / Devstral / GPT-OSS special-token format too.
-    msg = data['choices'][0]['message']
-    return {
-        'content': msg.get('content') or '',
-        'tool_calls': msg.get('tool_calls') or [],
-    }
+    """Cycle 98b / ADR 0011: thin shim over VllmOpenAIClient.
 
+    Kept for cycle-9..96 callers (run_loop, tests that monkeypatch this
+    function). Cycle 99 will plumb the ModelClient port directly so
+    this shim can go away."""
+    from src.adapters.vllm_openai_client import VllmOpenAIClient
+    client = VllmOpenAIClient(
+        base_url=vllm_base_url,
+        api_key=vllm_api_key,
+        default_model_id=model_id,
+    )
+    return client.call(
+        messages,
+        tools=list(TOOL_SCHEMAS),
+        temperature=temperature,
+        max_tokens=max_tokens,
+        model_id=model_id,
+    )
 
 def _identity_condense(messages):
     """Default condense: pass messages through unchanged."""
