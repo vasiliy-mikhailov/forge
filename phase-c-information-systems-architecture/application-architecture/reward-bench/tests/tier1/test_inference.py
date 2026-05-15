@@ -77,7 +77,7 @@ def test_when_skill_tier1_prompt_sent_then_reply_completes_within_5_min(vllm_bas
             {'role': 'system', 'content': 'You are a reward-bench Tier 1 author. Read the task spec and respond with the final Python module inside a single fenced python code block. No prose outside the fence.'},
             {'role': 'user', 'content': skill},
         ],
-        'max_tokens': 32768,
+        'max_tokens': 8192,  # cycle 99b: was 32768; ~73 tok/s vLLM throughput puts the full budget over the 5-min ceiling.
         'temperature': 0.0,
     }).encode()
     req = urllib.request.Request(

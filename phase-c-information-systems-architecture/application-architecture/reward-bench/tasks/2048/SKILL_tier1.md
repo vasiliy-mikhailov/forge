@@ -10,6 +10,40 @@ Save your final answer to `/workspace/submission.py`. The harness will then run 
 
 You must declare named **states** (e.g. `building`, `endgame`) and explicit **transitions** between them, using the `transitions.Machine` class. Each state has its own move policy (a method).
 
+Minimal correct skeleton (cycle 99b — the library expects each transition entry to be a `dict` or a `list`, NOT a tuple):
+
+```python
+from transitions import Machine
+
+class Solver:
+    states = ['building', 'endgame']
+    transitions = [
+        {'trigger': 'advance', 'source': 'building', 'dest': 'endgame'},
+        {'trigger': 'retreat', 'source': 'endgame',  'dest': 'building'},
+        # Or equivalently:  ['advance', 'building', 'endgame']
+    ]
+    def __init__(self):
+        self.machine = Machine(
+            model=self,
+            states=self.states,
+            transitions=self.transitions,
+            initial='building',
+        )
+    def move(self, board):
+        # delegate to the per-state policy method
+        return getattr(self, f'_move_{self.state}')(board)
+    def _move_building(self, board): return 'W'
+    def _move_endgame(self, board):  return 'A'
+```
+
+Common wrong form (causes `TypeError: argument after ** must be a mapping`):
+
+```python
+transitions = [
+    ('advance', 'building', 'endgame'),   # tuple — library rejects
+]
+```
+
 This is closed-world: your `Solver` runs in a sandbox with **no LLM access during play**. Every decision must be encoded in your Python.
 
 ## API contract

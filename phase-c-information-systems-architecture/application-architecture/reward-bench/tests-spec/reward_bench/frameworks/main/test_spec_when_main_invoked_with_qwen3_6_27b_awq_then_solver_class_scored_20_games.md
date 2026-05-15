@@ -11,17 +11,23 @@ acceptable here. The cycle-11 shape-only test
 DOES accept sentinel.
 
 - **Arrange**: import `AttemptResult`, `BenchConfig`, and `main`.
-  Build `_FAST = BenchConfig(max_iters=30, n_trials=1,
+  Build `_FAST = BenchConfig(max_iters=60, n_trials=1,
   temperature=0.0)` — ADR 0003 defaults (500 iters / T=0.7) would
-  take minutes. vLLM container serving `qwen3.6-27b-awq`.
+  take minutes. Cycle 99b bumped from 30 to 60 after cycle-99a
+  live run showed qwen3.6-27b-awq at temp=0.0 needs ~30+ iters
+  before finish. vLLM container serving `qwen3.6-27b-awq`.
 - **Act**: `result = main(model_id='qwen3.6-27b-awq', config=_FAST)`.
 - **Assert**:
   - `isinstance(result, AttemptResult)`.
   - `result.n_games == 20` (no sentinel — model produced a valid
     Solver class).
   - `len(result.games) == 20`.
-  - Every game has `final_state in {'won', 'lost'}` (not
-    `'solver_error'` or `'invalid_action'`).
+  - No game has `final_state in {'solver_error', 'invalid_action'}`.
+    Cycle 99b broadened from the cycle-12 wording (`in {'won', 'lost'}`)
+    to admit cycle-78 `stagnated` and cycle-23/27 `walltime_exceeded` —
+    both are legitimate game terminals (the Solver ran without
+    crashing). The intent of this assertion is reject Solver crashes
+    only.
   - `result.mean_score >= 0.0`.
 
 Real-system observation from cycle 11: qwen3.6-27b-awq under the
