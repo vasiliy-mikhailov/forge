@@ -249,6 +249,79 @@ Live evidence that **cycle 70 mechanisms fired correctly**:
 Artifact: `experiments/2026-05-13-iters100-T07-n3.json`.
 Commit: cycle 70 = 17ef812 (the refactor).
 
+### Cycle 72 multi-model smoke screen (22 models, 10 iters, n_trials=1, T=0.7, finish_floor=0)
+
+Per [ADR 0009](../docs/adr/0009-multi-model-smoke-bench-convention.md).
+Pytest result: **6 passed, 16 failed in 9500.93s (2:38:20)**.
+
+Discoveries made by this sweep:
+  - **Cycle 73** fix: `main()` now wires the picked `ModelTarget` through
+    `ensure_serving_model(target)` (was calling legacy `ensure_serving()`
+    that hardcoded AWQ).
+  - **Cycle 74** fix: `_call_model` payload `"model"` field now uses
+    `model_id` parameter (was hardcoded `"qwen3.6-27b-awq"`, caused HTTP 404
+    on every non-AWQ model after the cycle-73 swap).
+  - **Registry data fix**: `qwen3-32b-fp8.max_model_len` 131072 → 40960
+    (model config.json caps at 40960; vLLM crashed at startup otherwise).
+
+| model_id | canonical mean | max_tile | walltime (s) | notes |
+| -------- | -------------: | -------: | -----------: | ----- |
+| `nemotron-super-49b-v1.5-nvfp4` | **3286.2** | 512 | 11.5 | PASS |
+| `qwen3-32b-fp8` | **3036.2** | 512 | 2.4 | PASS |
+| `gemma-4-31b-fp8` | **3032.0** | 512 | 1.6 | PASS |
+| `gemma-4-31b-nvfp4` | **3032.0** | 512 | 2.6 | PASS |
+| `qwen2.5-72b-nvfp4` | **2442.2** | 512 | 17.1 | PASS |
+| `devstral-2-123b-nvfp4` | **1564.2** | 256 | 12.5 | PASS |
+| `devstral-small-2-24b` | 0.0 | 4 | 3.0 | FAIL: produced submission, scored 0 on canonical |
+| `llama-3.1-8b-nvfp4` | 0.0 | 2 | 60.0 | FAIL: produced submission, scored 0 on canonical |
+| `llama-3.3-70b-nvfp4` | 0.0 | 2 | 61.2 | FAIL: produced submission, scored 0 on canonical |
+| `nemotron-3-super-120b-nvfp4` | 0.0 | 2 | 60.2 | FAIL: produced submission, scored 0 on canonical |
+| `qwen3.6-27b-nvfp4` | 0.0 | 2 | 60.0 | FAIL: produced submission, scored 0 on canonical |
+| `mistral-small-3.2-24b` | 0.0 | 0 | 0.0 | FAIL: no protocol-valid submission within 10 iters |
+| `qwen3.5-27b-fp8` | 0.0 | 0 | 0.0 | FAIL: no protocol-valid submission within 10 iters |
+| `qwen3.5-27b-nvfp4` | 0.0 | 0 | 0.0 | FAIL: no protocol-valid submission within 10 iters |
+| `qwen3.6-27b-awq` | 0.0 | 0 | 0.0 | FAIL: no protocol-valid submission within 10 iters |
+| `qwen3.6-27b-fp8` | 0.0 | 0 | 0.0 | FAIL: no protocol-valid submission within 10 iters |
+| `gpt-oss-120b` | — | — | — | ERROR: TypeError: expected string or bytes-like object, got 'N |
+| `gpt-oss-20b` | — | — | — | ERROR: TypeError: expected string or bytes-like object, got 'N |
+| `nemotron-3-super-120b-a12b-nvfp4` | — | — | — | ERROR: HTTPError: HTTP Error 400: Bad Request |
+| `qwen3-32b-nvfp4` | — | — | — | NO ARTIFACT (ensure_serving_model failed before try/except) |
+| `nemotron-super-49b-v1.5-fp8` | — | — | — | NO ARTIFACT (ensure_serving_model failed before try/except) |
+| `devstral-2-123b` | — | — | — | NO ARTIFACT (ensure_serving_model failed before try/except) |
+
+**Headline**: 6 of 22 models pass the smoke screen. Top score:
+`nemotron-super-49b-v1.5-nvfp4` at **3,286**.
+
+**CAVEAT — smoke is biased toward fast-starters.**
+`qwen3.6-27b-awq` smoke-FAILed here (no submission in 10 iters) but is
+the best-performing model in the full campaign — cycle 67 hit 15,918 and
+cycle 71 trial 2 hit 15,307. Looking at cycle-71 trajectories for that
+model, it consistently emits its FIRST `execute_submission` around iter
+11-14. With `max_iters=10` the model never gets to emit a single
+submission — it spends all 10 iters reading the spec + planning. So a
+"FAIL" in this column really means *"did not produce a first solution
+within 10 iters"*, not *"cannot solve the task"*. Models with similar
+warmup behaviour likely show the same false negative.
+
+Concrete proposal for follow-up cycle: smoke with `max_iters=20`
+roughly doubles the wall-time budget per model (~6 h for all 22) but
+would surface the qwen3.6-27b-awq class of "slow-starter, strong
+finisher" models that this 10-iter cut misses.
+
+**Open follow-ups uncovered by cycle 72** (recorded as truths, not bugs):
+  - `gpt-oss-*` variants: `TypeError: expected string or bytes-like` in
+    the bench pipeline — likely the `openai` tool-call parser returns
+    `None` somewhere downstream code expects a string.
+  - `nemotron-3-super-120b-a12b-nvfp4`: HTTP 400 on first request — needs
+    investigation (parser mismatch? structured-outputs issue?).
+  - 9 models produce zero canonical mean (subtype A: no submission emitted,
+    subtype B: slow Solver caps under canonical 60s/20seeds budget). The
+    latter is exactly cycle 74 (deferred): align DEV_HARD_WALL_S so the
+    dev signal isn't looser than canonical's.
+  - 3 models had NO artifact written because `ensure_serving_model` raised
+    `TimeoutError` outside the smoke test's try/except. Test design
+    correction for a follow-up cycle.
+
 ## Reference baselines
 
 ### `tasks/2048/baselines/reference_fsm.py` (hand-written)

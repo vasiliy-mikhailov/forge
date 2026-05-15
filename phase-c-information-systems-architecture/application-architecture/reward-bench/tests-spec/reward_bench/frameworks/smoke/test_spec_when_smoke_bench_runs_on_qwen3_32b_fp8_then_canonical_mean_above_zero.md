@@ -5,7 +5,7 @@ Pins the **smoke screen** per [ADR 0009](
 for `ModelTarget(id='qwen3-32b-fp8',
 hf_path='Qwen/Qwen3-32B-FP8',
 served_name='qwen3-32b-fp8',
-max_model_len=131072,
+max_model_len=40960,
 tool_call_parser='qwen3_xml')`.
 
 - **Arrange**: vLLM container `reward-bench-vllm` swapped to serve

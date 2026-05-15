@@ -1,5 +1,5 @@
 {
-  "model_id": "qwen3.5-27b-fp8",
+  "model_id": "mistral-small-3.2-24b",
   "config": {
     "max_iters": 10,
     "n_trials": 1,

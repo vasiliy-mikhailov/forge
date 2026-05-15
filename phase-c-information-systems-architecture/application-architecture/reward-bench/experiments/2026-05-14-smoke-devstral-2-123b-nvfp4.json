@@ -1,5 +1,5 @@
 {
-  "model_id": "qwen3.5-27b-fp8",
+  "model_id": "devstral-2-123b-nvfp4",
   "config": {
     "max_iters": 10,
     "n_trials": 1,
@@ -9,11 +9,11 @@
     "hard_wall_sec": 60.0,
     "supervisor_every_k": 0
   },
-  "mean_score": 0.0,
-  "median_score": 0.0,
-  "max_max_tile": 0,
-  "n_games": 0,
-  "aggregate_walltime_sec": 0.0,
+  "mean_score": 1564.2,
+  "median_score": 1500.0,
+  "max_max_tile": 256,
+  "n_games": 20,
+  "aggregate_walltime_sec": 12.495209485990927,
   "solver_protocol_valid": true,
-  "smoke_passed": false
+  "smoke_passed": true
 }

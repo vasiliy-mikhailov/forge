@@ -1,5 +1,5 @@
 {
-  "model_id": "qwen3.5-27b-fp8",
+  "model_id": "gpt-oss-20b",
   "config": {
     "max_iters": 10,
     "n_trials": 1,
@@ -9,11 +9,7 @@
     "hard_wall_sec": 60.0,
     "supervisor_every_k": 0
   },
-  "mean_score": 0.0,
-  "median_score": 0.0,
-  "max_max_tile": 0,
-  "n_games": 0,
-  "aggregate_walltime_sec": 0.0,
-  "solver_protocol_valid": true,
+  "error": "TypeError: expected string or bytes-like object, got 'NoneType'",
+  "mean_score": null,
   "smoke_passed": false
 }

@@ -1,5 +1,5 @@
 {
-  "model_id": "qwen3.5-27b-fp8",
+  "model_id": "llama-3.3-70b-nvfp4",
   "config": {
     "max_iters": 10,
     "n_trials": 1,
@@ -11,9 +11,9 @@
   },
   "mean_score": 0.0,
   "median_score": 0.0,
-  "max_max_tile": 0,
-  "n_games": 0,
-  "aggregate_walltime_sec": 0.0,
+  "max_max_tile": 2,
+  "n_games": 20,
+  "aggregate_walltime_sec": 61.20801116200164,
   "solver_protocol_valid": true,
   "smoke_passed": false
 }
