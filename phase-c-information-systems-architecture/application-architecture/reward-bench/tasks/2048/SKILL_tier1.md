@@ -36,11 +36,21 @@ class Solver:
     def _move_endgame(self, board):  return 'A'
 ```
 
-Common wrong form (causes `TypeError: argument after ** must be a mapping`):
+### ⚠️ Common error to avoid
+
+The `transitions` library does NOT accept Python tuples as transition
+entries. If you write `(trigger, source, dest)` (a tuple) the library
+raises `TypeError: argument after ** must be a mapping`. ALWAYS use
+either a **list** `[trigger, source, dest]` (positional args) or a
+**dict** `{'trigger': ..., 'source': ..., 'dest': ...}` (kwargs).
+Never tuples.
+
+Correct (list form, fewer characters):
 
 ```python
 transitions = [
-    ('advance', 'building', 'endgame'),   # tuple — library rejects
+    ['advance', 'building', 'endgame'],
+    ['retreat', 'endgame', 'building'],
 ]
 ```
 

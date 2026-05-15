@@ -350,7 +350,8 @@ def run_loop(workspace, env_dir, tasks_dir, vllm_base_url, vllm_api_key,
              supervisor=None, supervisor_every_k=0,
              agent_loop_wall_sec=0.0, max_no_tool_call_iters=0,
              finish_floor=0.0, model_id='qwen3.6-27b-awq',
-             smoke_early_stop=False, dev_hard_wall_sec: float = None):
+             smoke_early_stop=False, dev_hard_wall_sec: float = None,
+             max_tokens: int = 12288):
     """Drive the interactive agent loop for at most max_iters turns.
 
     `condense` is an opaque callable that takes the message tuple and
@@ -406,7 +407,8 @@ def run_loop(workspace, env_dir, tasks_dir, vllm_base_url, vllm_api_key,
         iter_n += 1
         messages = list(condense(tuple(messages)))
         reply = _call_model(vllm_base_url, vllm_api_key, messages,
-                            temperature=temperature, model_id=model_id)
+                            temperature=temperature, model_id=model_id,
+                            max_tokens=max_tokens)
         # Cycle 83 back-compat shim: mocked _call_model in old tests
         # returns a bare string. Wrap so the rest of the loop is
         # uniform (cycle 83 contract is dict-with-content+tool_calls).

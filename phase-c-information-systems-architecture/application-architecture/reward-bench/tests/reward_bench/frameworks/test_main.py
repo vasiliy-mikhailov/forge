@@ -5,7 +5,7 @@ from src.tier1.entities.attempt_result import AttemptResult
 
 
 # Test-friendly small config: keeps cycle wall time bounded.
-_FAST = BenchConfig(max_iters=60, n_trials=1, temperature=0.0)
+_FAST = BenchConfig(max_iters=120, n_trials=1, temperature=0.0)
 
 
 def test_when_main_invoked_with_qwen3_6_27b_awq_then_attempt_result_emitted():

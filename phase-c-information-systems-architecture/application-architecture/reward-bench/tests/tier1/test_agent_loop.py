@@ -162,7 +162,7 @@ def test_when_run_loop_produces_submission_then_solver_move_returns_one_of_wasd(
     # Act
     # Cycle 99b: max_iters dropped 20 -> 5. The test only needs one
     # successful execute_submission to verify submission.py + WASD output.
-    run_loop(workspace, env_dir, tasks_dir, vllm_base_url, vllm_api_key, max_iters=5)
+    run_loop(workspace, env_dir, tasks_dir, vllm_base_url, vllm_api_key, max_iters=5, max_tokens=4096)
     submission = workspace / 'submission.py'
     assert submission.exists(), 'submission.py not written during run_loop'
     module = load_submission(submission)
