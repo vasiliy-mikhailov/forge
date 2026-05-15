@@ -135,7 +135,7 @@ def test_when_main_invoked_then_config_hard_wall_sec_passed_to_score_submission(
         # Write a minimal submission with a Solver class so load_submission
         # succeeds and main reaches score_submission.
         (workspace / 'submission.py').write_text(
-            'class Solver:\n'
+            'from transitions import Machine\nclass Solver:\n'
             '    def move(self, board):\n'
             "        return 'W'\n"
         )
@@ -185,7 +185,7 @@ def test_when_main_invoked_then_config_supervisor_every_k_passed_to_run_loop(mon
     def fake_run_loop(*, workspace, **kwargs):
         captured['kwargs'] = kwargs
         (workspace / 'submission.py').write_text(
-            'class Solver:\n'
+            'from transitions import Machine\nclass Solver:\n'
             '    def move(self, board):\n'
             "        return 'W'\n"
         )
@@ -282,7 +282,7 @@ def test_when_main_completes_then_attempt_result_best_dev_mean_matches_run_loop_
 
     def fake_run_loop(*, workspace, **kwargs):
         (workspace / 'submission.py').write_text(
-            'class Solver:\n'
+            'from transitions import Machine\nclass Solver:\n'
             '    def __init__(self): pass\n'
             "    def move(self, board): return 'S'\n"
         )
@@ -326,7 +326,7 @@ def test_when_main_invoked_in_smoke_mode_with_positive_dev_mean_then_skips_canon
 
     def fake_run_loop(*, workspace, **kwargs):
         (workspace / 'submission.py').write_text(
-            'class Solver:\n'
+            'from transitions import Machine\nclass Solver:\n'
             '    def __init__(self): pass\n'
             "    def move(self, board): return 'S'\n"
         )

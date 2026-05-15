@@ -934,7 +934,7 @@ def test_when_execute_submission_called_with_valid_solver_body_then_returns_per_
         pytest.skip('tasks/ not present in this sandbox')
 
     body = (
-        "class Solver:\n"
+        "from transitions import Machine\nclass Solver:\n"
         "    def __init__(self): pass\n"
         "    def move(self, board):\n"
         "        return 'W'\n"
@@ -1247,7 +1247,7 @@ def test_when_execute_submission_called_with_slow_solver_then_per_seed_reports_w
     # Sleep only when called with a non-empty board (i.e. inside a real game).
     body = (
         'import time\n'
-        'class Solver:\n'
+        'from transitions import Machine\nclass Solver:\n'
         '    def __init__(self): pass\n'
         '    def move(self, board):\n'
         '        if any(any(row) for row in board):\n'
@@ -1375,7 +1375,7 @@ def test_when_run_loop_observes_first_positive_dev_mean_with_smoke_early_stop_th
         '```tool\n'
         '{"name": "execute_submission", "args": {}}\n'
         '===FILE_BODY===\n'
-        "class Solver:\n"
+        "from transitions import Machine\nclass Solver:\n"
         "    def move(self, b): return 'S'\n"
         '```\n'
     )

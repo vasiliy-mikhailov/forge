@@ -248,7 +248,7 @@ def _execute_submission(body, workspace, tasks_dir):
         return '<observation>' + _json.dumps(obs) + '</observation>'
 
     from src.tier1.harness import validate_submission_protocol
-    violations = validate_submission_protocol(module)
+    violations = validate_submission_protocol(module, source=body)
     if violations:
         obs['protocol_violations'].extend(violations)
         return '<observation>' + _json.dumps(obs) + '</observation>'

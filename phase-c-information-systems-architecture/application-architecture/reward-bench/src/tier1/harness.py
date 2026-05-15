@@ -16,7 +16,7 @@ def load_submission(path):
     return module
 
 
-def validate_submission_protocol(module):
+def validate_submission_protocol(module, source: str | None = None):
     """Return a tuple of human-readable violation strings.
 
     Empty tuple = the module satisfies the SKILL_tier1.md contract:
@@ -79,6 +79,17 @@ def validate_submission_protocol(module):
         violations.append(
             f"Solver().move() returned {result!r}; expected one of "
             f"W/A/S/D (per SKILL_tier1.md action mapping)"
+        )
+        return tuple(violations)
+
+    # Cycle 91 / SPEC.md §Tier 1: soft-grep for `from transitions import`.
+    # Only when caller passes the body source; back-compat for older
+    # callers that don't have / don't pass the source.
+    if source is not None and 'from transitions import' not in source:
+        violations.append(
+            "submission does not `from transitions import ...` (SPEC.md "
+            "§Tier 1 requires the Solver class to use the `transitions` "
+            "library to declare states + transitions — soft-grep enforced)"
         )
         return tuple(violations)
 

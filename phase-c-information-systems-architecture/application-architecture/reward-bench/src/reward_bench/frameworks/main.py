@@ -212,7 +212,13 @@ def main(
     # named contract check; the violation strings are surfaced into the
     # artifact via the sentinel reason so observability distinguishes
     # protocol violations from runtime crashes.
-    violations = validate_submission_protocol(module)
+    # Cycle 91: pass the submission source text so the SPEC §Tier 1
+    # `transitions` soft-grep can fire on the canonical-scoring path too.
+    try:
+        _source = submission_path.read_text()
+    except Exception:
+        _source = None
+    violations = validate_submission_protocol(module, source=_source)
     if violations:
         return _sentinel_attempt_result(
             f'submission protocol violation: {violations[0]}',

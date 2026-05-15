@@ -108,3 +108,49 @@ def test_when_submission_validated_then_missing_move_returns_method_violation(tm
     assert any('move' in v for v in violations), (
         f'expected a move-method violation; got {violations!r}'
     )
+
+
+def test_when_submission_source_lacks_transitions_import_then_violation(tmp_path):
+    """Cycle 91 / SPEC.md Tier 1: validate_submission_protocol(module, source=...)
+    grep-rejects submissions missing 'from transitions import'."""
+    from src.tier1.harness import load_submission, validate_submission_protocol
+
+    body = (
+        'class Solver:\n'
+        '    def __init__(self): pass\n'
+        '    def move(self, board):\n'
+        "        return 'W'\n"
+    )
+    sub = tmp_path / 'submission.py'
+    sub.write_text(body)
+    mod = load_submission(str(sub))
+
+    violations = validate_submission_protocol(mod, source=body)
+
+    assert violations, 'expected at least one violation; got empty'
+    assert any('transitions' in v and 'import' in v for v in violations), (
+        f"expected a violation mentioning 'transitions' and 'import'; got {violations}"
+    )
+
+
+def test_when_submission_source_imports_transitions_then_no_transitions_violation(tmp_path):
+    """Negative-control for cycle 91: body with 'from transitions import Machine'
+    yields no transitions-related violation."""
+    from src.tier1.harness import load_submission, validate_submission_protocol
+
+    body = (
+        'from transitions import Machine\n'
+        'class Solver:\n'
+        '    def __init__(self): pass\n'
+        '    def move(self, board):\n'
+        "        return 'W'\n"
+    )
+    sub = tmp_path / 'submission.py'
+    sub.write_text(body)
+    mod = load_submission(str(sub))
+
+    violations = validate_submission_protocol(mod, source=body)
+
+    assert not any('transitions' in v for v in violations), (
+        f'unexpected transitions violation; got {violations}'
+    )
