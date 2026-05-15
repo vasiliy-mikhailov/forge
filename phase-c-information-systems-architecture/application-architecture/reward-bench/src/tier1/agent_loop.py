@@ -168,7 +168,8 @@ def _virt_to_host(virt, workspace, env_dir, tasks_dir):
     return None
 
 
-def execute_tool(name, args, workspace, env_dir, tasks_dir):
+def execute_tool(name, args, workspace, env_dir, tasks_dir,
+                 dev_hard_wall_sec: float = None):
     """Run one tool. Returns observation text the model will see next turn."""
     if name == 'view':
         virt = args.get('path', '')
@@ -192,7 +193,8 @@ def execute_tool(name, args, workspace, env_dir, tasks_dir):
         # return a structured JSON observation. Docker isolation per ADR
         # 0006 layer 2 is a future cycle; this implementation is host-side.
         body = args.get('content', '')
-        return _execute_submission(body, workspace, tasks_dir)
+        return _execute_submission(body, workspace, tasks_dir,
+                                   dev_hard_wall_sec=dev_hard_wall_sec)
 
     return f'<error>unknown tool: {name}</error>'
 
@@ -207,7 +209,15 @@ _DEV_SEEDS = (1, 2, 3, 4, 5)
 DEV_HARD_WALL_S = 30.0
 
 
-def _execute_submission(body, workspace, tasks_dir):
+def _execute_submission(body, workspace, tasks_dir,
+                        dev_hard_wall_sec: float = None):
+    # Cycle 77 / ADR 0006: per-game budget alignment with canonical.
+    # When the caller (run_loop or main()) knows canonical's
+    # config.hard_wall_sec, it passes a scaled dev_hard_wall_sec so
+    # dev's per-seed share matches canonical's. None -> back-compat
+    # default of the cycle-70 30s.
+    if dev_hard_wall_sec is None:
+        dev_hard_wall_sec = DEV_HARD_WALL_S
     """ADR 0008 dispatcher. Always returns a JSON-string observation;
     NEVER raises (failures land in protocol_violations / per_seed errors)."""
     import json as _json
@@ -260,7 +270,7 @@ def _execute_submission(body, workspace, tasks_dir):
             solver_factory=module.Solver,
             seeds=_DEV_SEEDS,
             env=GameBoard2048Adapter(),
-            hard_wall_sec=DEV_HARD_WALL_S,
+            hard_wall_sec=dev_hard_wall_sec,
         )
     except Exception as e:  # defence-in-depth: dispatcher must never raise
         obs['protocol_violations'].append(
@@ -297,7 +307,7 @@ def _err_for_final_state(final_state):
     if final_state in ('won', 'lost'):
         return None
     if final_state == 'walltime_exceeded':
-        return 'walltime_exceeded (per-game cap from DEV_HARD_WALL_S budget)'
+        return 'walltime_exceeded (per-game cap from dev_hard_wall_sec budget)'
     if final_state == 'solver_error':
         return 'solver_error (Solver raised in __init__ or move)'
     if final_state == 'stagnated':
@@ -414,7 +424,7 @@ def run_loop(workspace, env_dir, tasks_dir, vllm_base_url, vllm_api_key,
              supervisor=None, supervisor_every_k=0,
              agent_loop_wall_sec=0.0, max_no_tool_call_iters=0,
              finish_floor=0.0, model_id='qwen3.6-27b-awq',
-             smoke_early_stop=False):
+             smoke_early_stop=False, dev_hard_wall_sec: float = None):
     """Drive the interactive agent loop for at most max_iters turns.
 
     `condense` is an opaque callable that takes the message tuple and
@@ -522,7 +532,8 @@ def run_loop(workspace, env_dir, tasks_dir, vllm_base_url, vllm_api_key,
                           f'(best_dev_mean={_best_str} < floor={finish_floor})',
                           flush=True)
                     continue
-            obs = execute_tool(name, tool_args, workspace, env_dir, tasks_dir)
+            obs = execute_tool(name, tool_args, workspace, env_dir, tasks_dir,
+                               dev_hard_wall_sec=dev_hard_wall_sec)
             observations.append(obs)
             # Cycle 65: track last successful execute_submission body for
             # finish-time promotion per ADR 0008.

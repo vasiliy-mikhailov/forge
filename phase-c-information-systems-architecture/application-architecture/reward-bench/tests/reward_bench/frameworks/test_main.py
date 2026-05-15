@@ -356,3 +356,82 @@ def test_when_main_invoked_in_smoke_mode_with_positive_dev_mean_then_skips_canon
     assert result.best_dev_mean == 42.0
     assert result.mean_score == 0.0
     assert result.n_games == 0
+
+
+
+def test_when_main_invoked_with_nonzero_hard_wall_sec_then_run_loop_receives_scaled_dev_budget(
+        monkeypatch, tmp_path):
+    """Cycle 77 / ADR 0006: main() derives
+    dev_hard_wall_sec = config.hard_wall_sec * 5 / len(seeds)
+    and threads it into run_loop. Pins the wiring."""
+    from src.reward_bench.frameworks import main as main_mod
+
+    captured = {}
+    def fake_run_loop(**kwargs):
+        captured.update(kwargs)
+        return {'iterations': 0, 'messages': [],
+                'finished': True, 'best_dev_mean': 0.0}
+    monkeypatch.setattr(main_mod, 'run_loop', fake_run_loop)
+    monkeypatch.setattr(main_mod, 'ensure_serving_model', lambda t: 'http://stub')
+    monkeypatch.setenv('VLLM_API_KEY', 'stub')
+
+    # Stub the canonical scorer so main() returns quickly.
+    from src.tier1.entities.attempt_result import AttemptResult
+    def fake_score_submission(**kwargs):
+        return AttemptResult(
+            mean_score=0.0, median_score=0.0, std_score=0.0,
+            max_max_tile=0, n_games=20, aggregate_walltime_sec=0.0,
+            games=(), hard_wall_sec=kwargs.get('hard_wall_sec', 0.0),
+            stagnated_any=False, walltime_exceeded=False,
+        )
+    monkeypatch.setattr(main_mod, 'score_submission', fake_score_submission)
+
+    # Canonical = 60s / 20 seeds; dev should derive 60 * 5/20 = 15.0.
+    main_mod.main(
+        model_id='qwen3.6-27b-awq',
+        seeds=range(1000, 1020),
+        config=BenchConfig(max_iters=1, n_trials=1, hard_wall_sec=60.0),
+    )
+
+    assert captured.get('dev_hard_wall_sec') == 15.0, (
+        f'expected dev_hard_wall_sec=15.0 (=60*5/20); '
+        f'got {captured.get("dev_hard_wall_sec")}'
+    )
+
+
+def test_when_main_invoked_with_zero_hard_wall_sec_then_run_loop_dev_budget_is_none(
+        monkeypatch, tmp_path):
+    """Cycle 77: when canonical aggregate cap is disabled (=0, ADR 0003
+    default), main() passes dev_hard_wall_sec=None so the dev path uses
+    the cycle-70 module default DEV_HARD_WALL_S (30s)."""
+    from src.reward_bench.frameworks import main as main_mod
+
+    captured = {}
+    def fake_run_loop(**kwargs):
+        captured.update(kwargs)
+        return {'iterations': 0, 'messages': [],
+                'finished': True, 'best_dev_mean': 0.0}
+    monkeypatch.setattr(main_mod, 'run_loop', fake_run_loop)
+    monkeypatch.setattr(main_mod, 'ensure_serving_model', lambda t: 'http://stub')
+    monkeypatch.setenv('VLLM_API_KEY', 'stub')
+
+    from src.tier1.entities.attempt_result import AttemptResult
+    monkeypatch.setattr(
+        main_mod, 'score_submission',
+        lambda **k: AttemptResult(
+            mean_score=0.0, median_score=0.0, std_score=0.0,
+            max_max_tile=0, n_games=20, aggregate_walltime_sec=0.0,
+            games=(), hard_wall_sec=0.0,
+            stagnated_any=False, walltime_exceeded=False,
+        ),
+    )
+
+    main_mod.main(
+        model_id='qwen3.6-27b-awq',
+        config=BenchConfig(max_iters=1, n_trials=1, hard_wall_sec=0.0),
+    )
+
+    assert captured.get('dev_hard_wall_sec') is None, (
+        f'expected None (-> module default); '
+        f'got {captured.get("dev_hard_wall_sec")}'
+    )

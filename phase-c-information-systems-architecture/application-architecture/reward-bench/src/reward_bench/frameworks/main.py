@@ -178,6 +178,17 @@ def main(
         return condenser.condense(messages, condenser_config)
 
     supervisor = _build_supervisor(target, base_url, api_key)
+    # Cycle 77 / ADR 0006: align dev's per-seed share with canonical's.
+    # Without this scaling, dev's 30s/5seeds = 6s/seed admits Solvers
+    # that canonical's 60s/20seeds = 3s/seed will reject (cycle 78
+    # leaderboard observed this on llama-3.3-70b-nvfp4 et al.).
+    _seeds = tuple(seeds)
+    if config.hard_wall_sec > 0 and len(_seeds) > 0:
+        _dev_hard_wall_sec = (
+            config.hard_wall_sec * 5 / len(_seeds)
+        )
+    else:
+        _dev_hard_wall_sec = None  # use module default (30s)
     _run_loop_result = run_loop(
         workspace=workspace,
         env_dir=ENV_DIR,
@@ -193,7 +204,8 @@ def main(
         model_id=target.served_name,       # cycle 74: don't ask vLLM for AWQ
                                            # when the container serves something
                                            # else; otherwise HTTP 404.
-        smoke_early_stop=config.smoke_early_stop,  # cycle 76 / ADR 0009 v2
+        smoke_early_stop=config.smoke_early_stop,  # cycle 76 / ADR 0009 v2,
+        dev_hard_wall_sec=_dev_hard_wall_sec,
     )
 
     submission_path = workspace / 'submission.py'

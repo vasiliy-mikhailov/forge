@@ -1317,7 +1317,7 @@ def test_when_run_loop_observes_first_positive_dev_mean_with_smoke_early_stop_th
         call_count['n'] += 1
         return REPLY_WITH_EXEC
 
-    def fake_execute_tool(name, args, ws, ed, td):
+    def fake_execute_tool(name, args, ws, ed, td, **_):
         # Return a synthetic observation that the cycle-63 parser reads
         # as dev_mean = 100.0 (first positive). Schema must match cycle-70
         # _execute_submission output.
@@ -1449,3 +1449,84 @@ def test_when_structured_tool_calls_empty_then_returns_empty_list():
     assert parse_tool_calls("") == []
     assert parse_tool_calls("", structured_tool_calls=[]) == []
     assert parse_tool_calls("", structured_tool_calls=None) == []
+
+
+
+def test_when_execute_submission_called_with_dev_hard_wall_sec_then_score_submission_sees_it(
+        monkeypatch, tmp_path):
+    """Cycle 77 / ADR 0006: _execute_submission threads dev_hard_wall_sec
+    through to score_submission's hard_wall_sec arg. Without this the
+    cycle-77 alignment is unobservable."""
+    from src.tier1 import agent_loop as al
+
+    captured = {}
+    def fake_score_submission(*, solver_factory, seeds, env, hard_wall_sec):
+        captured['hard_wall_sec'] = hard_wall_sec
+        captured['n_seeds'] = len(tuple(seeds))
+        # Return a minimal AttemptResult-shaped object.
+        from src.tier1.entities.attempt_result import AttemptResult
+        return AttemptResult(
+            mean_score=0.0, median_score=0.0, std_score=0.0,
+            max_max_tile=0, n_games=captured['n_seeds'],
+            aggregate_walltime_sec=0.0, games=(),
+            hard_wall_sec=hard_wall_sec,
+            stagnated_any=False, walltime_exceeded=False,
+        )
+    monkeypatch.setattr(
+        'src.tier1.use_cases.score_submission.score_submission',
+        fake_score_submission,
+    )
+
+    body = (
+        "from transitions import Machine\n"
+        "class Solver:\n"
+        "    def __init__(self): pass\n"
+        "    def move(self, board): return 'W'\n"
+    )
+    obs = al._execute_submission(
+        body, workspace=tmp_path, tasks_dir=tmp_path,
+        dev_hard_wall_sec=12.5,
+    )
+
+    assert '<observation>' in obs, f'no observation in {obs[:200]!r}'
+    assert captured.get('hard_wall_sec') == 12.5, (
+        f'dev_hard_wall_sec not threaded; captured={captured}'
+    )
+    assert captured.get('n_seeds') == 5, (
+        f'expected dev to use 5 seeds; got {captured.get("n_seeds")}'
+    )
+
+
+def test_when_execute_submission_called_without_dev_hard_wall_sec_then_module_default_used(
+        monkeypatch, tmp_path):
+    """Cycle 77 back-compat: dev_hard_wall_sec=None -> DEV_HARD_WALL_S (30s)."""
+    from src.tier1 import agent_loop as al
+
+    captured = {}
+    def fake_score_submission(*, solver_factory, seeds, env, hard_wall_sec):
+        captured['hard_wall_sec'] = hard_wall_sec
+        from src.tier1.entities.attempt_result import AttemptResult
+        return AttemptResult(
+            mean_score=0.0, median_score=0.0, std_score=0.0,
+            max_max_tile=0, n_games=5,
+            aggregate_walltime_sec=0.0, games=(),
+            hard_wall_sec=hard_wall_sec,
+            stagnated_any=False, walltime_exceeded=False,
+        )
+    monkeypatch.setattr(
+        'src.tier1.use_cases.score_submission.score_submission',
+        fake_score_submission,
+    )
+
+    body = (
+        "from transitions import Machine\n"
+        "class Solver:\n"
+        "    def __init__(self): pass\n"
+        "    def move(self, board): return 'W'\n"
+    )
+    al._execute_submission(body, workspace=tmp_path, tasks_dir=tmp_path)
+
+    assert captured.get('hard_wall_sec') == al.DEV_HARD_WALL_S, (
+        f'expected DEV_HARD_WALL_S default (={al.DEV_HARD_WALL_S}); '
+        f'got {captured.get("hard_wall_sec")}'
+    )
