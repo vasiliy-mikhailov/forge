@@ -769,6 +769,62 @@ as the same test_spec with two bindings keeps the contract honest:
 the unit run guards the bench code, the live run guards the integration.
 A regression in either is the SAME spec breaking.
 
+## One src_spec per contract — across all implementations
+
+Mirror of the cycle-110 test_spec rule, applied to src_specs. Per
+[ADR 0018](#) every runtime-boundary dependency has a Port +
+production adapter + Fake. The Port IS the contract. Adapters MUST
+conform to it.
+
+Concrete rule:
+
+- A Port (e.g. `CanonicalScorerPort`) gets ONE src_spec describing the
+  contract: method signatures, return shape, error semantics, lifecycle
+  guarantees, what the Port forbids (e.g. "MUST NOT raise on hostile
+  input"). This is the document a Liskov violation refers back to.
+
+- Adapter implementations — the Fake, the production InProcess, the
+  Docker variant — do NOT get parallel src_specs duplicating the Port
+  contract. The adapter file gets a module-level docstring naming the
+  Port it implements; cross-cutting decisions (Docker isolation, image
+  versioning, walltime sentinels) live in ADRs.
+
+- Adapters MAY have their own src_spec only when they expose surface
+  **beyond** the Port. Examples that justify an adapter src_spec:
+  `FakeModelClient.calls` recording for test assertions;
+  `DockerCanonicalScorer`'s `--cpus` and image-tag knobs that callers
+  configure. The adapter src_spec then documents only that added
+  surface and links to the Port src_spec for the contract proper.
+
+- Entities (value objects, data types — `AttemptResult`,
+  `BenchConfig`) keep their own src_specs: they ARE the contract;
+  there's no separate Port.
+
+- Use-case modules (orchestrators that wire Ports together, e.g.
+  `run_loop`, `main`) keep their own src_specs: their contract is the
+  composition, not any single Port.
+
+The reason: duplicating Port semantics across N adapter src_spec files
+is exactly the drift the "Git is the history" rule rejects. The Port
+file is the contract record; the adapter file is HOW we cross the
+seam. Their concerns don't overlap and shouldn't share spec prose.
+
+When this matters:
+
+- Adding a new adapter for an existing Port (cycle 109's
+  `DockerCanonicalScorer` joining `InProcessCanonicalScorer` and
+  `FakeCanonicalScorer` under `CanonicalScorerPort`): add the code
+  file with a Port-naming docstring, write tests, do NOT create a
+  parallel src_spec for the new adapter unless it adds caller-visible
+  surface beyond `score()`.
+
+- Refactoring an existing single-implementation module into a Port +
+  adapter pair (cycle 109's split of `score_submission` into
+  `CanonicalScorerPort` + three adapters): create the Port src_spec,
+  delete the now-redundant adapter src_specs in place (per "Git is
+  the history") rather than appending "Superseded by Port spec"
+  notes.
+
 ## Git is the history; specs describe the current decision
 
 ADRs, src_specs and test_specs describe **the current decision** and

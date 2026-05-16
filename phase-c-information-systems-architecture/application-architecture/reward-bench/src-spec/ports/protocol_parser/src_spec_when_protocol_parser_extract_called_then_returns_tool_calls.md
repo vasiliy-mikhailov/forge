@@ -1,21 +1,62 @@
 # `src_spec_when_protocol_parser_extract_called_then_returns_tool_calls`
 
-[`ProtocolParser`](../../../src/ports/protocol_parser.py) decodes
-assistant replies into `(name, args)` tool-call tuples. Per
+[`ProtocolParser`](../../../src/ports/protocol_parser.py) — the
+runtime-boundary contract for "given an `AssistantReply`, extract the
+tool invocations". Established by
 [ADR 0011](../../../docs/adr/0011-clean-arch-ports-for-model-client-tool-registry-protocol-parser.md).
+
+This port also defines the canonical reply types `AssistantReply` and
+`ToolCall` that the rest of the agent loop consumes.
+
+## Types
+
+```python
+class AssistantReply(TypedDict):
+    content: str            # always str (empty allowed)
+    tool_calls: list[dict]  # OpenAI tool_calls shape; may be empty
+
+class ToolCall(NamedTuple):
+    name: str
+    args: dict
+```
 
 ## Contract
 
-`extract(reply: AssistantReply) -> list[ToolCall]`
+```python
+class ProtocolParser(Protocol):
+    def extract(self, reply: AssistantReply) -> list[ToolCall]: ...
+```
 
-- `AssistantReply` is the shape `ModelClient.call` returns:
-  `{content: str, tool_calls: list[dict]}`.
-- `ToolCall` is `NamedTuple(name: str, args: dict)`.
-- MUST NOT raise on malformed input (cycle 51 defensive-parser
-  contract). On any unrecoverable parse failure for a single block,
-  skip that block and continue; if no parseable calls remain, return `[]`.
+Semantics:
 
-Implementations:
-- [`FencedTextParser`](../../../src/adapters/parsers/fenced_text_parser.py) — cycle 9/58 text-fenced protocol.
-- [`StructuredOpenAIParser`](../../../src/adapters/parsers/structured_openai_parser.py) — cycle 83/96 OpenAI structured tool_calls (with Ġ/▁ SentencePiece strip).
-- [`CompositeParser`](../../../src/adapters/parsers/composite_parser.py) — tries children in order; first non-empty wins.
+- `reply` is whatever `ModelClient.call(...)` returned.
+- Return is a list of `ToolCall` namedtuples ready for
+  `ToolRegistry.dispatch(name, args, ctx)`. Order matches the order
+  the model emitted them.
+
+### Liveness / failure semantics
+
+- **MUST NOT raise on malformed input** (the defensive-parser
+  contract). Bad JSON in `function.arguments`, unknown schema,
+  missing required key — all become "extract found nothing here" and
+  return `[]`. The agent loop treats `[]` as "model produced
+  text-only this turn".
+- **MUST NOT mutate `reply`.** Parsers may be composed
+  (`CompositeParser`); each child must see the same input.
+
+## Adapter manifest
+
+- [`FencedTextParser`](../../../src/adapters/parsers/fenced_text_parser.py)
+  — ```tool fenced-block extractor over `reply["content"]`. Its
+  src_spec covers the fenced-block regex.
+- [`StructuredOpenAIParser`](../../../src/adapters/parsers/structured_openai_parser.py)
+  — extractor over `reply["tool_calls"]` with SentencePiece-leak
+  workaround per
+  [ADR 0010](../../../docs/adr/0010-mistral-devstral-gpt-oss-tool-calls-go-through-tools-advertisement-plus-structured-message-tool-calls.md).
+  Its src_spec covers the U+0120 / U+2581 strip.
+- [`CompositeParser`](../../../src/adapters/parsers/composite_parser.py)
+  — first-non-empty-wins chainer. Its src_spec covers the chaining
+  contract (which is its added surface, not the Port contract).
+
+Conftest autouse binds `CompositeParser([FencedTextParser(),
+StructuredOpenAIParser()])` per ADR 0014.

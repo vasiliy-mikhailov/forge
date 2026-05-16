@@ -1,22 +1,46 @@
 # `src_spec_when_cpu_count_consulted_then_returns_visible_core_count`
 
-[`CpuCountPort`](../../../src/ports/cpu_count.py) — port returning the
-number of CPU cores available to the current process. Established by
-cycle 105 / [ADR 0006 Layer 2 amendment](../../../docs/adr/0006-sandboxed-scoring-docker-tier1-and-walltime-budget.md).
+[`CpuCountPort`](../../../src/ports/cpu_count.py) — the
+runtime-boundary contract for "how many CPU cores does this process
+get to use". Established by
+[ADR 0006](../../../docs/adr/0006-sandboxed-scoring-docker-tier1-and-walltime-budget.md)
+Layer 2.
 
-## Why
-
-The clean-arch test forbids `import os` in `src/<m>/use_cases/`. Use
-cases that need to know the host's CPU count (e.g. for sizing a
-`docker run --cpus=N` cap) reach for this port instead. Tests inject
-[`FixedCpuCount(n)`](../../../src/adapters/multiprocessing_cpu_count.py).
+Use-case modules (anything under `src/.../use_cases/`) cannot import
+`os` per the clean-arch test in
+[`tests/architecture/`](../../../tests/architecture/). Anywhere a
+use-case needs `os.cpu_count()` or `len(os.sched_getaffinity(0))`, it
+must take a `CpuCountPort` instead.
 
 ## Contract
 
-`cpu_count() -> int` — returns the cgroup-visible logical CPU count.
-On a host with no cgroup limit, this is the kernel's online-CPU count.
-Inside a Docker container with `--cpus=N`, returns `N`.
+```python
+class CpuCountPort(Protocol):
+    def cpu_count(self) -> int: ...
+```
 
-Production binding:
-[`MultiprocessingCpuCount`](../../../src/adapters/multiprocessing_cpu_count.py)
-wrapping `multiprocessing.cpu_count()`.
+Semantics:
+
+- Returns the **effective** core count for the current process —
+  not the host's hardware total. Inside a `docker run --cpus=N`
+  container the effective count is `N` (rounded per cgroup quota),
+  not the host's 24.
+- Always returns `>= 1`. Adapters that detect a 0/none result clamp
+  to 1.
+- Pure, idempotent, fast. May cache; MUST NOT depend on test
+  ordering.
+
+### Liveness / failure semantics
+
+- **MUST NOT raise.** A failure to read cgroup files / `os.cpu_count`
+  / `nproc` returns 1 instead of raising. The bench has no recovery
+  path for "we don't know how many cores we have".
+
+## Adapter manifest
+
+- [`MultiprocessingCpuCount`](../../../src/adapters/multiprocessing_cpu_count.py)
+  — production adapter; reads `multiprocessing.cpu_count()` which
+  respects cgroup quota inside Docker. Its src_spec covers the cgroup
+  details.
+- Fakes: tests construct ad-hoc `FixedCpuCount(n)` instances inline
+  (no shared fake module since the surface is one int).
