@@ -691,6 +691,175 @@ rule of three is the lower-bound moment at which the cost of NOT
 lifting (compounding drift) exceeds the cost of lifting (one Port,
 one src_spec, one parametrised test_spec).
 
+## Three runtimes, two scales of src_spec — unit / live / production
+
+[ADR 0018](#) + [cycle 110](#) say every test_spec describes one
+contract across all binding modes; cycle 112 says parametrisation
+over a registry counts as one contract. Cycle 122 refines what
+"binding modes" means — they're **runtimes**, and every src_spec
+has **two adapter scales** that define the bindings.
+
+### Two scales of src_spec
+
+Every runtime-boundary Port src_spec declares two adapter scales:
+
+- **Unit scale** — the Fake adapter. In-memory, deterministic,
+  scripted. The autouse Fake binding per ADR 0018. Example:
+  `FakeModelClient`, `FakeCanonicalScorer`, `FakeInferenceOrchestrator`.
+  The Fake exists only in tests; it never appears in production
+  wiring.
+
+- **Live & production scale** — the Real adapter. Real subprocess,
+  real HTTP, real Docker. **The same Real adapter runs under both
+  live-test and production runtimes — they differ only in DI
+  parameters, not in code.** Example: `VllmOpenAIClient`,
+  `DockerCanonicalScorer`, `DockerVllmInferenceOrchestrator`.
+
+Adapter src_specs declare which scale they implement; the Port
+src_spec lists adapters by scale.
+
+A Port MAY have additional adapters at the same scale (e.g.,
+`InProcessCanonicalScorer` is a second live/production-scale
+adapter — real code, same Port, alternative production binding).
+The two-scale rule is the floor, not the ceiling.
+
+Pure-Python composition Ports (per the cycle-113 rule of three) MAY
+have a single trivial adapter that serves both scales (e.g.,
+`NullSupervisor`, `NullCondenser` — real code, but with no
+side-effect surface, so the same instance suffices for both unit
+and live/production). The src_spec MUST declare this explicitly:
+
+  > **Scales**: NullSupervisor is the trivial real adapter and
+  > serves both unit and live/production scales. No separate Fake
+  > exists because the Port has no side-effect surface to fake.
+
+### Three runtimes
+
+A **runtime** is a pair `(adapter-scale, DI-parameter-pack)`:
+
+- **Unit test runtime** — unit-scale adapters + smallest plausible
+  config (`max_iters=1`, `n_trials=1`, 1 seed, `hard_wall_sec=5`).
+  Default; unmarked. Runs in milliseconds. Per-cycle TIA gate,
+  every commit. Catches seam-wiring breaks (interface mismatches,
+  type errors, missing parameters).
+
+- **Live test runtime** — live/production-scale adapters + reduced
+  config (`max_iters=10`, `n_trials=1`, 3 seeds, `hard_wall_sec=60`,
+  `smoke_early_stop=True`). Marked `@pytest.mark.live`. Opt-in via
+  `pytest -m live`. Runs in minutes. Pre-merge / pre-release gate.
+  Catches fake-fidelity drift AND "the real boundary is broken"
+  (image missing, daemon down, model emits malformed tokens,
+  network unreachable, etc.).
+
+- **Production runtime** — live/production-scale adapters + FULL
+  production config (`max_iters=500`, `n_trials=10`, 20 seeds,
+  `hard_wall_sec=300`). Marked `@pytest.mark.production` (cycle
+  122). Opt-in via `pytest -m production`. Runs in hours; doubles
+  as the canonical bench (`run_canonical_battery()` is the
+  production-runtime invocation). Catches scale-dependent breaks
+  (state-accumulation at iter 200+, races in
+  `multiprocessing.Pool` of 20 seeds, slow-Solver `walltime_exceeded`
+  patterns, etc.).
+
+What changes between the three runtimes:
+
+| dimension      | unit            | live             | production       |
+|----------------|-----------------|------------------|------------------|
+| adapter scale  | unit (Fake)     | live/production  | live/production  |
+| `max_iters`    | 1               | 10               | 500              |
+| `n_trials`     | 1               | 1                | 10               |
+| seeds          | 1               | 3                | 20               |
+| `hard_wall_sec`| 5               | 60               | 300              |
+| marker         | (default)       | `@live`          | `@production`    |
+| typical time   | ms              | minutes          | hours            |
+
+The live and production runtimes share the **same code path** —
+identical adapter classes, identical use-case orchestration. Only
+the config constants differ. If a contract holds under live but
+breaks under production, the contract has scale-dependence we
+missed; if it holds under unit but breaks under live, the Fake has
+drifted from real.
+
+### Every test_spec MUST cover all three runtimes
+
+Concrete rule:
+
+- Every test_spec declares three runtime variants. The test code is
+  typically ONE function parametrised over `(runtime, config)`
+  tuples:
+
+      @pytest.mark.parametrize("runtime,config", [
+          ("unit",       UNIT_CONFIG),
+          ("live",       LIVE_CONFIG),
+          ("production", PROD_CONFIG),
+      ])
+      def test_when_X_then_Y(runtime, config, ...):
+          ...
+
+  OR three separate functions sharing one spec file. The spec is
+  the contract record; the function count is an implementation
+  detail.
+
+- The conftest autouse fixture (per ADR 0014) inspects the runtime
+  parameter / marker and binds the appropriate adapter scale: Fake
+  bindings for unit; Real bindings for live and production.
+
+- The test's assertions assert on the CONTRACT (the property that
+  holds across all three). Per-runtime tolerances (e.g.,
+  "production walltime budget is 5 minutes; live is 1 minute")
+  live in the config, not in the assertions.
+
+- When a contract is genuinely scale-invariant — entity-shape tests
+  (frozen-dataclass invariants), Port-Protocol existence tests,
+  pure-function unit tests — the test_spec MAY opt out of live and
+  production runtimes with an explicit justification line in the
+  spec body:
+
+      > **Runtime scope**: unit only — this contract is
+      > scale-invariant by construction (asserts on
+      > `AttemptResult`'s frozen-dataclass shape; no boundary
+      > involved).
+
+  Without that justification, all three runtimes are required. The
+  audit at cycle-122-time (see commit notes) listed each existing
+  test_spec's runtime coverage status.
+
+### The Runtime injection points spec section
+
+The "Model client injection point" subsection of test_specs (cycle
+106 / [ADR 0014](#)) is renamed and expanded to **Runtime injection
+points** — a table that names the `(adapter, config)` pair for each
+of the three runtimes:
+
+| runtime    | adapter binding        | config            |
+|------------|------------------------|-------------------|
+| unit       | `FakeModelClient` (autouse) | `UNIT_CONFIG`     |
+| live       | `VllmOpenAIClient`     | `LIVE_CONFIG`     |
+| production | `VllmOpenAIClient`     | `PROD_CONFIG`     |
+
+Scale-invariant test_specs note "unit only" in this section instead
+of the full table.
+
+### Why this matters
+
+Cycle 105 silently shipped `DockerCanonicalScorer` v0.4 image-tag
+bump with passing unit tests; no live-runtime test existed; the
+production runtime ran for 4 hours producing zero-score artifacts
+before a human noticed. Under cycle 122 the live-runtime test
+would have failed at commit time — `docker run reward-bench-tier1:0.4`
+returns "Unable to find image", the
+cycle-121 fail-loud check fires, the cycle's commit is blocked.
+
+The unit test pins seam wiring. The live test pins "the real
+boundary actually works." The production test pins
+scale-dependent behaviour. Each catches what the others can't.
+
+The fake-fidelity trap ("tests pass because the Fake says 'looks
+ok'; production fails because the real boundary disagrees") and
+the scale-blindness trap ("tests pass with max_iters=1; production
+breaks at iter 200") both close under the three-runtime
+discipline.
+
 ## Git is the history; specs describe the current decision
 
 ADRs, src_specs and test_specs describe **the current decision** and
