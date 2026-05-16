@@ -52,8 +52,19 @@ through a Port and have four artifacts**:
 
 A "runtime boundary" is one of: subprocess shell-out, HTTP/network
 call, file-system path that depends on host state, OS process state
-(cpu count, env vars), or Docker invocation. Pure-Python code without
-side effects does NOT need this treatment.
+(cpu count, env vars), or Docker invocation. Runtime-boundary
+dependencies MUST follow this discipline at the moment they're
+introduced (the Port comes with the boundary, not later).
+
+Pure-Python composition seams (a `Callable` parameter in
+`use_cases/`, a dispatch-by-name registry with multiple entries,
+classes sharing a single-method shape) do NOT force this discipline
+at first instance — they're not a runtime boundary. They DO get
+lifted to Ports during the **refactor step at the third instance**
+per the CATS "Lift implicit contracts into Ports — the rule of three"
+rule (cycle 113). The two rules together cover both external
+boundaries (forced at first instance, runtime-boundary trigger) and
+internal composition (lifted at third instance, emergence trigger).
 
 ## Current manifest
 

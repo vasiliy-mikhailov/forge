@@ -369,6 +369,21 @@ Do all eleven steps for ONE test case, then start the next.
 - No code without a failing test. If the cycle requires touching
   implementation without a corresponding red test, stop and pick a
   smaller behavior.
+- **Minimal implementation during GREEN; no speculative code.** Once
+  the red test is written, the implementation MUST be the smallest
+  change that makes the test pass. No extra fields, no extra
+  methods, no pre-generalized Protocols, no "while I'm here"
+  tidy-up, no introducing an abstraction "for the future." If a
+  refactor is needed, it happens in a REFACTOR step (the cycle's
+  final step after GREEN, or its own dedicated cycle) — never as
+  part of the GREEN implementation. The "Lift implicit contracts
+  into Ports — the rule of three" section makes this concrete for
+  the Port-lifting case: the lift happens at refactor, not during
+  RED/GREEN. The same logic applies to every other abstraction:
+  extracting helpers, renaming for clarity, splitting modules.
+  GREEN is for making the one test pass; REFACTOR is for making the
+  code clean. Mixing them is what produces speculative abstractions
+  that break previously-green tests.
 - Each commit covers exactly one cycle. The diff should be readable
   in one screen.
 - **Artifacts come from tests.** Leaderboard data points,
@@ -413,6 +428,23 @@ Do all eleven steps for ONE test case, then start the next.
   to come back. This applies equally to import errors discovered
   while running a script, integration failures seen while running
   the bench live, and real-system observations from operations.
+
+- **When introducing a CATS or ADR rule, audit existing code in the
+  same cycle; do not pre-fix.** A new rule that applies
+  retroactively to "all X" must include a **read-only** audit of
+  existing X in the same cycle. Each discovered violation becomes a
+  follow-up cycle task. The fixes happen in their own CATS cycles
+  (RED for the violation → GREEN minimal fix → REFACTOR clean up),
+  one cycle per violation. The rule-cycle commit ships: the rule +
+  the audit summary + the follow-up task list. The first violation
+  gets fixed in the NEXT cycle, not this one. This prevents two
+  failure modes:
+    1. Rules silently allowing pre-existing violations (the cycle
+       109 / 110 / 111 pattern: rule added forward, backsweep
+       forgotten, backlog accumulates invisibly).
+    2. Mixing a rule-introduction commit with a flurry of
+       speculative fixes that break previously-green tests because
+       the rule is being road-tested AND applied at once.
 
 ## Suggested folder layout per lab
 
@@ -839,6 +871,65 @@ When this matters:
   delete the now-redundant adapter src_specs in place (per "Git is
   the history") rather than appending "Superseded by Port spec"
   notes.
+
+## Lift implicit contracts into Ports — the rule of three
+
+[ADR 0018](#) forces a Port at the moment a runtime-boundary
+dependency is introduced (subprocess, HTTP, fs, Docker). That trigger
+catches external boundaries at the first instance. It does not catch
+**internal composition seams** that accumulate across many cycles —
+a `Callable` parameter in `use_cases/`, a dispatch-by-name registry
+with multiple entries, several classes sharing a single-method shape.
+
+The rule for those: **the rule of three, applied at refactor**.
+
+Concrete rule:
+
+- When you add the SECOND implementation of a shape used elsewhere
+  in the lab, note it. Don't lift yet. Two is coincidence; the
+  abstraction is speculative.
+
+- When you add the THIRD, the **refactor step** of that cycle (or
+  a dedicated refactor cycle) lifts the shape into a formal Port:
+
+      1. `src/ports/<name>.py` with the `Protocol`.
+      2. `src-spec/ports/<name>/...` per cycle 111.
+      3. test_spec for the contract per cycle 110, parametrised
+         over adapter implementations per cycle 112.
+      4. Existing implementations renamed to named adapters; their
+         call sites switch to a Port-typed parameter.
+      5. Architectural `PORT_MANIFEST` extended.
+
+- **The lift always happens AFTER all behavioral tests are GREEN.**
+  Never during RED, never as part of minimal implementation. The
+  lift is a structural refactor — observable behaviour must not
+  change. Tests going red during the lift means the lift was wrong;
+  revert and rethink. Pre-emptive lift during RED/GREEN is
+  speculative abstraction and risks breaking previously-green tests
+  in the same cycle that is supposed to be MINIMALLY adding one
+  behaviour.
+
+- The lift MAY be its own dedicated cycle if it's large (multi-file
+  adapter renames, conftest binding changes, architectural test
+  extension). Whether co-located in the third cycle's refactor step
+  or its own cycle, it always happens AFTER green — never alongside
+  RED/GREEN minimal-implementation.
+
+- **One-off shapes stay inline.** A genuinely unique seam unlikely
+  to recur isn't a Port candidate; the rule of three is a heuristic,
+  not a mandate. When in doubt, lift later — the cost of lifting at
+  the fourth instance is small; the cost of speculative abstraction
+  at the first instance is concrete code no one needs.
+
+The reason: external boundaries (ADR 0018) are forced because the
+side-effect surface is large and untestable without a Fake. Internal
+composition seams compound silently — three pure-Python classes
+sharing a shape look fine in isolation, but they prevent parametrised
+tests (cycle 110/112), prevent architectural enforcement of
+conformance, and let the contract drift between implementations. The
+rule of three is the lower-bound moment at which the cost of NOT
+lifting (compounding drift) exceeds the cost of lifting (one Port,
+one src_spec, one parametrised test_spec).
 
 ## Git is the history; specs describe the current decision
 
