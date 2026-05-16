@@ -34,6 +34,8 @@ MANIFEST = [
      None, None),   # NullSupervisor is the production-default Port-conformant impl
     ("src.ports.condenser", "CondenserPort",
      None, None),   # NullCondenser is the production-default Port-conformant impl
+    ("src.ports.inference_orchestrator", "InferenceOrchestrator",
+     "src.adapters.fakes.fake_inference_orchestrator", "FakeInferenceOrchestrator"),
 ]
 
 
