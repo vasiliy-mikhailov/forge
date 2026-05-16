@@ -179,6 +179,7 @@ def run_canonical_battery(
     n_trials: int = 10,
     max_iters: int = 500,
     temperature: float = 0.7,
+    canonical_hard_wall_sec: float = 300.0,
     seeds: list[int] | None = None,
     registry_path: Path | str | None = None,
     filter_regex: str | None = None,
@@ -221,6 +222,7 @@ def run_canonical_battery(
                 max_iters=max_iters,
                 n_trials=1,
                 temperature=temperature,
+                hard_wall_sec=canonical_hard_wall_sec,  # cycle 104 / ADR 0015
             )
             result = _bench_main(model_id=model_id, seeds=seeds,
                                  config=config)
