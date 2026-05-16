@@ -45,10 +45,11 @@ class _FakeBoard:
             return True
         return False
 
-    def step(self, action: str) -> None:
+    def do_action(self, action: str) -> bool:
         self._moves += 1
         self.score += self._score_per_move
         self.max_tile = max(self.max_tile, 4)
+        return True   # real GameBoard.do_action returns bool
 
 
 def _install_fake_env_2048():

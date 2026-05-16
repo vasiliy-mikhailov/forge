@@ -1,0 +1,200 @@
+{
+  "model_id": "qwen3.6-27b-fp8",
+  "trial": 6,
+  "config": {
+    "max_iters": 500,
+    "n_trials_total": 10,
+    "temperature": 0.7,
+    "seeds": [
+      1000,
+      1001,
+      1002,
+      1003,
+      1004,
+      1005,
+      1006,
+      1007,
+      1008,
+      1009,
+      1010,
+      1011,
+      1012,
+      1013,
+      1014,
+      1015,
+      1016,
+      1017,
+      1018,
+      1019
+    ]
+  },
+  "mean_score": 0.0,
+  "median_score": 0.0,
+  "std_score": 0.0,
+  "max_max_tile": 2,
+  "n_games": 20,
+  "aggregate_walltime_sec": 0.6347094140946865,
+  "best_dev_mean": 12684.8,
+  "games": [
+    {
+      "seed": 1000,
+      "score": 0,
+      "max_tile": 2,
+      "moves": 0,
+      "final_state": "walltime_exceeded",
+      "walltime_sec": 0.0
+    },
+    {
+      "seed": 1001,
+      "score": 0,
+      "max_tile": 2,
+      "moves": 0,
+      "final_state": "walltime_exceeded",
+      "walltime_sec": 0.0
+    },
+    {
+      "seed": 1002,
+      "score": 0,
+      "max_tile": 2,
+      "moves": 0,
+      "final_state": "walltime_exceeded",
+      "walltime_sec": 0.0
+    },
+    {
+      "seed": 1003,
+      "score": 0,
+      "max_tile": 2,
+      "moves": 0,
+      "final_state": "walltime_exceeded",
+      "walltime_sec": 0.0
+    },
+    {
+      "seed": 1004,
+      "score": 0,
+      "max_tile": 2,
+      "moves": 0,
+      "final_state": "walltime_exceeded",
+      "walltime_sec": 0.0
+    },
+    {
+      "seed": 1005,
+      "score": 0,
+      "max_tile": 2,
+      "moves": 0,
+      "final_state": "walltime_exceeded",
+      "walltime_sec": 0.0
+    },
+    {
+      "seed": 1006,
+      "score": 0,
+      "max_tile": 2,
+      "moves": 0,
+      "final_state": "walltime_exceeded",
+      "walltime_sec": 0.0
+    },
+    {
+      "seed": 1007,
+      "score": 0,
+      "max_tile": 2,
+      "moves": 0,
+      "final_state": "walltime_exceeded",
+      "walltime_sec": 0.0
+    },
+    {
+      "seed": 1008,
+      "score": 0,
+      "max_tile": 2,
+      "moves": 0,
+      "final_state": "walltime_exceeded",
+      "walltime_sec": 0.0
+    },
+    {
+      "seed": 1009,
+      "score": 0,
+      "max_tile": 2,
+      "moves": 0,
+      "final_state": "walltime_exceeded",
+      "walltime_sec": 0.0
+    },
+    {
+      "seed": 1010,
+      "score": 0,
+      "max_tile": 2,
+      "moves": 0,
+      "final_state": "walltime_exceeded",
+      "walltime_sec": 0.0
+    },
+    {
+      "seed": 1011,
+      "score": 0,
+      "max_tile": 2,
+      "moves": 0,
+      "final_state": "walltime_exceeded",
+      "walltime_sec": 0.0
+    },
+    {
+      "seed": 1012,
+      "score": 0,
+      "max_tile": 2,
+      "moves": 0,
+      "final_state": "walltime_exceeded",
+      "walltime_sec": 0.0
+    },
+    {
+      "seed": 1013,
+      "score": 0,
+      "max_tile": 2,
+      "moves": 0,
+      "final_state": "walltime_exceeded",
+      "walltime_sec": 0.0
+    },
+    {
+      "seed": 1014,
+      "score": 0,
+      "max_tile": 2,
+      "moves": 0,
+      "final_state": "walltime_exceeded",
+      "walltime_sec": 0.0
+    },
+    {
+      "seed": 1015,
+      "score": 0,
+      "max_tile": 2,
+      "moves": 0,
+      "final_state": "walltime_exceeded",
+      "walltime_sec": 0.0
+    },
+    {
+      "seed": 1016,
+      "score": 0,
+      "max_tile": 2,
+      "moves": 0,
+      "final_state": "walltime_exceeded",
+      "walltime_sec": 0.0
+    },
+    {
+      "seed": 1017,
+      "score": 0,
+      "max_tile": 2,
+      "moves": 0,
+      "final_state": "walltime_exceeded",
+      "walltime_sec": 0.0
+    },
+    {
+      "seed": 1018,
+      "score": 0,
+      "max_tile": 2,
+      "moves": 0,
+      "final_state": "walltime_exceeded",
+      "walltime_sec": 0.0
+    },
+    {
+      "seed": 1019,
+      "score": 0,
+      "max_tile": 2,
+      "moves": 0,
+      "final_state": "walltime_exceeded",
+      "walltime_sec": 0.0
+    }
+  ]
+}

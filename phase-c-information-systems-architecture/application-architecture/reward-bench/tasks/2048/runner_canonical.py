@@ -134,7 +134,7 @@ def _play_one_collect_events(args):
             })
             final_state = "invalid_action"
             break
-        game.step(action)
+        game.do_action(action)
         moves += 1
         if game.score > last_progress_score or game.max_tile > last_progress_tile:
             last_progress_t = time.monotonic()
