@@ -2,7 +2,7 @@
 
 [`FakeModelClient`](../../../src/adapters/fakes/fake_model_client.py) is
 a test [`ModelClient`](../../../src/ports/model_client.py) returning
-pre-scripted replies. Cycle 99a / [ADR 0012](../../../docs/adr/0012-light-speed-offline-testing-via-injectable-fake-model-client.md).
+pre-scripted replies. See [ADR 0012](../../../docs/adr/0012-light-speed-offline-testing-via-injectable-fake-model-client.md).
 
 ## Contract
 

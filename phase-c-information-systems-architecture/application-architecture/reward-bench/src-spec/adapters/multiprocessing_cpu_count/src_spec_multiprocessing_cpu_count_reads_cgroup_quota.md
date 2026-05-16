@@ -2,7 +2,7 @@
 
 [`MultiprocessingCpuCount`](../../../src/adapters/multiprocessing_cpu_count.py)
 is the production [`CpuCountPort`](../../../src/ports/cpu_count.py)
-binding. Cycle 105 / ADR 0006 Layer 2.
+binding. See [ADR 0006](../../../docs/adr/0006-sandboxed-scoring-docker-tier1-and-walltime-budget.md) Layer 2.
 
 ## Contract
 

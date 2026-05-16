@@ -1,7 +1,7 @@
 # `src_spec_fake_vllm_server_handles_v1_endpoints`
 
 [`FakeVllmServer`](../../../src/adapters/fakes/fake_vllm_server.py) —
-in-process responder to vLLM's two HTTP paths. Cycle 101 / ADR 0012.
+in-process responder to vLLM's two HTTP paths. See [ADR 0012](../../../docs/adr/0012-light-speed-offline-testing-via-injectable-fake-model-client.md).
 
 ## Contract
 
