@@ -40,6 +40,14 @@ sys.path.insert(0, "/env")
 from env_2048 import GameBoard  # type: ignore
 
 
+# Cycle 132: moves-wise stagnation threshold. If a solver makes
+# MOVES_STAGNATION consecutive moves without score or max_tile
+# increase, the worker marks the game `stagnated` (instead of
+# running all the way to max_moves=10000 which qwen3.6 misread
+# as "my solver is broken" -> trivial fallback).
+MOVES_STAGNATION = int(os.environ.get("REWARD_BENCH_MOVES_STAGNATION", "100"))
+
+
 def _load_submission(submission_path: str):
     spec = importlib.util.spec_from_file_location("submission", submission_path)
     if spec is None or spec.loader is None:
@@ -95,6 +103,7 @@ def _play_one_collect_events(args):
     moves = 0
     final_state = "max_moves"
     last_progress_t = time.monotonic()
+    last_progress_move = 0   # cycle 132: moves-wise stagnation
     last_progress_score = game.score
     last_progress_tile = game.max_tile
     t_game_start = time.time()
@@ -114,6 +123,15 @@ def _play_one_collect_events(args):
                 "seed": seed, "move": moves, "event": "stagnated",
                 "score": game.score, "max_tile": game.max_tile,
                 "secs_since_progress": now_mono - last_progress_t,
+            })
+            final_state = "stagnated"
+            break
+        if (moves - last_progress_move) >= MOVES_STAGNATION:
+            # Cycle 132: fast-but-stuck solver detection.
+            events.append({
+                "seed": seed, "move": moves, "event": "stagnated_moves",
+                "score": game.score, "max_tile": game.max_tile,
+                "moves_since_progress": moves - last_progress_move,
             })
             final_state = "stagnated"
             break
@@ -138,6 +156,7 @@ def _play_one_collect_events(args):
         moves += 1
         if game.score > last_progress_score or game.max_tile > last_progress_tile:
             last_progress_t = time.monotonic()
+            last_progress_move = moves
             last_progress_score = game.score
             last_progress_tile = game.max_tile
         if moves % 10 == 0 or game.is_terminal():

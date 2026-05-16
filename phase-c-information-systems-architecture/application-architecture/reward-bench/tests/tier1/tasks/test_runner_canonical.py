@@ -25,7 +25,8 @@ class _FakeBoard:
     def __init__(self, seed: int = 0, target: int = 2048,
                  max_moves_terminal: int = 5,
                  score_per_move: int = 4,
-                 always_terminal: bool = False):
+                 always_terminal: bool = False,
+                 no_progress: bool = False):
         self.seed = seed
         self.target = target
         self.score = 0
@@ -36,6 +37,7 @@ class _FakeBoard:
         self._max_moves_terminal = max_moves_terminal
         self._score_per_move = score_per_move
         self._always_terminal = always_terminal
+        self._no_progress = no_progress   # cycle 132 test
 
     def is_terminal(self) -> bool:
         if self._always_terminal:
@@ -47,9 +49,11 @@ class _FakeBoard:
 
     def do_action(self, action: str) -> bool:
         self._moves += 1
+        if self._no_progress:
+            return False   # cycle 132 test: no score/tile update
         self.score += self._score_per_move
         self.max_tile = max(self.max_tile, 4)
-        return True   # real GameBoard.do_action returns bool
+        return True
 
 
 def _install_fake_env_2048():
@@ -186,3 +190,45 @@ def test_when_hard_deadline_passed_then_walltime_exceeded(_runner_module, tmp_pa
         (str(sub), 1, 2048, 100, 60.0, already_past)
     )
     assert game["final_state"] == "walltime_exceeded"
+
+
+@pytest.mark.no_fake
+def test_when_solver_makes_no_progress_then_stagnated_within_threshold(_runner_module, monkeypatch, tmp_path):
+    """Cycle 132: moves-wise stagnation. A stuck solver (returns valid
+    action but board never changes) must be detected as stagnated within
+    MOVES_STAGNATION moves, NOT run to max_moves=10000.
+
+    Pre-cycle-132 the runner only had wall-time stagnation (60s) which
+    never tripped for fast-but-stuck solvers; the observation returned
+    moves=10000 + state=max_moves + err="sentinel: max_moves" — qwen3.6
+    misread that as "my solver is broken" and gave up to trivial \'W\'."""
+    monkeypatch.setattr(_runner_module, "MOVES_STAGNATION", 50)
+
+    orig_GameBoard = _runner_module.GameBoard
+    monkeypatch.setattr(
+        _runner_module, "GameBoard",
+        lambda *a, **kw: orig_GameBoard(
+            *a, **{**kw, "no_progress": True, "max_moves_terminal": 99999},
+        ),
+    )
+
+    sub = tmp_path / "submission.py"
+    sub.write_text(
+        "class Solver:\n"
+        "    def move(self, board): return 'S'\n"
+    )
+
+    game, events = _runner_module._play_one_collect_events(
+        (str(sub), 1, 2048, 10000, 60.0, None)
+    )
+
+    assert game["final_state"] == "stagnated", (
+        f"expected stagnated; got {game}"
+    )
+    assert game["moves"] <= 60, (
+        f"stagnation should fire within ~50-60 moves; got {game['moves']}"
+    )
+    last_event = events[-1]
+    assert last_event["event"] == "stagnated_moves", (
+        f"expected stagnated_moves event; got {last_event}"
+    )
