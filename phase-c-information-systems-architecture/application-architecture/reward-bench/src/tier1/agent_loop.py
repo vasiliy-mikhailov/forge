@@ -181,24 +181,33 @@ def _execute_submission(body, workspace, tasks_dir,
         obs['protocol_violations'].extend(violations)
         return '<observation>' + _json.dumps(obs) + '</observation>'
 
-    # Cycle 70: delegate per-game scoring to the canonical scorer. The
-    # cycle-58 inline game loop is gone — the dev feedback path now
-    # inherits the cycle 23/27 hard_wall_sec + per-game daemon-thread
-    # timeout and the cycle 28/29 solver-error sentinels. Fixes cycle
-    # 69's wedge (model wrote expectimax depth=4 → inline loop ground
-    # for hours; canonical scorer sentinels under DEV_HARD_WALL_S).
-    from src.tier1.use_cases.score_submission import score_submission
-    from src.tier1.adapters.game_board_2048 import GameBoard2048Adapter
+    # Cycle 128 (ADR 0006 amendment): dev runner uses Layer 2 (Docker
+    # hard kill via cgroup), not Layer 1 (in-process daemon-thread
+    # soft timeout). Layer 1 cannot interrupt C-level Python work,
+    # which lets adversarial CPU-bound submissions (Monte Carlo,
+    # expectimax, busy loops) wedge the entire bench process. Layer 2
+    # collapses Layer 1: Docker --pids-limit + cgroup CPU/memory caps
+    # enforce limits at kernel level; nothing in user code can resist.
+    # The cycle-70 fix was incomplete; cycle 128 finishes it.
+    from src.tier1.adapters.docker_canonical_scorer import DockerCanonicalScorer
     try:
-        _attempt = score_submission(
-            solver_factory=module.Solver,
-            seeds=_DEV_SEEDS,
-            env=GameBoard2048Adapter(),
+        _scorer = DockerCanonicalScorer(env_path=Path(tasks_dir) / 'env.py')
+        _attempt = _scorer.score(
+            sub_path,
+            _DEV_SEEDS,
             hard_wall_sec=dev_hard_wall_sec,
         )
+    except RuntimeError as e:
+        # Cycle 121: infrastructure failure (image missing, daemon down).
+        # Surface as a protocol_violation so the model sees the failure
+        # without the bench wedging.
+        obs['protocol_violations'].append(
+            f'dev runner infrastructure failure: {type(e).__name__}: {e}'
+        )
+        return '<observation>' + _json.dumps(obs) + '</observation>'
     except Exception as e:  # defence-in-depth: dispatcher must never raise
         obs['protocol_violations'].append(
-            f'score_submission failed: {type(e).__name__}: {e}'
+            f'DockerCanonicalScorer failed: {type(e).__name__}: {e}'
         )
         return '<observation>' + _json.dumps(obs) + '</observation>'
 

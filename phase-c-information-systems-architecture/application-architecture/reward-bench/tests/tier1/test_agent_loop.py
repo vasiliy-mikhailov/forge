@@ -1471,21 +1471,23 @@ def test_when_execute_submission_called_with_dev_hard_wall_sec_then_score_submis
     from src.tier1 import agent_loop as al
 
     captured = {}
-    def fake_score_submission(*, solver_factory, seeds, env, hard_wall_sec):
-        captured['hard_wall_sec'] = hard_wall_sec
-        captured['n_seeds'] = len(tuple(seeds))
-        # Return a minimal AttemptResult-shaped object.
-        from src.tier1.entities.attempt_result import AttemptResult
-        return AttemptResult(
-            mean_score=0.0, median_score=0.0, std_score=0.0,
-            max_max_tile=0, n_games=captured['n_seeds'],
-            aggregate_walltime_sec=0.0, games=(),
-            hard_wall_sec=hard_wall_sec,
-            stagnated_any=False, walltime_exceeded=False,
-        )
+    from src.tier1.entities.attempt_result import AttemptResult
+    class _FakeScorer:
+        def __init__(self, *a, **kw):
+            pass
+        def score(self, submission_path, seeds, *, hard_wall_sec=0.0, reports_root=None):
+            captured['hard_wall_sec'] = hard_wall_sec
+            captured['n_seeds'] = len(tuple(seeds))
+            return AttemptResult(
+                mean_score=0.0, median_score=0.0, std_score=0.0,
+                max_max_tile=0, n_games=captured['n_seeds'],
+                aggregate_walltime_sec=0.0, games=(),
+                hard_wall_sec=hard_wall_sec,
+                stagnated_any=False, walltime_exceeded=False,
+            )
     monkeypatch.setattr(
-        'src.tier1.use_cases.score_submission.score_submission',
-        fake_score_submission,
+        'src.tier1.adapters.docker_canonical_scorer.DockerCanonicalScorer',
+        _FakeScorer,
     )
 
     body = (
@@ -1514,19 +1516,22 @@ def test_when_execute_submission_called_without_dev_hard_wall_sec_then_module_de
     from src.tier1 import agent_loop as al
 
     captured = {}
-    def fake_score_submission(*, solver_factory, seeds, env, hard_wall_sec):
-        captured['hard_wall_sec'] = hard_wall_sec
-        from src.tier1.entities.attempt_result import AttemptResult
-        return AttemptResult(
-            mean_score=0.0, median_score=0.0, std_score=0.0,
-            max_max_tile=0, n_games=5,
-            aggregate_walltime_sec=0.0, games=(),
-            hard_wall_sec=hard_wall_sec,
-            stagnated_any=False, walltime_exceeded=False,
-        )
+    from src.tier1.entities.attempt_result import AttemptResult
+    class _FakeScorer:
+        def __init__(self, *a, **kw):
+            pass
+        def score(self, submission_path, seeds, *, hard_wall_sec=0.0, reports_root=None):
+            captured['hard_wall_sec'] = hard_wall_sec
+            return AttemptResult(
+                mean_score=0.0, median_score=0.0, std_score=0.0,
+                max_max_tile=0, n_games=5,
+                aggregate_walltime_sec=0.0, games=(),
+                hard_wall_sec=hard_wall_sec,
+                stagnated_any=False, walltime_exceeded=False,
+            )
     monkeypatch.setattr(
-        'src.tier1.use_cases.score_submission.score_submission',
-        fake_score_submission,
+        'src.tier1.adapters.docker_canonical_scorer.DockerCanonicalScorer',
+        _FakeScorer,
     )
 
     body = (
