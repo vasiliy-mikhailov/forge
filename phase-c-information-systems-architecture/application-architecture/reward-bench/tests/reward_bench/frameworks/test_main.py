@@ -151,29 +151,36 @@ def test_when_main_invoked_then_config_hard_wall_sec_passed_to_score_submission(
         )
     monkeypatch.setattr(main_mod, 'run_loop', fake_run_loop)
 
+    # Cycle 105 sub-C: main now invokes canonical_scorer.score(...)
+    # instead of in-process score_submission. Inject a recorder.
     captured = {'calls': []}
-    def stub_score_submission(*args, **kwargs):
-        captured['calls'].append({'args': args, 'kwargs': kwargs})
+    def stub_score(submission_path, seeds, *, hard_wall_sec=0.0, reports_root=None):
+        captured['calls'].append({
+            'submission_path': str(submission_path),
+            'seeds': tuple(seeds),
+            'hard_wall_sec': hard_wall_sec,
+        })
         return AttemptResult(
             mean_score=0.0, median_score=0.0, std_score=0.0,
             max_max_tile=2, n_games=1, aggregate_walltime_sec=0.0,
             games=(GameResult(seed=1, score=0, max_tile=2, moves=0,
                               final_state='lost', walltime_sec=0.0),),
         )
-    monkeypatch.setattr(main_mod, 'score_submission', stub_score_submission)
+    class _StubScorer:
+        score = staticmethod(stub_score)
 
     # Act
     main_mod.main(
         model_id='qwen3.6-27b-awq',
         config=BenchConfig(max_iters=1, n_trials=1, temperature=0.0,
                            hard_wall_sec=42.0),
+        canonical_scorer=_StubScorer(),
     )
 
     # Assert
     assert len(captured['calls']) == 1
-    assert captured['calls'][0]['kwargs'].get('hard_wall_sec') == 42.0, (
-        f'hard_wall_sec not forwarded; '
-        f'kwargs={captured["calls"][0]["kwargs"]}'
+    assert captured['calls'][0]['hard_wall_sec'] == 42.0, (
+        f'hard_wall_sec not forwarded; got {captured["calls"][0]}'
     )
 
 
@@ -304,17 +311,19 @@ def test_when_main_completes_then_attempt_result_best_dev_mean_matches_run_loop_
         }
     monkeypatch.setattr(main_mod, 'run_loop', fake_run_loop)
 
-    # Mock score_submission so the test doesn't actually play games.
-    def fake_score(*args, **kwargs):
+    # Cycle 105 sub-C: canonical scoring goes via canonical_scorer DI.
+    def stub_score(submission_path, seeds, *, hard_wall_sec=0.0, reports_root=None):
         return AR(
             mean_score=42.0, median_score=42.0, std_score=0.0,
             max_max_tile=16, n_games=20, aggregate_walltime_sec=0.1,
         )
-    monkeypatch.setattr(main_mod, 'score_submission', fake_score)
+    class _StubScorer:
+        score = staticmethod(stub_score)
 
     result = main_mod.main(
         model_id='qwen3.6-27b-awq',
         config=BenchConfig(max_iters=1, n_trials=1, temperature=0.0),
+        canonical_scorer=_StubScorer(),
     )
 
     assert isinstance(result, AR)

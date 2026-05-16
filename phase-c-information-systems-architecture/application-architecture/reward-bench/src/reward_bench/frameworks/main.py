@@ -150,6 +150,7 @@ def main(
     model_id: str = 'qwen3.6-27b-awq',
     seeds: Iterable[int] = range(1000, 1020),
     config: BenchConfig = BenchConfig(),
+    canonical_scorer=None,
 ) -> AttemptResult:
     """Run the bench end-to-end and emit an AttemptResult.
 
@@ -252,8 +253,20 @@ def main(
             best_dev_mean=_best_dev_mean,
         )
 
-    adapter = GameBoard2048Adapter()
-    result = score_submission(SolverCls, seeds, adapter, hard_wall_sec=config.hard_wall_sec)
+    # Cycle 105 sub-C / ADR 0006 Layer 2: canonical scoring runs in a
+    # reward-bench-tier1 Docker container. Production default: build
+    # DockerCanonicalScorer lazily (50% of host cores). Tests inject a
+    # recorder via canonical_scorer parameter.
+    if canonical_scorer is None:
+        from src.tier1.adapters.docker_canonical_scorer import DockerCanonicalScorer
+        canonical_scorer = DockerCanonicalScorer(env_path=ENV_DIR / 'env.py')
+    reports_dir = workspace / 'reports'
+    reports_dir.mkdir(parents=True, exist_ok=True)
+    result = canonical_scorer.score(
+        submission_path, seeds,
+        hard_wall_sec=config.hard_wall_sec,
+        reports_root=reports_dir,
+    )
     # Cycle 79 / ADR 0009 v3: surface best_dev_mean (from run_loop's
     # execute_submission tracker) on AttemptResult so smoke tests can
     # assert on the "first working code" signal rather than the
