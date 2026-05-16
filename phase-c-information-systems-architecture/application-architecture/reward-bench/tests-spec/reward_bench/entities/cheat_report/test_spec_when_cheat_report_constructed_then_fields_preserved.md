@@ -11,3 +11,10 @@ Pins the `CheatReport` data contract — the verdict envelope around
   `len(report.findings) == 2`.
 
 Test code: [`tests/reward_bench/entities/test_cheat_report.py`](../../../../tests/reward_bench/entities/test_cheat_report.py).
+
+## Model client injection point
+
+- **Seam**: conftest autouse `_bind_model_client` per ADR 0014.
+- **Mode**: **fake** (default) — autouse `FakeModelClient` / `FakeVllmServer`.
+- **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
+

@@ -32,3 +32,10 @@ The adapter is the right layer for the catch because:
   - `result.score >= 0` and `result.max_tile >= 2` (whatever the env started with).
 
 Test code: [`tests/tier1/adapters/test_game_board_2048.py`](../../../../tests/tier1/adapters/test_game_board_2048.py).
+
+## Model client injection point
+
+- **Seam**: conftest autouse `_bind_model_client` per ADR 0014.
+- **Mode**: **fake** (default) — autouse `FakeModelClient` / `FakeVllmServer`.
+- **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
+

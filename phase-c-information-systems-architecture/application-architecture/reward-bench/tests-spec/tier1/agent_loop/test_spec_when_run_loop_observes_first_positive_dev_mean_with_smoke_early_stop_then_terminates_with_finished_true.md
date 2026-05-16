@@ -39,3 +39,10 @@ same arrangement runs the full `max_iters=10`. (Already pinned by
 existing cycle-48 best-snapshot test.)
 
 Test code: [`tests/tier1/test_agent_loop.py`](../../../../tests/tier1/test_agent_loop.py).
+
+## Model client injection point
+
+- **Seam**: conftest autouse `_bind_model_client` per ADR 0014.
+- **Mode**: **fake** (default) — autouse `FakeModelClient` / `FakeVllmServer`.
+- **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
+

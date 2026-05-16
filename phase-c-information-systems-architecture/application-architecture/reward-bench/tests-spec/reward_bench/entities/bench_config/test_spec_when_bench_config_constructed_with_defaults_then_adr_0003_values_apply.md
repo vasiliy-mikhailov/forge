@@ -19,3 +19,10 @@ A second test case pins **override** behavior: every field can be
 overridden in the constructor, and the override values read back.
 
 Test code: [`tests/reward_bench/entities/test_bench_config.py`](../../../../tests/reward_bench/entities/test_bench_config.py).
+
+## Model client injection point
+
+- **Seam**: conftest autouse `_bind_model_client` per ADR 0014.
+- **Mode**: **fake** (default) — autouse `FakeModelClient` / `FakeVllmServer`.
+- **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
+

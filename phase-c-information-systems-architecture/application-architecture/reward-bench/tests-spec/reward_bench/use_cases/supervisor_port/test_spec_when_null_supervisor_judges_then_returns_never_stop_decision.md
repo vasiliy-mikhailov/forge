@@ -20,3 +20,10 @@ protocol and the default for cycle 33's agent_loop hook.
     protocol acceptance.
 
 Test code: [`tests/reward_bench/use_cases/test_supervisor_port.py`](../../../../tests/reward_bench/use_cases/test_supervisor_port.py).
+
+## Model client injection point
+
+- **Seam**: conftest autouse `_bind_model_client` per ADR 0014.
+- **Mode**: **fake** (default) — autouse `FakeModelClient` / `FakeVllmServer`.
+- **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
+

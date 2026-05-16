@@ -34,3 +34,10 @@ Per [ADR 0001](../../../docs/adr/0001-condenser-uses-same-model-as-bench.md),
 the LLM-backed condenser adapter (cycle 16) will use the same
 `ModelTarget` as the model under bench; cycle 15 only pins the seam,
 the model decision lands when the adapter does.
+
+## Model client injection point
+
+- **Seam**: conftest autouse `_bind_model_client` per ADR 0014.
+- **Mode**: **fake** (default) — autouse `FakeModelClient` / `FakeVllmServer`.
+- **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
+

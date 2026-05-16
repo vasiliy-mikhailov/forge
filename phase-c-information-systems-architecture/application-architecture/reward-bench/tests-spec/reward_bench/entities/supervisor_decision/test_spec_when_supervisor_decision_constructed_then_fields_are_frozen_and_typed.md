@@ -20,3 +20,10 @@ mutate, attempt to construct with wrong types.
     is typed `str` (no `__annotations__` slip).
 
 Test code: [`tests/reward_bench/entities/test_supervisor_decision.py`](../../../../tests/reward_bench/entities/test_supervisor_decision.py).
+
+## Model client injection point
+
+- **Seam**: conftest autouse `_bind_model_client` per ADR 0014.
+- **Mode**: **fake** (default) — autouse `FakeModelClient` / `FakeVllmServer`.
+- **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
+

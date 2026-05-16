@@ -11,3 +11,10 @@ on an operator having started the container manually.
   returns 200 and lists `qwen3.6-27b-awq` with `max_model_len` >= 131072.
 
 Test code: [`tests/tier1/test_inference.py`](../../tests/tier1/test_inference.py).
+
+## Model client injection point
+
+- **Seam**: conftest autouse `_bind_model_client` per ADR 0014.
+- **Mode**: **fake** (default) — autouse `FakeModelClient` / `FakeVllmServer`.
+- **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
+

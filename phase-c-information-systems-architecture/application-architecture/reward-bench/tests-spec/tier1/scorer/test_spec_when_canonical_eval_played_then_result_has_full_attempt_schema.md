@@ -13,3 +13,10 @@ The returned dict matches the SPEC.md `AttemptResult` schema fields.
   `seeds`. `n_games == 20`. `seeds == list(range(1000, 1020))`.
 
 Test code: [`tests/tier1/test_scorer.py`](../../tests/tier1/test_scorer.py).
+
+## Model client injection point
+
+- **Seam**: conftest autouse `_bind_model_client` per ADR 0014.
+- **Mode**: **fake** (default) — autouse `FakeModelClient` / `FakeVllmServer`.
+- **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
+

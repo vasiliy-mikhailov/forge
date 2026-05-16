@@ -17,3 +17,10 @@ immediately.
   - Replay tolerance progression: 0, 5, 5, 10.
 
 Test code: [`tests/reward_bench/use_cases/test_tier_registry.py`](../../../../tests/reward_bench/use_cases/test_tier_registry.py).
+
+## Model client injection point
+
+- **Seam**: conftest autouse `_bind_model_client` per ADR 0014.
+- **Mode**: **fake** (default) — autouse `FakeModelClient` / `FakeVllmServer`.
+- **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
+

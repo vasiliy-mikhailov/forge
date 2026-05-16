@@ -22,3 +22,10 @@ end-to-end and the test goes red.
   - `any(per_trial_protocol_valid)` — REGRESSION GUARD.
 
 Test code: [`tests/reward_bench/frameworks/campaigns/test_iters100_T07_n3.py`](../../../../tests/reward_bench/frameworks/campaigns/test_iters100_T07_n3.py).
+
+## Model client injection point
+
+- **Seam**: conftest autouse `_bind_model_client` per ADR 0014.
+- **Mode**: **fake** (default) — autouse `FakeModelClient` / `FakeVllmServer`.
+- **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
+

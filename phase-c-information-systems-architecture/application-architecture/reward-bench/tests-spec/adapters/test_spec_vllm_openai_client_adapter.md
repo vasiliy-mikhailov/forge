@@ -40,3 +40,10 @@ suite stays offline.
 Pre-cycle-98b callers of `_call_model(base, key, msgs, max_tokens=, temperature=, model_id=)`
 must continue to work. The shim takes the same args and constructs
 the client + delegates.
+
+## Model client injection point
+
+- **Seam**: conftest autouse `_bind_model_client` per ADR 0014.
+- **Mode**: **fake** (default) — autouse `FakeModelClient` / `FakeVllmServer`.
+- **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
+

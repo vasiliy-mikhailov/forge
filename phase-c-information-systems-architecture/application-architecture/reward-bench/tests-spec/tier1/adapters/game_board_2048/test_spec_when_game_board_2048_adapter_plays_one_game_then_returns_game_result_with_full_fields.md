@@ -24,3 +24,10 @@ populate `AttemptResult.games` per SPEC.md without the use case
 itself measuring moves or walltime — that's an adapter concern.
 
 Test code: [`tests/tier1/adapters/test_game_board_2048.py`](../../../../tests/tier1/adapters/test_game_board_2048.py).
+
+## Model client injection point
+
+- **Seam**: conftest autouse `_bind_model_client` per ADR 0014.
+- **Mode**: **fake** (default) — autouse `FakeModelClient` / `FakeVllmServer`.
+- **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
+
