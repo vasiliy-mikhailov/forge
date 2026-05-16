@@ -67,17 +67,67 @@ the cap kicks in. For the cycle-22 observed hang, a 60 s cap would
 have terminated the campaign after the first game (~60 s) instead
 of running for 34+ minutes.
 
-### 2. Docker tier-1 sandbox (queued; not yet implemented as of cycle 87)
+### 2. Docker tier-1 sandbox (implemented cycle 105)
 
-Replace `GameBoard2048Adapter` with `SandboxedScoreAdapter`:
+Replace `GameBoard2048Adapter` with a `DockerCanonicalScorer`
+adapter (cycle 105):
 
 1. Copies `submission.py` and the env to a workspace directory.
-2. Invokes `docker run --network=none --rm -v <workspace>:/workspace
-   -v <env>:/env:ro -v <reports>:/reports reward-bench-tier1:0.3
-   python /env/runner_canonical.py`.
+2. Invokes:
+
+   ```
+   docker run --rm --network=none \
+     --memory=2g --pids-limit=256 \
+     --cpus=${CANONICAL_CPUS} \          # cycle 105: host-side cap
+     -v <workspace>:/workspace \
+     -v <env>:/env:ro -v <reports>:/reports \
+     -e REWARD_BENCH_NUM_GAMES=20 \
+     -e REWARD_BENCH_SEED_BASE=1000 \
+     -e REWARD_BENCH_HARD_WALL_SEC=${HARD_WALL_SEC} \
+     reward-bench-tier1:${TAG}
+   ```
+
 3. Honours `REWARD_BENCH_STAGNATION_SEC` / `REWARD_BENCH_HARD_WALL_SEC`
-   env vars via the `BenchConfig` plumbing.
+   env vars via the `BenchConfig` plumbing (cycle 104 / ADR 0015 sets
+   the canonical default to 300 s).
 4. Reads `/reports/result.json` + `events.jsonl`; maps to entities.
+
+### Host-side: `--cpus=N` is the only knob
+
+The bench parent picks `N` as `cpu_count() // 2` by default (cycle 105;
+50 % of host cores). `cpu_count()` is supplied via a `CpuCountPort`
+DI seam so the `score_submission` use-case stays free of `os` imports
+(architecture rule: use-cases must not import `os`).
+
+Tests inject a fixed-count fake (`FakeCpuCount(8)` -> `--cpus=4`);
+production binds `MultiprocessingCpuCount` -> reads
+`multiprocessing.cpu_count()` -> typically 24 on the lab host ->
+`--cpus=12`.
+
+### Container-side: parallelise across cgroup-visible cores
+
+Inside the container, `runner_canonical.py` parallelises the N-seed
+canonical eval via `multiprocessing.Pool(processes=cpu_count())`.
+
+`multiprocessing.cpu_count()` inside a Docker container reads the
+cgroup CPU quota that `--cpus=N` imposes — so the container "sees"
+exactly the slice Docker gave it and uses all of it.
+
+Result: the host only thinks in `--cpus` numbers; the container
+auto-parallelises across that quota; no `max_workers` parameter
+threads through the codebase.
+
+### `hard_wall_sec` is enforced by Docker, not Python
+
+The parent's hard cap is realised by `docker stop --time=N` (clean
+SIGTERM, then SIGKILL after the grace period) rather than the cycle
+27 daemon-thread `Thread.join(timeout=...)` antipattern. A Solver
+that hangs in a tight Python loop is killed at the OS level, not
+abandoned in a zombie thread.
+
+The cycle 78 / runner v0.3 in-container stagnation detector remains
+the primary bound for the common case (~60 s of no `score / max_tile`
+progress => `final_state="stagnated"`).
 
 Properties this unlocks:
 
