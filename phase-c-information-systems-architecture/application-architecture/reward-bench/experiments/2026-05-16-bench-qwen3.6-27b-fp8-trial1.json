@@ -1,0 +1,200 @@
+{
+  "model_id": "qwen3.6-27b-fp8",
+  "trial": 1,
+  "config": {
+    "max_iters": 500,
+    "n_trials_total": 10,
+    "temperature": 0.7,
+    "seeds": [
+      1000,
+      1001,
+      1002,
+      1003,
+      1004,
+      1005,
+      1006,
+      1007,
+      1008,
+      1009,
+      1010,
+      1011,
+      1012,
+      1013,
+      1014,
+      1015,
+      1016,
+      1017,
+      1018,
+      1019
+    ]
+  },
+  "mean_score": 13680.6,
+  "median_score": 15782.0,
+  "std_score": 5464.9945324766795,
+  "max_max_tile": 2048,
+  "n_games": 20,
+  "aggregate_walltime_sec": 2.1686433169525117,
+  "best_dev_mean": 16347.2,
+  "games": [
+    {
+      "seed": 1000,
+      "score": 16384,
+      "max_tile": 1024,
+      "moves": 975,
+      "final_state": "lost",
+      "walltime_sec": 0.17059814499225467
+    },
+    {
+      "seed": 1001,
+      "score": 5324,
+      "max_tile": 512,
+      "moves": 368,
+      "final_state": "lost",
+      "walltime_sec": 0.04748018505051732
+    },
+    {
+      "seed": 1002,
+      "score": 20540,
+      "max_tile": 2048,
+      "moves": 992,
+      "final_state": "won",
+      "walltime_sec": 0.28567957400809973
+    },
+    {
+      "seed": 1003,
+      "score": 14160,
+      "max_tile": 1024,
+      "moves": 808,
+      "final_state": "lost",
+      "walltime_sec": 0.10802882199641317
+    },
+    {
+      "seed": 1004,
+      "score": 22052,
+      "max_tile": 2048,
+      "moves": 1081,
+      "final_state": "won",
+      "walltime_sec": 0.08032772596925497
+    },
+    {
+      "seed": 1005,
+      "score": 10740,
+      "max_tile": 1024,
+      "moves": 634,
+      "final_state": "lost",
+      "walltime_sec": 0.03454866097308695
+    },
+    {
+      "seed": 1006,
+      "score": 9380,
+      "max_tile": 512,
+      "moves": 598,
+      "final_state": "lost",
+      "walltime_sec": 0.038737698923796415
+    },
+    {
+      "seed": 1007,
+      "score": 16252,
+      "max_tile": 1024,
+      "moves": 958,
+      "final_state": "lost",
+      "walltime_sec": 0.06042084901127964
+    },
+    {
+      "seed": 1008,
+      "score": 7548,
+      "max_tile": 512,
+      "moves": 525,
+      "final_state": "lost",
+      "walltime_sec": 0.06244149198755622
+    },
+    {
+      "seed": 1009,
+      "score": 5196,
+      "max_tile": 256,
+      "moves": 399,
+      "final_state": "lost",
+      "walltime_sec": 0.0888959530275315
+    },
+    {
+      "seed": 1010,
+      "score": 13696,
+      "max_tile": 1024,
+      "moves": 786,
+      "final_state": "lost",
+      "walltime_sec": 0.22263529198244214
+    },
+    {
+      "seed": 1011,
+      "score": 16052,
+      "max_tile": 1024,
+      "moves": 942,
+      "final_state": "lost",
+      "walltime_sec": 0.1325352960266173
+    },
+    {
+      "seed": 1012,
+      "score": 20500,
+      "max_tile": 2048,
+      "moves": 979,
+      "final_state": "won",
+      "walltime_sec": 0.08156945300288498
+    },
+    {
+      "seed": 1013,
+      "score": 16120,
+      "max_tile": 1024,
+      "moves": 942,
+      "final_state": "lost",
+      "walltime_sec": 0.1071226829662919
+    },
+    {
+      "seed": 1014,
+      "score": 7792,
+      "max_tile": 512,
+      "moves": 535,
+      "final_state": "lost",
+      "walltime_sec": 0.10300858097616583
+    },
+    {
+      "seed": 1015,
+      "score": 16108,
+      "max_tile": 1024,
+      "moves": 939,
+      "final_state": "lost",
+      "walltime_sec": 0.13726411503739655
+    },
+    {
+      "seed": 1016,
+      "score": 3464,
+      "max_tile": 256,
+      "moves": 286,
+      "final_state": "lost",
+      "walltime_sec": 0.05458795593585819
+    },
+    {
+      "seed": 1017,
+      "score": 15512,
+      "max_tile": 1024,
+      "moves": 909,
+      "final_state": "lost",
+      "walltime_sec": 0.06440544000361115
+    },
+    {
+      "seed": 1018,
+      "score": 20472,
+      "max_tile": 2048,
+      "moves": 974,
+      "final_state": "won",
+      "walltime_sec": 0.1802451730472967
+    },
+    {
+      "seed": 1019,
+      "score": 16320,
+      "max_tile": 1024,
+      "moves": 961,
+      "final_state": "lost",
+      "walltime_sec": 0.10770445095840842
+    }
+  ]
+}

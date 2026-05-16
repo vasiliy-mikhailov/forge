@@ -83,8 +83,19 @@ def _play_with_timeout(env, solver, seed, timeout) -> Optional[GameResult]:
     captured = {'value': None, 'exc': None}
 
     def worker():
+        # Cycle 103: redirect stdout/stderr around the Solver call so
+        # model-emitted print() inside move() doesn't flood the bench
+        # log. Use contextlib+io rather than os.devnull to keep this
+        # use-case layer free of os-level dependencies (architecture
+        # rule: use_cases must not import os/subprocess/urllib/...).
+        # Restored on exit (even on exception) via the with blocks.
+        import io as _io
+        import contextlib as _ctx
+        _sink_out = _io.StringIO()
+        _sink_err = _io.StringIO()
         try:
-            captured['value'] = env.play_one_game(solver, seed)
+            with _ctx.redirect_stdout(_sink_out), _ctx.redirect_stderr(_sink_err):
+                captured['value'] = env.play_one_game(solver, seed)
         except BaseException as e:
             captured['exc'] = e
 
