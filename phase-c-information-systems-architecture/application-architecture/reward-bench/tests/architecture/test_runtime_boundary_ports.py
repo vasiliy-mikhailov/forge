@@ -30,6 +30,8 @@ MANIFEST = [
      "src.adapters.fakes.fake_canonical_scorer", "FakeCanonicalScorer"),
     ("src.ports.tool", "Tool",
      None, None),   # no shared Fake; per-tool adapters tested directly
+    ("src.ports.supervisor", "SupervisorPort",
+     None, None),   # NullSupervisor is the production-default Port-conformant impl
 ]
 
 

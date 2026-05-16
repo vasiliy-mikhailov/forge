@@ -189,7 +189,7 @@ def test_when_main_invoked_then_config_supervisor_every_k_passed_to_run_loop(mon
     """Cycle 35: pin the BenchConfig.supervisor_every_k + LlmSupervisor
     -> run_loop wiring."""
     from src.reward_bench.frameworks import main as main_mod
-    from src.reward_bench.use_cases.supervisor_port import SupervisorPort
+    from src.ports.supervisor import SupervisorPort
     from src.tier1.entities.attempt_result import AttemptResult
     from src.tier1.entities.game_result import GameResult
 

@@ -17,7 +17,7 @@ import re
 from typing import Callable, Tuple
 
 from src.reward_bench.entities.supervisor_decision import SupervisorDecision
-from src.reward_bench.use_cases.supervisor_port import Sample
+from src.ports.supervisor import Sample
 
 
 _JSON_OBJECT_RE = re.compile(r'\{.*\}', re.DOTALL)

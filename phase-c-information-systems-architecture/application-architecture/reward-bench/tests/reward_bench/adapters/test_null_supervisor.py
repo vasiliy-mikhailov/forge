@@ -1,11 +1,9 @@
-"""SupervisorPort + NullSupervisor tests.
+"""NullSupervisor + SupervisorPort runtime-checkable conformance tests.
 
-See tests-spec/reward_bench/use_cases/supervisor_port/."""
+See tests-spec/reward_bench/adapters/null_supervisor/."""
+from src.ports.supervisor import SupervisorPort
+from src.reward_bench.adapters.null_supervisor import NullSupervisor
 from src.reward_bench.entities.supervisor_decision import SupervisorDecision
-from src.reward_bench.use_cases.supervisor_port import (
-    NullSupervisor,
-    SupervisorPort,
-)
 
 
 def test_when_null_supervisor_judges_then_returns_never_stop_decision():
