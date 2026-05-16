@@ -32,6 +32,8 @@ MANIFEST = [
      None, None),   # no shared Fake; per-tool adapters tested directly
     ("src.ports.supervisor", "SupervisorPort",
      None, None),   # NullSupervisor is the production-default Port-conformant impl
+    ("src.ports.condenser", "CondenserPort",
+     None, None),   # NullCondenser is the production-default Port-conformant impl
 ]
 
 
