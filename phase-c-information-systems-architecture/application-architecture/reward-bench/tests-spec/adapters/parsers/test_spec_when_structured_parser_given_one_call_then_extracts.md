@@ -17,3 +17,8 @@
 - **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
 
 Test code: [`tests/adapters/parsers/test_protocol_parser_adapters.py`](../../../../tests/adapters/parsers/test_protocol_parser_adapters.py)::`test_when_structured_parser_given_one_call_then_extracts`.
+
+## Runtime scope
+
+> **Runtime scope**: unit only — pure function over `AssistantReply`; no runtime boundary.
+

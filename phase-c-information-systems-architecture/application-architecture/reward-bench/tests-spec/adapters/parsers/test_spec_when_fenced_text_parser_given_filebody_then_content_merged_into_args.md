@@ -17,3 +17,8 @@
 - **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
 
 Test code: [`tests/adapters/parsers/test_protocol_parser_adapters.py`](../../../../tests/adapters/parsers/test_protocol_parser_adapters.py)::`test_when_fenced_text_parser_given_filebody_then_content_merged_into_args`.
+
+## Runtime scope
+
+> **Runtime scope**: unit only — pure function over `AssistantReply`; no runtime boundary.
+

@@ -31,3 +31,8 @@ Test code:
 
 - **Seam**: not applicable — NullSupervisor takes no model client.
 - **Mode**: pure-Python; runs under the default autouse fake binding.
+
+## Runtime scope
+
+> **Runtime scope**: unit only — trivial Port-conformant implementation; no runtime boundary to live-test.
+

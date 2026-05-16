@@ -21,3 +21,8 @@ Some vLLM modes emit arguments as a dict (non-strict).
 - **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
 
 Test code: [`tests/adapters/parsers/test_protocol_parser_adapters.py`](../../../../tests/adapters/parsers/test_protocol_parser_adapters.py)::`test_when_structured_parser_arguments_is_dict_then_used_directly`.
+
+## Runtime scope
+
+> **Runtime scope**: unit only — pure function over `AssistantReply`; no runtime boundary.
+
