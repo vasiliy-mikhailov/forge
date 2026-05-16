@@ -133,10 +133,23 @@ class DockerCanonicalScorer(CanonicalScorerPort):
 
         elapsed = time.monotonic() - start
 
+        # Cycle 121: distinguish infrastructure failure from runner
+        # crash. Infra failure (image missing, daemon down) must
+        # RAISE per ADR 0018 Port contract — silently sentinelizing
+        # them produces zero-score artifacts that look like "slow
+        # solver hit timeout" but actually mean "bench broken."
+        if _is_infra_failure(returncode, stderr):
+            raise RuntimeError(
+                f"docker run infrastructure failure (returncode={returncode}); "
+                f"stderr: {stderr.strip()[:500]}"
+            )
+
         result_path = reports_dir / "result.json"
         if not result_path.exists():
-            # No result file => container crashed before writing. Emit
-            # walltime_exceeded sentinels for all seeds.
+            # No result file => container started and crashed before
+            # writing. Emit walltime_exceeded sentinels per seed —
+            # this is submission-side / runner-side failure, not
+            # infrastructure.
             games = tuple(_walltime_exceeded(seed) for seed in seeds_t)
             return _aggregate(games, elapsed, hard_wall_sec)
 
@@ -167,6 +180,36 @@ class DockerCanonicalScorer(CanonicalScorerPort):
 
 
 # ---- helpers ----
+
+# Cycle 121: docker stderr patterns that indicate infrastructure
+# failure (image missing, daemon unreachable, exec error). Match
+# these AND treat returncode 125/126/127 as infra-failure as well.
+_INFRA_FAIL_STDERR_PATTERNS = (
+    "Unable to find image",
+    "No such image",
+    "pull access denied",
+    "manifest unknown",
+    "manifest for",
+    "repository does not exist",
+    "Cannot connect to the Docker daemon",
+    "error during connect",
+    "executable file not found",
+)
+
+
+def _is_infra_failure(returncode: int, stderr: str) -> bool:
+    # docker run returncodes for infra failure:
+    #   125 — daemon error, image not found
+    #   126 — container command not executable
+    #   127 — container command not found
+    if returncode in (125, 126, 127):
+        return True
+    if returncode != 0 and stderr:
+        for pattern in _INFRA_FAIL_STDERR_PATTERNS:
+            if pattern in stderr:
+                return True
+    return False
+
 
 def _walltime_exceeded(seed: int) -> GameResult:
     return GameResult(seed=int(seed), score=0, max_tile=2, moves=0,
