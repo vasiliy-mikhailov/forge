@@ -49,3 +49,8 @@ Test code:
 | unit       | `FakeInferenceOrchestrator` (autouse) | scripted base_url; arbitrary target |
 | **live**   | `DockerVllmInferenceOrchestrator`      | canary `qwen3.6-27b-awq` from MODEL_REGISTRY |
 | production | `DockerVllmInferenceOrchestrator`      | every model in MODEL_REGISTRY (one swap per model in canonical bench) |
+
+## Runtime scope
+
+> **Runtime scope**: unit only — tier1 adapter contract; @live coverage at the production-scale boundary per the relevant cycle (123/124/125/128).
+

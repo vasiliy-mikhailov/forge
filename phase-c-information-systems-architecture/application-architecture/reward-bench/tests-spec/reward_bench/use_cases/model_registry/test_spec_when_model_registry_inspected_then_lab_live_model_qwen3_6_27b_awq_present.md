@@ -25,3 +25,7 @@ Test code: [`tests/reward_bench/use_cases/test_model_registry.py`](../../../../t
 - **Mode**: **fake** (default) — autouse `FakeModelClient` / `FakeVllmServer`.
 - **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
 
+## Runtime scope
+
+> **Runtime scope**: unit only — MODEL_REGISTRY tuple contract; pure-Python data; scale-invariant.
+

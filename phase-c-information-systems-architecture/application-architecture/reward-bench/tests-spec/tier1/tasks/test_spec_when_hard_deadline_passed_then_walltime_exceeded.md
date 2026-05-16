@@ -22,3 +22,8 @@ Deadline already passed at call time -> first iter of the
 - **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
 
 Test code: [`tests/tier1/tasks/test_runner_canonical.py`](../../../../tests/tier1/tasks/test_runner_canonical.py)::`test_when_hard_deadline_passed_then_walltime_exceeded`.
+
+## Runtime scope
+
+> **Runtime scope**: unit only — runner_canonical worker contracts; live coverage via @live test_docker_canonical_scorer_live (cycle 123) which invokes runner_canonical inside Docker against a real solver.
+

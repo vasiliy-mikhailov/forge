@@ -49,3 +49,7 @@ Test code: [`tests/reward_bench/frameworks/test_run_battery.py`](../../../../tes
 - **Mode**: **fake** (default) — autouse `FakeModelClient` / `FakeVllmServer`.
 - **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
 
+## Runtime scope
+
+> **Runtime scope**: unit only — canonical-battery driver; production-runtime IS this driver invoked end-to-end during operational sweeps.
+

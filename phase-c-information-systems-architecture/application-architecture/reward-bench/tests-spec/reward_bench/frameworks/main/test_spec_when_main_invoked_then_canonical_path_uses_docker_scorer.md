@@ -72,3 +72,8 @@ will move that to Docker too).
   the canonical source of truth).
 
 Test code: [`tests/reward_bench/frameworks/test_main_docker_scorer.py`](../../../../tests/reward_bench/frameworks/test_main_docker_scorer.py).
+
+## Runtime scope
+
+> **Runtime scope**: unit only — main() orchestration over DI seams; production-runtime coverage via canonical bench.
+

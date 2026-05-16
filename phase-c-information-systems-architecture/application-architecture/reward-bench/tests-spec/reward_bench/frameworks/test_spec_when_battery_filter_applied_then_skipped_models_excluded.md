@@ -21,3 +21,8 @@ select_battery drops `bench_skip: True` entries; preserves order.
 - **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
 
 Test code: [`tests/reward_bench/frameworks/test_run_battery.py`](../../../../tests/reward_bench/frameworks/test_run_battery.py)::`test_when_battery_filter_applied_then_skipped_models_excluded`.
+
+## Runtime scope
+
+> **Runtime scope**: unit only — framework orchestration; production-runtime coverage via canonical bench (run_canonical_battery) and @smoke multi-model battery.
+

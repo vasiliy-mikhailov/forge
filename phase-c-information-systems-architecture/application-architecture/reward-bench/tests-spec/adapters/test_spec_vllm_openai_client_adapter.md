@@ -47,3 +47,7 @@ the client + delegates.
 - **Mode**: **fake** (default) — autouse `FakeModelClient` / `FakeVllmServer`.
 - **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
 
+## Runtime scope
+
+> **Runtime scope**: unit only — adapter contract; the live coverage for the boundary it crosses lives in the adapter-specific @live test.
+

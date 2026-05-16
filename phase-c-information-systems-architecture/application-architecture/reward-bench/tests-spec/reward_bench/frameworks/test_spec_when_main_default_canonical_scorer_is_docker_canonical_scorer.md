@@ -22,3 +22,8 @@ Cycle 105 sub-C: when canonical_scorer is omitted, main() builds
 - **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
 
 Test code: [`tests/reward_bench/frameworks/test_main_docker_scorer.py`](../../../../tests/reward_bench/frameworks/test_main_docker_scorer.py)::`test_when_main_default_canonical_scorer_is_docker_canonical_scorer`.
+
+## Runtime scope
+
+> **Runtime scope**: unit only — framework orchestration; production-runtime coverage via canonical bench (run_canonical_battery) and @smoke multi-model battery.
+

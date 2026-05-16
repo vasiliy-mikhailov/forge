@@ -84,3 +84,8 @@ Test code: [`tests/tier1/tasks/test_runner_canonical.py`](../../../../tests/tier
   that runs the runner directly via `python tasks/2048/runner_canonical.py`).
 - Real Docker container spawn (cycle 106 candidate: live test against
   the built image).
+
+## Runtime scope
+
+> **Runtime scope**: unit only — runner_canonical worker contracts; live coverage via @live test_docker_canonical_scorer_live (cycle 123) which invokes runner_canonical inside Docker against a real solver.
+

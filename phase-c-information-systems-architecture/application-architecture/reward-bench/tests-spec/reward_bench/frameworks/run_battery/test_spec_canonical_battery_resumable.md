@@ -74,3 +74,8 @@ cd reward-bench && python3 -c "from src.reward_bench.frameworks.run_battery \
 ls experiments/$(date +%Y-%m-%d)-bench-*.json | wc -l
 # /22 models × 10 trials = 220 total artifacts at full completion.
 ```
+
+## Runtime scope
+
+> **Runtime scope**: unit only — canonical-battery driver; production-runtime IS this driver invoked end-to-end during operational sweeps.
+

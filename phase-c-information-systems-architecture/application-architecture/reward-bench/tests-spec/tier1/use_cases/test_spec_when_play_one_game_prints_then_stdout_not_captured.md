@@ -22,3 +22,8 @@ Cycle 103: Solver print() inside move() must not leak to the
 - **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
 
 Test code: [`tests/tier1/use_cases/test_solver_stdout.py`](../../../../tests/tier1/use_cases/test_solver_stdout.py)::`test_when_play_one_game_prints_then_stdout_not_captured`.
+
+## Runtime scope
+
+> **Runtime scope**: unit only — use-case orchestration over Port mocks; scale-invariant by construction.
+

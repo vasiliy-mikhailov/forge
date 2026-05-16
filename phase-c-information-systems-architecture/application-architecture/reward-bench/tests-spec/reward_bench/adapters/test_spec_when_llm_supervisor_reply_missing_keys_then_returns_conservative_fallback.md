@@ -21,3 +21,8 @@ JSON parseable but schema-incomplete — same conservative path.
 - **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
 
 Test code: [`tests/reward_bench/adapters/test_llm_supervisor.py`](../../../../tests/reward_bench/adapters/test_llm_supervisor.py)::`test_when_llm_supervisor_reply_missing_keys_then_returns_conservative_fallback`.
+
+## Runtime scope
+
+> **Runtime scope**: unit only — adapter contract; scale-invariant or covered by adapter-specific @live test.
+

@@ -21,3 +21,8 @@ Cycle 53: pin the missing-method violation.
 - **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
 
 Test code: [`tests/tier1/test_harness.py`](../../../../tests/tier1/test_harness.py)::`test_when_submission_validated_then_missing_move_returns_method_violation`.
+
+## Runtime scope
+
+> **Runtime scope**: unit only — tier1 use-case / parser contract; scale-invariant pure functions over Port mocks.
+

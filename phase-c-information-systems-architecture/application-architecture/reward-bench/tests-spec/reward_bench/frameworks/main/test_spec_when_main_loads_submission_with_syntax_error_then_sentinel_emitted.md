@@ -38,3 +38,7 @@ Test code: [`tests/reward_bench/frameworks/test_main.py`](../../../../tests/rewa
 - **Mode**: **fake** (default) — autouse `FakeModelClient` / `FakeVllmServer`.
 - **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
 
+## Runtime scope
+
+> **Runtime scope**: unit only — main() orchestration over DI seams; production-runtime coverage via canonical bench.
+

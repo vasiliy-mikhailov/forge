@@ -46,3 +46,8 @@ passes").
 - **Mode**: **smoke** — opt-in via `pytest -m smoke`; uses live vLLM.
 - **Override**: pass `model_client=` per-test, OR mark
   `@pytest.mark.live` / `@pytest.mark.no_fake`.
+
+## Runtime scope
+
+> **Runtime scope**: live + production — parametrised over `MODEL_REGISTRY`; @pytest.mark.smoke; opt-in via `pytest -m smoke`. Production-runtime coverage is the canonical bench (`run_canonical_battery`) which exercises the same `main()` path with FULL config (max_iters=500, n_trials=10, 20 seeds) instead of smoke config (max_iters=100, smoke_early_stop=True).
+

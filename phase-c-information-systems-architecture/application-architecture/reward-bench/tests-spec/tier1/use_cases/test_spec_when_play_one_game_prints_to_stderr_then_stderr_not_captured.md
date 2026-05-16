@@ -22,3 +22,8 @@ Cycle 103: stderr too — same channel for tracebacks and noisy
 - **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
 
 Test code: [`tests/tier1/use_cases/test_solver_stdout.py`](../../../../tests/tier1/use_cases/test_solver_stdout.py)::`test_when_play_one_game_prints_to_stderr_then_stderr_not_captured`.
+
+## Runtime scope
+
+> **Runtime scope**: unit only — use-case orchestration over Port mocks; scale-invariant by construction.
+

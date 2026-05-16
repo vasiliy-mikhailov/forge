@@ -24,3 +24,7 @@ Test code: [`tests/architecture/test_dependency_direction.py`](../../tests/archi
 - **Mode**: **fake** (default) — autouse `FakeModelClient` / `FakeVllmServer`.
 - **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
 
+## Runtime scope
+
+> **Runtime scope**: unit only — static AST import-graph assertion; not runtime-dependent.
+

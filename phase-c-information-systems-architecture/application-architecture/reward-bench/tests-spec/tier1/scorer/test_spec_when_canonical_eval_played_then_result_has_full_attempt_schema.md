@@ -20,3 +20,7 @@ Test code: [`tests/tier1/test_scorer.py`](../../tests/tier1/test_scorer.py).
 - **Mode**: **fake** (default) — autouse `FakeModelClient` / `FakeVllmServer`.
 - **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
 
+## Runtime scope
+
+> **Runtime scope**: unit only — AttemptResult shape / replay-equality contract; pure-Python; scale-invariant.
+

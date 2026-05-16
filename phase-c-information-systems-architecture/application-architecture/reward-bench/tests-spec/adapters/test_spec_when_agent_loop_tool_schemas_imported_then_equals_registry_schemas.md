@@ -22,3 +22,8 @@ Cycle 98c: TOOL_SCHEMAS module-level export still resolves so
 - **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
 
 Test code: [`tests/adapters/test_tier1_tool_registry.py`](../../../../tests/adapters/test_tier1_tool_registry.py)::`test_when_agent_loop_tool_schemas_imported_then_equals_registry_schemas`.
+
+## Runtime scope
+
+> **Runtime scope**: unit only — adapter contract; the live coverage for the boundary it crosses lives in the adapter-specific @live test.
+

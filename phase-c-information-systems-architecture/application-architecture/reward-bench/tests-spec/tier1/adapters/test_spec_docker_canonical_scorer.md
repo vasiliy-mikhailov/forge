@@ -85,3 +85,8 @@ is the host-side adapter that:
   the Dockerfile.tier1 bump in cycle 105 sub-A).
 
 Test code: [`tests/tier1/adapters/test_docker_canonical_scorer.py`](../../../../tests/tier1/adapters/test_docker_canonical_scorer.py).
+
+## Runtime scope
+
+> **Runtime scope**: unit only — tier1 adapter contract; @live coverage at the production-scale boundary per the relevant cycle (123/124/125/128).
+

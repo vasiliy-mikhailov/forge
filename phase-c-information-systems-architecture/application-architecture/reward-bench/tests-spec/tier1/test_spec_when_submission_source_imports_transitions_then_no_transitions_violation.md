@@ -22,3 +22,8 @@ Negative-control for cycle 91: body with 'from transitions import Machine'
 - **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
 
 Test code: [`tests/tier1/test_harness.py`](../../../../tests/tier1/test_harness.py)::`test_when_submission_source_imports_transitions_then_no_transitions_violation`.
+
+## Runtime scope
+
+> **Runtime scope**: unit only — tier1 use-case / parser contract; scale-invariant pure functions over Port mocks.
+

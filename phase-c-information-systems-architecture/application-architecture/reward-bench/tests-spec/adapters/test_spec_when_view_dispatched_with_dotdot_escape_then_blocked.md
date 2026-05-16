@@ -21,3 +21,8 @@ Defence-in-depth: ../ paths must not resolve outside /tasks.
 - **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
 
 Test code: [`tests/adapters/test_tier1_tool_registry.py`](../../../../tests/adapters/test_tier1_tool_registry.py)::`test_when_view_dispatched_with_dotdot_escape_then_blocked`.
+
+## Runtime scope
+
+> **Runtime scope**: unit only — adapter contract; the live coverage for the boundary it crosses lives in the adapter-specific @live test.
+

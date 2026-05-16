@@ -35,3 +35,7 @@ Test code: [`tests/reward_bench/use_cases/test_run_bench_trials.py`](../../../..
 - **Mode**: **fake** (default) — autouse `FakeModelClient` / `FakeVllmServer`.
 - **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
 
+## Runtime scope
+
+> **Runtime scope**: unit only — use-case orchestration over Port mocks; scale-invariant.
+

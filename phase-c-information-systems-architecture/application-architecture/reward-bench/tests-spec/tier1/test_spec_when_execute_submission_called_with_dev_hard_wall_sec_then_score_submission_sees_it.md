@@ -23,3 +23,8 @@ Cycle 77 / ADR 0006: _execute_submission threads dev_hard_wall_sec
 - **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
 
 Test code: [`tests/tier1/test_agent_loop.py`](../../../../tests/tier1/test_agent_loop.py)::`test_when_execute_submission_called_with_dev_hard_wall_sec_then_score_submission_sees_it`.
+
+## Runtime scope
+
+> **Runtime scope**: unit only — tier1 use-case / parser contract; scale-invariant pure functions over Port mocks.
+

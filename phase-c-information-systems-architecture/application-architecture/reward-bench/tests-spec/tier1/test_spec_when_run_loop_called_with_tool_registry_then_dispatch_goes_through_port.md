@@ -22,3 +22,8 @@ Cycle 99: passing tool_registry=R means R.dispatch() handles
 - **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
 
 Test code: [`tests/tier1/test_run_loop_di.py`](../../../../tests/tier1/test_run_loop_di.py)::`test_when_run_loop_called_with_tool_registry_then_dispatch_goes_through_port`.
+
+## Runtime scope
+
+> **Runtime scope**: unit only — tier1 use-case / parser contract; scale-invariant pure functions over Port mocks.
+

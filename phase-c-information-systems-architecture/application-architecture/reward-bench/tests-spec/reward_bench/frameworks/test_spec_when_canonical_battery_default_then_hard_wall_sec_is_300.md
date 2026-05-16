@@ -21,3 +21,8 @@ Cycle 104 / ADR 0015: default canonical hard_wall_sec is 300 s.
 - **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
 
 Test code: [`tests/reward_bench/frameworks/test_canonical_battery.py`](../../../../tests/reward_bench/frameworks/test_canonical_battery.py)::`test_when_canonical_battery_default_then_hard_wall_sec_is_300`.
+
+## Runtime scope
+
+> **Runtime scope**: unit only — framework orchestration; production-runtime coverage via canonical bench (run_canonical_battery) and @smoke multi-model battery.
+

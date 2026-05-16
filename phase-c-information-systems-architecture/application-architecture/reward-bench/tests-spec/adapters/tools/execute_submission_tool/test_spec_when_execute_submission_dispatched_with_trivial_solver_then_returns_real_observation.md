@@ -46,3 +46,8 @@ Test code:
 | unit       | `Tier1ToolRegistry` with autouse fake `_execute_submission` | UNIT_CONFIG (mocked) |
 | **live**   | `ExecuteSubmissionTool()` + real `_execute_submission` | dev_hard_wall_sec=60, trivial Solver, 5 dev seeds |
 | production | `ExecuteSubmissionTool()` + real `_execute_submission` | full agent_loop submissions; exercised by canonical bench |
+
+## Runtime scope
+
+> **Runtime scope**: live + production — exercises real Docker dev runner via ExecuteSubmissionTool + DockerCanonicalScorer (cycle 128) with trivial solver (5 dev seeds, ~10s). Production-runtime coverage via canonical bench + the cycle-128 busy-loop adversarial-input live test.
+

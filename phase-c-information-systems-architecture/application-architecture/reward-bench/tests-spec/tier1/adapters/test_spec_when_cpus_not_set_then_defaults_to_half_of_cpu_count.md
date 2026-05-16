@@ -21,3 +21,8 @@ ADR 0006 Layer 2: 50% of host cores.
 - **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
 
 Test code: [`tests/tier1/adapters/test_docker_canonical_scorer.py`](../../../../tests/tier1/adapters/test_docker_canonical_scorer.py)::`test_when_cpus_not_set_then_defaults_to_half_of_cpu_count`.
+
+## Runtime scope
+
+> **Runtime scope**: unit only — tier1 adapter contract; @live coverage at the production-scale boundary per the relevant cycle (123/124/125/128).
+

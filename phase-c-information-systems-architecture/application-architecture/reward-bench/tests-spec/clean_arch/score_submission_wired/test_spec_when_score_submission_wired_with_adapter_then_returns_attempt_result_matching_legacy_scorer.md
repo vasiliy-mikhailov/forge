@@ -21,3 +21,7 @@ Test code: [`tests/clean_arch/test_score_submission_wired.py`](../../tests/clean
 - **Mode**: **fake** (default) — autouse `FakeModelClient` / `FakeVllmServer`.
 - **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
 
+## Runtime scope
+
+> **Runtime scope**: unit only — Clean-architecture wire-up assertion; pure-Python adapter equality check.
+

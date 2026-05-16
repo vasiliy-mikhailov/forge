@@ -57,3 +57,8 @@ parameter for a specific sweep; defaults persist the ADR.
   of `_dev_hard_wall_sec`).
 
 Test code: [`tests/reward_bench/frameworks/test_canonical_battery.py`](../../../../tests/reward_bench/frameworks/test_canonical_battery.py).
+
+## Runtime scope
+
+> **Runtime scope**: unit only — canonical-battery driver; production-runtime IS this driver invoked end-to-end during operational sweeps.
+

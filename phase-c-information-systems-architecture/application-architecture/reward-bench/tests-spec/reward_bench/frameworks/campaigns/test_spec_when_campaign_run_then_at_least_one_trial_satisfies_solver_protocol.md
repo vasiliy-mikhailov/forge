@@ -29,3 +29,7 @@ Test code: [`tests/reward_bench/frameworks/campaigns/test_iters100_T07_n3.py`](.
 - **Mode**: **fake** (default) — autouse `FakeModelClient` / `FakeVllmServer`.
 - **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
 
+## Runtime scope
+
+> **Runtime scope**: unit only — @pytest.mark.campaign tests ARE the production runtime — same contract under production-scale config.
+

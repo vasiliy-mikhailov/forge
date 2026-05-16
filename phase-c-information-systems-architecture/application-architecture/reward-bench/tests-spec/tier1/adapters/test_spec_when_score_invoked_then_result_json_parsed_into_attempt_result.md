@@ -21,3 +21,8 @@ ADR 0006 Layer 2: container's result.json maps cleanly to AttemptResult.
 - **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
 
 Test code: [`tests/tier1/adapters/test_docker_canonical_scorer.py`](../../../../tests/tier1/adapters/test_docker_canonical_scorer.py)::`test_when_score_invoked_then_result_json_parsed_into_attempt_result`.
+
+## Runtime scope
+
+> **Runtime scope**: unit only — tier1 adapter contract; @live coverage at the production-scale boundary per the relevant cycle (123/124/125/128).
+

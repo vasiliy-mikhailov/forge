@@ -71,3 +71,8 @@ Test code:
 | unit       | `FakeCanonicalScorer` (autouse)        | UNIT_CONFIG (n/a; unit tests are in `test_docker_canonical_scorer.py`) |
 | **live**   | `DockerCanonicalScorer(env_path=tasks/2048/env.py)` | seeds=(1,2,3), hard_wall_sec=60 |
 | production | `DockerCanonicalScorer(env_path=tasks/2048/env.py)` | full battery (seeds=range(1000,1020), hard_wall_sec=300); exercised by `run_canonical_battery()` |
+
+## Runtime scope
+
+> **Runtime scope**: unit only — tier1 adapter contract; @live coverage at the production-scale boundary per the relevant cycle (123/124/125/128).
+

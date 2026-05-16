@@ -63,3 +63,8 @@ Same as above with `print('marker', file=sys.stderr)`. Assert
 Defensive: even on exception, stdout must be restored.
 
 Test code: [`tests/tier1/use_cases/test_score_submission.py`](../../../../tests/tier1/use_cases/test_score_submission.py).
+
+## Runtime scope
+
+> **Runtime scope**: unit only — use-case orchestration over Port mocks; scale-invariant by construction.
+

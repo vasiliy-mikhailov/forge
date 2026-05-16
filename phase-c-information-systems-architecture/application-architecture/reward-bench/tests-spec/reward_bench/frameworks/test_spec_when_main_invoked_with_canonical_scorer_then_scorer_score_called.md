@@ -21,3 +21,8 @@ Cycle 105 sub-C: injected canonical_scorer is what's used for scoring.
 - **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
 
 Test code: [`tests/reward_bench/frameworks/test_main_docker_scorer.py`](../../../../tests/reward_bench/frameworks/test_main_docker_scorer.py)::`test_when_main_invoked_with_canonical_scorer_then_scorer_score_called`.
+
+## Runtime scope
+
+> **Runtime scope**: unit only — framework orchestration; production-runtime coverage via canonical bench (run_canonical_battery) and @smoke multi-model battery.
+

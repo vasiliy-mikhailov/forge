@@ -23,3 +23,8 @@ Cycle 77: when canonical aggregate cap is disabled (=0, ADR 0003
 - **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
 
 Test code: [`tests/reward_bench/frameworks/test_main.py`](../../../../tests/reward_bench/frameworks/test_main.py)::`test_when_main_invoked_with_zero_hard_wall_sec_then_run_loop_dev_budget_is_none`.
+
+## Runtime scope
+
+> **Runtime scope**: unit only — framework orchestration; production-runtime coverage via canonical bench (run_canonical_battery) and @smoke multi-model battery.
+

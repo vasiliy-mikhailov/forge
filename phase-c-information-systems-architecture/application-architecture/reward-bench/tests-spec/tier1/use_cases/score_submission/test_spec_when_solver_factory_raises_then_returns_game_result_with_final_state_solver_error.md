@@ -43,3 +43,7 @@ Test code: [`tests/tier1/use_cases/test_score_submission.py`](../../../../tests/
 - **Mode**: **fake** (default) — autouse `FakeModelClient` / `FakeVllmServer`.
 - **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
 
+## Runtime scope
+
+> **Runtime scope**: unit only — use-case orchestration; the live coverage for the full scoring path is via @live test_docker_canonical_scorer_live (cycle 123) at the Docker boundary.
+

@@ -31,3 +31,7 @@ Test code: [`tests/tier1/adapters/test_game_board_2048.py`](../../../../tests/ti
 - **Mode**: **fake** (default) — autouse `FakeModelClient` / `FakeVllmServer`.
 - **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
 
+## Runtime scope
+
+> **Runtime scope**: unit only — GameBoard adapter pure-Python wrapper; scale-invariant.
+

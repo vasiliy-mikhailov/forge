@@ -17,3 +17,8 @@
 - **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
 
 Test code: [`tests/adapters/test_vllm_client_adapter.py`](../../../../tests/adapters/test_vllm_client_adapter.py)::`test_when_response_has_tool_calls_then_returned_in_reply`.
+
+## Runtime scope
+
+> **Runtime scope**: unit only — adapter contract; the live coverage for the boundary it crosses lives in the adapter-specific @live test.
+

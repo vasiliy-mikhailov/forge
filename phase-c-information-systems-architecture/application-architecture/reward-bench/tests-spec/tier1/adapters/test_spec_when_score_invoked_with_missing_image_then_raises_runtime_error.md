@@ -54,3 +54,8 @@ crashed during scoring), the scorer continues to emit
 "raise on infra" and "sentinel on runner-crash" so a future
 overcorrection doesn't make the scorer raise on legitimate solver
 failures.
+
+## Runtime scope
+
+> **Runtime scope**: unit only — tier1 adapter contract; @live coverage at the production-scale boundary per the relevant cycle (123/124/125/128).
+

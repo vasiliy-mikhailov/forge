@@ -21,3 +21,8 @@ Cycle 105 sub-A worker: valid Solver -> game played, dict returned.
 - **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
 
 Test code: [`tests/tier1/tasks/test_runner_canonical.py`](../../../../tests/tier1/tasks/test_runner_canonical.py)::`test_when_solver_valid_then_game_result_returned`.
+
+## Runtime scope
+
+> **Runtime scope**: unit only — runner_canonical worker contracts; live coverage via @live test_docker_canonical_scorer_live (cycle 123) which invokes runner_canonical inside Docker against a real solver.
+

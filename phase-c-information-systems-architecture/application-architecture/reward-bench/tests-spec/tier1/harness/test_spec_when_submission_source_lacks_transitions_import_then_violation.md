@@ -48,3 +48,7 @@ Test code: [`tests/tier1/test_harness.py`](../../../../tests/tier1/test_harness.
 - **Mode**: **fake** (default) — autouse `FakeModelClient` / `FakeVllmServer`.
 - **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
 
+## Runtime scope
+
+> **Runtime scope**: unit only — validator AST + grep + class-existence; pure-Python checks; scale-invariant.
+
