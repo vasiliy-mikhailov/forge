@@ -10,6 +10,10 @@
 #   0.2  add 5-min play-time cap — runner respects
 #        REWARD_BENCH_WALLTIME_BUDGET_SEC; default 300s. Stage-2 docker run
 #        is also wrapped in `timeout` host-side (budget + 60s grace).
+#   0.4  parallelise the N-seed canonical eval via multiprocessing.Pool
+#        (cycle 105 / ADR 0006 Layer 2). cpu_count() reads the cgroup
+#        quota imposed by docker run --cpus=N, so the container uses
+#        exactly the host-allotted slice without a max_workers knob.
 #   0.3  replace 5-min wall cap with per-game stagnation detector. Runner
 #        respects REWARD_BENCH_STAGNATION_SEC (default 60). A game ends with
 #        final_state="stagnated" when neither score nor max-tile changes for

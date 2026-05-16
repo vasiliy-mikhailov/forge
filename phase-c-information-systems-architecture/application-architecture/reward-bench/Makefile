@@ -14,7 +14,7 @@ include $(shell git rev-parse --show-toplevel)/common.mk
 #       REWARD_BENCH_STAGNATION_SEC=60 — if score+max-tile flat for 60s,
 #       the game ends as final_state="stagnated". Outer wall cap retained as
 #       optional REWARD_BENCH_HARD_WALL_SEC (default 0 = disabled).
-TIER1_IMAGE := reward-bench-tier1:0.3
+TIER1_IMAGE := reward-bench-tier1:0.4
 LAB_DIR     := $(shell pwd)
 # Resolve $STORAGE_ROOT from forge/.env so EXPERIMENTS lands on /mnt/steam.
 STORAGE_ROOT := $(shell grep -E '^STORAGE_ROOT=' $(FORGE_ROOT)/.env | cut -d= -f2)

@@ -1,5 +1,11 @@
 """tier-1 runner — runs INSIDE the Docker sandbox.
 
+Cycle 105 / ADR 0006 Layer 2: parallelises the N-seed eval using
+`multiprocessing.Pool(processes=multiprocessing.cpu_count())`. The
+container sees only the cgroup-allocated cores (Docker `--cpus=N`
+sets the quota), so cpu_count() naturally bounds the parallelism
+without any host-side `max_workers` parameter.
+
 Loads the submitted Solver from /workspace/submission.py, plays N games of
 2048 (deterministic seed sequence), writes structured result.json + events.jsonl.
 
@@ -8,31 +14,21 @@ Inputs (env vars):
     REWARD_BENCH_SEED_BASE        default 0
     REWARD_BENCH_TARGET           default 2048
     REWARD_BENCH_MAX_MOVES        default 10000
-    REWARD_BENCH_STAGNATION_SEC   default 60. Per-game stagnation detector:
-                                  if neither game.score nor game.max_tile has
-                                  increased for this many seconds of wall time,
-                                  the game ends with final_state="stagnated".
-                                  This replaces the previous hard 5-min wall
-                                  budget; it works for any tier because it's
-                                  wall-time-based regardless of decision
-                                  latency (a tier-1 FSM with millisecond
-                                  decisions or a tier-2 LangGraph with 2 s
-                                  decisions are both bounded by the same rule).
-    REWARD_BENCH_HARD_WALL_SEC    default 0 (disabled). Optional outer
-                                  runaway-protection cap across the whole 20-
-                                  game eval. Set to a positive number to keep
-                                  the previous "kill the run after N seconds"
-                                  behaviour as a safety net.
+    REWARD_BENCH_STAGNATION_SEC   default 60.
+    REWARD_BENCH_HARD_WALL_SEC    default 0 (disabled). Outer
+                                  runaway-protection cap across the whole
+                                  eval. Cycle 104 / ADR 0015 sets the
+                                  canonical default to 300.
 
 Output paths (matched to /reports mount inside the container):
     /reports/result.json
     /reports/events.jsonl
 """
-
 from __future__ import annotations
 
 import importlib.util
 import json
+import multiprocessing
 import os
 import sys
 import time
@@ -55,108 +51,113 @@ def _load_submission(submission_path: str):
     return mod.Solver
 
 
-def _play_one(solver_class, seed: int, target: int, max_moves: int,
-              events_fp, stagnation_sec: float = 60.0,
-              hard_deadline: float | None = None):
-    """Play one game.
+def _play_one_collect_events(args):
+    """Run one game in a worker process. Each worker re-imports the
+    submission for clean state.
 
-    Stagnation rule: if neither game.score nor game.max_tile has changed for
-    `stagnation_sec` seconds of wall time, the game ends with
-    final_state="stagnated" — the score accumulated so far is kept.
+    Returns (game_result_dict, list_of_event_dicts).
 
-    Optional `hard_deadline` (monotonic clock seconds) is an outer
-    runaway-protection cap across the whole eval; if it fires mid-game the
-    game ends with final_state="walltime_exceeded" (kept for backward
-    compatibility with REWARD_BENCH_HARD_WALL_SEC; default disabled).
+    The hard_deadline_wall arg is an absolute time.time() seconds. We
+    pass wall (not monotonic) because monotonic isn't portable across
+    processes.
     """
+    (submission_path, seed, target, max_moves,
+     stagnation_sec, hard_deadline_wall) = args
+
+    events: list[dict] = []
+    try:
+        solver_class = _load_submission(submission_path)
+    except Exception as e:
+        return ({
+            "seed": seed,
+            "score": 0,
+            "max_tile": 0,
+            "moves": 0,
+            "final_state": "solver_error",
+            "walltime_sec": 0.0,
+            "error": f"{type(e).__name__}: {e}",
+        }, events)
+
+    try:
+        solver = solver_class()
+    except Exception as e:
+        return ({
+            "seed": seed,
+            "score": 0,
+            "max_tile": 0,
+            "moves": 0,
+            "final_state": "solver_error",
+            "walltime_sec": 0.0,
+            "error": f"Solver.__init__: {type(e).__name__}: {e}",
+        }, events)
+
     game = GameBoard(seed=seed, target=target)
-    solver = solver_class()
     moves = 0
     final_state = "max_moves"
     last_progress_t = time.monotonic()
     last_progress_score = game.score
     last_progress_tile = game.max_tile
+    t_game_start = time.time()
+
     while not game.is_terminal() and moves < max_moves:
-        now = time.monotonic()
-        if hard_deadline is not None and now >= hard_deadline:
-            events_fp.write(json.dumps({
+        now_mono = time.monotonic()
+        now_wall = time.time()
+        if hard_deadline_wall is not None and now_wall >= hard_deadline_wall:
+            events.append({
                 "seed": seed, "move": moves, "event": "walltime_exceeded_midgame",
                 "score": game.score, "max_tile": game.max_tile,
-            }) + "\n")
+            })
             final_state = "walltime_exceeded"
             break
-        if (now - last_progress_t) >= stagnation_sec:
-            events_fp.write(json.dumps({
+        if (now_mono - last_progress_t) >= stagnation_sec:
+            events.append({
                 "seed": seed, "move": moves, "event": "stagnated",
                 "score": game.score, "max_tile": game.max_tile,
-                "secs_since_progress": now - last_progress_t,
-            }) + "\n")
+                "secs_since_progress": now_mono - last_progress_t,
+            })
             final_state = "stagnated"
             break
-        # Pass an immutable copy to the solver
         board = game.board
         try:
             action = solver.move(board)
         except Exception as e:
-            events_fp.write(json.dumps({
-                "seed": seed, "move": moves, "event": "solver_exception",
-                "exc": repr(e), "traceback": traceback.format_exc(),
-            }) + "\n")
+            events.append({
+                "seed": seed, "move": moves, "event": "solver_raised",
+                "error": f"{type(e).__name__}: {e}",
+            })
             final_state = "solver_error"
             break
-
-        if action not in ("W", "A", "S", "D"):
-            events_fp.write(json.dumps({
+        if not isinstance(action, str) or action not in ("W", "A", "S", "D"):
+            events.append({
                 "seed": seed, "move": moves, "event": "invalid_action",
                 "action": repr(action),
-            }) + "\n")
+            })
             final_state = "invalid_action"
             break
-
-        legal = game.legal_actions()
-        if action not in legal:
-            # Solver picked an action that wouldn't change the board.
-            # Fall back to first legal in canonical order; record event.
-            events_fp.write(json.dumps({
-                "seed": seed, "move": moves, "event": "illegal_action_fallback",
-                "tried": action, "legal": legal, "fallback": legal[0] if legal else None,
-            }) + "\n")
-            if not legal:
-                break
-            action = legal[0]
-
-        try:
-            game.do_action(action)
-        except Exception as e:
-            events_fp.write(json.dumps({
-                "seed": seed, "move": moves, "event": "env_exception",
-                "exc": repr(e),
-            }) + "\n")
-            break
-
+        game.step(action)
         moves += 1
-        # Track progress for stagnation detector — score or max-tile increase
-        # resets the stagnation clock.
         if game.score > last_progress_score or game.max_tile > last_progress_tile:
             last_progress_t = time.monotonic()
             last_progress_score = game.score
             last_progress_tile = game.max_tile
-        # Compact step trace — keep events.jsonl readable
         if moves % 10 == 0 or game.is_terminal():
-            events_fp.write(json.dumps({
+            events.append({
                 "seed": seed, "move": moves, "event": "checkpoint",
-                "score": game.score, "max_tile": game.max_tile, "state": game.state,
-            }) + "\n")
+                "score": game.score, "max_tile": game.max_tile,
+                "state": game.state,
+            })
 
-    if game.state in ("won", "lost") and final_state not in ("walltime_exceeded", "stagnated"):
+    if game.state in ("won", "lost") and final_state not in ("walltime_exceeded", "stagnated", "solver_error", "invalid_action"):
         final_state = game.state
-    return {
+
+    return ({
         "seed": seed,
         "score": game.score,
         "max_tile": game.max_tile,
         "moves": moves,
         "final_state": final_state,
-    }
+        "walltime_sec": time.time() - t_game_start,
+    }, events)
 
 
 def main():
@@ -173,54 +174,75 @@ def main():
     result_path = reports_dir / "result.json"
     events_path = reports_dir / "events.jsonl"
 
-    t0 = time.time()
-    mono0 = time.monotonic()
-    hard_deadline = mono0 + hard_wall_sec if hard_wall_sec > 0 else None
+    t0_wall = time.time()
+    hard_deadline_wall = t0_wall + hard_wall_sec if hard_wall_sec > 0 else None
+
+    # Sanity load to surface load errors early.
     try:
-        solver_class = _load_submission(submission_path)
+        _load_submission(submission_path)
     except Exception as e:
         result_path.write_text(json.dumps({
             "error": "submission_load_failed",
             "exc": repr(e),
             "traceback": traceback.format_exc(),
-            "walltime_sec": time.time() - t0,
+            "walltime_sec": time.time() - t0_wall,
             "stagnation_sec": stagnation_sec,
             "hard_wall_sec": hard_wall_sec,
         }, indent=2))
         return 1
 
-    games = []
+    # Cycle 105: parallel pool sized by cgroup-visible cores.
+    n_workers = max(1, multiprocessing.cpu_count())
+
+    # Build per-seed work items.
+    work = [
+        (submission_path, seed_base + i, target, max_moves,
+         stagnation_sec, hard_deadline_wall)
+        for i in range(n_games)
+    ]
+
+    games: list[dict] = []
+    events: list[dict] = []
     walltime_exceeded = False
     stagnated_any = False
-    with open(events_path, "w") as events_fp:
-        for i in range(n_games):
-            seed = seed_base + i
-            if hard_deadline is not None and time.monotonic() >= hard_deadline:
-                # Outer runaway cap kicked in. Mark remaining games as skipped.
-                events_fp.write(json.dumps({
-                    "seed": seed, "event": "walltime_exceeded_skip",
-                }) + "\n")
-                games.append({
-                    "seed": seed,
-                    "score": 0,
-                    "max_tile": 0,
-                    "moves": 0,
-                    "final_state": "walltime_exceeded",
-                    "walltime_sec": 0.0,
-                })
+
+    with multiprocessing.Pool(processes=n_workers) as pool:
+        # imap_unordered: results stream back as workers complete.
+        # We sort by seed at the end for deterministic order.
+        for game, ev in pool.imap_unordered(_play_one_collect_events, work):
+            games.append(game)
+            events.extend(ev)
+            if game["final_state"] == "walltime_exceeded":
                 walltime_exceeded = True
-                continue
-            t_game = time.time()
-            res = _play_one(solver_class, seed=seed, target=target,
-                            max_moves=max_moves, events_fp=events_fp,
-                            stagnation_sec=stagnation_sec,
-                            hard_deadline=hard_deadline)
-            res["walltime_sec"] = time.time() - t_game
-            games.append(res)
-            if res["final_state"] == "walltime_exceeded":
-                walltime_exceeded = True
-            if res["final_state"] == "stagnated":
+            if game["final_state"] == "stagnated":
                 stagnated_any = True
+            # Honour the host-side hard cap proactively: if we're past
+            # the deadline, kill pending workers (terminate the pool).
+            if hard_deadline_wall is not None and time.time() >= hard_deadline_wall:
+                pool.terminate()
+                walltime_exceeded = True
+                break
+
+    # Sort games by seed for deterministic artifact shape.
+    games.sort(key=lambda g: g["seed"])
+    events.sort(key=lambda e: (e.get("seed", 0), e.get("move", 0)))
+
+    # Backfill missing seeds with walltime_exceeded sentinels (pool.terminate
+    # may have killed some before they reported).
+    completed_seeds = {g["seed"] for g in games}
+    for i in range(n_games):
+        seed = seed_base + i
+        if seed not in completed_seeds:
+            games.append({
+                "seed": seed, "score": 0, "max_tile": 0, "moves": 0,
+                "final_state": "walltime_exceeded", "walltime_sec": 0.0,
+            })
+            walltime_exceeded = True
+    games.sort(key=lambda g: g["seed"])
+
+    with open(events_path, "w") as events_fp:
+        for ev in events:
+            events_fp.write(json.dumps(ev) + "\n")
 
     scores = [g["score"] for g in games]
     max_tiles = [g["max_tile"] for g in games]
@@ -234,11 +256,12 @@ def main():
         "min_score": min(scores) if scores else 0,
         "max_score": max(scores) if scores else 0,
         "max_max_tile": max(max_tiles) if max_tiles else 0,
-        "aggregate_walltime_sec": time.time() - t0,
+        "aggregate_walltime_sec": time.time() - t0_wall,
         "stagnation_sec": stagnation_sec,
         "hard_wall_sec": hard_wall_sec,
         "walltime_exceeded": walltime_exceeded,
         "stagnated_any": stagnated_any,
+        "n_workers": n_workers,    # cycle 105: visibility into parallelism
     }
     result_path.write_text(json.dumps(summary, indent=2))
     return 0
