@@ -52,7 +52,7 @@ Our re-implementation (cycles 1-22):
 
 Two-layer fix:
 
-### 1. Application-layer aggregate cap (cycle 23, this session)
+### 1. Application-layer aggregate cap
 
 `score_submission` accepts a `hard_wall_sec` parameter. When > 0,
 between games the use case checks `time.monotonic() - start >
@@ -67,7 +67,7 @@ the cap kicks in. For the cycle-22 observed hang, a 60 s cap would
 have terminated the campaign after the first game (~60 s) instead
 of running for 34+ minutes.
 
-### 2. Docker tier-1 sandbox (implemented cycle 105)
+### 2. Docker tier-1 sandbox
 
 Replace `GameBoard2048Adapter` with a `DockerCanonicalScorer`
 adapter (cycle 105):
@@ -209,7 +209,7 @@ heavy lookahead.
 
 ## Implementation pointers
 
-### Layer 1 (now, cycle 23):
+### Layer 1
 
 - `src/tier1/use_cases/score_submission.py` — accept
   `hard_wall_sec: float = 0.0` parameter; between-game check.
@@ -220,7 +220,7 @@ heavy lookahead.
   `BenchConfig` first or a separate parameter; minimal-change
   pass-through via an explicit kwarg works for the campaign tests).
 
-### Layer 2 (queued; not yet implemented as of cycle 87):
+### Layer 2
 
 - `src/tier1/adapters/sandboxed_score.py` — Docker-invoking
   `GameEnvPort` impl.

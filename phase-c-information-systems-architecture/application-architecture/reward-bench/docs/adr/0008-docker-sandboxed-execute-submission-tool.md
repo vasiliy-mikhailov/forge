@@ -140,10 +140,6 @@ final scoring is the held-out variant on different seeds.
 - [ADR 0006](0006-sandboxed-scoring-docker-tier1-and-walltime-budget.md)
   — docker tier-1 + walltime budget. `execute_submission` is the
   dev-time application of ADR 0006's runner layer.
-- [ADR 0007](0007-per-model-bench-uses-blessed-runner-until-agent-loop-bisect.md)
-  — blessed runner. Once `execute_submission` lands, the
-  active loop should reach parity with legacy and ADR 0007 can be
-  superseded.
 - Task #7 in the open task list: "Wire SPEC.md Docker-sandbox:
   runner_canonical.py inside reward-bench-tier1 container" — this
   ADR is the design preamble.

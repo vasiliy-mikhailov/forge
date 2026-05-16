@@ -724,6 +724,50 @@ re-platformed (Python -> Go, monolith -> service, in-process port
 -> HTTP). Code references and runnable examples may still be
 language-specific — they are illustrations, not the contract.
 
+## Git is the history; specs describe the current decision
+
+ADRs, src_specs and test_specs describe **the current decision** and
+**the current contract**, not the history of how either evolved. The
+repository's git history is the durable record of every transition.
+Don't duplicate it inside the spec files.
+
+Concrete rules:
+
+- **Don't write "Superseded by X" notes.** When an ADR is fully
+  superseded, **delete the file**. Future readers find it via
+  `git log -- docs/adr/<name>.md`.
+- **Don't keep version-history blocks** ("Accepted v1 (cycle 72)…
+  Superseded by v2 (cycle 76)… Superseded by v3 (cycle 79 + 80)").
+  Rewrite the spec to describe only v3. `git blame` and
+  `git log -p` show the v1 / v2 prose and when they changed.
+- **Don't append amendment sections.** When a finding changes the
+  decision, **rewrite the affected paragraphs in place**. Footnotes
+  like "Cycle 95 amendment: actually we also need X" become noise as
+  the file ages. Edit the body so it reads as the truth as of HEAD.
+- **Cycle-number stamps inside spec prose are usually noise.** "(cycle
+  77)" markers proliferate and rot. Keep them only when they orient a
+  reader who needs to grep `git log --grep='cycle 77'` for the
+  rationale. When in doubt, delete.
+- **Cross-references stay.** Linking from one *current* document to
+  another (`see [ADR 0003](...)`) is fine — that's the docs graph.
+  Linking to a deleted ADR is broken; delete the link or rewrite the
+  reference to whatever supersedes it.
+
+The reason: spec files that accumulate "Superseded by", "Amendment N",
+"Originally we did X, now we do Y" turn into archaeology. New readers
+have to mentally diff to find the actual current state. Git already
+solves that problem; we lose nothing by trusting it.
+
+When this matters:
+- Cleaning up after a refactor cycle: delete the superseded ADR
+  rather than marking it "Status: Superseded".
+- Resolving a deferred finding: edit the body to describe the
+  resolved state rather than appending "Resolved by cycle N".
+- Bumping a Dockerfile or runner version: the version header comment
+  block (e.g. "v0.1 -> v0.2 -> v0.3 -> v0.4 with reasons") is one
+  legitimate exception, since pinning the image-tag → semantics
+  mapping is part of the contract, not history.
+
 ## File naming convention
 
 Per-behavior spec files are named after the test they justify:

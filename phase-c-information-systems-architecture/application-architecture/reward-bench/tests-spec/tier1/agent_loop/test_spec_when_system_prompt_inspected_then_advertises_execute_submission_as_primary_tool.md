@@ -7,7 +7,7 @@ Pins [`SYSTEM_PROMPT`](../../../../src/tier1/agent_loop.py) shape per
 - MUST advertise `view` and `finish` (still active per SPEC.md).
 - MUST instruct the model to read `/tasks/2048/SKILL_tier1.md`.
 - MUST NOT mention `write_file` or `bash` (removed in cycle 92 per
-  ADR 0008; ADR 0007 superseded).
+  ADR 0008).
 - Reasonable length (1000..6000 chars; not empty, not war-and-peace).
 
 Not a literal-equality pin — the prompt evolves. Shape contract.
