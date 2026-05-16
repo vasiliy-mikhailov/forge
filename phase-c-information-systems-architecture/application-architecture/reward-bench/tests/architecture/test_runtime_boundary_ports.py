@@ -28,6 +28,8 @@ MANIFEST = [
      "src.adapters.multiprocessing_cpu_count", "FixedCpuCount"),
     ("src.ports.canonical_scorer", "CanonicalScorerPort",
      "src.adapters.fakes.fake_canonical_scorer", "FakeCanonicalScorer"),
+    ("src.ports.tool", "Tool",
+     None, None),   # no shared Fake; per-tool adapters tested directly
 ]
 
 

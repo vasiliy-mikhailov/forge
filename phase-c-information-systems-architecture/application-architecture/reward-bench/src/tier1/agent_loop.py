@@ -104,7 +104,6 @@ def _parse_dev_runner_summary(obs_text):
 
 
 
-from src.adapters.tier1_tool_registry import _virt_to_host  # noqa: F401
 
 
 

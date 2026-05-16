@@ -1,27 +1,33 @@
 # `src_spec_tier1_tool_registry_advertises_view_execute_submission_finish`
 
-[`Tier1ToolRegistry`](../../../src/adapters/tier1_tool_registry.py) is the
+[`Tier1ToolRegistry`](../../../src/adapters/tier1_tool_registry.py) — the
 production [`ToolRegistry`](../../../src/ports/tool_registry.py) binding
-for tier 1. Owns the production tier-1 tool surface.
+for tier 1. After the cycle-114 rule-of-three lift, the registry is a
+composition of three [`Tool`](../../../src/ports/tool.py) adapters;
+per-tool dispatch logic lives in the adapter files, not here.
 
-## Contract
+## Composition
 
-`schemas` returns 3 OpenAI tool-call definitions:
+The registry holds a `dict[str, Tool]` over three tier-1 adapters:
 
-| name | params | semantics |
-|---|---|---|
-| `view` | `path` | read a file from /workspace, /env, or /tasks into the next prompt |
-| `execute_submission` | `content` | dev-time sandbox: write the body, run on dev seeds, return JSON observation |
-| `finish` | `note` | end the loop; last successful execute_submission body is promoted |
+| `name`               | adapter                                                                                                          |
+|----------------------|------------------------------------------------------------------------------------------------------------------|
+| `view`               | [`ViewTool`](../../../src/adapters/tools/view_tool.py)                                                            |
+| `execute_submission` | [`ExecuteSubmissionTool`](../../../src/adapters/tools/execute_submission_tool.py)                                 |
+| `finish`             | [`FinishTool`](../../../src/adapters/tools/finish_tool.py)                                                        |
+
+`schemas` returns `tuple(t.schema for t in self._tools.values())` —
+three OpenAI tool-call definitions, one per adapter.
 
 `dispatch(name, args, ctx)`:
-- `view`: resolves `args['path']` via `_virt_to_host` (defends ../ escapes
-  via post-resolve check); returns `<view path="...">...</view>` or
-  `<error>view: ...</error>` on missing file / illegal path.
-- `finish`: returns `<finish>{note}</finish>`.
-- `execute_submission`: lazy-imports `_execute_submission` and delegates
-  (`dev_hard_wall_sec` threaded through ctx per [ADR 0006](../../../docs/adr/0006-sandboxed-scoring-docker-tier1-and-walltime-budget.md)).
-- Unknown name: returns `<error>unknown tool: {name}</error>`.
+- Looks up `self._tools[name]`; delegates to `tool.dispatch(args, ctx)`.
+- Unknown `name`: returns `<error>unknown tool: {name}</error>` (per
+  the Tool Port "MUST NOT raise on unknown name" contract).
+
+The registry constructor optionally takes a `tuple[Tool, ...]` for
+DI; default composition is `(ViewTool(), ExecuteSubmissionTool(),
+FinishTool())`.
 
 Tier 2..4 registries will provide different tool surfaces (langgraph,
-openhands, orchestrator) per SPEC.md §Submission Protocols.
+openhands, orchestrator) per SPEC.md §Submission Protocols, composing
+their own Tool adapters under `src/<tier_n>/adapters/tools/`.
