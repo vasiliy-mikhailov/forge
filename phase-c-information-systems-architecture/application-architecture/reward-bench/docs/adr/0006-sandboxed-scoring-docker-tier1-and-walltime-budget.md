@@ -209,27 +209,64 @@ heavy lookahead.
 
 ## Implementation pointers
 
-### Layer 1
+### Layer 1 — in-process scoring (narrowed scope)
 
-- `src/tier1/use_cases/score_submission.py` — accept
-  `hard_wall_sec: float = 0.0` parameter; between-game check.
-- `tests/tier1/use_cases/test_score_submission.py` — stub
-  `GameEnvPort` that sleeps; assert sentinel-fill on cap.
-- `src/reward_bench/frameworks/main.py` — pass
-  `config.hard_wall_sec` through (requires adding the field to
-  `BenchConfig` first or a separate parameter; minimal-change
-  pass-through via an explicit kwarg works for the campaign tests).
+`src/tier1/use_cases/score_submission.py` is the in-process,
+daemon-thread-bounded scorer. Honours `hard_wall_sec: float = 0.0`
+via a between-game check; per-game daemon thread polls a deadline.
 
-### Layer 2
+**Limitation discovered in cycle 128**: daemon-thread soft timeout
+cannot interrupt C-level Python work (busy loops, deepcopy chains,
+NumPy operations). When the model emits a CPU-heavy submission, the
+daemon worker eats a core indefinitely, the GIL starves the main
+thread, and the bench wedges. This pattern bit production at
+cycle 105 sub-A landing (4h zero-score) and again on the cycle-123
+restart (10+ min hang at iter 25/500).
 
-- `src/tier1/adapters/sandboxed_score.py` — Docker-invoking
-  `GameEnvPort` impl.
-- `src/tier1/frameworks/docker_driver.py` — the docker run
-  wrapper (volume mounts, env-var passing, JSON read-back).
-- `BenchConfig.stagnation_sec` and `BenchConfig.hard_wall_sec`
-  fields (ADR 0003 amendment).
-- ADR-0006 follow-up describing the sandbox-result entity
-  marshalling.
+Layer 1 is **still useful** for hermetic testing of the scoring
+algorithm itself (no Docker dependency) but is **no longer the
+production path** for either canonical scoring or dev runner. It
+lives behind the `InProcessCanonicalScorer` adapter
+(`src/adapters/in_process_canonical_scorer.py`) which implements
+`CanonicalScorerPort` (ADR 0018 / cycle 109) so tests that want
+in-process scoring can wire it explicitly.
+
+### Layer 2 — Docker scoring (production for ALL runners)
+
+`src/tier1/adapters/docker_canonical_scorer.py` is the
+`DockerCanonicalScorer` (ADR 0018 / cycle 109). Spawns
+`reward-bench-tier1:${VERSION}` per attempt with `--cpus=N`
+(`port.cpu_count() / 2` by default), `--memory=2g`,
+`--pids-limit=256`, `--network=none`. Hard kill via cgroup is
+enforced by the kernel; nothing in user code can resist.
+
+Per cycle 128, **the dev runner ALSO uses Layer 2**. Pre-cycle-128
+`_execute_submission` (the model-facing tool that runs submissions
+on 5 dev seeds for fast feedback) called `score_submission` directly
+(Layer 1, in-process). Cycle 128 swapped it to call
+`DockerCanonicalScorer.score()` with `dev_seeds=(1,2,3,4,5)` and
+`hard_wall_sec=dev_hard_wall_sec`. Same Docker adapter, smaller
+config. The dev runner thus inherits Layer 2's hard kill AND its
+multi-core parallelism (5 dev seeds across `cpus=12` finish ~10x
+faster than the in-process sequential path).
+
+The CanonicalScorerPort (ADR 0018) abstracts both layers so
+callers can swap adapters at the DI seam. Production wiring uses
+DockerCanonicalScorer; tests use either InProcessCanonicalScorer
+(hermetic) or FakeCanonicalScorer (in-memory scripted).
+
+### Open follow-ups
+
+- **Cycle 129/131**: `validate_submission_protocol` still calls
+  `instance.move(test_board)` in the bench main thread — same
+  wedge pattern as cycle 128 at a different layer. Cycle 131 will
+  wrap the runtime check in a `multiprocessing.Process` with hard
+  timeout.
+
+- **Composition over additional Layers**: future tier-2/3/4 work
+  may add new runtime-boundary Ports (LangGraph runner, orchestrator
+  runner); each will follow the ADR 0018 Port pattern with a
+  Docker-based Real adapter and a Fake.
 
 ## Cross-references
 
