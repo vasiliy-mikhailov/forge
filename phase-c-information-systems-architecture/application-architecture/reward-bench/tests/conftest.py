@@ -173,6 +173,19 @@ def _bind_model_client(request, monkeypatch, model_client):
                         lambda target: 'http://fake:8000')
     monkeypatch.setenv('VLLM_API_KEY', 'fake-key')
 
+    # Cycle 109 / ADR 0018: bind FakeCanonicalScorer as the default
+    # canonical scorer so tests reaching main() don't spawn Docker.
+    from src.adapters.fakes.fake_canonical_scorer import FakeCanonicalScorer
+    from src.reward_bench.frameworks import main as _main_mod
+    _fake_scorer = FakeCanonicalScorer()
+    monkeypatch.setattr(_main_mod, '_default_canonical_scorer',
+                        lambda: _fake_scorer)
+    # main.py did `from src.tier1.inference import ensure_serving_model`
+    # so the name on `inf` (patched above) isn't what main() calls.
+    # Patch the local symbol too.
+    monkeypatch.setattr(_main_mod, 'ensure_serving_model',
+                        lambda target: 'http://fake:8000')
+
     yield
 
 

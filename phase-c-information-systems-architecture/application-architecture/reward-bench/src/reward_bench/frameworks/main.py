@@ -146,6 +146,16 @@ def _build_supervisor(target: ModelTarget, base_url: str, api_key: str) -> LlmSu
     return LlmSupervisor(ask=ask, model_id=target.id)
 
 
+
+def _default_canonical_scorer():
+    """Cycle 109 / ADR 0018: module-level factory for the default
+    canonical scorer. Production returns DockerCanonicalScorer; tests
+    monkeypatch this to return FakeCanonicalScorer (conftest autouse
+    binding)."""
+    from src.tier1.adapters.docker_canonical_scorer import DockerCanonicalScorer
+    return DockerCanonicalScorer(env_path=ENV_DIR / 'env.py')
+
+
 def main(
     model_id: str = 'qwen3.6-27b-awq',
     seeds: Iterable[int] = range(1000, 1020),
@@ -258,8 +268,9 @@ def main(
     # DockerCanonicalScorer lazily (50% of host cores). Tests inject a
     # recorder via canonical_scorer parameter.
     if canonical_scorer is None:
-        from src.tier1.adapters.docker_canonical_scorer import DockerCanonicalScorer
-        canonical_scorer = DockerCanonicalScorer(env_path=ENV_DIR / 'env.py')
+        # Cycle 109 / ADR 0018: factory hook lets conftest autouse
+        # inject FakeCanonicalScorer; production binds Docker.
+        canonical_scorer = _default_canonical_scorer()
     reports_dir = workspace / 'reports'
     reports_dir.mkdir(parents=True, exist_ok=True)
     result = canonical_scorer.score(

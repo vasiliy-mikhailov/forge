@@ -23,6 +23,7 @@ from pathlib import Path
 
 from src.adapters.multiprocessing_cpu_count import MultiprocessingCpuCount
 from src.ports.cpu_count import CpuCountPort
+from src.ports.canonical_scorer import CanonicalScorerPort
 from src.tier1.entities.attempt_result import AttemptResult
 from src.tier1.entities.game_result import GameResult
 
@@ -30,7 +31,7 @@ from src.tier1.entities.game_result import GameResult
 _DEFAULT_IMAGE = "reward-bench-tier1:0.4"
 
 
-class DockerCanonicalScorer:
+class DockerCanonicalScorer(CanonicalScorerPort):
     """Per-attempt Docker-sandboxed canonical scorer."""
 
     def __init__(
