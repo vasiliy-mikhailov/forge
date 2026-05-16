@@ -763,6 +763,21 @@ Concrete rule:
   5 minutes" is a real-stack-only contract — no fake equivalent. It
   gets its own spec because it tests something the fake cannot.
 
+- **Parametrisation over a registry follows the same rule.** A test
+  like `@pytest.mark.parametrize("target", MODEL_REGISTRY, ...)`
+  that asserts a property for every value in a registry is ONE
+  contract — the property — and gets ONE test_spec. Don't fork the
+  spec file per parameter value; the values live in the registry,
+  not in spec filenames. The spec body uses `<target.id>` /
+  `<target.served_name>` / `<config>` placeholders where it needs
+  concrete substitution.
+
+  Exception (mirrors the binding-exception): a parameter value with
+  genuinely different observed behaviour (a model whose tokenizer
+  leaks SentencePiece tokens; a solver class with its own
+  walltime envelope) earns its own spec — same logic as the
+  live-only contract exception.
+
 The reason: a contract that holds under the Fake but breaks under the
 Live binding is a bench bug — not a "different test". Treating them
 as the same test_spec with two bindings keeps the contract honest:

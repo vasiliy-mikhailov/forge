@@ -3,12 +3,15 @@
 Inherits SPEC.md.
 
 ## Identity
-served_name:  qwen3.6-27b-awq
-hf_path:      cyankiwi/Qwen3.6-27B-AWQ-INT4
-family:       qwen3.5 (mamba-transformer hybrid)
-quant:        awq-int4
-vram_budget:  ~ 18 GB on 5090 (AWQ, mamba-hybrid)
-tool_parser:  qwen3_coder
+
+Canonical fields (`id`, `hf_path`, `served_name`, `tool_call_parser`,
+`max_model_len`) live in
+[`MODEL_REGISTRY`](../../src/reward_bench/use_cases/model_registry.py).
+This data sheet captures only the operational / family-quirk facts
+the registry can't carry:
+
+- family:      qwen3.5 (mamba-transformer hybrid)
+- vram_budget: ~ 18 GB on 5090 (AWQ, mamba-hybrid)
 
 ## Hardware
 primary:  rtx-5090 (playground container omega-reptile-vllm-playground)
