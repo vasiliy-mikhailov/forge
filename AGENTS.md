@@ -724,6 +724,51 @@ re-platformed (Python -> Go, monolith -> service, in-process port
 -> HTTP). Code references and runnable examples may still be
 language-specific — they are illustrations, not the contract.
 
+## One test_spec per contract — across all binding modes
+
+Per [ADR 0014](#) test_specs name their dependency-injection seam.
+Per [ADR 0018](#) every runtime-boundary dependency has a Port +
+production adapter + Fake + autouse binding. The natural consequence
+is **one test_spec per contract** — not one test_spec per binding.
+
+Concrete rule:
+
+- A test that proves "main() returns AttemptResult shaped correctly"
+  is ONE contract. It runs as a **unit test** against a Fake binding
+  (autouse), as a **hermetic seam test** against the real production
+  code under `@pytest.mark.no_fake` with a stubbed lower seam, and as
+  an **e2e test** against the live production stack under
+  `@pytest.mark.live`. Same contract, three bindings — **one
+  test_spec**.
+
+- The test_spec's "Model client injection point" subsection (or its
+  more general "Sandbox injection point" equivalent) names how the
+  test can be re-run under each mode.
+
+- The test function MAY be parametrised over the binding:
+
+      @pytest.mark.parametrize("binding", ["fake", "no_fake", "live"])
+      def test_when_X_then_Y(binding, ...):
+          ...
+
+  or three separate functions sharing one spec file. The spec file is
+  the contract record; the function count is an implementation detail.
+
+- **DO NOT** write a "unit test variant" and a "live test variant" of
+  the same contract under separate test_spec files. That is the
+  duplication this rule rejects.
+
+- **DO** keep separate test_specs when the contract genuinely differs
+  per binding. Example: a live spec asserting "vLLM responds within
+  5 minutes" is a real-stack-only contract — no fake equivalent. It
+  gets its own spec because it tests something the fake cannot.
+
+The reason: a contract that holds under the Fake but breaks under the
+Live binding is a bench bug — not a "different test". Treating them
+as the same test_spec with two bindings keeps the contract honest:
+the unit run guards the bench code, the live run guards the integration.
+A regression in either is the SAME spec breaking.
+
 ## Git is the history; specs describe the current decision
 
 ADRs, src_specs and test_specs describe **the current decision** and
