@@ -130,8 +130,10 @@ cycle once the supervisor's failure modes are observed.
 - **Entity**: `src/reward_bench/entities/supervisor_decision.py`
   — `SupervisorDecision(plateau: bool, reasoning: str,
   stop_recommended: bool)`. Frozen dataclass.
-- **Port**: `src/reward_bench/use_cases/supervisor_port.py` —
-  `Protocol` with `assess(sweep_data) -> SupervisorDecision`.
+- **Port**: `src/ports/supervisor.py` (relocated cycle 115) —
+  `Protocol` with `judge(sweep) -> SupervisorDecision`. The
+  trivial `NullSupervisor` lives at
+  `src/reward_bench/adapters/null_supervisor.py`.
 - **Adapter**: `src/reward_bench/adapters/llm_supervisor.py` —
   posts to vLLM (per ADR 0001), parses the JSON response.
   Constructor takes the same `summarise`-style injected callable

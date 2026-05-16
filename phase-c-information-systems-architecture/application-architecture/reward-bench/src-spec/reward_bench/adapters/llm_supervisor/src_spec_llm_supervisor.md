@@ -38,4 +38,4 @@ to "keep going", never to "stop accidentally".
 
 Allowed imports: `json`, `re`, `typing.Callable`, `typing.Tuple`,
 `src.reward_bench.entities.supervisor_decision`,
-`src.reward_bench.use_cases.supervisor_port` (for the `Sample` alias).
+`src.ports.supervisor` (for the `Sample` alias).

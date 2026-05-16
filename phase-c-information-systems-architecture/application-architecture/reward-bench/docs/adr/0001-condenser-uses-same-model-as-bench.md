@@ -115,9 +115,10 @@ information the model is using.
 
 - `src/reward_bench/entities/condenser_config.py` — already exists
   (cycle 13). `model_id` field carries the chosen condenser model id.
-- `src/reward_bench/use_cases/condenser_port.py` — already exists
-  (cycle 14). `NullCondenser` is the default for cases below the
-  trigger.
+- `src/ports/condenser.py` (relocated cycle 116) — the
+  `CondenserPort` Protocol. The trivial `NullCondenser` lives at
+  `src/reward_bench/adapters/null_condenser.py` and is the default
+  for cases below the trigger.
 - `src/reward_bench/adapters/llm_condenser.py` — cycle 16. Will
   call the bench-model vLLM endpoint to summarise older turns.
 - `src/reward_bench/frameworks/main.py` — cycle 17. Wires the
