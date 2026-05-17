@@ -25,7 +25,7 @@ from src.tier1.inference import ensure_serving_model
 from src.tier1.use_cases.score_submission import score_submission
 
 
-REPO = Path(__file__).resolve().parents[4]
+REPO = Path(__file__).resolve().parents[3]
 ENV_DIR = REPO / 'tasks' / '2048'
 TASKS_DIR = REPO / 'tasks'
 

@@ -12,7 +12,7 @@ solver correctness) is pinned in
 [`test_spec_when_main_invoked_with_qwen3_6_27b_awq_then_solver_class_scored_20_games`](test_spec_when_main_invoked_with_qwen3_6_27b_awq_then_solver_class_scored_20_games.md).
 - **Arrange**: import `AttemptResult`, `BenchConfig`, and `main`.
  Build `_FAST = BenchConfig(max_iters=30, n_trials=1,
- temperature=0.0)` — test-friendly knobs that bound wall time;
+ temperature=0.7)` — test-friendly knobs that bound wall time;
  [SOLUTION-ARCHITECTURE](../../../../SOLUTION-ARCHITECTURE.md)
  defaults (500 iters / T=0.7) would take minutes. vLLM container
  `reward-bench-vllm` serving `qwen3.6-27b-awq` (`ensure_serving`
