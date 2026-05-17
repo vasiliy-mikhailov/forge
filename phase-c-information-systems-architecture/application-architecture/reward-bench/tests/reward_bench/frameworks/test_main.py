@@ -55,7 +55,14 @@ def test_when_main_invoked_with_qwen3_6_27b_awq_then_solver_class_scored_20_game
         f'Solver crashes detected — model produced wrong-shape submission. '
         f'crashed game final_states: {[(g.seed, g.final_state) for g in bad]}'
     )
-    assert result.mean_score >= 0.0
+    # Quality floor: trivial-W fallback scores ~4-20 across 20 seeds;
+    # any real Solver clears 1000+. 32 catches the W-fallback pattern
+    # without flagging legitimate-but-weak solvers.
+    assert result.mean_score >= 32, (
+        f'mean_score={result.mean_score:.1f} below trivial-W floor (32). '
+        f'Likely a trivial-fallback (return W / return S). '
+        f'per-seed scores: {[(g.seed, g.score) for g in result.games]}'
+    )
 
 
 @pytest.mark.live
