@@ -19,7 +19,5 @@ class AttemptResult:
     stagnated_any: bool = False
     walltime_exceeded: bool = False
     solver_protocol_valid: bool = True
+    # best dev_mean observed during the agent loop; used as smoke success criterion.
     best_dev_mean: float | None = None
-                                         # best dev_mean observed during the
-                                         # agent loop (from execute_submission).
-                                         # Used as the smoke success criterion.
