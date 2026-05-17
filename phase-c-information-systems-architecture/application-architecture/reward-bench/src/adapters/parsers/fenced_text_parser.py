@@ -1,6 +1,6 @@
-"""Cycle 98 / ADR 0011: FencedTextParser adapter.
+"""FencedTextParser adapter.
 
-Reads cycle-9/58 fenced ```tool blocks out of AssistantReply.content:
+Reads fenced ```tool blocks out of AssistantReply.content:
 
     ```tool
     {"name": "execute_submission", "args": {}}
@@ -8,10 +8,8 @@ Reads cycle-9/58 fenced ```tool blocks out of AssistantReply.content:
     ...raw python...
     ```
 
-Lifted verbatim from the pre-cycle-98 `parse_tool_calls` body in
-src/tier1/agent_loop.py (cycles 9, 51, 58). Defensive: bad JSON in one
-block does not abort the iter — the block is skipped (cycle 51
-hypothesis #9).
+Defensive: bad JSON in one block does not abort the iter — the
+block is skipped.
 """
 from __future__ import annotations
 
@@ -39,8 +37,7 @@ class FencedTextParser(ProtocolParser):
             try:
                 obj = json.loads(json_part)
             except json.JSONDecodeError:
-                # Cycle 51 fallback: strip trailing commas/whitespace
-                # and retry once.
+                # Fallback: strip trailing commas/whitespace and retry once.
                 try:
                     obj = json.loads(json_part.rstrip(', \t\n'))
                 except json.JSONDecodeError:

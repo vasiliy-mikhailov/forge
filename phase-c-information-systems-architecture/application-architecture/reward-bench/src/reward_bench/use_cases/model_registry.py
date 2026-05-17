@@ -1,10 +1,7 @@
 """MODEL_REGISTRY: tuple of every ModelTarget the bench evaluates.
 
-Single source of truth in Python — mirrors the YAML registry at
-phase-c-information-systems-architecture/application-architecture/wiki-compiler/configs/models.yml.
-Models marked `bench_skip: true` in the YAML are excluded here.
-
-See src-spec/reward_bench/use_cases/model_registry/."""
+Mirrors the YAML registry at wiki-compiler/configs/models.yml;
+models marked `bench_skip: true` are excluded."""
 from src.reward_bench.entities.model_target import ModelTarget
 
 
@@ -26,10 +23,10 @@ MODEL_REGISTRY = (
                 served_name='qwen3.5-27b-nvfp4', max_model_len=131072,
                 tool_call_parser='qwen3_xml'),
     ModelTarget(id='qwen3-32b-fp8', hf_path='Qwen/Qwen3-32B-FP8',
-                served_name='qwen3-32b-fp8', max_model_len=40960,  # cycle 74: actual model max
+                served_name='qwen3-32b-fp8', max_model_len=40960,
                 tool_call_parser='qwen3_xml'),
     ModelTarget(id='qwen3-32b-nvfp4', hf_path='nvidia/Qwen3-32B-NVFP4',
-                served_name='qwen3-32b-nvfp4', max_model_len=40960,  # cycle 81: same as fp8 sibling
+                served_name='qwen3-32b-nvfp4', max_model_len=40960,
                 tool_call_parser='qwen3_xml'),
     ModelTarget(id='devstral-small-2-24b',
                 hf_path='Firworks/Devstral-Small-2-24B-Instruct-2512-nvfp4',

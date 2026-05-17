@@ -1,23 +1,12 @@
 """Tier 1 score-submission use case.
 
-See src-spec/tier1/use_cases/score_submission/src_spec_score_submission.md.
-
 Application-policy orchestrator: plays N games per the seeds list via
 an injected GameEnvPort, aggregates per-game scores, returns an
 AttemptResult entity. Pure application-business-rule layer: no IO,
 no HTTP, no Docker.
 
-Cycle 23 (no-silent-fix): adds aggregate hard_wall_sec cap to address
-the cycle-22 hang. Between games, if total elapsed exceeds
-hard_wall_sec (when > 0), remaining seeds get sentinel GameResult
-records with final_state='walltime_exceeded'. Per ADR 0006 layer 1.
-
-Cycle 27 (no-silent-fix): adds per-game preemption — each
-play_one_game call runs in a daemon thread with a join timeout
-derived from the remaining budget. A single hanging game no longer
-blocks the cap. Python daemon threads cannot be force-killed; the
-thread stays alive but the orchestrator process proceeds. The Docker
-tier-1 sandbox (ADR 0006 layer 2) remains the canonical fix."""
+Applies an aggregate hard_wall_sec cap between games; per-game
+preemption via daemon-thread join timeout."""
 import statistics
 import threading
 import time
@@ -47,13 +36,8 @@ def _walltime_exceeded_sentinel(seed: int) -> GameResult:
 
 
 def _solver_error_sentinel(seed: int) -> GameResult:
-    """Cycle 29: per-seed sentinel when solver_factory() raises.
-
-    Reproduces campaign10 shape: Solver.__init__ AttributeError. The
-    factory crash is uniform across seeds, but emitting one sentinel
-    per seed preserves the n_games == len(seeds) artifact contract.
-    See tests-spec/tier1/use_cases/score_submission/
-    test_spec_when_solver_factory_raises_..."""
+    """Per-seed sentinel when solver_factory() raises (one per seed
+    so n_games == len(seeds) is preserved)."""
     return GameResult(
         seed=seed, score=0, max_tile=2, moves=0,
         final_state='solver_error', walltime_sec=0.0,
@@ -61,11 +45,8 @@ def _solver_error_sentinel(seed: int) -> GameResult:
 
 
 def _build_solver_or_none(solver_factory):
-    """Cycle 29: call solver_factory() with sentinel-on-crash.
-
-    Returns the solver on success, None on Exception. Callers MUST
-    emit _solver_error_sentinel for the current seed when this
-    returns None."""
+    """Call solver_factory() with sentinel-on-crash. Returns the
+    solver on success, None on Exception."""
     try:
         return solver_factory()
     except Exception:
@@ -83,12 +64,8 @@ def _play_with_timeout(env, solver, seed, timeout) -> Optional[GameResult]:
     captured = {'value': None, 'exc': None}
 
     def worker():
-        # Cycle 103: redirect stdout/stderr around the Solver call so
-        # model-emitted print() inside move() doesn't flood the bench
-        # log. Use contextlib+io rather than os.devnull to keep this
-        # use-case layer free of os-level dependencies (architecture
-        # rule: use_cases must not import os/subprocess/urllib/...).
-        # Restored on exit (even on exception) via the with blocks.
+        # Redirect stdout/stderr around the Solver call so model-emitted
+        # print() inside move() doesn't flood the bench log.
         import io as _io
         import contextlib as _ctx
         _sink_out = _io.StringIO()
@@ -117,19 +94,15 @@ def score_submission(
 ) -> AttemptResult:
     """Play canonical seeds; aggregate; return AttemptResult.
 
-    `hard_wall_sec` (cycles 23 + 27 / ADR 0006 layer 1):
-    - When > 0, caps the aggregate walltime BETWEEN games (cycle 23).
+    `hard_wall_sec`:
+    - When > 0, caps the aggregate walltime BETWEEN games.
     - When > 0, also caps each individual game via per-game daemon
-      thread + join timeout derived from remaining budget (cycle 27).
-    A single hanging game no longer blocks the cap.
-    Default 0 = disabled, matching the legacy unbounded behavior."""
+      thread + join timeout derived from remaining budget.
+    Default 0 = disabled."""
     start = time.monotonic()
     seeds_tuple = tuple(seeds)
     games_list = []
     for seed in seeds_tuple:
-        # Cycle 29: build solver with sentinel-on-crash BEFORE entering
-        # play_one_game. A failing __init__ is uniform across seeds but
-        # we still emit one sentinel per seed (preserves n_games shape).
         solver = _build_solver_or_none(solver_factory)
         if solver is None:
             games_list.append(_solver_error_sentinel(seed))
@@ -140,7 +113,6 @@ def score_submission(
                 # Aggregate cap exhausted; sentinel for this and the rest.
                 games_list.append(_walltime_exceeded_sentinel(seed))
                 continue
-            # Cycle 27: per-game cap = remaining aggregate budget.
             game = _play_with_timeout(env, solver, seed, timeout=remaining)
             if game is None:
                 # This game alone burned the rest of the budget.

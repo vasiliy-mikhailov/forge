@@ -1,17 +1,10 @@
-"""LlmSupervisor: SupervisorPort impl that delegates plateau judgment
-to the bench LLM under test.
-
-See src-spec/reward_bench/adapters/llm_supervisor/.
-
-Per ADR 0001 (same model as bench) + ADR 0005 (LLM self-judges
-plateau), the wiring layer (frameworks/main) supplies an `ask`
-callable backed by the bench-model vLLM endpoint.
+"""LlmSupervisor: SupervisorPort impl that delegates plateau
+judgment to the bench LLM under test.
 
 Flow: render sweep -> ask -> parse -> SupervisorDecision. Any
 failure on the parse path degrades to a CONSERVATIVE fallback
 (plateau=False, stop_recommended=False) — the agent loop never
-sees an exception from the supervisor, and a flaky supervisor
-never causes an accidental early stop."""
+sees an exception from the supervisor."""
 import json
 import re
 from typing import Callable, Tuple

@@ -1,7 +1,6 @@
-"""Cycle 105 / ADR 0006 Layer 2: MultiprocessingCpuCount adapter.
+"""MultiprocessingCpuCount adapter.
 
-Production binding for CpuCountPort. Uses multiprocessing.cpu_count
-(stdlib, no `os` import in caller).
+Production binding for CpuCountPort.
 """
 from __future__ import annotations
 

@@ -1,9 +1,7 @@
-"""Cycle 98b / ADR 0011: VllmOpenAIClient adapter.
+"""VllmOpenAIClient adapter.
 
-Lifted verbatim from the pre-cycle-98b `_call_model` in
-src/tier1/agent_loop.py (cycles 11, 74, 83, 96). Sends an OpenAI-style
-Chat-Completions request to a vLLM `/v1/chat/completions` endpoint
-and returns the {content, tool_calls} shape.
+Sends an OpenAI-style Chat-Completions request to a vLLM
+`/v1/chat/completions` endpoint and returns the {content, tool_calls} shape.
 """
 from __future__ import annotations
 
@@ -46,7 +44,7 @@ class VllmOpenAIClient(ModelClient):
             'temperature': temperature,
         }
         if tools:
-            # Cycle 96: advertise tools so vLLM per-model parsers
+            # Advertise tools so vLLM per-model parsers
             # (mistral / openai_oss / etc.) route structured calls.
             payload['tools'] = list(tools)
         req = urllib.request.Request(

@@ -1,18 +1,13 @@
-"""Shared pytest fixtures. See src-spec/tier1/.
+"""Shared pytest fixtures.
 
-Cycle 99a / ADR 0014: `model_client` is a real fixture that tests
-depend on. Default binding is `FakeModelClient` (offline, fast).
-Tests marked `@pytest.mark.live` get the real `VllmOpenAIClient`
-bound to the lab vLLM container instead — same test code, different
-injected dependency.
+`model_client` defaults to `FakeModelClient` (offline). Tests
+marked `@pytest.mark.live` get the real `VllmOpenAIClient` bound
+to the lab vLLM container.
 
-Cycle 101 / ADR 0012: a `FakeVllmServer` is also bound at the
-`urllib.request.urlopen` seam so live-by-nature tests (test_inference,
-skill_tier1_reply, tool_protocol_reply) run offline too. They get a
-canned `/v1/models` catalog and a canned `/v1/chat/completions` reply.
+A `FakeVllmServer` is also bound at the `urllib.request.urlopen`
+seam so live-by-nature tests run offline too.
 
-There is NO env-variable flag. Dependencies travel through the
-fixture graph; that IS the DI seam.
+Dependencies travel through the fixture graph; that IS the DI seam.
 """
 import json
 import os
@@ -173,8 +168,7 @@ def _bind_model_client(request, monkeypatch, model_client):
                         lambda target: 'http://fake:8000')
     monkeypatch.setenv('VLLM_API_KEY', 'fake-key')
 
-    # Cycle 109 / ADR 0018: bind FakeCanonicalScorer as the default
-    # canonical scorer so tests reaching main() don't spawn Docker.
+    # Bind FakeCanonicalScorer so tests reaching main() don't spawn Docker.
     from src.adapters.fakes.fake_canonical_scorer import FakeCanonicalScorer
     from src.reward_bench.frameworks import main as _main_mod
     _fake_scorer = FakeCanonicalScorer()

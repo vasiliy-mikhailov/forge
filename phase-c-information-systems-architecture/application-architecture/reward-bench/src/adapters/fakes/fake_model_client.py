@@ -1,9 +1,8 @@
-"""Cycle 99a / ADR 0012: FakeModelClient adapter.
+"""FakeModelClient adapter.
 
 Returns scripted AssistantReply values in order; ignores messages /
 tools / model_id (logs them on `.calls` so tests can inspect what
-the loop sent). Used to exercise the entire agent loop end-to-end
-without a vLLM container.
+the loop sent).
 """
 from __future__ import annotations
 

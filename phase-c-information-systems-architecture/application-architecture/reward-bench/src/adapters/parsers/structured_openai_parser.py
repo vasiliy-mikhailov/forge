@@ -1,9 +1,8 @@
-"""Cycle 98 / ADR 0011: StructuredOpenAIParser adapter.
+"""StructuredOpenAIParser adapter.
 
-Reads OpenAI tool_calls (cycle 83 / ADR 0010 / cycle 96) out of
-AssistantReply.tool_calls. Defensive against:
-  - malformed function.arguments JSON  -> empty args
-  - vLLM mistral tokenizer leaking U+0120 / U+2581 -> stripped before json.loads
+Reads OpenAI tool_calls out of AssistantReply.tool_calls. Defensive:
+  - malformed function.arguments JSON -> empty args
+  - vLLM mistral tokenizer leaking U+0120 / U+2581 stripped before json.loads
   - function.arguments arriving as dict in non-strict vLLM modes
 """
 from __future__ import annotations
@@ -31,9 +30,7 @@ class StructuredOpenAIParser(ProtocolParser):
             raw_args = fn.get('arguments')
             args: dict = {}
             if isinstance(raw_args, str):
-                # Cycle 96: vLLM mistral tokenizer leaks U+0120 (Ġ,
-                # SentencePiece space) and U+2581 (▁) into the
-                # rendered JSON. Strip; no-op on well-formed JSON.
+                # Strip SentencePiece artefacts (U+0120 Ġ, U+2581 ▁); no-op on well-formed JSON.
                 cleaned = raw_args.replace('Ġ', ' ').replace('▁', ' ')
                 try:
                     parsed = json.loads(cleaned)

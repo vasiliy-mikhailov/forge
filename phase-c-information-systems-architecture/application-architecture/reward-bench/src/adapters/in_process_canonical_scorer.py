@@ -1,12 +1,8 @@
-"""Cycle 109 / ADR 0018: InProcessCanonicalScorer adapter.
+"""InProcessCanonicalScorer adapter.
 
-Wraps the in-process `score_submission` use-case (cycle 23/27 daemon-
-thread timeout, Layer 1 per ADR 0006) as a `CanonicalScorerPort`.
-
-Production use is typically `DockerCanonicalScorer` (Layer 2); this
-adapter exists for parity, for offline benchmarking when Docker isn't
-available, and to give the canonical-scorer port a real (not just
-Fake) alternative.
+Wraps `score_submission` as a `CanonicalScorerPort`. Exists for
+offline benchmarking when Docker isn't available; production uses
+`DockerCanonicalScorer`.
 """
 from __future__ import annotations
 
@@ -18,13 +14,11 @@ from src.tier1.entities.attempt_result import AttemptResult
 
 
 class InProcessCanonicalScorer(CanonicalScorerPort):
-    """Wraps `src.tier1.use_cases.score_submission.score_submission` as
-    a `CanonicalScorerPort`.
+    """Wraps `score_submission` as a `CanonicalScorerPort`.
 
-    Loads the submission module from `submission_path`, instantiates
-    `Solver`, plays the seeds via the cycle-23/27 daemon-thread harness,
-    returns an `AttemptResult`. Per ADR 0006 Layer 1; isolation is
-    best-effort (Python thread, not OS process).
+    Loads the submission module, instantiates `Solver`, plays the
+    seeds via the daemon-thread harness, returns an `AttemptResult`.
+    Isolation is best-effort (Python thread, not OS process).
     """
 
     def __init__(self, env=None):

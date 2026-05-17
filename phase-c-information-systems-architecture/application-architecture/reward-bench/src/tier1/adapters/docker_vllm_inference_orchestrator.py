@@ -1,16 +1,6 @@
 """DockerVllmInferenceOrchestrator — InferenceOrchestrator binding for Docker + vLLM.
 
-Production class wrapping the existing `ensure_serving_model` free
-function in src/tier1/inference.py. Created in cycle 117 as part of
-the ADR 0018 backsweep — the free function predates the Port
-discipline and is now Port-conformant via this thin class.
-
-Why a thin wrapper instead of moving the logic? Per the cycle-113
-minimal-implementation discipline: the lift is structural (so the
-Port exists and the architecture test enforces it). Moving the
-container-management logic into the class is a separate refactor
-that can happen incrementally without risking regression in the
-already-tested free function.
+Thin wrapper around `src.tier1.inference.ensure_serving_model`.
 """
 from __future__ import annotations
 

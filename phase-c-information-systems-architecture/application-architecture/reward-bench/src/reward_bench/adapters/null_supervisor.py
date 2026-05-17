@@ -1,10 +1,6 @@
 """NullSupervisor — trivial SupervisorPort adapter that never recommends stop.
 
-The default supervisor when no live LLM-based one is configured.
-Also the test anchor for SupervisorPort runtime-checkable conformance.
-
-Relocated from src.reward_bench.use_cases.supervisor_port in
-cycle 115.
+Default supervisor when no live LLM-based one is configured.
 """
 from typing import Tuple
 

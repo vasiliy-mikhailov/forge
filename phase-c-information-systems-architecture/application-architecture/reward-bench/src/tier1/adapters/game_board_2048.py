@@ -1,6 +1,4 @@
-"""GameBoard2048Adapter: wraps tasks/2048/env.GameBoard behind GameEnvPort.
-
-See src-spec/tier1/adapters/game_board_2048/src_spec_game_board_2048_adapter.md."""
+"""GameBoard2048Adapter: wraps tasks/2048/env.GameBoard behind GameEnvPort."""
 import sys
 import time
 from pathlib import Path
@@ -22,11 +20,8 @@ class GameBoard2048Adapter:
         board = GameBoard(seed=seed)
         moves = 0
         start = time.monotonic()
-        # Cycle 28: catch solver runtime errors and emit a per-game sentinel
-        # (final_state='solver_error') instead of letting AttributeError /
-        # any other Exception escape score_submission. See ADR 0002 +
-        # tests-spec/tier1/adapters/game_board_2048/
-        # test_spec_when_solver_raises_in_move_then_returns_game_result_with_final_state_solver_error.md
+        # Catch solver runtime errors and emit a per-game sentinel
+        # (final_state='solver_error') instead of letting the exception escape.
         try:
             while not board.is_terminal():
                 action = solver.move(board.board)

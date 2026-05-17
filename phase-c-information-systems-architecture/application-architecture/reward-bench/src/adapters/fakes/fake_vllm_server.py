@@ -1,16 +1,11 @@
-"""Cycle 101 / ADR 0012 + 0014: FakeVllmServer adapter.
+"""FakeVllmServer adapter.
 
 In-process responder to the two vLLM HTTP paths the bench uses:
   - `GET /v1/models`            -> served_name + max_model_len catalog
   - `POST /v1/chat/completions` -> scripted assistant reply
 
 Installed via the conftest autouse fixture as a `urllib.request.urlopen`
-replacement for non-live tests. Same dependency-injection seam as the
-cycle-99a FakeModelClient — `urlopen` is the wire-level seam that
-test_inference.py and the session-scoped `skill_tier1_reply` /
-`tool_protocol_reply` fixtures use directly.
-
-Live tests opt out via `@pytest.mark.live` (handled by the autouse).
+replacement. Live tests opt out via `@pytest.mark.live`.
 """
 from __future__ import annotations
 

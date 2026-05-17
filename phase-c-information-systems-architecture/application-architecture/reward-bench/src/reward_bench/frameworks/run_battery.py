@@ -1,20 +1,9 @@
-"""Cycle 94: implement `make reward-battery` for real.
+"""`make reward-battery`: iterate `make reward-bench` across the
+model registry.
 
 Reads wiki-compiler/configs/models.yml, filters out entries with
 bench_skip=True (and optionally narrows by a regex on `id`), then
 invokes `make reward-bench MODEL=<id> TIER=<n> TASK=<task>` for each.
-
-Per SPEC.md §Make targets:
-  > make reward-battery TIER=<N> [--filter <regex>]
-  >     Iterate over every model in wiki-compiler/configs/models.yml with
-  >     bench_tier ≠ skip; run one attempt at the given TIER for each.
-
-The schema has `bench_skip: bool` (separate from `bench_tier: A|B|C|D`).
-We honor `bench_skip != True` as the inclusion rule (SPEC text predates
-the schema split; behavior is unchanged).
-
-Cycle 78 ran the same sweep manually via 22 per-model CATS tasks; this
-script is the codified version of that.
 """
 from __future__ import annotations
 
@@ -49,13 +38,8 @@ def select_battery(
     models: Iterable[dict],
     filter_regex: str | None = None,
 ) -> list[dict]:
-    """Filter models per the SPEC.md §Make targets rule.
-
-    - Drop entries with `bench_skip: true`.
-    - If `filter_regex` is given, keep only entries whose `id` matches.
-
-    Preserves registry order — the operator decides priority via
-    models.yml layout (cycle 78 used the registry order verbatim).
+    """Filter models: drop `bench_skip: true`; keep `id` matching
+    `filter_regex` when given. Preserves registry order.
     """
     out: list[dict] = []
     pat = re.compile(filter_regex) if filter_regex else None
@@ -149,7 +133,7 @@ if __name__ == "__main__":  # pragma: no cover
 
 
 # ============================================================
-# Cycle 102: resumable canonical bench
+# Resumable canonical bench
 # ============================================================
 
 _CANONICAL_DATE_STAMP = None  # set lazily; YYYY-MM-DD at startup time.
@@ -186,15 +170,12 @@ def run_canonical_battery(
     experiments_root: Path | str | None = None,
     runner: callable = None,
 ) -> list[dict]:
-    """ADR 0003 canonical campaign: 500 iters × 10 trials × T=0.7
-    across every model in MODEL_REGISTRY (filtered by `bench_skip`).
+    """Canonical campaign across every model in MODEL_REGISTRY.
 
-    Resumable: on each (model, trial) the driver checks for an existing
-    artifact; if present, skips. Ctrl-C halts in-flight without losing
-    completed (model, trial) artifacts.
+    Resumable: skips (model, trial) pairs whose artifact already exists.
+    Ctrl-C halts in-flight without losing completed artifacts.
 
-    Returns the list of artifact dicts (one per completed trial,
-    including ones skipped because they already existed).
+    Returns the list of artifact dicts (one per completed trial).
     """
     import json
     from datetime import date
@@ -222,7 +203,7 @@ def run_canonical_battery(
                 max_iters=max_iters,
                 n_trials=1,
                 temperature=temperature,
-                hard_wall_sec=canonical_hard_wall_sec,  # cycle 104 / ADR 0015
+                hard_wall_sec=canonical_hard_wall_sec,
             )
             result = _bench_main(model_id=model_id, seeds=seeds,
                                  config=config)

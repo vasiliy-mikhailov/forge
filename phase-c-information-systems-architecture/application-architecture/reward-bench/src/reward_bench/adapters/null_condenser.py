@@ -1,10 +1,4 @@
-"""NullCondenser — trivial CondenserPort adapter that returns messages unchanged.
-
-The default condenser when no LLM-based compaction is configured;
-also the test anchor for CondenserPort runtime-checkable conformance.
-
-Relocated from src.reward_bench.use_cases.condenser_port in cycle 116.
-"""
+"""NullCondenser — trivial CondenserPort adapter that returns messages unchanged."""
 from typing import Tuple
 
 from src.reward_bench.entities.condenser_config import CondenserConfig

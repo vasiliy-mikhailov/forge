@@ -1,4 +1,4 @@
-"""Tier 1 inference provisioning. See src-spec/tier1/src_spec_when_bench_provisions_inference_*.md."""
+"""Tier 1 inference provisioning."""
 import os
 import subprocess
 import time
@@ -114,8 +114,7 @@ def ensure_serving():
 
 
 def _healthy_for_target(target):
-    """Cycle 42: like _healthy but verifies the container serves
-    `target.served_name` (not the hardcoded SERVED_NAME)."""
+    """Like _healthy but verifies the container serves `target.served_name`."""
     ip = _inspect_ip()
     if not ip:
         return None
@@ -137,7 +136,7 @@ def _healthy_for_target(target):
 
 
 def _bring_up_target(target, api_key):
-    """Cycle 42: like _bring_up but parameterised by ModelTarget."""
+    """Like _bring_up but parameterised by ModelTarget."""
     gpu_uuid = os.environ.get("GPU_BLACKWELL_UUID", "")
     hf_token = os.environ.get("HF_TOKEN", "")
     cmd = [
@@ -170,12 +169,11 @@ def _bring_up_target(target, api_key):
 
 
 def ensure_serving_model(target: ModelTarget):
-    """Cycle 42: (re)provision reward-bench-vllm to serve `target`.
+    """(Re)provision reward-bench-vllm to serve `target`.
 
     1. If container already serves target.served_name and is healthy,
        return its URL — no swap.
-    2. Otherwise remove any existing container and start a new one
-       with target's hf_path, served_name, max_model_len, parser.
+    2. Otherwise remove any existing container and start a new one.
     3. Wait up to _HEALTH_TIMEOUT_S for /v1/models to advertise the
        served_name.
     """

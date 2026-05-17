@@ -1,7 +1,4 @@
-"""Tier 1 AttemptResult entity. See src-spec/tier1/entities/attempt_result/.
-
-Pure domain type — no IO, no HTTP, no external systems. The Clean
-Architecture innermost layer."""
+"""Tier 1 AttemptResult entity. Pure domain type — no IO, no HTTP."""
 from dataclasses import dataclass, field
 from typing import Tuple
 
@@ -21,8 +18,8 @@ class AttemptResult:
     hard_wall_sec: float = 0.0
     stagnated_any: bool = False
     walltime_exceeded: bool = False
-    solver_protocol_valid: bool = True  # cycle 55
-    best_dev_mean: float | None = None  # cycle 79 / ADR 0009 v3
+    solver_protocol_valid: bool = True
+    best_dev_mean: float | None = None
                                          # best dev_mean observed during the
                                          # agent loop (from execute_submission).
                                          # Used as the smoke success criterion.

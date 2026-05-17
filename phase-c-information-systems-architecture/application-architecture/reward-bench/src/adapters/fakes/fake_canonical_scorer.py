@@ -1,8 +1,6 @@
-"""Cycle 109 / ADR 0018: FakeCanonicalScorer adapter.
+"""FakeCanonicalScorer adapter.
 
 Returns scripted AttemptResults; records every call onto `.calls`.
-Used by the conftest autouse fixture as the default-bound canonical
-scorer so tests reaching main() don't spawn Docker.
 """
 from __future__ import annotations
 
