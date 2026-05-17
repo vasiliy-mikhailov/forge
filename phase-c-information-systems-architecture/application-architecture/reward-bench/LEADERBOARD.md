@@ -1,6 +1,6 @@
 # reward-bench leaderboard — Tier 1 (2048)
 
-Per [ADR 0029](../../../phase-preliminary/adr/0029-reward-bench.md). Vocabulary used in this doc is defined in [TERMINOLOGY.md](TERMINOLOGY.md) — short version: each row is a single **attempt** (one **trial** of the ralph loop + Stage 2 + Stage 3) by a **candidate model**. Newer rows from the May-08 sweep onward report a **replication** (mean ± stdev across N=10 trials). All Stage-2 scores are mean over 20 canonical **games** on held-out seeds 1000-1019, target=2048, max_moves=10000. Stage-2 budget is **per-game stagnation** — a game ends `final_state="stagnated"` if neither score nor max-tile changes for 60 s (see SPEC). Stage-2 sandbox: `reward-bench-tier1:0.3`, `--network=none`, deterministic.
+Per [ADR 0029](../../../phase-preliminary/adr/0029-reward-bench.md). Vocabulary: [TERMINOLOGY.md](TERMINOLOGY.md). Each row is one **attempt** (a **trial** of the ralph loop + Stage 2 + Stage 3) by a **candidate model**; May-08+ rows are **replications** (mean ± stdev over N=10 trials). Stage-2 scores: mean over 20 canonical **games** on seeds 1000-1019, target=2048, max_moves=10000, per-game stagnation budget (60s — see SPEC). Sandbox: `reward-bench-tier1:0.3`, `--network=none`, deterministic.
 
 ## Tier 1 — static FSM
 
@@ -40,7 +40,7 @@ Per [ADR 0029](../../../phase-preliminary/adr/0029-reward-bench.md). Vocabulary 
 | Textbook expectimax 3-ply (literature) | ~40 000-80 000 | Way more compute per move; not in our bench |
 | Well-tuned MCTS / RL | 100 000+ | Definitely not in our bench |
 
-So **Claude's 8 632 ceiling reference is well below textbook 3-ply expectimax.** That's intentional: Tier 1 is about whether models can produce a reasonable static FSM, not whether they can implement state-of-the-art search.
+**Claude's 8 632 ceiling sits well below textbook 3-ply expectimax** — intentional. Tier 1 measures whether models can produce a reasonable static FSM, not state-of-the-art search.
 
 ## Candidates queued
 

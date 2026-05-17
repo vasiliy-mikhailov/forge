@@ -1,6 +1,6 @@
 # reward-bench terminology
 
-A small glossary used consistently across the lab. Adopt these terms in any new doc, commit message, leaderboard entry, code variable, or chart title. Old occurrences are being migrated.
+Glossary used across the lab. Adopt these terms in any new doc, commit message, leaderboard entry, code variable, or chart title.
 
 ## Roles
 

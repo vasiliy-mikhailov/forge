@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Server-side, Docker-sandboxed evaluator that runs a candidate LLM through a 4-tier ladder of agentic puzzle-solving tasks. Each tier asks the model to produce an FSM (or FSM-of-agents) that maximises a verifiable quantitative reward on a target task. The first task is 2048; the harness is built to admit additional tasks later (each as a self-contained module).
+Server-side, Docker-sandboxed evaluator. Runs a candidate LLM through a 4-tier ladder of agentic puzzle-solving tasks; each tier asks the model to produce an FSM (or FSM-of-agents) maximising a verifiable quantitative reward. First task: 2048; harness is task-agnostic.
 
 reward-bench is **the comprehensiveness scoreboard** for forge. Throughput is measured separately (`bench-fp8-16k.sh`, `bench-nvfp4-16k.sh`). reward-bench answers: "given a model that's fast enough, can it actually orchestrate to solve a task?"
 
@@ -57,9 +57,7 @@ CPU-only — co-runs with whichever mode/lab is currently providing inference. R
 
 ### Reuse from rl-2048
 
-The 2048 env (`tasks/2048/env.py`) is lifted from the `GameBoard` class in `rl-2048/notebooks/2048_gpt_oss_20b.ipynb` — same WASD action API, same seed/target/probability_fours params. The anti-cheat helpers (`check_python_modules`, `create_locked_down_function`) are adapted from the same notebook (which uses Unsloth's helpers; reward-bench reimplements without the Unsloth dep so the sandbox stays minimal).
-
-This guarantees a model fine-tuned on rl-2048 sees the same env at eval time — no environment drift between training and benchmark.
+`tasks/2048/env.py` is lifted from `GameBoard` in `rl-2048/notebooks/2048_gpt_oss_20b.ipynb` — same WASD action API, same params. Anti-cheat helpers (`check_python_modules`, `create_locked_down_function`) are reimplemented without the Unsloth dep to keep the sandbox minimal. A model fine-tuned on rl-2048 sees the same env at eval time.
 
 ## Data contracts
 
@@ -147,28 +145,17 @@ class CheatReport(BaseModel):
 
 ## Submission protocols
 
-Each tier admits two protocols for getting from a model to a scored
-submission. Both target the same per-tier submission file (Solver
-class, build_graph, or construct meta-orchestrator) described in the
-tier sections below. They differ only in how the model produces it.
+Each tier admits two protocols. Both target the same per-tier submission file (Solver class / build_graph / construct meta-orchestrator); they differ only in how the model produces it.
 
 ### Static — single-reply emission
 
-The model receives the task spec in one prompt and must emit the
-submission as one fenced code block in its reply. The harness extracts
-the block, writes it to the sandbox, runs the game suite, scores.
+Model receives the task spec in one prompt; emits the submission as one fenced code block. Harness extracts, writes, runs, scores.
 
-Status: planned. Not currently implemented.
+Status: planned.
 
 ### Interactive — tool-using agent loop
 
-The model is given a workspace, an env module, and a tool protocol. It
-reads files (view), submits code for evaluation (execute_submission),
-and signals completion (finish). The loop runs up to a per-attempt
-iteration cap or until the model calls finish. The submission body
-from the most recent successful `execute_submission` call is what gets
-scored at finish time (the bench promotes it into the final
-`/workspace/submission.py`).
+Model gets a workspace, env module, and tool protocol. Reads files (view), submits code (execute_submission), signals completion (finish). Loop runs up to a per-attempt iteration cap. The body from the most recent successful `execute_submission` is promoted to `/workspace/submission.py` for canonical scoring.
 
 Tool-call wire format: each call is one fenced block in the assistant
 reply:
@@ -193,14 +180,11 @@ Active tool set (per [ADR 0008](docs/adr/0008-docker-sandboxed-execute-submissio
 The parser that decodes assistant replies into (name, args) tuples is
 specified in spec/parser.md.
 
-Status: the only currently-implemented protocol. The live 2026-05
-reward-bench campaign runs every tier and every model in this mode.
+Status: only currently-implemented protocol.
 
 ### Why two protocols
 
-Static bounds reasoning at one forward pass; it is the cheaper baseline.
-Interactive gives the model access to the env source and shell iteration
-on a larger context budget. Cross-mode comparison is informative.
+Static bounds reasoning at one forward pass — cheaper baseline. Interactive gives env source + shell iteration on a larger budget. Cross-mode comparison is informative.
 
 ## Tier specifications
 
@@ -212,12 +196,7 @@ on a larger context budget. Cross-mode comparison is informative.
 **Allowed imports:** numpy, transitions, re, math, random, collections, itertools, functools, dataclasses, typing, plus `env_2048` (the read-only env module).
 **Reward:** mean game score over N=20 games (configurable).
 **Replay tolerance:** 0 % — exact match required.
-**Author-stage inference context:** the Stage 1 author loop runs the
-model with **128 K input + output context** (`--max-model-len 131072`).
-A **condenser** summarises older turns when prompt + reserved
-output exceeds the budget so the loop can run as long as the model
-can still make progress. This applies to the interactive submission
-protocol; static-mode authors get one shot inside the same budget.
+**Author-stage context:** Stage 1 runs the model at 128K (`--max-model-len 131072`). A **condenser** summarises older turns when prompt + reserved output exceeds the budget. Interactive protocol only; static-mode authors get one shot in the same budget.
 
 ### Tier 2 — open-world FSM-of-agents
 
@@ -281,11 +260,10 @@ alongside the spec targets for convenience:
   loop through the shim (Claude-in-the-loop fixture).
 
 `make reward-battery TIER=<N> [FILTER=<regex>]` is implemented by
-[`src/reward_bench/frameworks/run_battery.py`](src/reward_bench/frameworks/run_battery.py)
-(cycle 94). It reads the wiki-compiler models.yml registry, drops
-entries with `bench_skip: True`, optionally narrows by a regex on
-`id`, and invokes `make reward-bench MODEL=<id> TIER=<N>` per pick
-— the codified version of cycle 78's manual 22-model sweep.
+[`src/reward_bench/frameworks/run_battery.py`](src/reward_bench/frameworks/run_battery.py).
+It reads `wiki-compiler/configs/models.yml`, drops `bench_skip: True`
+entries, optionally narrows by regex on `id`, and invokes `make
+reward-bench MODEL=<id> TIER=<N>` per pick.
 
 ## Per-game stagnation detector
 
@@ -296,8 +274,6 @@ Stage 2 budgets are **per-game**, not per-attempt. Each game runs as long as it'
 - Detection is wall-time-based, so it normalises across tiers without per-tier tuning.
 
 An outer runaway cap remains available via `REWARD_BENCH_HARD_WALL_SEC` (default 0 = disabled). Set it to e.g. 1800 if you want to bound total Stage-2 wall time as a safety net for badly-misbehaving solvers.
-
-Rationale: per-game stagnation is more honest than a hard wall budget. A submission that legitimately sustains long, productive games (the textbook expectimax case) shouldn't be punished by a one-size-fits-all clock; one that's stuck in a no-progress loop should be cut off fast regardless of decision latency.
 
 ## Risk surfaces
 

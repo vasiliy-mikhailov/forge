@@ -4,9 +4,9 @@ Per [ADR 0029](../../../phase-preliminary/adr/0029-reward-bench.md) + [SPEC.md](
 
 ## What this lab is
 
-A Docker-sandboxed evaluator that runs a candidate LLM through a 4-tier ladder of agentic puzzle-solving tasks. Each tier asks the model to write (or assemble) an FSM that maximises a verifiable quantitative reward. Tier 1 is closed-world Python FSM. Tiers 2-4 add increasing meta-orchestration. First task: 2048.
+Docker-sandboxed evaluator. Runs a candidate LLM through a 4-tier ladder of agentic puzzle-solving tasks; each tier asks the model to write an FSM maximising a verifiable reward. Tier 1: closed-world Python FSM. Tiers 2-4: increasing meta-orchestration. First task: 2048.
 
-This lab is the *comprehensiveness scoreboard*. Throughput is measured separately by `bench-fp8-16k.sh` / `bench-nvfp4-16k.sh`. reward-bench answers: «given that a model is fast enough, can it actually orchestrate to solve a task?»
+*Comprehensiveness scoreboard*. Throughput is measured separately (`bench-fp8-16k.sh` / `bench-nvfp4-16k.sh`). reward-bench answers: «given a model is fast enough, can it actually orchestrate to solve a task?»
 
 ## Mode mutex
 
@@ -128,4 +128,4 @@ Per [P7](../../../phase-preliminary/architecture-principles.md):
 
 ## Methodology
 
-The full CATS (Clean Architecture Test Specs) methodology — every cycle's eleven steps, the discipline rules, the spec hierarchy, the structural-test contract — lives at the forge root in [`AGENTS.md`](../../../AGENTS.md) (canonical source at [`phase-preliminary/cats.md`](../../../phase-preliminary/cats.md)). Read it before opening an editor for this lab. The reward-bench discipline is exactly CATS — no lab-specific deviations beyond the module names called out in this file.
+Full CATS methodology lives at the forge root [`AGENTS.md`](../../../AGENTS.md) (canonical: [`phase-preliminary/cats.md`](../../../phase-preliminary/cats.md)). Read before editing. reward-bench follows CATS exactly — no lab-specific deviations beyond module names called out above.
