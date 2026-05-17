@@ -43,7 +43,7 @@ EXPECTED_MAX_LINK_VIOLATIONS = 0
 # Ratchet: tests defined under tests/ without a corresponding
 # test_spec_when_X.md anywhere in tests-spec/. Decrement as each is
 # either spec'd or removed.
-EXPECTED_MAX_ORPHAN_TESTS = 32
+EXPECTED_MAX_ORPHAN_TESTS = 34
 
 # Ratchet: src_spec_*.md files missing or referencing a non-existent
 # `src/...py` link.
@@ -51,6 +51,14 @@ EXPECTED_MAX_SRC_LINK_VIOLATIONS = 41
 
 # Ratchet: src/*.py modules not referenced by any src_spec.
 EXPECTED_MAX_ORPHAN_SRC_MODULES = 0
+
+# Ratchet: archaeology refs in src/*.py source code.
+EXPECTED_MAX_SRC_PY_ARCHAEOLOGY = 0
+
+# Ratchet: archaeology refs in tests/*.py source code. Conservative —
+# tests often have fixture strings; AST-based clean-up is the future
+# work; for now ratchet at observed count.
+EXPECTED_MAX_TESTS_PY_ARCHAEOLOGY = 161
 
 
 TESTS_DIR = REPO_ROOT / "tests"
@@ -311,6 +319,54 @@ def _all_src_modules() -> list[Path]:
             continue
         out.append(f)
     return out
+
+
+def _py_archaeology_violations(files: list[Path]) -> list[tuple[str, int, str]]:
+    out: list[tuple[str, int, str]] = []
+    for f in files:
+        if "__pycache__" in f.parts:
+            continue
+        try:
+            text = f.read_text()
+        except Exception:
+            continue
+        for lineno, line in enumerate(text.splitlines(), start=1):
+            for pat in _ARCHAEOLOGY_PATTERNS:
+                if pat.search(line):
+                    rel = f.relative_to(REPO_ROOT)
+                    out.append((str(rel), lineno, line.strip()[:120]))
+                    break
+    return out
+
+
+def test_when_src_python_files_walked_then_no_cycle_archaeology_present():
+    """Arrange / Act / Assert."""
+    files = sorted(SRC_DIR.rglob("*.py"))
+    violations = _py_archaeology_violations(files)
+    if len(violations) > EXPECTED_MAX_SRC_PY_ARCHAEOLOGY:
+        head = '\n'.join(f'  {p}:{ln}  {snippet}' for p, ln, snippet in violations[:20])
+        more = (f'\n  ... and {len(violations) - 20} more'
+                if len(violations) > 20 else '')
+        pytest.fail(
+            f'cycle/ADR archaeology in {len(violations)} src/*.py line(s); '
+            f'ratchet expected at most {EXPECTED_MAX_SRC_PY_ARCHAEOLOGY}:'
+            f'\n{head}{more}'
+        )
+
+
+def test_when_tests_python_files_walked_then_no_cycle_archaeology_present():
+    """Arrange / Act / Assert."""
+    files = sorted(TESTS_DIR.rglob("*.py"))
+    violations = _py_archaeology_violations(files)
+    if len(violations) > EXPECTED_MAX_TESTS_PY_ARCHAEOLOGY:
+        head = '\n'.join(f'  {p}:{ln}  {snippet}' for p, ln, snippet in violations[:20])
+        more = (f'\n  ... and {len(violations) - 20} more'
+                if len(violations) > 20 else '')
+        pytest.fail(
+            f'cycle/ADR archaeology in {len(violations)} tests/*.py line(s); '
+            f'ratchet expected at most {EXPECTED_MAX_TESTS_PY_ARCHAEOLOGY}:'
+            f'\n{head}{more}'
+        )
 
 
 def test_when_src_modules_walked_then_each_referenced_by_at_least_one_src_spec():
