@@ -142,93 +142,124 @@ The condenser (ADR-0001), supervisor (ADR-0005), and bench model all hit the sam
 - A model that can't summarise its own context or judge its own progress *should* score worse — that's signal, not noise.
 - Condenser and supervisor cost extra inferences; mitigated by trigger thresholds (`trigger_tokens=80000`, `supervisor_every_k=5`).
 
-## 7. Target architecture: subagent-per-iter
+## 7. Target architecture: fitness function over orchestrators
 
-Current architecture (§§1-6) has the agent loop as a single long-lived
-process accumulating context across iters. This produces several
-known failure modes captured in §8 Open items: W-fallback drift,
-observability gaps, context-window pressure at high `max_iters`.
+The bench, type-signature first:
 
-The planned architecture inverts the responsibility split:
-
-```
-Main agent (ralph-loop orchestrator — top-level, long-lived)
-├── Holds cumulative state:
-│   - best submission so far + its score
-│   - history digest (prior iters' submissions + scores, compressed)
-│   - remaining time budget, remaining iter count
-│
-└── Per iter, spawns a fresh subagent with its own context:
-    │  Receives FROM main:
-    │    - history digest (prior submissions + scores)
-    │    - time budget for THIS iter
-    │    - iters remaining in the loop
-    │    - env spec reference (if first time)
-    │  Does (autonomously):
-    │    - reads env spec, prior best, sees its constraints
-    │    - writes code, runs it in Docker sandbox
-    │    - inspects exec results, iterates within the iter if budget allows
-    │  Returns to main:
-    │    - submission body
-    │    - runtime_sec, score, max_tile
-    │    (NOT its deliberation tokens — those die with subagent context)
+```haskell
+bench :: Env -> BenchConfig -> Submission
+bench env cfg = argmaxBy (score env) (orchestrate env cfg)
 ```
 
-Why this addresses the observed failure modes:
+`orchestrate` is a strategy that enumerates candidate submissions
+under `cfg`. The bench is the `argmax` over its output. The fitness
+function we are optimising is not "agent loop runs", it is:
 
-- **W-fallback drift** (model gives up after many iters): subagent
-  doesn't carry "30 iters in, I'm tired" baggage. Each iter starts
-  fresh; the cumulative state in main is structured signal (scores
-  and code), not raw deliberation.
-- **Observability gaps**: subagent's context is *constructed* by
-  main with every signal we want it to have — time budget, iters
-  remaining, prior scores. No accidental omissions.
-- **Context-window pressure**: main keeps a small compressed
-  digest; subagent context is freshly built per iter and discarded.
-  No condenser/compaction at the main loop level.
-- **Reward gradient**: subagent sees prior iters' scores explicitly
-  and is asked to do better — a numeric gradient, not "vibes".
+```
+best_score : Env -> BenchConfig -> Walltime -> Score
+best_score env cfg t =
+    max { score env s
+        | s in orchestrate env cfg,
+          submission_walltime s <= t }
+```
 
-### Implementation: OpenHands
+i.e. given a fixed env and a fixed time budget, which orchestration
+strategy produces the highest-scoring submission. Everything else —
+context construction, sandbox spawning, prompt shape — is a free
+parameter of `orchestrate`.
 
-The subagent-per-iter pattern is OpenHands' native model. Each iter
-becomes an OpenHands task with a fresh agent context; the main
-orchestrator becomes a thin wrapper that constructs the task input
-from cumulative state and aggregates results.
+Two strategies share that signature:
 
-This collapses several things we currently maintain ourselves:
-- `src/tier1/agent_loop.py::run_loop` orchestration — replaced by
-  OpenHands' agent loop.
-- `Tool` / `ToolRegistry` / `ProtocolParser` ports + adapters —
-  replaced by OpenHands' tool surface.
-- Custom Docker bind-mount + env-var threading
-  (`DockerCanonicalScorer`) — replaced by OpenHands' sandbox
-  primitive.
-- `_execute_submission` dev runner — recast as an OpenHands action.
+```haskell
+orchestrate_ralph_single_context  :: Env -> BenchConfig -> [Submission]
+orchestrate_subagent_per_iter     :: Env -> BenchConfig -> [Submission]
+```
 
-What we KEEP:
-- `SPEC.md` (lab contract) and this `SOLUTION-ARCHITECTURE.md`.
-- The canonical scoring port + adapter (the reward signal is
-  ours; OpenHands shouldn't see it).
-- The cycle-133 quality floor and other fitness functions.
+Current code implements the first: one long-lived agent context
+accumulating across iters. Planned code implements the second: main
+process holds cumulative state (best-so-far, history digest, time
+remaining); each iter spawns a fresh subagent context constructed
+from that state and returning only `(body, score, walltime)`. The
+subagent's deliberation tokens die with its context.
+
+### The fitness function, made testable
+
+```
+test_when_orchestrators_compared_at_same_time_budget_then_
+  subagent_per_iter_score_dominates_ralph_single_context
+```
+
+Given identical `Env` and identical wall-clock budget `t`, compare
+`best_score env cfg_ralph t` against `best_score env cfg_subagent t`.
+The subagent strategy is justified iff it dominates across the
+model registry. This is the only test that decides whether we
+migrate; everything below is the implementation hypothesis.
+
+### Why subagent-per-iter is the hypothesis
+
+Failure modes of the single-context strategy, observed on the
+current bench:
+
+- **W-fallback drift**: cumulative context carries "30 iters in,
+  scores not improving" as deliberation, model gives up to `return W`.
+  Subagent context is freshly constructed; "tired" is not a state
+  the strategy can be in.
+- **Observability gaps** (cycles 158-161): every signal the model
+  needs (budget per seed, iters remaining, prior scores, walltime
+  margin) has to be threaded into the long context. With per-iter
+  subagents, the main process builds the context from cumulative
+  state — the signals are inputs to a pure function, not accidents
+  of message history.
+- **Context-window pressure**: at `max_iters=120` the single context
+  pushes against the window; compaction becomes a meta-problem.
+  Per-iter subagent context is bounded by construction.
+- **Reward gradient**: subagent receives prior iters' scores as a
+  numeric gradient over its constructed input, not as buried
+  history.
+
+### Implementation pivot: OpenHands
+
+The per-iter subagent pattern is OpenHands' native model. Each iter
+becomes an OpenHands task with a freshly-constructed agent context;
+the main orchestrator becomes a thin wrapper that constructs the
+task input from cumulative state and reduces results.
+
+Collapsing onto OpenHands removes code we would otherwise maintain:
+
+- `src/tier1/agent_loop.py::run_loop` orchestration
+- `Tool` / `ToolRegistry` / `ProtocolParser` ports and adapters
+- Docker bind-mount + env-var threading in `DockerCanonicalScorer`
+- `_execute_submission` dev-runner action
+
+What survives the pivot — the parts that are ours, not OpenHands':
+
+- `SPEC.md` (the lab contract) and this `SOLUTION-ARCHITECTURE.md`.
+- `CanonicalScorerPort` + its Docker adapter (the reward signal is
+  the bench, not the agent framework).
+- The cycle-133 quality floor and other fitness functions in
+  `tests/architecture/`.
 - `MODEL_REGISTRY`, `BenchConfig`, leaderboard generation.
 
-The cycles 158-159 work on observability informs the
-context-construction layer (what the main → subagent message
-should contain) but doesn't survive as code.
+The cycles 158-162 observability work informs `construct_subagent_input
+:: CumulativeState -> SubagentInput` — what fields the main → subagent
+message must contain — but does not survive as procedural code in
+`agent_loop.py`.
 
 ### Decision status
 
 **Pending.** Migration cost estimated 2-3 weeks. Trigger: when the
-next 1-2 cycles' worth of features would be implementing OpenHands
-primitives ourselves.
+next 1-2 cycles' worth of features would be re-implementing
+OpenHands primitives ourselves, or when
+`test_when_orchestrators_compared_at_same_time_budget_then_subagent
+_per_iter_score_dominates_ralph_single_context` is implementable in
+prototype form and shows dominance.
 
 ## 8. Open items / known tensions
 
-- **Subagent-per-iter architecture pending.** See §7. Implementation
-  path is the OpenHands pivot. Current code is single-process
-  ralph loop that accumulates context across iters; planned shape
-  spawns a fresh subagent per iter.
+- **Subagent-per-iter orchestrator pending.** See §7. The fitness
+  test is `test_when_orchestrators_compared_at_same_time_budget_then_
+  subagent_per_iter_score_dominates_ralph_single_context`; the
+  implementation path is the OpenHands pivot.
 - **Bench bug — zero-score artifacts from bench-spawned Docker.** Live test reproduces it; canonical Docker invocations sometimes return `score=0` artifacts despite a working submission. Under investigation; suspected in the canonical scorer path, not the model.
 - **`MODEL_REGISTRY` duplication.** YAML and Python tuple disagree (e.g. `qwen3.6-27b-awq` vs `qwen3.6-27b-awq-int4-community`, missing `qwen3.6-35b-a3b-fp8`). Rewrite to load-from-YAML pending (ADR-0013 cycle 101).
 - **Condenser token estimation is heuristic.** 4-chars-per-token may be off ±30 %. Trigger has 18 K headroom; future cycle to lift `trigger_tokens` onto `BenchConfig` per `ModelTarget.max_model_len`.
