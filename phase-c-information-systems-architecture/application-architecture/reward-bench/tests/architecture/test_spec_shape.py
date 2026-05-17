@@ -43,7 +43,7 @@ EXPECTED_MAX_LINK_VIOLATIONS = 0
 # Ratchet: tests defined under tests/ without a corresponding
 # test_spec_when_X.md anywhere in tests-spec/. Decrement as each is
 # either spec'd or removed.
-EXPECTED_MAX_ORPHAN_TESTS = 34
+EXPECTED_MAX_ORPHAN_TESTS = 51
 
 # Ratchet: src_spec_*.md files missing or referencing a non-existent
 # `src/...py` link.

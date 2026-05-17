@@ -6,6 +6,14 @@ import shutil
 import urllib.request
 from pathlib import Path
 
+from src.tier1.agent_loop_helpers import (
+    promote_body_text,
+    reject_finish_for_floor,
+    should_smoke_stop,
+    sweep_sample,
+    update_best_snapshot,
+)
+
 
 
 _TOOL_BLOCK_RE = re.compile(r'```tool\b\s*\n(.*?)\n```', re.DOTALL)
@@ -375,25 +383,12 @@ def run_loop(workspace, env_dir, tasks_dir, vllm_base_url, vllm_api_key,
         _consecutive_no_tool_iters = 0
         observations = []
         for name, tool_args in tool_calls:
-            # Finish-floor enforcement: reject `finish` when best_dev_mean
-            # is below the floor.
-            if name == 'finish' and finish_floor > 0:
-                _best_str = (str(_best_dev_mean) if _best_dev_mean is not None
-                             else 'unknown (no dev_runner yet)')
-                if _best_dev_mean is None or _best_dev_mean < finish_floor:
-                    rejected = (
-                        f'<error>finish rejected: best dev MEAN so far is '
-                        f'{_best_str}, which is below the finish_floor '
-                        f'({finish_floor}). You must produce a submission '
-                        f'scoring above this floor before finishing. '
-                        f'Run `bash python3 /tasks/2048/dev_runner.py '
-                        f'/workspace/submission.py` to test, then refine '
-                        f'your FSM until dev MEAN exceeds {finish_floor}.'
-                        f'</error>'
-                    )
+            if name == 'finish':
+                rejected = reject_finish_for_floor(finish_floor, _best_dev_mean)
+                if rejected is not None:
                     observations.append(rejected)
                     print(f'[harness] finish rejected '
-                          f'(best_dev_mean={_best_str} < floor={finish_floor})',
+                          f'(best_dev_mean={_best_dev_mean} < floor={finish_floor})',
                           flush=True)
                     continue
             if tool_registry is not None:
@@ -418,13 +413,12 @@ def run_loop(workspace, env_dir, tasks_dir, vllm_base_url, vllm_api_key,
             _parsed = _parse_dev_runner_summary(_obs)
             if _parsed is not None:
                 break
-        if _parsed is None:
-            _sweep_samples.append((iter_n, 0.0, 0, 0.0))
-        else:
-            _mean, _max_tile, _walltime = _parsed
-            _sweep_samples.append((iter_n, _mean, _max_tile, _walltime))
-            if _best_dev_mean is None or _mean > _best_dev_mean:
-                _best_dev_mean = _mean
+        _sweep_samples.append(sweep_sample(iter_n, _parsed))
+        if _parsed is not None:
+            _mean, _, _ = _parsed
+            new_best, snapshot_fires = update_best_snapshot(_best_dev_mean, _mean)
+            _best_dev_mean = new_best
+            if snapshot_fires:
                 if _submission_path.exists():
                     try:
                         shutil.copyfile(_submission_path, _best_snapshot_path)
@@ -436,8 +430,7 @@ def run_loop(workspace, env_dir, tasks_dir, vllm_base_url, vllm_api_key,
                     print(f'[harness] new best dev MEAN={_mean} '
                           f'(snapshot=False, no submission.py)',
                           flush=True)
-            # Smoke-mode bench-forced early-stop.
-            if smoke_early_stop and _best_dev_mean is not None and _best_dev_mean > 0:
+            if should_smoke_stop(smoke_early_stop, _best_dev_mean):
                 finished = True
                 print(f'[run_loop] smoke_early_stop fired at iter {iter_n} '
                       f'with best dev MEAN={_best_dev_mean}',
@@ -477,10 +470,7 @@ def run_loop(workspace, env_dir, tasks_dir, vllm_base_url, vllm_api_key,
     # Fallback: promote last successful execute_submission body when no snapshot.
     if _last_successful_execute_body is not None and not _best_snapshot_path.exists():
         try:
-            _body = _last_successful_execute_body
-            if not _body.endswith(chr(10)):
-                _body = _body + chr(10)
-            _submission_path.write_text(_body)
+            _submission_path.write_text(promote_body_text(_last_successful_execute_body))
             print('[harness] promoted last successful execute_submission body '
                   'to workspace/submission.py for canonical scoring',
                   flush=True)
