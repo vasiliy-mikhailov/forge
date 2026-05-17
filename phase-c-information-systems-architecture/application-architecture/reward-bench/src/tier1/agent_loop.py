@@ -148,7 +148,7 @@ def _execute_submission(body, workspace, tasks_dir,
     # soft timeout cannot interrupt C-level CPU-bound submissions.
     from src.tier1.adapters.docker_canonical_scorer import DockerCanonicalScorer
     try:
-        _scorer = DockerCanonicalScorer(env_path=Path(tasks_dir) / 'env.py')
+        _scorer = DockerCanonicalScorer(env_path=Path(tasks_dir) / '2048' / 'env.py')
         _attempt = _scorer.score(
             sub_path,
             _DEV_SEEDS,
