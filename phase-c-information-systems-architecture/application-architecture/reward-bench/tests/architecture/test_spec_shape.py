@@ -38,7 +38,7 @@ EXPECTED_MAX_PLACEHOLDERS = 0
 # Ratchet: residual aggregator specs (multi-test, violate one-spec-per-
 # behavior) + orphan specs (reference deleted tests). Decrement as
 # each is migrated or removed in subsequent cycles.
-EXPECTED_MAX_LINK_VIOLATIONS = 14
+EXPECTED_MAX_LINK_VIOLATIONS = 0
 
 
 def _discover_test_specs() -> tuple[Path, ...]:

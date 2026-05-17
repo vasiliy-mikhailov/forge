@@ -45,3 +45,5 @@ All three are independent: a test may inject only the parts it cares about and l
 Test code: [`tests/tier1/test_run_loop_di.py`](../../../../tests/tier1/test_run_loop_di.py).
 ## Runtime scope
 > **Runtime scope**: unit only — agent-loop seam wiring contract; live coverage via the @live agent_loop tests in tests/tier1/test_agent_loop.py (skill_prompt_sent_then_reply_contains_tool_call_block, first_reply_received_then_views_skill_spec, run_loop_invoked_with_one_iter_cap_then_returns_one_turn_history).
+
+Test code: [`../../../tests/tier1/test_run_loop_di.py`](../../../tests/tier1/test_run_loop_di.py)::`test_when_run_loop_called_with_model_client_then_calls_pass_through_port`.

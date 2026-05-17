@@ -59,3 +59,5 @@ ls experiments/$(date +%Y-%m-%d)-bench-*.json | wc -l
 ```
 ## Runtime scope
 > **Runtime scope**: unit only — canonical-battery driver; production-runtime IS this driver invoked end-to-end during operational sweeps.
+
+Test code: [`../../../../tests/reward_bench/frameworks/test_canonical_battery.py`](../../../../tests/reward_bench/frameworks/test_canonical_battery.py)::`test_when_canonical_battery_runs_with_no_artifacts_then_runner_invoked_per_trial`.

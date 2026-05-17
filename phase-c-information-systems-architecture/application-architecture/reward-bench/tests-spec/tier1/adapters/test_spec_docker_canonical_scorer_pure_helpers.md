@@ -77,3 +77,5 @@ Test code: [`tests/tier1/adapters/test_docker_canonical_scorer_pure_helpers.py`]
 > dependency. Production-runtime coverage of the surrounding
 > `DockerCanonicalScorer.score` orchestration is via the existing
 > live-runtime test.
+
+Test code: [`../../../tests/tier1/adapters/test_docker_canonical_scorer_pure_helpers.py`](../../../tests/tier1/adapters/test_docker_canonical_scorer_pure_helpers.py)::`test_when_build_docker_cmd_called_with_options_then_returns_canonical_arg_tuple`.

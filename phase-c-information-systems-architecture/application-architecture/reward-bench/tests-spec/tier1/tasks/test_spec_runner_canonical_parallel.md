@@ -62,3 +62,5 @@ Test code: [`tests/tier1/tasks/test_runner_canonical.py`](../../../../tests/tier
 - Real Docker container spawn.
 ## Runtime scope
 > **Runtime scope**: unit only — runner_canonical worker contracts; live coverage via @live test_docker_canonical_scorer_live which invokes runner_canonical inside Docker against a real solver.
+
+Test code: [`../../../tests/tier1/tasks/test_runner_canonical.py`](../../../tests/tier1/tasks/test_runner_canonical.py)::`test_when_solver_valid_then_game_result_returned`.
