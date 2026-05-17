@@ -298,10 +298,11 @@ only to make tests pass. Spec describes only what tests prove.
 
 Do all eleven steps for ONE test case, then start the next.
 
-  1. Pick the next behavior that advances the TOGAF documents under
-     implementation. Smallest unit that adds value; avoid scoping
-     beyond one paragraph of src-spec. Confirm with the user when
-     ambiguous.
+  1. Pick the next behavior that advances the documents under
+     implementation (TOGAF Phase A vision, lab SPEC.md, lab
+     SOLUTION-ARCHITECTURE.md, forge-wide ADRs). Smallest unit that
+     adds value; avoid scoping beyond one paragraph of src-spec.
+     Confirm with the user when ambiguous.
   2. Add an entry to the tests-spec file. Carry enough detail to
      reconstruct the test if test code is lost. Format:
 
@@ -928,48 +929,42 @@ Test code and implementation:
 A test file holds multiple functions, one per
 test_spec_when_X_then_Y.md.
 
-## Implementation ADRs — between SPEC.md and test_spec
+## Implementation architecture — SOLUTION-ARCHITECTURE.md between SPEC.md and test_spec
 
 A test_spec pins ONE behavior in 30-300 words. SPEC.md describes the
-lab's TOGAF promise in hundreds of lines. Between them: the
-**architectural decisions** — too detailed for SPEC.md, too
-cross-cutting for any test_spec. They live as **implementation ADRs**
-at `<lab>/docs/adr/NNNN-short-slug.md`.
+lab's TOGAF promise in hundreds of lines. Between them: the **how**
+— the implementation architecture. That layer lives as ONE file per
+lab: `<lab>/SOLUTION-ARCHITECTURE.md`.
 
-Each ADR captures:
+A SOLUTION-ARCHITECTURE.md describes **current state**, not history.
+Typical sections: architectural overview (diagram), components table,
+port discipline (Port × adapter × default fake), runtime architecture
+(Docker invocations, env-vars, CPU/memory), cross-cutting decisions
+(one bullet per choice), open items, cross-references.
 
-- **Status** — Accepted (date) | Superseded by ADR-NNN | Deprecated.
-- **Context** — what forced the decision.
-- **Decision** — one-sentence position, specific enough to write code.
-- **Consequences** — positive AND negative; revert cost.
-- **Alternatives considered** — named and briefly rejected.
-- **Implementation pointers** — files/cycles that realise it.
+The file is rewritten as the architecture evolves; git holds history.
+Per the cats.md *Writing — cross out excess words* and *Git is the
+history* rules, the file describes the **current decision** only.
 
-Lab-local numbering (own sequence from `0001`), distinct from
-forge-wide ADRs in `phase-preliminary/adr/`.
+### When to write or amend SOLUTION-ARCHITECTURE.md
 
-### When to write an implementation ADR
+- Before the first cycle of a new lab — the document is the
+  composition root for every subsequent cycle.
+- When a cross-cutting decision changes — edit the affected section
+  in place; do NOT append an "amendment" header.
+- When a new Port is introduced or retired — update the Port table.
+- When an open tension is resolved — remove it from §"Open items".
 
-BEFORE the cycle that realises it. Symptoms that an ADR is overdue:
+### Optional supplementary ADRs
 
-- You're typing "we chose X because Y" into a test_spec body.
-- A decision is referenced/contradicted by `_bak/` legacy.
-- Two reasonable implementations fit SPEC.md.
-- The cycle will write production code hard to revert without context.
+Most decisions fold into SOLUTION-ARCHITECTURE.md as compressed
+bullets. A separate ADR file under `<lab>/docs/adr/NNNN-*.md` is
+warranted only when a decision was genuinely contested and the
+"alternatives considered" paragraph would be a meaningful future
+reference. The rest of the time, the single SOLUTION-ARCHITECTURE.md
+is enough.
 
-Pause the test_spec cycle, write the ADR, commit, then realise.
-test_spec references the ADR by relative path.
-
-### Example
-
-`reward-bench` faced "condenser uses same model as bench, or
-separate smaller one?". SPEC.md mentioned "a condenser" without
-committing; legacy `_bak/` used separate. The decision was made AS
-AN ADR (`reward-bench/docs/adr/0001-condenser-uses-same-model-as-bench.md`)
-BEFORE the wiring cycle. Implementation pointers name the realising
-cycles.
-
-## Two layers of code-facing spec, one TOGAF document under implementation
+## Two layers of code-facing spec, two lab-level documents
 
   - SPEC.md at the lab root: the document under implementation,
     TOGAF-facing (what the lab measures, tiers, outputs). Coverage
