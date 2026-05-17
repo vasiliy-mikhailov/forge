@@ -2,33 +2,24 @@
 
 ## Context
 
-After cycle 105 the bench has Docker-isolated canonical scoring
+The bench has Docker-isolated canonical scoring
 ([ADR 0006](0006-sandboxed-scoring-docker-tier1-and-walltime-budget.md))
-plus three previously-extracted ports — `ModelClient`, `ToolRegistry`,
-`ProtocolParser` ([ADR 0011](0011-clean-arch-ports-for-model-client-tool-registry-protocol-parser.md))
-— and a fourth small one for cpu count.
+plus `ModelClient`, `ToolRegistry`, `ProtocolParser`
+([ADR 0011](0011-clean-arch-ports-for-model-client-tool-registry-protocol-parser.md))
+and `CpuCountPort`.
 
-The cycle 105 Docker work shipped `DockerCanonicalScorer` as a
-concrete class with a duck-typed `score(...)` method. There is **no
-Protocol**, **no in-memory Fake**, and **no autouse binding** in the
-test conftest. `main()` accepts an optional `canonical_scorer=`
-parameter and falls back to constructing the real `DockerCanonicalScorer`
-when none is provided.
+`DockerCanonicalScorer` shipped as a concrete class with a duck-typed
+`score(...)`. **No Protocol, no Fake, no autouse binding.** `main()`
+falls back to constructing a real Docker scorer when `canonical_scorer=`
+isn't passed.
 
-This creates a footgun: any test reaching `main()` without explicitly
-passing a `canonical_scorer=` argument will attempt to spawn a Docker
-container in the fast offline gate. Today no test trips this (the
-cycle-105 sub-C tests explicitly inject; older tests are
-`@pytest.mark.live`), but the next author will.
+Footgun: a test reaching `main()` without explicit injection spawns
+Docker in the fast offline gate.
 
-We already have the discipline for the other three ports: the conftest
-autouse `_bind_model_client` fixture (cycle 99a / [ADR 0014](0014-every-test-spec-declares-model-client-injection-point.md))
-intercepts `_call_model`, `urlopen`, `execute_tool`, and
-`ensure_serving_model`. The pattern is right; only `DockerCanonicalScorer`
-escaped it.
-
-The opportunity: codify the pattern explicitly so the next runtime-boundary
-dependency comes with the same shape automatically.
+The other three ports have the discipline (conftest autouse
+`_bind_model_client` per [ADR 0014](0014-every-test-spec-declares-model-client-injection-point.md)).
+Only `DockerCanonicalScorer` escaped it. Codify the pattern so the
+next boundary comes with the same shape.
 
 ## Decision
 
@@ -56,15 +47,12 @@ call, file-system path that depends on host state, OS process state
 dependencies MUST follow this discipline at the moment they're
 introduced (the Port comes with the boundary, not later).
 
-Pure-Python composition seams (a `Callable` parameter in
-`use_cases/`, a dispatch-by-name registry with multiple entries,
-classes sharing a single-method shape) do NOT force this discipline
-at first instance — they're not a runtime boundary. They DO get
-lifted to Ports during the **refactor step at the third instance**
-per the CATS "Lift implicit contracts into Ports — the rule of three"
-rule (cycle 113). The two rules together cover both external
-boundaries (forced at first instance, runtime-boundary trigger) and
-internal composition (lifted at third instance, emergence trigger).
+Pure-Python composition seams (Callable params in `use_cases/`,
+dispatch-by-name registries, single-method shape) are NOT runtime
+boundaries — they get lifted to Ports at the **third instance** per
+CATS "rule of three". The two rules together cover external
+boundaries (forced at first instance) and internal composition (lifted
+at third).
 
 ## Current manifest
 
@@ -78,63 +66,42 @@ The following ports are tracked under this rule:
 | `CpuCountPort` | `MultiprocessingCpuCount` | `FixedCpuCount` | n/a (no side effects; DI param suffices) |
 | `CanonicalScorerPort` | `DockerCanonicalScorer` | `FakeCanonicalScorer` | ✓ (cycle 109) |
 
-Adding a port that ISN'T on this manifest is a CATS gap — the
-architecture test will catch it on the next pass.
+A port off-manifest is a CATS gap — caught by the architecture test.
 
 ## Enforcement
 
 `tests/architecture/test_runtime_boundary_ports.py` asserts:
 
-1. Each port name in the manifest above has a `src/ports/<name>.py` (or
-   the legacy location like `src/ports/cpu_count.py`).
-2. Each port has at least one production adapter implementing it
-   (heuristically: a class under `src/.../adapters/` whose name
-   matches `<X>Client`, `<X>Scorer`, `<X>Registry`, `<X>Parser`,
-   `<X>Provisioner`, etc., and whose source mentions the port name).
-3. Each port has a Fake adapter under `src/adapters/fakes/`.
-4. The conftest autouse fixture mentions every port that needs a
-   default-bound instance.
+1. Each manifest port has a `src/ports/<name>.py`.
+2. Each has a production adapter under `src/.../adapters/`.
+3. Each has a Fake under `src/adapters/fakes/`.
+4. Conftest autouse mentions every port needing a default binding.
 
-Failure of any check is a test failure. The manifest is a
-hand-maintained list in the architecture test file — new ports get
-added there alongside their first src-spec.
+Manifest is hand-maintained in the architecture test file.
 
 ## Consequences
 
-+ The next author who introduces a Docker / HTTP / subprocess
-  dependency is forced to add Port + Fake + autouse, or the
-  architecture test fails.
-+ Tests that touch any runtime-boundary code are guaranteed to run
-  hermetically by default — no surprises like a stray Docker spawn
-  during the fast gate.
-+ Same test_spec can serve as unit (Fake binding) AND e2e (Live or
-  no_fake binding) — per [ADR 0014](0014-every-test-spec-declares-model-client-injection-point.md)
-  the test_spec names the seam, and the conftest does the binding.
-- New runtime-boundary dependencies cost ~4 small files instead of 1.
-  Marginal up-front; pays off the second time a test wedges.
-- The manifest is a hand-maintained list. If someone adds a port
-  without registering it in the manifest, the architecture test
-  doesn't catch the gap. Mitigated by: the audit cycle that produced
-  this ADR is the standard recourse.
++ New Docker/HTTP/subprocess dependencies are forced to add Port +
+  Fake + autouse, or the architecture test fails.
++ Runtime-boundary tests run hermetically by default — no stray Docker
+  spawns in the fast gate.
++ Same test_spec serves unit (Fake) and e2e (Live/no_fake) per
+  [ADR 0014](0014-every-test-spec-declares-model-client-injection-point.md).
+- ~4 small files per dependency instead of 1.
+- Hand-maintained manifest can lag; audit cycle is the recourse.
 
-## Path forward (cycle 109)
+## Path forward
 
-1. Add `CanonicalScorerPort` Protocol under `src/ports/canonical_scorer.py`.
-2. Make `DockerCanonicalScorer` formally implement it (no runtime
-   change; just an inheritance declaration + type check).
-3. Wrap the in-process `score_submission` use-case in
-   `InProcessCanonicalScorer` adapter for parity (Layer 1 fallback).
-4. Add `FakeCanonicalScorer` returning scripted `AttemptResult`s.
-5. Conftest autouse binds the Fake by default; explicit DI parameter
-   on `main()` overrides.
-6. Architecture test asserts the manifest is complete.
+1. `CanonicalScorerPort` Protocol at `src/ports/canonical_scorer.py`.
+2. `DockerCanonicalScorer` formally implements it.
+3. `InProcessCanonicalScorer` wraps `score_submission` use-case.
+4. `FakeCanonicalScorer` returns scripted `AttemptResult`s.
+5. Conftest autouse binds the Fake; explicit DI override on `main()`.
+6. Architecture test asserts manifest completeness.
 
 ## Related
 
 - [ADR 0011](0011-clean-arch-ports-for-model-client-tool-registry-protocol-parser.md)
-  — the first three runtime-boundary ports.
+  — first three runtime-boundary ports.
 - [ADR 0014](0014-every-test-spec-declares-model-client-injection-point.md)
-  — test_specs name the injection point; ADR 0018 generalises the
-  pattern to non-model-client boundaries.
-- Cycle 105 — `DockerCanonicalScorer` shipped without the full
-  pattern; cycle 109 closes the gap and codifies the rule.
+  — generalises the test_spec injection-point pattern.

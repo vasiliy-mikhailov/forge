@@ -6,27 +6,18 @@ Accepted (2026-05-13). Active.
 
 ## Context
 
-[ADR 0001](0001-condenser-uses-same-model-as-bench.md) decided that
-the condenser uses the same model as the bench target. The bench
-model serves at `max_model_len=131072` (per
-[SPEC.md](../../SPEC.md) §"Author-stage inference context"). Cycle 21
-made `LlmCondenser` token-aware: it gates compaction on a
-`trigger_tokens` threshold from `CondenserConfig`. The remaining
-question: **what value should that threshold be?**
+Per [ADR 0001](0001-condenser-uses-same-model-as-bench.md), the
+condenser is the bench model, serving at `max_model_len=131072`.
+`LlmCondenser` gates compaction on a `trigger_tokens` threshold from
+`CondenserConfig`. Question: **what value?**
 
-The legacy `_bak/bin/campaign_tier1.sh` set
-`--condenser-trigger-tokens 40000` (~30 % of `max_model_len`). That
-value was chosen for a setup that ran the condenser on a
-**different, smaller model** on the secondary 5090 GPU. The
-condenser model had a smaller effective context; conservative
-trigger avoided pushing the small model past its own limit.
+The legacy `_bak/bin/campaign_tier1.sh` used `40000` (~30 % of budget),
+sized for a smaller condenser model on the secondary GPU.
 
-In our setup the condenser IS the bench model (per ADR 0001), with
-`max_model_len=131072`. Triggering at 40000 fires the condenser at
-30 % of budget — well before the context is anywhere near its
-limit. Cycle-20 live verification showed this over-aggressive
-firing inflated cycle-12 wall time **10×** (56 s → 561 s) with no
-quality benefit (`mean_score` unchanged: 3361 → 3410).
+With the same-model condenser, triggering at 40000 fires at 30 % of
+budget — far from the limit. Live verification showed this inflated
+short-run wall time **10×** (56 s → 561 s) with no quality benefit
+(`mean_score`: 3361 → 3410).
 
 ## Decision
 
@@ -48,84 +39,55 @@ without overflow.
 
 ### Positive
 
-- **Short bench runs stay fast.** Cycle 12 strict (30 iters) stays
-  at ~56 s. Cycle 18-20 ballooned it to 561 s; cycle 21 brings it
-  back.
-- **Compaction fires near the context limit, where it adds value.**
-  Long campaigns (500-iter, per [ADR 0003](0003-bench-defaults-500-iters-10-trials-temp-0.7.md))
-  will trigger compaction in their later iterations where 128 K
-  budget is actually under pressure.
-- **No quality regression.** Cycle 20 verified `mean_score` is
-  unchanged between condenser-off (3361) and condenser-on-aggressive
-  (3410). The condenser doesn't help model quality at short
-  iterations — it only matters for budget management.
+- **Short runs stay fast.** 30-iter runs stay at ~56 s.
+- **Compaction fires where it matters.** 500-iter campaigns trigger
+  late, when the 128 K budget is actually under pressure.
+- **No quality regression.** `mean_score` unchanged between
+  condenser-off (3361) and condenser-on-aggressive (3410).
 
 ### Negative
 
-- **Imprecise token estimate.** The `LlmCondenser` uses a
-  4-chars-per-token heuristic. Real token counts depend on the
-  tokenizer; estimate may be off by ±30 %. Mitigation: 18 K
-  headroom between trigger and budget absorbs the error.
-- **Diverges from `_bak` legacy.** Anyone comparing leaderboard
-  numbers under our settings vs `_bak` settings should know that
-  `trigger_tokens` is one of the differences.
-- **Tied to qwen3.6's 131K budget.** Models with smaller
-  `max_model_len` would over-trigger. Future cycle should compute
-  `trigger_tokens` per `ModelTarget` (e.g.
-  `0.8 * (target.max_model_len - 32768)`).
+- **Imprecise token estimate.** 4-chars-per-token heuristic may be off
+  ±30 %. Mitigation: 18 K headroom absorbs the error.
+- **Diverges from `_bak`.** Cross-config comparisons must note this.
+- **Tied to qwen3.6's 131 K budget.** Smaller-context models would
+  over-trigger; future cycle should derive `trigger_tokens` per
+  `ModelTarget` as `0.8 * (max_model_len - 32768)`.
 
 ### Reverting
 
-The constant lives in
-`src/reward_bench/frameworks/main.py` as `_CONDENSER_TRIGGER_TOKENS`.
-A future cycle should lift it onto `BenchConfig` so it is
-overridable per run; today the only way to override is to monkey-
-patch the module constant.
+Constant lives in `src/reward_bench/frameworks/main.py` as
+`_CONDENSER_TRIGGER_TOKENS`. Future cycle should lift onto
+`BenchConfig` for per-run override.
 
 ## Alternatives considered
 
-### A. Keep the legacy `40000` (~30 % of budget)
+### A. Keep legacy `40000` (~30 %)
 
-Faithful to `_bak`. **Rejected** because it over-fires; cycle 20
-data showed walltime inflation without quality benefit.
+**Rejected**: over-fires; inflates walltime without quality benefit.
 
 ### B. Trigger at the limit (`98000`)
 
-Maximum context usage before compaction. **Rejected** because the
-4-chars-per-token estimate may be off; running right up to the
-limit risks vLLM rejecting a request as too long.
+**Rejected**: heuristic may overshoot; vLLM would reject as too long.
 
-### C. Per-model `trigger_tokens` derived from `ModelTarget.max_model_len`
+### C. Per-model `trigger_tokens` from `ModelTarget.max_model_len`
 
-Cleanest long-term. **Deferred** — this ADR's `80000` is the right
-default for the current `qwen3.6-27b-awq` (max_model_len=131072).
-Future cycle adds the derivation so smaller-context models scale
-down.
+**Deferred**: `80000` is correct for current `qwen3.6-27b-awq`.
 
-### D. Token-count from a real tokenizer (transformers / tiktoken)
+### D. Real tokenizer (transformers / tiktoken)
 
-Accurate. **Deferred** — adds a heavy import dependency to a
-critical path. The 4-chars-per-token heuristic with 18 K headroom
-is enough for the current setup. Cycle later when token accounting
-becomes the dominant error.
+**Deferred**: heavy import on a hot path; heuristic + headroom suffices.
 
 ## Implementation pointers
 
-- `src/reward_bench/frameworks/main.py` — the `_CONDENSER_TRIGGER_TOKENS = 80000`
-  module constant.
-- `src/reward_bench/adapters/llm_condenser.py` — the `_estimate_tokens`
-  helper using the 4-chars-per-token heuristic; the token gate in
-  `LlmCondenser.condense`.
-- `tests/reward_bench/adapters/test_llm_condenser.py` — the
-  pass-through test pins the token gate behavior.
+- `src/reward_bench/frameworks/main.py` — `_CONDENSER_TRIGGER_TOKENS = 80000`.
+- `src/reward_bench/adapters/llm_condenser.py` — `_estimate_tokens`
+  helper; token gate in `LlmCondenser.condense`.
+- `tests/reward_bench/adapters/test_llm_condenser.py` — pins the gate.
 
 ## Cross-references
 
 - [SPEC.md §"Author-stage inference context"](../../SPEC.md)
-- [Lab ADR 0001](0001-condenser-uses-same-model-as-bench.md) — same-model
-  condenser; this ADR builds on that by relaxing the trigger.
-- [Lab ADR 0003](0003-bench-defaults-500-iters-10-trials-temp-0.7.md)
-  — bench knob defaults. `trigger_tokens` is NOT in `BenchConfig`
-  yet (queued); when lifted it inherits this ADR's value as default.
-- `_bak/bin/campaign_tier1.sh` — the source-of-truth document for
-  the legacy `40000` value.
+- [Lab ADR 0001](0001-condenser-uses-same-model-as-bench.md) — same-model condenser.
+- [Lab ADR 0003](0003-bench-defaults-500-iters-10-trials-temp-0.7.md) — bench knob defaults.
+- `_bak/bin/campaign_tier1.sh` — legacy `40000` source.

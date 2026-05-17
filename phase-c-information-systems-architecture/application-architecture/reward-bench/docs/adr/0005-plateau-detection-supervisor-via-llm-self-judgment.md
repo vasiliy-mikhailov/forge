@@ -6,31 +6,23 @@ Accepted (2026-05-13). Active.
 
 ## Context
 
-[ADR 0003](0003-bench-defaults-500-iters-10-trials-temp-0.7.md)
-lists `max_no_improve` as a knob: "Reject `finish` if dev_runner
-score did not improve in N turns." That's the legacy `_bak`
-approach — mechanical, threshold-based.
+[ADR 0003](0003-bench-defaults-500-iters-10-trials-temp-0.7.md) lists
+`max_no_improve` — the legacy mechanical, threshold-based plateau rule.
 
 Mechanical no-improve is brittle:
 
-1. **Noise creates false triggers.** A submission scoring
-   3000 → 3050 → 2980 → 3010 is *not* on a plateau; it's
-   oscillating around 3000. A `max_no_improve=2` rule would treat
-   the third iteration as a non-improvement and over-trigger.
-2. **Lucky bumps mask plateaus.** A 3000 → 3000 → 3100 → 3000
-   → 3000 sequence looks like progress to a "any improvement
-   resets" rule, but the model is actually stuck near 3000.
-3. **Per-model variance.** What counts as "no improvement" for
-   tier-1 2048 (scores 1k-10k) differs from tier-3 LangGraph
-   orchestration (scores in a different unit). Hardcoding
-   thresholds is task-coupled.
-4. **The judgment is intelligent.** Recognising a plateau in noisy
-   sweep data is exactly the kind of pattern recognition LLMs are
-   good at — and the model under test ALREADY knows its own
-   optimization tendencies.
+1. **Noise creates false triggers.** 3000 → 3050 → 2980 → 3010 is
+   oscillation, not a plateau.
+2. **Lucky bumps mask plateaus.** 3000 → 3000 → 3100 → 3000 → 3000
+   passes "any improvement resets" while actually stuck.
+3. **Per-model variance.** Thresholds are task-coupled (tier-1 2048
+   scores vs tier-3 LangGraph units).
+4. **The judgment is intelligent.** Recognising plateaus in noisy data
+   is what LLMs are good at — and the model under test knows its own
+   optimisation tendencies.
 
-Per ADR 0001 the bench model is also the condenser model. The same
-endpoint, same warm KV cache, can also be the **supervisor**.
+Per ADR 0001 the bench endpoint already serves as condenser. Same
+endpoint can serve as **supervisor**.
 
 ## Decision
 
@@ -53,110 +45,73 @@ turns (or after any dev_runner invocation), the supervisor:
        plateau if you are confident further iterations would not
        improve.
 
-3. Parses the reply. If `stop_recommended == true`, the agent
-   loop forces a `finish` (with `note` = the supervisor's
-   reasoning).
+3. Parses the reply. If `stop_recommended == true`, force a `finish`
+   with `note` = the supervisor's reasoning.
 
-This makes plateau detection **adaptive per model + per task**.
-A smarter model may keep iterating productively when a weaker
-model would have stopped; both are judged by their own sense of
-progress.
+Plateau detection becomes **adaptive per model + per task**.
 
 ## Consequences
 
 ### Positive
 
-- **No threshold tuning.** `max_no_improve` becomes obsolete; one
-  fewer knob in `BenchConfig`.
-- **Per-model intelligence.** Different models have different
-  optimization patterns; each one judges its own.
+- **No threshold tuning.** `max_no_improve` becomes obsolete.
+- **Per-model intelligence.** Each model judges itself.
 - **Same-model consistency** with ADRs 0001 and 0004 — one vLLM
-  endpoint serves bench, condenser, and supervisor.
-- **Honest stop signal.** When the supervisor says "stop", the
-  recommended `finish` note carries the supervisor's reasoning into
-  the per-attempt artifacts — auditable signal of WHY a run ended.
+  endpoint serves bench, condenser, supervisor.
+- **Honest stop signal.** Supervisor reasoning lands in `finish` note,
+  auditable in per-attempt artifacts.
 
 ### Negative
 
-- **Extra inference per check.** One small LLM call every K
-  iterations adds cost. Mitigation: K=5 (configurable) so the
-  supervisor fires sparingly.
-- **Supervisor may be wrong.** A model that's eager to stop will
-  bias toward early plateau declarations; a stubborn model will
-  bias toward "still making progress" even when it's not. Honest
-  trade-off; mechanical detection has the same problem with worse
-  failure modes (false stops, missed plateaus).
-- **Prompt engineering required.** The supervisor's prompt must
-  encourage conservative plateau judgments. Without that, models
-  may over-call plateau on the first 2-3 stable iterations.
-- **More complexity.** New entity (`SupervisorDecision`), new
-  port, new adapter, new hook in `agent_loop`. Worth it given the
-  signal quality, but documented complexity.
+- **Extra inference per check.** Mitigation: K=5 default.
+- **Supervisor may be wrong.** Eager models stop early; stubborn ones
+  miss plateaus. Mechanical detection has the same problem with worse
+  failure modes.
+- **Prompt engineering required.** Conservative-bias prompt prevents
+  over-calling plateau early.
+- **More complexity.** New entity, port, adapter, hook in `agent_loop`.
 
 ### Reverting
 
-The supervisor is opt-in via a new `BenchConfig.use_supervisor:
-bool` field (default depending on tier). Setting it to `False`
-restores the legacy `max_no_improve` behaviour. A future cycle
-could combine both: supervisor + fallback to mechanical when the
-supervisor errors out.
+Opt-in via `BenchConfig.use_supervisor: bool`. Setting `False` restores
+legacy `max_no_improve`. Future cycle could combine both.
 
 ## Alternatives considered
 
 ### A. Keep mechanical `max_no_improve`
 
-Simple, deterministic, no extra inference. **Rejected** because of
-the noise/lucky-bump issues described above.
+**Rejected**: noise/lucky-bump issues above.
 
 ### B. Statistical plateau detection (slope-based)
 
-Compute the slope of the last N scores; if `|slope| < threshold`,
-declare plateau. **Rejected** because the threshold is
-task-specific — what's "flat" for 2048 may be active progress for
-another tier.
+**Rejected**: slope threshold is task-specific.
 
 ### C. LLM self-judgment (this decision)
 
-Adaptive, model-aware. Accepted with the conservative-bias prompt.
+Accepted with conservative-bias prompt.
 
 ### D. Hybrid (supervisor + statistical fallback)
 
-Use the supervisor as primary; fall back to slope-based if the
-supervisor errors out or times out. **Deferred** to a future
-cycle once the supervisor's failure modes are observed.
+**Deferred** until supervisor failure modes are observed.
 
 ## Implementation pointers
 
-- **Entity**: `src/reward_bench/entities/supervisor_decision.py`
-  — `SupervisorDecision(plateau: bool, reasoning: str,
-  stop_recommended: bool)`. Frozen dataclass.
-- **Port**: `src/ports/supervisor.py` (relocated cycle 115) —
-  `Protocol` with `judge(sweep) -> SupervisorDecision`. The
-  trivial `NullSupervisor` lives at
-  `src/reward_bench/adapters/null_supervisor.py`.
-- **Adapter**: `src/reward_bench/adapters/llm_supervisor.py` —
-  posts to vLLM (per ADR 0001), parses the JSON response.
-  Constructor takes the same `summarise`-style injected callable
-  used by `LlmCondenser` so the adapter is testable without a live
-  model.
+- **Entity**: `src/reward_bench/entities/supervisor_decision.py` —
+  `SupervisorDecision(plateau: bool, reasoning: str, stop_recommended: bool)`.
+- **Port**: `src/ports/supervisor.py` — `judge(sweep) -> SupervisorDecision`.
+  Default `NullSupervisor` at `src/reward_bench/adapters/null_supervisor.py`.
+- **Adapter**: `src/reward_bench/adapters/llm_supervisor.py` — posts to
+  vLLM, parses JSON. Constructor takes an injected `summarise`-style
+  callable for testability.
 - **agent_loop hook**: every K iterations call
-  `supervisor.assess(sweep_data)`; if `stop_recommended`, inject a
-  `finish` tool call from outside the model and break the loop
-  carrying the supervisor's reasoning as the finish `note`.
-- **Sweep data source**: parse `dev_runner` stdout (already
-  captured as tool observations in `messages`); pluck
-  `(iteration, mean_score, max_tile, walltime_sec)` per call.
-- **`BenchConfig` field**: add `supervisor_every_k: int` (e.g.
-  default 5).
+  `supervisor.assess(sweep_data)`; if `stop_recommended`, inject `finish`.
+- **Sweep data source**: parse `dev_runner` stdout from tool observations.
+- **`BenchConfig` field**: `supervisor_every_k: int` (default 5).
 
 ## Cross-references
 
-- [Lab ADR 0001](0001-condenser-uses-same-model-as-bench.md) —
-  same-model rule extends to the supervisor.
-- [Lab ADR 0003](0003-bench-defaults-500-iters-10-trials-temp-0.7.md)
-  — supersedes the `max_no_improve` row in the defaults table
-  (the supervisor replaces that knob). Update the ADR-0003 row to
-  "deprecated; see ADR 0005" when the supervisor lands in code.
+- [Lab ADR 0001](0001-condenser-uses-same-model-as-bench.md) — same-model rule.
+- [Lab ADR 0003](0003-bench-defaults-500-iters-10-trials-temp-0.7.md) —
+  supersedes the `max_no_improve` row.
 - [Lab ADR 0004](0004-condenser-trigger-at-80-percent-of-input-budget.md)
-  — supervisor pattern mirrors the condenser pattern (port +
-  adapter + injected summarise-style callable).
+  — supervisor pattern mirrors the condenser pattern.

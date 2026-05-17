@@ -8,79 +8,54 @@ step 2 (run_loop takes the ports as DI params) is in place.
 
 ## Context
 
-The smoke v2 sweep (cycles 78 + 97) takes ~30 minutes per model
-× 22 models = up to 12 hours wall time. Most of that is vLLM
-container provisioning + model loading + inference — none of
-which exercises the bench's own logic.
+The smoke v2 sweep takes ~30 min/model × 22 models = up to 12 h wall.
+Mostly vLLM provisioning + model loading + inference — none of which
+exercises bench logic.
 
-After ADR 0011 (cycles 98a–c) the bench loop talks to three
-ports:
-  - `ModelClient` — sends `messages` + `tools` to a model server,
-    returns `AssistantReply`.
-  - `ToolRegistry` — dispatches `(name, args, ctx)` to tool handlers.
-  - `ProtocolParser` — turns `AssistantReply` into `ToolCall`s.
-
-The model client is the single chokepoint where the GPU/vLLM lives.
-A test that swaps `VllmOpenAIClient` for an in-memory fake gets
-**identical bench behavior** without any of the cost.
+After ADR 0011 the loop talks to three ports: `ModelClient`,
+`ToolRegistry`, `ProtocolParser`. The model client is the GPU/vLLM
+chokepoint. Swapping `VllmOpenAIClient` for an in-memory fake gets
+**identical bench behavior** without the cost.
 
 ## Decision
 
-Add a `FakeModelClient(ModelClient)` adapter under
-`src/adapters/fakes/`. The adapter takes a list of scripted
-`AssistantReply` values at construction and returns them in order.
-Tests parametrise over `MODEL_REGISTRY` (so coverage stays honest)
-but every iteration uses the same fake client — the `model_id`
-parameter is logged, not honored, since there's no real inference.
+Add `FakeModelClient(ModelClient)` at `src/adapters/fakes/`. Takes a
+list of scripted `AssistantReply` at construction; returns them in
+order. Tests parametrise over `MODEL_REGISTRY` for coverage; `model_id`
+is logged, not honoured.
 
-A new `tests/reward_bench/frameworks/smoke/test_smoke_fast.py`
-becomes the canonical "is the bench loop healthy?" check:
-  - One script per scenario (happy-path Solver, regress-then-restore,
-    no-tool prose, ...) — each is a tuple of `AssistantReply`s.
-  - 22 model IDs × 5 scenarios = 110 tests, all running in seconds.
-  - Replaces the cycle-78 smoke v2 sweep as the CI gate.
+New `tests/reward_bench/frameworks/smoke/test_smoke_fast.py` is the
+canonical "is the bench loop healthy?" check:
 
-The slow vLLM-backed smoke (current `test_smoke_all_models.py`)
-becomes an opt-in *live* gate, run on demand to validate that
-real model output is still bench-compatible. The fast smoke is
-the default.
+- One script per scenario (happy / regress-then-restore / no-tool /
+  walltime / protocol-violation).
+- 22 models × 5 scenarios = 110 tests in seconds.
+- Replaces the smoke v2 sweep as the CI gate.
+
+The vLLM-backed `test_smoke_all_models.py` becomes opt-in *live*,
+run on demand.
 
 ## Consequences
 
-+ CI/regression turnaround: ~3 seconds for the full bench-logic
-  coverage instead of 30 min/model.
-+ Bench bugs land in fast smoke before they reach a GPU run.
-+ Scenarios (regress-then-restore, no-tool-stall, walltime_exceeded
-  cascade) become reproducible artefacts, not "we'll see if a model
-  triggers it" leaderboard footnotes.
-+ Bench cycles (cycles 98+, ADR 0011 follow-ups) no longer pay
-  GPU minutes for verification.
-- Fast smoke does NOT test the vLLM serving stack, the tool-call
-  parser config, or the docker layer. Those need their own targeted
-  live tests (one per concern, not one per model).
++ CI turnaround ~3 s for full bench-logic coverage vs 30 min/model.
++ Bench bugs land in fast smoke before any GPU run.
++ Scenarios become reproducible artefacts, not leaderboard footnotes.
++ Verification cycles no longer pay GPU minutes.
+- Fast smoke does NOT cover the vLLM stack, parser config, or docker
+  layer. Those need targeted live tests (one per concern).
 
 ## Path forward
 
-**Cycle 99** (preceding this): wire `run_loop(*, model_client,
-tool_registry, protocol_parser, ...)` so callers pass the triple.
-
-**Cycle 99a** (this ADR's implementation):
-  - Add `src/adapters/fakes/fake_model_client.py`.
-  - Add `src/adapters/fakes/scripts.py` with 5 reference scripts
-    (happy / regress / no-tool / walltime / protocol-violation).
-  - Add `tests/reward_bench/frameworks/smoke/test_smoke_fast.py`
-    parametrized over MODEL_REGISTRY × scripts.
-  - Mark `test_smoke_all_models.py` with `@pytest.mark.live` so
-    `pytest -m 'not live'` runs only the fast variant by default.
-
-**Cycle 99b** (after fast smoke proven): retire cycle-78 / cycle-97
-artefacts to `experiments/archive/` and document the fast-smoke
-artefact as the new leaderboard substrate.
+1. Wire `run_loop(*, model_client, tool_registry, protocol_parser, ...)`.
+2. Add `fake_model_client.py` + 5 reference scripts + `test_smoke_fast.py`
+   parametrized over MODEL_REGISTRY × scripts. Mark
+   `test_smoke_all_models.py` `@pytest.mark.live`.
+3. After fast smoke proven, retire old artefacts to
+   `experiments/archive/`.
 
 ## Related
 
 - [ADR 0011](0011-clean-arch-ports-for-model-client-tool-registry-protocol-parser.md)
-  — established the ports this ADR exploits.
-- [ADR 0009](0009-multi-model-smoke-bench-convention.md)
-  — the smoke convention being tested. Fast smoke does NOT replace
-  this; it accelerates verifying it.
+  — ports this ADR exploits.
+- [ADR 0009](0009-multi-model-smoke-bench-convention.md) — smoke
+  convention being verified.

@@ -9,33 +9,24 @@ Accepted (2026-05-13). Active.
 [SPEC.md](../../SPEC.md) §"Author-stage inference context" describes
 the Stage-1 author loop running with **128 K input + output context**
 and a **condenser** that summarises older turns when prompt + reserved
-output exceeds the budget so the loop can run as long as the model can
-still make progress.
+output exceeds the budget.
 
 The legacy `_bak/bin/campaign_tier1.sh` wired the condenser to a
-**separate, smaller** model (`condenser-llama31-8b` running on the
-secondary RTX 5090 GPU), exposed via `--condenser-shim`,
-`--condenser-model`, `--condenser-trigger-tokens`,
-`--condenser-keep-recent` flags. Pattern was: bench model runs on the
-Blackwell, condenser model runs on the 5090, two containers, two model
-registry entries, two cache stores.
+**separate, smaller** model (`condenser-llama31-8b` on the secondary
+RTX 5090), via `--condenser-shim`, `--condenser-model`,
+`--condenser-trigger-tokens`, `--condenser-keep-recent` flags. Two
+containers, two registry entries, two cache stores.
 
-Re-thinking under CATS: do we *want* a separate condenser model?
+Three observations against a separate condenser:
 
-Three observations:
-
-1. **Operational drag.** A separate condenser doubles the operational
-   surface — second container lifecycle, second GPU mutex, second
-   model-registry entry, version-skew risk between condenser and bench
-   model.
+1. **Operational drag.** Second container lifecycle, second GPU mutex,
+   second registry entry, version-skew risk.
 2. **The bench model already has 128 K of context.** vLLM serves
-   `qwen3.6-27b-awq` with `--max-model-len 131072`; a summarisation
-   call to the same model fits comfortably inside that budget. The
-   condenser doesn't *need* a different model to do its job.
-3. **Cross-model comparability.** When the bench compares model A vs
-   model B at Tier 3-4, having both condensers be the *same* model as
-   the bench target makes the comparison cleaner: every model is its
-   own summariser. No "model A had a better condenser" confound.
+   `qwen3.6-27b-awq` with `--max-model-len 131072`; summarisation fits
+   comfortably inside that budget.
+3. **Cross-model comparability.** A/B comparisons are cleaner when
+   every model is its own summariser — no "model A had a better
+   condenser" confound.
 
 ## Decision
 
@@ -67,62 +58,47 @@ Concretely:
 
 ### Negative
 
-- **Condenser eats into agent context budget.** Each summarisation
-  call consumes input + output tokens from the same model's effective
-  budget. Mitigation: `keep_recent` keeps the most recent turns
-  verbatim; older turns are replaced by a single short summary turn.
-  The net effect is fewer tokens spent on context than no condensing
-  at all.
+- **Condenser eats into agent context budget.** Mitigation:
+  `keep_recent` keeps recent turns verbatim; older turns collapse to a
+  single short summary. Net: fewer tokens than no condensing.
 - **If the bench model is poor at summarisation, the condenser is
-  poor.** But a model that can't summarise its own conversation
-  history probably can't solve the task either, so the bench result
-  is still meaningful — just worse all around.
-- **Throughput cost.** Each `condense()` call is one extra inference
-  request. Acceptable; condensing triggers only after
-  `trigger_tokens` (default 40 K) are accumulated.
+  poor.** A model that can't summarise its own history probably can't
+  solve the task — the bench result remains meaningful.
+- **Throughput cost.** One extra inference per `condense()`. Triggers
+  only after `trigger_tokens` (default 40 K).
 
 ### Reverting
 
-The decision can be reversed cycle-by-cycle if needed: `CondenserConfig`
-already carries `model_id`, so a future cycle could set it to a
-different `ModelTarget`. The default behaviour is what changes; the
-abstraction supports either choice.
+`CondenserConfig.model_id` is configurable; a future cycle can point it
+at a different `ModelTarget`. Only the default changes.
 
 ## Alternatives considered
 
 ### A. Separate smaller condenser model (legacy `_bak`)
 
-Use e.g. `llama-3.1-8b-nvfp4` on the 5090, separate vLLM container,
-separate model registry. **Rejected** because of operational drag and
-the comparability confound described above.
+`llama-3.1-8b-nvfp4` on the 5090, separate container, separate registry.
+**Rejected**: operational drag and comparability confound (above).
 
 ### B. No condenser at all
 
-Cap the agent loop at whatever the model's context window can hold;
-fail when context exceeds budget. **Rejected** because tier 3-4 will
-accumulate context faster than tier 1 (orchestrator calls + node-level
-LLM calls inside the submitted graph) and the bench's reach depends on
-sustained context.
+Fail when context exceeds budget. **Rejected**: tier 3-4 accumulates
+context faster than tier 1; bench reach depends on sustained context.
 
 ### C. Sliding window without summarisation
 
-Drop oldest turns when budget hits trigger. **Rejected** because tier 1
-specifically benefits from remembering the early dev-runner feedback
-and the SKILL.md spec; losing those by simple truncation drops
+Drop oldest turns at trigger. **Rejected**: tier 1 benefits from
+remembering early dev-runner feedback and SKILL.md; truncation drops
 information the model is using.
 
 ## Implementation pointers
 
-- `src/reward_bench/entities/condenser_config.py` — already exists
-  (cycle 13). `model_id` field carries the chosen condenser model id.
-- `src/ports/condenser.py` (relocated cycle 116) — the
-  `CondenserPort` Protocol. The trivial `NullCondenser` lives at
-  `src/reward_bench/adapters/null_condenser.py` and is the default
-  for cases below the trigger.
-- `src/reward_bench/adapters/llm_condenser.py` — cycle 16. Will
-  call the bench-model vLLM endpoint to summarise older turns.
-- `src/reward_bench/frameworks/main.py` — cycle 17. Wires the
-  condenser using the same `ModelTarget` that drives the bench.
+- `src/reward_bench/entities/condenser_config.py` — `model_id` field.
+- `src/ports/condenser.py` — `CondenserPort` Protocol. Default
+  `NullCondenser` at `src/reward_bench/adapters/null_condenser.py`.
+- `src/reward_bench/adapters/llm_condenser.py` — calls the bench-model
+  vLLM endpoint.
+- `src/reward_bench/frameworks/main.py` — wires the condenser using the
+  bench `ModelTarget`.
 
 ## Cross-references
 
