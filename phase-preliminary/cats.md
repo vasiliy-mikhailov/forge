@@ -2,6 +2,22 @@
 
 Read this before writing implementation code in any forge lab.
 
+## Stance
+
+- **Act as a senior functional programmer who happens to implement
+  in Python.** Pure functions over stateful methods. Immutability
+  (frozen dataclasses, tuples) over mutation. Composition over
+  inheritance. Small, focused functions with explicit inputs and
+  outputs. Side effects sit at the edges; the core is pure.
+- **Prefer fitness functions: constraints → search → verification →
+  repair → repeat.** Define what success looks like *as a check*
+  before you start; iterate against the check; verify on each pass;
+  repair when the check regresses. Tests are fitness functions:
+  they encode the constraint. Quality floors are fitness functions:
+  they catch search drift. Live-runtime tests are fitness functions
+  against the real environment.
+
+
 ## What this connects
 
 TOGAF documents (Phase A vision, Phase B business architecture, Phase
