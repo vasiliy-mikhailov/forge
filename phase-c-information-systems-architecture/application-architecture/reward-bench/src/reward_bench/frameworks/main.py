@@ -1,16 +1,9 @@
 """reward-bench composition root.
 
-See src-spec/reward_bench/frameworks/main/src_spec_main.md.
-
 Wires the model registry, the tier1 inference container, the agent
 loop, the harness, the GameBoard adapter, the score_submission use
 case, and the LlmCondenser into a single end-to-end run that emits
-an AttemptResult.
-
-Per ADR 0001, the condenser uses the same vLLM endpoint and model
-as the bench target. Per ADR 0002, malformed submissions yield a
-sentinel AttemptResult. Per ADR 0003, the default BenchConfig
-applies 500 iters / T=0.7."""
+an AttemptResult."""
 import json
 import os
 import tempfile
@@ -36,13 +29,8 @@ REPO = Path(__file__).resolve().parents[4]
 ENV_DIR = REPO / 'tasks' / '2048'
 TASKS_DIR = REPO / 'tasks'
 
-# Condenser trigger sized for the 128K context budget. With
-# max_model_len=131072 and reserved output budget max_tokens=32768, the
-# effective input budget is ~98304 tokens. We trigger at ~80% of that so
-# the model has room to swing without compacting prematurely. Legacy _bak
-# used 40000 (conservative for a smaller secondary GPU); our setup runs
-# the same 128K model for both bench and condenser per ADR 0001 so the
-# higher trigger is safe.
+# Condenser trigger sized for the 128K context budget: ~80% of the
+# effective input budget (max_model_len 131072 minus reserved output 32768).
 _CONDENSER_TRIGGER_TOKENS = 80000
 _CONDENSER_KEEP_RECENT = 8
 
@@ -58,7 +46,7 @@ def _pick_model(model_id: str) -> ModelTarget:
 
 
 def _sentinel_attempt_result(reason: str, *, protocol_invalid: bool = False) -> AttemptResult:
-    """Empty AttemptResult emitted when the submission is malformed (ADR 0002)."""
+    """Empty AttemptResult emitted when the submission is malformed."""
     print(f'[bench] submission shape error: {reason}')
     return AttemptResult(
         mean_score=0.0,
@@ -73,9 +61,8 @@ def _sentinel_attempt_result(reason: str, *, protocol_invalid: bool = False) -> 
 
 
 def _build_summarise(base_url: str, api_key: str, served_name: str):
-    """Construct a callable that posts older turns to the bench vLLM endpoint
-    and returns the resulting summary string. Per ADR 0001, served_name is
-    the same as the bench target."""
+    """Callable that posts older turns to the bench vLLM endpoint and
+    returns the resulting summary string."""
     def summarise(older_turns: Tuple[dict, ...]) -> str:
         prompt = [
             {'role': 'system',
@@ -108,17 +95,15 @@ def _build_summarise(base_url: str, api_key: str, served_name: str):
 
 
 def _build_condenser(target: ModelTarget, base_url: str, api_key: str) -> LlmCondenser:
-    """Construct an LlmCondenser for the bench target per ADR 0001 — same
-    model serves both bench-target inference and condensing."""
+    """Construct an LlmCondenser for the bench target — same model
+    serves both bench-target inference and condensing."""
     summarise = _build_summarise(base_url, api_key, target.served_name)
     return LlmCondenser(summarise=summarise, model_id=target.id)
 
 
 def _build_ask(base_url: str, api_key: str, served_name: str):
-    """Cycle 35: bind a one-shot LLM completion against the bench endpoint.
-
-    The supervisor uses this to ask the bench model (per ADR 0001) to
-    judge plateau from sweep data."""
+    """Bind a one-shot LLM completion against the bench endpoint for
+    the supervisor's plateau judgement."""
     def ask(prompt: str) -> str:
         body = json.dumps({
             'model': served_name,
@@ -141,17 +126,16 @@ def _build_ask(base_url: str, api_key: str, served_name: str):
 
 
 def _build_supervisor(target: ModelTarget, base_url: str, api_key: str) -> LlmSupervisor:
-    """Cycle 35: same-model supervisor per ADR 0001 + ADR 0005."""
+    """Same-model supervisor."""
     ask = _build_ask(base_url, api_key, target.served_name)
     return LlmSupervisor(ask=ask, model_id=target.id)
 
 
 
 def _default_canonical_scorer():
-    """Cycle 109 / ADR 0018: module-level factory for the default
-    canonical scorer. Production returns DockerCanonicalScorer; tests
-    monkeypatch this to return FakeCanonicalScorer (conftest autouse
-    binding)."""
+    """Module-level factory for the default canonical scorer.
+    Production returns DockerCanonicalScorer; tests monkeypatch this
+    to return FakeCanonicalScorer."""
     from src.tier1.adapters.docker_canonical_scorer import DockerCanonicalScorer
     return DockerCanonicalScorer(env_path=ENV_DIR / 'env.py')
 
@@ -162,16 +146,8 @@ def main(
     config: BenchConfig = BenchConfig(),
     canonical_scorer=None,
 ) -> AttemptResult:
-    """Run the bench end-to-end and emit an AttemptResult.
-
-    `config` defaults to ADR 0003 (500 iters, T=0.7); tests pass a
-    smaller config to keep wall time bounded."""
+    """Run the bench end-to-end and emit an AttemptResult."""
     target = _pick_model(model_id)
-    # Cycle 73: pass the picked ModelTarget through so the lab vLLM
-    # container is (re)provisioned for THIS model. Before cycle 73,
-    # this was the bare cycle-11 ensure_serving() which hardcoded AWQ
-    # and silently overrode any earlier ensure_serving_model(target)
-    # call — uncovered live during cycle 72's multi-model smoke.
     base_url = ensure_serving_model(target)
     api_key = os.environ['VLLM_API_KEY']
 
@@ -189,17 +165,14 @@ def main(
         return condenser.condense(messages, condenser_config)
 
     supervisor = _build_supervisor(target, base_url, api_key)
-    # Cycle 77 / ADR 0006: align dev's per-seed share with canonical's.
-    # Without this scaling, dev's 30s/5seeds = 6s/seed admits Solvers
-    # that canonical's 60s/20seeds = 3s/seed will reject (cycle 78
-    # leaderboard observed this on llama-3.3-70b-nvfp4 et al.).
+    # Align dev's per-seed share with canonical's.
     _seeds = tuple(seeds)
     if config.hard_wall_sec > 0 and len(_seeds) > 0:
         _dev_hard_wall_sec = (
             config.hard_wall_sec * 5 / len(_seeds)
         )
     else:
-        _dev_hard_wall_sec = None  # use module default (30s)
+        _dev_hard_wall_sec = None
     _run_loop_result = run_loop(
         workspace=workspace,
         env_dir=ENV_DIR,
@@ -211,11 +184,9 @@ def main(
         temperature=config.temperature,
         supervisor=supervisor,
         supervisor_every_k=config.supervisor_every_k,
-        finish_floor=config.finish_floor,  # cycle 50 / hypothesis #2
-        model_id=target.served_name,       # cycle 74: don't ask vLLM for AWQ
-                                           # when the container serves something
-                                           # else; otherwise HTTP 404.
-        smoke_early_stop=config.smoke_early_stop,  # cycle 76 / ADR 0009 v2,
+        finish_floor=config.finish_floor,
+        model_id=target.served_name,
+        smoke_early_stop=config.smoke_early_stop,
         dev_hard_wall_sec=_dev_hard_wall_sec,
     )
 
@@ -225,18 +196,7 @@ def main(
     except FileNotFoundError:
         return _sentinel_attempt_result(f'no submission at {submission_path}')
     except SyntaxError as e:
-        # Model wrote non-Python content (e.g. HTML, pseudocode). Per ADR
-        # 0002 sentinel-on-malformed pattern, extended to cover SyntaxError
-        # discovered live with temperature=0.7 cycle-22 campaign run.
         return _sentinel_attempt_result(f'submission has SyntaxError: {e}')
-    # Cycle 53: explicit submission-protocol validation per
-    # tasks/2048/SKILL_tier1.md (class Solver + move(self, board)->W/A/S/D).
-    # Replaces the ad-hoc AttributeError sentinel from cycles 28/29 with a
-    # named contract check; the violation strings are surfaced into the
-    # artifact via the sentinel reason so observability distinguishes
-    # protocol violations from runtime crashes.
-    # Cycle 91: pass the submission source text so the SPEC §Tier 1
-    # `transitions` soft-grep can fire on the canonical-scoring path too.
     try:
         _source = submission_path.read_text()
     except Exception:
@@ -249,27 +209,19 @@ def main(
         )
     SolverCls = module.Solver
 
-    # Cycle 80: smoke-mode canonical-skip. Once smoke_early_stop fired
-    # with positive dev_mean, the smoke contract (ADR 0009 v3) is
-    # satisfied; canonical scoring is pure overhead. Return a synthetic
-    # AttemptResult carrying just best_dev_mean.
+    # Smoke-mode canonical-skip: when smoke_early_stop fired with
+    # positive dev_mean, canonical scoring is pure overhead.
     _best_dev_mean = (_run_loop_result or {}).get('best_dev_mean')
     if config.smoke_early_stop and _best_dev_mean is not None and _best_dev_mean > 0:
         print(f'[bench] smoke-mode canonical-skip: best_dev_mean='
-              f'{_best_dev_mean} (per ADR 0009 v3 / cycle 80)')
+              f'{_best_dev_mean}')
         return AttemptResult(
             mean_score=0.0, median_score=0.0, std_score=0.0,
             max_max_tile=0, n_games=0, aggregate_walltime_sec=0.0,
             best_dev_mean=_best_dev_mean,
         )
 
-    # Cycle 105 sub-C / ADR 0006 Layer 2: canonical scoring runs in a
-    # reward-bench-tier1 Docker container. Production default: build
-    # DockerCanonicalScorer lazily (50% of host cores). Tests inject a
-    # recorder via canonical_scorer parameter.
     if canonical_scorer is None:
-        # Cycle 109 / ADR 0018: factory hook lets conftest autouse
-        # inject FakeCanonicalScorer; production binds Docker.
         canonical_scorer = _default_canonical_scorer()
     reports_dir = workspace / 'reports'
     reports_dir.mkdir(parents=True, exist_ok=True)
@@ -278,10 +230,6 @@ def main(
         hard_wall_sec=config.hard_wall_sec,
         reports_root=reports_dir,
     )
-    # Cycle 79 / ADR 0009 v3: surface best_dev_mean (from run_loop's
-    # execute_submission tracker) on AttemptResult so smoke tests can
-    # assert on the "first working code" signal rather than the
-    # canonical second-stage score.
     import dataclasses as _dc
     result = _dc.replace(result, best_dev_mean=(_run_loop_result or {}).get('best_dev_mean'))
 

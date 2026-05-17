@@ -1,9 +1,4 @@
-"""Tier 1 interactive agent loop. See src-spec/tier1/.
-
-Per SPEC.md Submission Protocols, the interactive protocol is the
-currently-implemented mode. Lifted verbatim from _bak/bin/agent_loop.py
-(May 2026 production campaign, ~15.9k mean score on Qwen3.6-27B-AWQ).
-"""
+"""Tier 1 interactive agent loop."""
 import json
 import os
 import re
@@ -18,29 +13,23 @@ _BODY_SPLIT_RE = re.compile(r'\n===FILE_BODY===\s*\n', re.DOTALL)
 
 
 def parse_tool_calls(reply, structured_tool_calls=None):
-    """Cycle 98 / ADR 0011: delegates to CompositeParser.
+    """Extract tool calls from an assistant reply.
 
-    Accepts the legacy (str, list|None) shape AND the cycle-83 + cycle-96
-    composite reply shape. Constructs an `AssistantReply` dict and runs
-    the production-default parser pair (fenced-text + structured-openai).
-
-    The two-surface contract from cycles 9/58/83/96 lives in the
-    parser adapters now; this function is a thin compatibility shim.
+    Accepts (str, list|None) shape AND the composite reply shape.
+    Constructs an `AssistantReply` dict and runs the production-default
+    parser pair (fenced-text + structured-openai).
     """
     from src.ports.protocol_parser import AssistantReply
     from src.adapters.parsers.fenced_text_parser import FencedTextParser
     from src.adapters.parsers.structured_openai_parser import StructuredOpenAIParser
     from src.adapters.parsers.composite_parser import CompositeParser
 
-    # Normalize the caller's input into an AssistantReply.
     if isinstance(reply, dict):
-        # Cycle 83+: reply is already shaped {'content': str, 'tool_calls': list}.
         ar: AssistantReply = {
             'content': reply.get('content', '') or '',
             'tool_calls': reply.get('tool_calls') or (structured_tool_calls or []),
         }
     else:
-        # Legacy: reply is a bare content string (most tests).
         ar = {
             'content': reply or '',
             'tool_calls': structured_tool_calls or [],
@@ -48,7 +37,6 @@ def parse_tool_calls(reply, structured_tool_calls=None):
 
     parser = CompositeParser([FencedTextParser(), StructuredOpenAIParser()])
     calls = parser.extract(ar)
-    # Return list[tuple] for back-compat with callers that unpack tuples.
     return [(c.name, c.args) for c in calls]
 
 def _trim(s, n=4000):
@@ -57,11 +45,8 @@ def _trim(s, n=4000):
     return s[: n - 200] + f"\n... [truncated, total {len(s)} chars]"
 
 
-# Cycle 34: dev_runner emits a summary line shaped like
+# Legacy bash dev_runner stdout summary:
 #   MEAN=5000.0  MEDIAN=4800.0  max-tile-best=512  (1.5s total)
-# This regex extracts mean, max_tile, walltime to feed the supervisor
-# sweep per ADR 0005. None when no match (the caller emits a zero-filled
-# placeholder so n_samples == iter_count).
 _DEV_RUNNER_SUMMARY_RE = re.compile(
     r"MEAN=([0-9]+(?:\.[0-9]+)?)\s+"
     r"MEDIAN=[0-9]+(?:\.[0-9]+)?\s+"
@@ -73,13 +58,9 @@ _DEV_RUNNER_SUMMARY_RE = re.compile(
 def _parse_dev_runner_summary(obs_text):
     """Return (mean_score, max_tile, walltime_sec) or None.
 
-    Cycle 34: matches the legacy bash dev_runner stdout summary line.
-    Cycle 63 (ADR 0008): ALSO matches the execute_submission JSON
-    observation wrapped in <observation>...</observation> so the active
-    tool feeds the same best_dev_mean / supervisor sweep / finish-floor
-    accumulators as the legacy path.
+    Matches both the legacy bash dev_runner stdout summary line and
+    the execute_submission JSON observation wrapped in <observation>...</observation>.
     """
-    # Active path (ADR 0008): JSON observation.
     if "<observation>" in obs_text:
         try:
             import json as _json
@@ -93,10 +74,8 @@ def _parse_dev_runner_summary(obs_text):
                 max_tile = int(payload.get("max_tile_best", 0))
                 walltime = float(payload.get("walltime_sec_total", 0.0))
                 return (mean, max_tile, walltime)
-            # Empty per_seed (protocol violation / SyntaxError) => no parse.
         except (ValueError, KeyError):
             pass
-    # Legacy path: bash dev_runner stdout regex.
     m = _DEV_RUNNER_SUMMARY_RE.search(obs_text)
     if m is None:
         return None
@@ -105,15 +84,9 @@ def _parse_dev_runner_summary(obs_text):
 
 
 
-
-
 def execute_tool(name, args, workspace, env_dir, tasks_dir,
                  dev_hard_wall_sec: float = None):
-    """Cycle 98c / ADR 0011: delegates to Tier1ToolRegistry.
-
-    Kept as a function for back-compat with pre-cycle-98c callers
-    (run_loop, monkeypatched tests). Cycle 99 will let run_loop take
-    the ToolRegistry port directly so this shim goes away."""
+    """Delegates to Tier1ToolRegistry."""
     from src.adapters.tier1_tool_registry import Tier1ToolRegistry
     registry = Tier1ToolRegistry()
     return registry.dispatch(name, args, {
@@ -125,24 +98,15 @@ def execute_tool(name, args, workspace, env_dir, tasks_dir,
 
 _DEV_SEEDS = (1, 2, 3, 4, 5)
 
-# Cycle 70: aggregate wall-time cap for the dev feedback path. Passed
-# through to score_submission's hard_wall_sec; per-game cap derives
-# from remaining budget (cycle 27 daemon-thread timeout). Without this,
-# a slow Solver (e.g. cycle 69's expectimax(depth=4) with deepcopy)
-# wedges the ralph loop. Monkeypatched small in tests.
+# Aggregate wall-time cap for the dev feedback path.
 DEV_HARD_WALL_S = 30.0
 
 
 def _execute_submission(body, workspace, tasks_dir,
                         dev_hard_wall_sec: float = None):
-    # Cycle 77 / ADR 0006: per-game budget alignment with canonical.
-    # When the caller (run_loop or main()) knows canonical's
-    # config.hard_wall_sec, it passes a scaled dev_hard_wall_sec so
-    # dev's per-seed share matches canonical's. None -> back-compat
-    # default of the cycle-70 30s.
     if dev_hard_wall_sec is None:
         dev_hard_wall_sec = DEV_HARD_WALL_S
-    """ADR 0008 dispatcher. Always returns a JSON-string observation;
+    """Dispatcher. Always returns a JSON-string observation;
     NEVER raises (failures land in protocol_violations / per_seed errors)."""
     import json as _json
     import sys as _sys
@@ -163,7 +127,6 @@ def _execute_submission(body, workspace, tasks_dir,
         obs['protocol_violations'].append(f'write failed: {type(e).__name__}: {e}')
         return '<observation>' + _json.dumps(obs) + '</observation>'
 
-    # Load + validate protocol.
     try:
         spec = _ilu.spec_from_file_location('execute_submission_module', str(sub_path))
         module = _ilu.module_from_spec(spec)
@@ -181,14 +144,8 @@ def _execute_submission(body, workspace, tasks_dir,
         obs['protocol_violations'].extend(violations)
         return '<observation>' + _json.dumps(obs) + '</observation>'
 
-    # Cycle 128 (ADR 0006 amendment): dev runner uses Layer 2 (Docker
-    # hard kill via cgroup), not Layer 1 (in-process daemon-thread
-    # soft timeout). Layer 1 cannot interrupt C-level Python work,
-    # which lets adversarial CPU-bound submissions (Monte Carlo,
-    # expectimax, busy loops) wedge the entire bench process. Layer 2
-    # collapses Layer 1: Docker --pids-limit + cgroup CPU/memory caps
-    # enforce limits at kernel level; nothing in user code can resist.
-    # The cycle-70 fix was incomplete; cycle 128 finishes it.
+    # Dev runner uses Docker hard-kill (cgroup) — in-process daemon-thread
+    # soft timeout cannot interrupt C-level CPU-bound submissions.
     from src.tier1.adapters.docker_canonical_scorer import DockerCanonicalScorer
     try:
         _scorer = DockerCanonicalScorer(env_path=Path(tasks_dir) / 'env.py')
@@ -198,21 +155,18 @@ def _execute_submission(body, workspace, tasks_dir,
             hard_wall_sec=dev_hard_wall_sec,
         )
     except RuntimeError as e:
-        # Cycle 121: infrastructure failure (image missing, daemon down).
-        # Surface as a protocol_violation so the model sees the failure
-        # without the bench wedging.
+        # Infrastructure failure (image missing, daemon down) — surface
+        # as protocol_violation so the model sees the failure.
         obs['protocol_violations'].append(
             f'dev runner infrastructure failure: {type(e).__name__}: {e}'
         )
         return '<observation>' + _json.dumps(obs) + '</observation>'
-    except Exception as e:  # defence-in-depth: dispatcher must never raise
+    except Exception as e:
         obs['protocol_violations'].append(
             f'DockerCanonicalScorer failed: {type(e).__name__}: {e}'
         )
         return '<observation>' + _json.dumps(obs) + '</observation>'
 
-    # Thin AttemptResult -> observation transform. Preserves the cycle-63
-    # parser contract (mean/median/per_seed/max_tile_best/walltime_sec_total).
     per_seed = []
     for _g in _attempt.games:
         per_seed.append({
@@ -233,10 +187,8 @@ def _execute_submission(body, workspace, tasks_dir,
 
 
 def _err_for_final_state(final_state):
-    """Cycle 70: map GameResult.final_state to the optional `err` field
-    in the execute_submission per_seed observation. None for happy
-    states; descriptive string for sentinel states so the model can
-    read why a per_seed entry is degenerate."""
+    """Map GameResult.final_state to the optional `err` field
+    in the execute_submission per_seed observation."""
     if final_state in ('won', 'lost'):
         return None
     if final_state == 'walltime_exceeded':
@@ -249,15 +201,7 @@ def _err_for_final_state(final_state):
 
 
 
-# Cycle 96 / ADR 0010 cycle-95 amendment: OpenAI-style tool advertisement.
-# Mistral / devstral / gpt-oss require tools=[...] in the request to emit
-# structured message.tool_calls; without it they answer "I do not have
-# the tools needed". qwen / gemma / llama already honor SYSTEM_PROMPT
-# fenced-text protocol; passing tools as well does not suppress them
-# (their replies still come back in message.content fenced blocks, the
-# default branch of parse_tool_calls).
-# Cycle 98c: schemas now live in src/adapters/tier1_tool_registry.py.
-# Re-exported for back-compat with pre-cycle-98c callers.
+# Re-exported for back-compat callers.
 from src.adapters.tier1_tool_registry import Tier1ToolRegistry as _Tier1Reg
 TOOL_SCHEMAS = _Tier1Reg().schemas
 
@@ -283,9 +227,9 @@ class Solver:
     def move(self, board: list[list[int]]) -> str:
         return 'W'
 ```
-  PRIMARY TOOL (per ADR 0008). Emit your FULL submission body inline
-  after the `===FILE_BODY===` separator (NO JSON escaping — newlines,
-  quotes, backslashes all literal). The bench writes the body into a
+  PRIMARY TOOL. Emit your FULL submission body inline after the
+  `===FILE_BODY===` separator (NO JSON escaping — newlines, quotes,
+  backslashes all literal). The bench writes the body into a
   sandboxed Docker container, runs dev_runner on 5 dev seeds, and
   returns a structured JSON observation:
 
@@ -329,11 +273,7 @@ FIRST_USER = "Start the task. Read /tasks/2048/SKILL_tier1.md to learn the const
 
 def _call_model(vllm_base_url, vllm_api_key, messages, max_tokens=12288, temperature=0.0,
                 model_id='qwen3.6-27b-awq'):
-    """Cycle 98b / ADR 0011: thin shim over VllmOpenAIClient.
-
-    Kept for cycle-9..96 callers (run_loop, tests that monkeypatch this
-    function). Cycle 99 will plumb the ModelClient port directly so
-    this shim can go away."""
+    """Thin shim over VllmOpenAIClient."""
     from src.adapters.vllm_openai_client import VllmOpenAIClient
     client = VllmOpenAIClient(
         base_url=vllm_base_url,
@@ -365,28 +305,14 @@ def run_loop(workspace, env_dir, tasks_dir, vllm_base_url, vllm_api_key,
 
     `condense` is an opaque callable that takes the message tuple and
     returns a (possibly shorter) tuple. Called BEFORE every _call_model
-    invocation. Default is identity. See
-    src-spec/tier1/agent_loop/src_spec_when_run_loop_called_with_condense_callable_*
-    for the seam contract; see reward-bench/docs/adr/0001 for the
-    same-model decision used by the concrete LlmCondenser adapter.
+    invocation. Default is identity.
 
-    `temperature` is the Stage-1 author-loop sampling temperature
-    passed through to `_call_model`. Default 0.0 (deterministic) for
-    test isolation; the bench orchestrator (`main()`) passes
-    `BenchConfig.temperature` per ADR 0003 (0.7 for exploration).
-
-    `supervisor` (cycle 33, ADR 0005): optional SupervisorPort impl
-    consulted every `supervisor_every_k` iterations to judge whether
-    the agent has plateaued. When the supervisor returns
+    `supervisor` is an optional SupervisorPort consulted every
+    `supervisor_every_k` iterations. When the supervisor returns
     `stop_recommended=True`, the loop terminates early with
-    `finished=True` and a synthetic note carrying the supervisor's
-    reasoning.
+    `finished=True`.
 
-    `supervisor_every_k` (cycle 33): consult cadence. Default 0 means
-    NEVER consult (cycle-12 behavior; no change for existing campaigns
-    that pass no supervisor or pass NullSupervisor).
-
-    Returns {iterations, messages, finished}.
+    Returns {iterations, messages, finished, best_dev_mean}.
     """
     messages = [
         {'role': 'system', 'content': SYSTEM_PROMPT},
@@ -394,31 +320,20 @@ def run_loop(workspace, env_dir, tasks_dir, vllm_base_url, vllm_api_key,
     ]
     finished = False
     iter_n = 0
-    # Cycle 34: accumulator for supervisor sweep samples per ADR 0005.
     _sweep_samples = []
-    # Cycle 38: stall detection state.
     import time as _t_loop
     _loop_start = _t_loop.monotonic()
     _consecutive_no_tool_iters = 0
-    # Cycle 48 / hypothesis #1: best-snapshot + restore. Track best dev MEAN
-    # seen so far; snapshot submission.py -> submission.best.py on new best;
-    # restore the snapshot over submission.py at finish so canonical scoring
-    # sees the high-water mark, not whatever the model wrote last.
+    # Best-snapshot + restore: track best dev MEAN, snapshot submission.py
+    # on new best, restore at finish for canonical scoring.
     _best_dev_mean = None
     _best_snapshot_path = workspace / 'submission.best.py'
     _submission_path = workspace / 'submission.py'
-    # Cycle 65 / ADR 0008 finish-time promotion: remember the last
-    # execute_submission body whose observation had per_seed != [] so it
-    # can be written to workspace/submission.py at end-of-loop.
     _last_successful_execute_body = None
     while iter_n < max_iters and not finished:
         _iter_start = _t_loop.monotonic()
         iter_n += 1
         messages = list(condense(tuple(messages)))
-        # Cycle 99 / ADR 0011 step 2: DI seam. When the caller
-        # passed an explicit model_client, use it directly;
-        # otherwise fall back to the module-level _call_model
-        # (which tests monkeypatch).
         if model_client is not None:
             _tools = (list(tool_registry.schemas) if tool_registry is not None
                       else list(TOOL_SCHEMAS))
@@ -430,16 +345,12 @@ def run_loop(workspace, env_dir, tasks_dir, vllm_base_url, vllm_api_key,
             reply = _call_model(vllm_base_url, vllm_api_key, messages,
                                 temperature=temperature, model_id=model_id,
                                 max_tokens=max_tokens)
-        # Cycle 83 back-compat shim: mocked _call_model in old tests
-        # returns a bare string. Wrap so the rest of the loop is
-        # uniform (cycle 83 contract is dict-with-content+tool_calls).
+        # Mocked _call_model in old tests returns a bare string; wrap.
         if isinstance(reply, str):
             reply = {'content': reply, 'tool_calls': []}
         _content = reply.get('content', '') or ''
         _structured = reply.get('tool_calls') or []
         messages.append({'role': 'assistant', 'content': _content})
-        # Cycle 99: when caller passes a protocol_parser, use it;
-        # otherwise fall back to the legacy module-level helper.
         if protocol_parser is not None:
             _ar = {'content': _content, 'tool_calls': _structured or []}
             _calls = protocol_parser.extract(_ar)
@@ -451,13 +362,11 @@ def run_loop(workspace, env_dir, tasks_dir, vllm_base_url, vllm_api_key,
                    'must be in a fenced code block tagged `tool`.</error>')
             messages.append({'role': 'user', 'content': obs})
             _consecutive_no_tool_iters += 1
-            # Cycle 38: heartbeat for the no-tool-call path too.
             print(f'[run_loop] iter {iter_n}/{max_iters} '
                   f'tool_calls=0 no_tool_streak={_consecutive_no_tool_iters} '
                   f'dt={_t_loop.monotonic() - _iter_start:.2f}s', flush=True)
             if (max_no_tool_call_iters > 0
                     and _consecutive_no_tool_iters >= max_no_tool_call_iters):
-                # No-progress stall: model emitting prose only for K iters.
                 break
             if (agent_loop_wall_sec > 0
                     and _t_loop.monotonic() - _loop_start >= agent_loop_wall_sec):
@@ -466,9 +375,8 @@ def run_loop(workspace, env_dir, tasks_dir, vllm_base_url, vllm_api_key,
         _consecutive_no_tool_iters = 0
         observations = []
         for name, tool_args in tool_calls:
-            # Cycle 50 / hypothesis #2: finish-floor enforcement. Reject
-            # `finish` when best_dev_mean is below the floor; force the
-            # model to keep iterating until it scores above the baseline.
+            # Finish-floor enforcement: reject `finish` when best_dev_mean
+            # is below the floor.
             if name == 'finish' and finish_floor > 0:
                 _best_str = (str(_best_dev_mean) if _best_dev_mean is not None
                              else 'unknown (no dev_runner yet)')
@@ -488,8 +396,6 @@ def run_loop(workspace, env_dir, tasks_dir, vllm_base_url, vllm_api_key,
                           f'(best_dev_mean={_best_str} < floor={finish_floor})',
                           flush=True)
                     continue
-            # Cycle 99: when caller passes a tool_registry, dispatch
-            # via the port; otherwise fall back to module-level helper.
             if tool_registry is not None:
                 obs = tool_registry.dispatch(name, tool_args, {
                     'workspace': workspace, 'env_dir': env_dir,
@@ -500,8 +406,6 @@ def run_loop(workspace, env_dir, tasks_dir, vllm_base_url, vllm_api_key,
                 obs = execute_tool(name, tool_args, workspace, env_dir, tasks_dir,
                                    dev_hard_wall_sec=dev_hard_wall_sec)
             observations.append(obs)
-            # Cycle 65: track last successful execute_submission body for
-            # finish-time promotion per ADR 0008.
             if name == 'execute_submission':
                 _body_candidate = tool_args.get('content', '')
                 if _body_candidate and _execute_submission_observation_is_successful(obs):
@@ -509,8 +413,6 @@ def run_loop(workspace, env_dir, tasks_dir, vllm_base_url, vllm_api_key,
             if name == 'finish':
                 finished = True
         messages.append({'role': 'user', 'content': '\n\n'.join(observations)})
-        # Cycle 34: parse the iteration's observations for a dev_runner
-        # summary line; record a Sample or a zero-filled placeholder.
         _parsed = None
         for _obs in observations:
             _parsed = _parse_dev_runner_summary(_obs)
@@ -521,8 +423,6 @@ def run_loop(workspace, env_dir, tasks_dir, vllm_base_url, vllm_api_key,
         else:
             _mean, _max_tile, _walltime = _parsed
             _sweep_samples.append((iter_n, _mean, _max_tile, _walltime))
-            # Cycle 48 / hypothesis #1: best-snapshot. New best dev MEAN ->
-            # copy current submission.py to submission.best.py.
             if _best_dev_mean is None or _mean > _best_dev_mean:
                 _best_dev_mean = _mean
                 if _submission_path.exists():
@@ -536,28 +436,16 @@ def run_loop(workspace, env_dir, tasks_dir, vllm_base_url, vllm_api_key,
                     print(f'[harness] new best dev MEAN={_mean} '
                           f'(snapshot=False, no submission.py)',
                           flush=True)
-            # Cycle 76 / ADR 0009 v2: smoke mode bench-forced early-stop.
-            # As soon as ANY execute_submission yields dev_mean > 0, exit
-            # the loop with finished=True. Strong models would otherwise
-            # grind all 100 iters (cycle 71 trial 2 finished naturally at
-            # iter 74). Default off (regular bench unchanged).
+            # Smoke-mode bench-forced early-stop.
             if smoke_early_stop and _best_dev_mean is not None and _best_dev_mean > 0:
                 finished = True
                 print(f'[run_loop] smoke_early_stop fired at iter {iter_n} '
                       f'with best dev MEAN={_best_dev_mean}',
                       flush=True)
-        # Cycle 33 (ADR 0005): supervisor hook. Every K iters, ask the
-        # supervisor whether to stop. We feed it a minimal per-iter sample
-        # `(iter_n, 0.0, 0, 0.0)` for now — cycle 34 will parse real
-        # dev_runner output into mean_score / max_tile.
-        # Cycle 38: heartbeat after tool execution.
         print(f'[run_loop] iter {iter_n}/{max_iters} '
               f'tool_calls={len(tool_calls)} finished={finished} '
               f'dt={_t_loop.monotonic() - _iter_start:.2f}s '
               f'total={_t_loop.monotonic() - _loop_start:.1f}s', flush=True)
-        # Cycle 38: agent-loop wall-time budget (mirrors ADR 0006 layer 1
-        # but for the AGENT phase). Checked BETWEEN iterations to bound
-        # total wall time on a stuck or runaway loop.
         if (agent_loop_wall_sec > 0
                 and _t_loop.monotonic() - _loop_start >= agent_loop_wall_sec
                 and not finished):
@@ -577,8 +465,7 @@ def run_loop(workspace, env_dir, tasks_dir, vllm_base_url, vllm_api_key,
                     ),
                 })
                 finished = True
-    # Cycle 48 / hypothesis #1: restore best snapshot over submission.py
-    # so canonical scoring sees the best version the model produced this trial.
+    # Restore best-snapshot so canonical scoring sees the high-water-mark body.
     if _best_snapshot_path.exists():
         try:
             shutil.copyfile(_best_snapshot_path, _submission_path)
@@ -587,17 +474,9 @@ def run_loop(workspace, env_dir, tasks_dir, vllm_base_url, vllm_api_key,
                   flush=True)
         except Exception:
             pass
-    # Cycle 65 / ADR 0008 finish-time promotion: write the last successful
-    # execute_submission body to workspace/submission.py so canonical
-    # scoring (which reads exactly that path) sees it.
-    # Cycle 92: only fire as a fallback when cycle-48 best-snapshot
-    # restore did NOT run. Otherwise we silently overwrite the best
-    # body with the last (potentially regressed) body.
+    # Fallback: promote last successful execute_submission body when no snapshot.
     if _last_successful_execute_body is not None and not _best_snapshot_path.exists():
         try:
-            # Ensure trailing newline (PEP-8 / Python convention). The
-            # tool-call body parser strips the final \\n adjacent to the
-            # closing ``` fence; restore it on promotion.
             _body = _last_successful_execute_body
             if not _body.endswith(chr(10)):
                 _body = _body + chr(10)
@@ -612,8 +491,7 @@ def run_loop(workspace, env_dir, tasks_dir, vllm_base_url, vllm_api_key,
 
 
 def _execute_submission_observation_is_successful(obs):
-    """Cycle 65 helper: ADR 0008 says 'successful' = per_seed != [].
-    Returns False on any parse failure (defensive)."""
+    """'successful' = per_seed != []. Returns False on any parse failure."""
     if '<observation>' not in obs:
         return False
     try:
