@@ -1,26 +1,18 @@
 # `test_when_attempt_result_inspected_then_legacy_seeds_field_is_removed`
-
-Pins the removal of the legacy `seeds: tuple[int, ...]` field on
+Pins the removal of the legacy `seeds: tuple[int,...]` field on
 `AttemptResult`. Per-seed identity is now recovered from
 `tuple(g.seed for g in result.games)` — SPEC.md never declared the
 flat `seeds` field; it was a pre-realignment compatibility shim.
-
 - **Arrange**: import `AttemptResult` and `dataclasses`.
 - **Act**: inspect `dataclasses.fields(AttemptResult)`.
 - **Assert**:
-  - `'seeds'` is NOT among the field names.
-  - `'games'` IS among the field names (positive control — the
-    replacement is intact).
-
+ - `'seeds'` is NOT among the field names.
+ - `'games'` IS among the field names (positive control — the
+ replacement is intact).
 Test code: [`tests/tier1/entities/test_attempt_result.py`](../../../../tests/tier1/entities/test_attempt_result.py).
-
 ## Model client injection point
-
-- **Seam**: conftest autouse `_bind_model_client` per ADR 0014.
+- **Seam**: conftest autouse `_bind_model_client`.
 - **Mode**: **fake** (default) — autouse `FakeModelClient` / `FakeVllmServer`.
 - **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
-
 ## Runtime scope
-
 > **Runtime scope**: unit only — frozen-dataclass invariant; asserts on entity shape, no runtime boundary involved.
-
