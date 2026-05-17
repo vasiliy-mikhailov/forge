@@ -29,3 +29,5 @@ Test code: [`tests/reward_bench/adapters/test_llm_condenser.py`](../../../../tes
 - **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
 ## Runtime scope
 > **Runtime scope**: unit only — compaction logic over scripted summaries; live model coverage is via run_loop @live tests.
+
+Test code: [`../../../../tests/reward_bench/adapters/test_llm_condenser.py`](../../../../tests/reward_bench/adapters/test_llm_condenser.py)::`test_when_llm_condenser_called_with_short_messages_then_pass_through_regardless_of_count`.

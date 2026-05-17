@@ -16,3 +16,5 @@ Test code: [`tests/tier1/entities/test_attempt_result.py`](../../../../tests/tie
 - **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
 ## Runtime scope
 > **Runtime scope**: unit only — frozen-dataclass invariant; asserts on entity shape, no runtime boundary involved.
+
+Test code: [`../../../../tests/tier1/entities/test_attempt_result.py`](../../../../tests/tier1/entities/test_attempt_result.py)::`test_when_attempt_result_inspected_then_legacy_seeds_field_is_removed`.

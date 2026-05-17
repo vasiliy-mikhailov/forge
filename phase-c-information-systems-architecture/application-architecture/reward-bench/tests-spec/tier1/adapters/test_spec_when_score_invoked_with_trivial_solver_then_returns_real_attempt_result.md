@@ -50,8 +50,7 @@ Fix landed alongside this spec: `game.step(action)` ->
  infrastructure failure (image missing, daemon down, runner
  broken). If all 3 walltime_exceeded in <60s, the assert
  fails loudly with a diagnostic message.
-Test code:
-[`tests/tier1/adapters/test_docker_canonical_scorer_live.py`](../../../tests/tier1/adapters/test_docker_canonical_scorer_live.py)::`test_when_score_invoked_with_trivial_solver_then_returns_real_attempt_result`.
+Test code: [`../../../tests/tier1/adapters/test_docker_canonical_scorer_live.py`](../../../tests/tier1/adapters/test_docker_canonical_scorer_live.py)::`test_when_score_invoked_with_trivial_solver_then_returns_real_attempt_result`.
 ## Runtime injection points
 | runtime | adapter binding | config |
 |------------|---------------------------------------|--------------------|

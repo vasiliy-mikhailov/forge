@@ -25,3 +25,5 @@ Test code: [`tests/reward_bench/entities/test_model_target.py`](../../../tests/r
 - **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
 ## Runtime scope
 > **Runtime scope**: unit only — frozen-dataclass invariant; asserts on entity shape, no runtime boundary involved.
+
+Test code: [`../../../../tests/reward_bench/entities/test_model_target.py`](../../../../tests/reward_bench/entities/test_model_target.py)::`test_when_mistral_small_3_2_24b_model_target_constructed_then_fields_match_registry`.

@@ -14,3 +14,5 @@ Test code: [`tests/tier1/test_scorer.py`](../../tests/tier1/test_scorer.py).
 - **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
 ## Runtime scope
 > **Runtime scope**: unit only — AttemptResult shape / replay-equality contract; pure-Python; scale-invariant.
+
+Test code: [`../../../tests/tier1/test_scorer.py`](../../../tests/tier1/test_scorer.py)::`test_when_canonical_eval_replayed_then_mean_score_matches_exactly`.

@@ -14,3 +14,5 @@ Test code: [`tests/tier1/test_inference.py`](../../tests/tier1/test_inference.py
 - **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
 ## Runtime scope
 > **Runtime scope**: unit only — inference-orchestration wiring contract; @live coverage at the InferenceOrchestrator level.
+
+Test code: [`../../../tests/tier1/test_inference.py`](../../../tests/tier1/test_inference.py)::`test_when_bench_provisions_inference_then_qwen3_6_27b_awq_serves_with_128k_context`.

@@ -39,3 +39,5 @@ Test code: [`tests/reward_bench/frameworks/test_main.py`](../../../../tests/rewa
 - **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
 ## Runtime scope
 > **Runtime scope**: unit only — main() orchestration over DI seams; production-runtime coverage via canonical bench.
+
+Test code: [`../../../../tests/reward_bench/frameworks/test_main.py`](../../../../tests/reward_bench/frameworks/test_main.py)::`test_when_main_invoked_then_uses_ensure_serving_model_with_picked_target`.

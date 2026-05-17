@@ -19,7 +19,7 @@ type embedded in `game['error']`.
 - **Seam**: `sys.modules['env_2048']` plus the on-disk submission file.
 - **Mode**: fake (in-process `_FakeBoard`, no Docker, no LLM).
 
-Test code: [`tests/tier1/tasks/test_runner_canonical.py`](../../../../tests/tier1/tasks/test_runner_canonical.py)::`test_when_solver_init_raises_then_solver_error_final_state`.
+Test code: [`../../../tests/tier1/tasks/test_runner_canonical.py`](../../../tests/tier1/tasks/test_runner_canonical.py)::`test_when_solver_init_raises_then_solver_error_final_state`.
 
 ## Runtime scope
 

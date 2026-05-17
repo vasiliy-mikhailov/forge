@@ -17,8 +17,7 @@ adapter's new location under `src/reward_bench/adapters/`.
  - `isinstance(condenser, CondenserPort) is True`
  - return is a tuple of length 3
  - return equals input
-Test code:
-[`tests/reward_bench/adapters/test_null_condenser.py`](../../../../tests/reward_bench/adapters/test_null_condenser.py)::`test_when_null_condenser_used_then_messages_pass_through_unchanged`.
+Test code: [`../../../../tests/reward_bench/adapters/test_null_condenser.py`](../../../../tests/reward_bench/adapters/test_null_condenser.py)::`test_when_null_condenser_used_then_messages_pass_through_unchanged`.
 ## Model client injection point
 - **Seam**: not applicable — NullCondenser takes no model client.
 - **Mode**: pure-Python; runs under the default autouse fake binding.

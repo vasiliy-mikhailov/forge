@@ -18,3 +18,5 @@ Test code: [`tests/reward_bench/entities/test_condenser_config.py`](../../../../
 - **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
 ## Runtime scope
 > **Runtime scope**: unit only — frozen-dataclass invariant; asserts on entity shape, no runtime boundary involved.
+
+Test code: [`../../../../tests/reward_bench/entities/test_condenser_config.py`](../../../../tests/reward_bench/entities/test_condenser_config.py)::`test_when_condenser_config_constructed_then_fields_preserved`.

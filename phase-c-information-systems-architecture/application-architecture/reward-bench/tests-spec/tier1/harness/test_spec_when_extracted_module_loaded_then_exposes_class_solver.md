@@ -14,3 +14,5 @@ Test code: [`tests/tier1/test_harness.py`](../../tests/tier1/test_harness.py).
 - **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
 ## Runtime scope
 > **Runtime scope**: unit only — validator AST + grep + class-existence; pure-Python checks; scale-invariant.
+
+Test code: [`../../../tests/tier1/test_harness.py`](../../../tests/tier1/test_harness.py)::`test_when_extracted_module_loaded_then_exposes_class_solver`.

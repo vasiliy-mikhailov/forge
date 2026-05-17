@@ -9,6 +9,6 @@ no-silent-fix: ask() throwing must NOT propagate to the agent loop.
 - **Seam**: conftest autouse `_bind_model_client`.
 - **Mode**: **fake** (default) — autouse `FakeModelClient` / `FakeVllmServer`.
 - **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
-Test code: [`tests/reward_bench/adapters/test_llm_supervisor.py`](../../../../tests/reward_bench/adapters/test_llm_supervisor.py)::`test_when_llm_supervisor_ask_raises_then_returns_conservative_fallback`.
+Test code: [`../../../tests/reward_bench/adapters/test_llm_supervisor.py`](../../../tests/reward_bench/adapters/test_llm_supervisor.py)::`test_when_llm_supervisor_ask_raises_then_returns_conservative_fallback`.
 ## Runtime scope
 > **Runtime scope**: unit only — adapter contract; scale-invariant or covered by adapter-specific @live test.

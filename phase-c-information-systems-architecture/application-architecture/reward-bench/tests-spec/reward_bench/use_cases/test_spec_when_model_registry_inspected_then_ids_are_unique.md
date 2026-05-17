@@ -7,6 +7,6 @@
 - **Seam**: conftest autouse `_bind_model_client`.
 - **Mode**: **fake** (default) — autouse `FakeModelClient` / `FakeVllmServer`.
 - **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
-Test code: [`tests/reward_bench/use_cases/test_model_registry.py`](../../../../tests/reward_bench/use_cases/test_model_registry.py)::`test_when_model_registry_inspected_then_ids_are_unique`.
+Test code: [`../../../tests/reward_bench/use_cases/test_model_registry.py`](../../../tests/reward_bench/use_cases/test_model_registry.py)::`test_when_model_registry_inspected_then_ids_are_unique`.
 ## Runtime scope
 > **Runtime scope**: unit only — use-case orchestration over Port mocks; scale-invariant.

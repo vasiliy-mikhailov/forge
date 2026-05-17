@@ -15,6 +15,6 @@ resulting `--cpus=N/2` flag must appear in the docker cmd.
  (`FixedCpuCount(24)`); `subprocess.run` monkeypatched as recorder.
 - **Mode**: fake throughout.
 - **Marker**: `@pytest.mark.no_fake`.
-Test code: [`../../../../tests/tier1/adapters/test_docker_canonical_scorer.py`](../../../../tests/tier1/adapters/test_docker_canonical_scorer.py)::`test_when_cpus_not_set_then_defaults_to_half_of_cpu_count`.
+Test code: [`../../../tests/tier1/adapters/test_docker_canonical_scorer.py`](../../../tests/tier1/adapters/test_docker_canonical_scorer.py)::`test_when_cpus_not_set_then_defaults_to_half_of_cpu_count`.
 ## Runtime scope
 > **Runtime scope**: unit only.

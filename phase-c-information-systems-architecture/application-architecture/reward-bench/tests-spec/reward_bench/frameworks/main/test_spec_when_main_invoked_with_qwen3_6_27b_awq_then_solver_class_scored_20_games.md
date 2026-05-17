@@ -48,3 +48,5 @@ floor turns the W-fallback into a unit-time regression.
 > end-to-end. Unit-runtime coverage is provided by the sibling test_specs
 > in this directory that exercise `main()` via DI seams. Production-runtime
 > coverage is the canonical bench campaign.
+
+Test code: [`../../../../tests/reward_bench/frameworks/test_main.py`](../../../../tests/reward_bench/frameworks/test_main.py)::`test_when_main_invoked_with_qwen3_6_27b_awq_then_solver_class_scored_20_games`.

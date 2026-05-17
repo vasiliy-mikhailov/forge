@@ -14,6 +14,6 @@ for every seed.
 - **Seam**: `subprocess.run` (monkeypatched to raise).
 - **Mode**: fake raises `TimeoutExpired`.
 - **Marker**: `@pytest.mark.no_fake`.
-Test code: [`../../../../tests/tier1/adapters/test_docker_canonical_scorer.py`](../../../../tests/tier1/adapters/test_docker_canonical_scorer.py)::`test_when_outer_timeout_fires_then_walltime_exceeded_sentinels`.
+Test code: [`../../../tests/tier1/adapters/test_docker_canonical_scorer.py`](../../../tests/tier1/adapters/test_docker_canonical_scorer.py)::`test_when_outer_timeout_fires_then_walltime_exceeded_sentinels`.
 ## Runtime scope
 > **Runtime scope**: unit only.

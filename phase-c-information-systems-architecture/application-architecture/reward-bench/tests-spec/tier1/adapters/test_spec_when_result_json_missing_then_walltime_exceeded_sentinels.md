@@ -18,6 +18,6 @@ so the silent failure is self-explaining.
 - **Seam**: `subprocess.run` (monkeypatched).
 - **Mode**: fake returns non-zero exit without writing result.json.
 - **Marker**: `@pytest.mark.no_fake`.
-Test code: [`../../../../tests/tier1/adapters/test_docker_canonical_scorer.py`](../../../../tests/tier1/adapters/test_docker_canonical_scorer.py)::`test_when_result_json_missing_then_walltime_exceeded_sentinels`.
+Test code: [`../../../tests/tier1/adapters/test_docker_canonical_scorer.py`](../../../tests/tier1/adapters/test_docker_canonical_scorer.py)::`test_when_result_json_missing_then_walltime_exceeded_sentinels`.
 ## Runtime scope
 > **Runtime scope**: unit only.

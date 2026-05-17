@@ -26,9 +26,19 @@ _ARCHAEOLOGY_PATTERNS = (
 
 _PLACEHOLDER_PATTERN = re.compile(r'\(see test body[^)]*\)')
 
+# Test code: [`<relative-path>`](<relative-path>)::`test_when_X_then_Y`.
+_TEST_CODE_LINK_RE = re.compile(
+    r'Test code:\s*\[`([^`]+\.py)`\]\([^)]+\)::`(test_when_[A-Za-z0-9_]+)`'
+)
+
 # Ratchet: decrement each cycle that rewrites a stub. When 0, the test
 # becomes a strict equality and the defect class is permanently extinct.
 EXPECTED_MAX_PLACEHOLDERS = 0
+
+# Ratchet: residual aggregator specs (multi-test, violate one-spec-per-
+# behavior) + orphan specs (reference deleted tests). Decrement as
+# each is migrated or removed in subsequent cycles.
+EXPECTED_MAX_LINK_VIOLATIONS = 14
 
 
 def _discover_test_specs() -> tuple[Path, ...]:
@@ -122,4 +132,55 @@ def test_when_test_spec_corpus_walked_then_placeholder_count_at_or_below_known_m
             f'`(see test body ...)`; ratchet expected at most '
             f'{EXPECTED_MAX_PLACEHOLDERS}. Spec-rewrite cycles must be '
             f'monotonically lowering this; a regression is in:\n{head}{more}'
+        )
+
+
+def test_when_test_spec_links_followed_then_referenced_test_function_exists():
+    """Arrange / Act / Assert.
+
+    Every test_spec_*.md ends with a `Test code:` link pointing at a
+    test function. This fitness function verifies the link resolves:
+    the .py file exists and the test function is defined in it.
+    """
+    # Arrange
+    specs = _discover_test_specs()
+    assert specs, f"no test_specs found under {TESTS_SPEC}"
+
+    # Act
+    violations: list[str] = []
+    for spec in specs:
+        text = spec.read_text()
+        m = _TEST_CODE_LINK_RE.search(text)
+        if not m:
+            violations.append(f'{spec.relative_to(REPO_ROOT)}: '
+                              f'no `Test code:` link found')
+            continue
+        rel_path, func_name = m.group(1), m.group(2)
+        resolved = (spec.parent / rel_path).resolve()
+        if not resolved.exists():
+            violations.append(f'{spec.relative_to(REPO_ROOT)}: '
+                              f'link target missing: {rel_path}')
+            continue
+        # Function existence: grep for `def {name}(`. Cheap, robust.
+        try:
+            src = resolved.read_text()
+        except Exception as e:
+            violations.append(f'{spec.relative_to(REPO_ROOT)}: '
+                              f'unreadable {rel_path}: {e}')
+            continue
+        if not re.search(rf'\bdef\s+{re.escape(func_name)}\s*\(', src):
+            violations.append(f'{spec.relative_to(REPO_ROOT)}: '
+                              f'function `{func_name}` not defined in '
+                              f'{rel_path}')
+
+    # Assert (ratchet: residual aggregator + orphan specs)
+    if len(violations) > EXPECTED_MAX_LINK_VIOLATIONS:
+        head = '\n'.join(f'  {v}' for v in violations[:20])
+        more = (f'\n  ... and {len(violations) - 20} more'
+                if len(violations) > 20 else '')
+        pytest.fail(
+            f'{len(violations)} test_spec → test-code link violation(s); '
+            f'ratchet expected at most {EXPECTED_MAX_LINK_VIOLATIONS}. '
+            f'Either fix the link, rename the test, or remove the orphan '
+            f'spec:\n{head}{more}'
         )

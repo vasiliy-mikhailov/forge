@@ -11,3 +11,5 @@ Test code: [`tests/reward_bench/entities/test_attempt_meta.py`](../../../../test
 - **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
 ## Runtime scope
 > **Runtime scope**: unit only — frozen-dataclass invariant; asserts on entity shape, no runtime boundary involved.
+
+Test code: [`../../../../tests/reward_bench/entities/test_attempt_meta.py`](../../../../tests/reward_bench/entities/test_attempt_meta.py)::`test_when_attempt_meta_constructed_then_fields_preserved`.

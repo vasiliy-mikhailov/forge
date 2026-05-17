@@ -22,7 +22,7 @@ pins the orchestration path end-to-end.
 - **Mode**: fake recorder writes synthetic `result.json`. Marker
  `@pytest.mark.no_fake` bypasses the autouse fakes; this test
  exercises real `DockerCanonicalScorer` code.
-Test code: [`../../../../tests/tier1/adapters/test_docker_canonical_scorer.py`](../../../../tests/tier1/adapters/test_docker_canonical_scorer.py)::`test_when_score_invoked_then_result_json_parsed_into_attempt_result`.
+Test code: [`../../../tests/tier1/adapters/test_docker_canonical_scorer.py`](../../../tests/tier1/adapters/test_docker_canonical_scorer.py)::`test_when_score_invoked_then_result_json_parsed_into_attempt_result`.
 ## Runtime scope
 > **Runtime scope**: unit only — `subprocess.run` faked. Live coverage
 > at `test_docker_canonical_scorer_live.py`.

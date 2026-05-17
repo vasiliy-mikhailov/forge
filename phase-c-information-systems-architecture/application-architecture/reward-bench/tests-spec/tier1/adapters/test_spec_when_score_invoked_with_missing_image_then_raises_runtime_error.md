@@ -28,8 +28,7 @@ and the [CanonicalScorerPort src_spec](../../../src-spec/ports/canonical_scorer/
  message includes the stderr content for diagnosis. NO
  `AttemptResult` is returned. NO sentinel `walltime_exceeded` games
  are produced.
-Test code:
-[`tests/tier1/adapters/test_docker_canonical_scorer.py`](../../../tests/tier1/adapters/test_docker_canonical_scorer.py)::`test_when_score_invoked_with_missing_image_then_raises_runtime_error`.
+Test code: [`../../../tests/tier1/adapters/test_docker_scorer_infra_failure.py`](../../../tests/tier1/adapters/test_docker_scorer_infra_failure.py)::`test_when_score_invoked_with_missing_image_then_raises_runtime_error`.
 ## Model client injection point
 - **Seam**: monkeypatch `subprocess.run` directly (the scorer holds
  no DI seam for subprocess; that's a separate future cycle).

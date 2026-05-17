@@ -26,3 +26,5 @@ Test code: [`tests/reward_bench/adapters/test_llm_supervisor.py`](../../../../te
 - **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
 ## Runtime scope
 > **Runtime scope**: unit only — parser/fallback semantics over scripted replies; live model coverage is via run_loop @live tests.
+
+Test code: [`../../../../tests/reward_bench/adapters/test_llm_supervisor.py`](../../../../tests/reward_bench/adapters/test_llm_supervisor.py)::`test_when_llm_supervisor_reply_unparseable_then_returns_conservative_fallback`.

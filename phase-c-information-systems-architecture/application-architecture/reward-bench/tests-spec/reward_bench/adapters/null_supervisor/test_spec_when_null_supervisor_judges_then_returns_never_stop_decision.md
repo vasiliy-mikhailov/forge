@@ -19,8 +19,7 @@ adapter's new location under `src/reward_bench/adapters/`.
  - `decision.stop_recommended is False`
  - `decision.reasoning` is a non-empty `str`
  - `isinstance(supervisor, SupervisorPort) is True`
-Test code:
-[`tests/reward_bench/adapters/test_null_supervisor.py`](../../../../tests/reward_bench/adapters/test_null_supervisor.py)::`test_when_null_supervisor_judges_then_returns_never_stop_decision`.
+Test code: [`../../../../tests/reward_bench/adapters/test_null_supervisor.py`](../../../../tests/reward_bench/adapters/test_null_supervisor.py)::`test_when_null_supervisor_judges_then_returns_never_stop_decision`.
 ## Model client injection point
 - **Seam**: not applicable — NullSupervisor takes no model client.
 - **Mode**: pure-Python; runs under the default autouse fake binding.

@@ -19,7 +19,7 @@ absent. Pairs with `..._given_tools_then_advertises_them`.
 - **Seam**: `urllib.request.urlopen` (monkeypatched).
 - **Mode**: fake.
 
-Test code: [`tests/adapters/test_vllm_client_adapter.py`](../../../tests/adapters/test_vllm_client_adapter.py)::`test_when_client_call_given_no_tools_then_field_omitted`.
+Test code: [`../../tests/adapters/test_vllm_client_adapter.py`](../../tests/adapters/test_vllm_client_adapter.py)::`test_when_client_call_given_no_tools_then_field_omitted`.
 
 ## Runtime scope
 

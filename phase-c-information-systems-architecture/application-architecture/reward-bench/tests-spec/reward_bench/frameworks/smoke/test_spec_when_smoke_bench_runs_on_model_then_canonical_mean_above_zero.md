@@ -40,3 +40,5 @@ passes").
  `@pytest.mark.live` / `@pytest.mark.no_fake`.
 ## Runtime scope
 > **Runtime scope**: live + production — parametrised over `MODEL_REGISTRY`; @pytest.mark.smoke; opt-in via `pytest -m smoke`. Production-runtime coverage is the canonical bench (`run_canonical_battery`) which exercises the same `main()` path with FULL config (max_iters=500, n_trials=10, 20 seeds) instead of smoke config (max_iters=100, smoke_early_stop=True).
+
+Test code: [`../../../../tests/reward_bench/frameworks/smoke/test_smoke_all_models.py`](../../../../tests/reward_bench/frameworks/smoke/test_smoke_all_models.py)::`test_when_smoke_bench_runs_on_model_then_canonical_mean_above_zero`.

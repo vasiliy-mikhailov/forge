@@ -10,6 +10,6 @@ Pins the module-level default image constant. Catches drift between
 - **Seam**: none — pure module-level constant.
 - **Mode**: n/a.
 - **Marker**: `@pytest.mark.no_fake`.
-Test code: [`../../../../tests/tier1/adapters/test_docker_canonical_scorer.py`](../../../../tests/tier1/adapters/test_docker_canonical_scorer.py)::`test_when_default_image_then_v04_used`.
+Test code: [`../../../tests/tier1/adapters/test_docker_canonical_scorer.py`](../../../tests/tier1/adapters/test_docker_canonical_scorer.py)::`test_when_default_image_then_v04_used`.
 ## Runtime scope
 > **Runtime scope**: unit only.

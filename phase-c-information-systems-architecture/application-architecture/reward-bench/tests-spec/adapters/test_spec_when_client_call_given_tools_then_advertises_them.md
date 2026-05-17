@@ -28,7 +28,7 @@ to "I do not have the tools needed".
 - **Override**: not applicable (test exercises the production
   `VllmOpenAIClient` directly).
 
-Test code: [`tests/adapters/test_vllm_client_adapter.py`](../../../tests/adapters/test_vllm_client_adapter.py)::`test_when_client_call_given_tools_then_advertises_them`.
+Test code: [`../../tests/adapters/test_vllm_client_adapter.py`](../../tests/adapters/test_vllm_client_adapter.py)::`test_when_client_call_given_tools_then_advertises_them`.
 
 ## Runtime scope
 

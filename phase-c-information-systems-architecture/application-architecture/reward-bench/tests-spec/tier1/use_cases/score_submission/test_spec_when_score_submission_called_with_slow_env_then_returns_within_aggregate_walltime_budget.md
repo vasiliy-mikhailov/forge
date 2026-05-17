@@ -41,3 +41,5 @@ Test code: [`tests/tier1/use_cases/test_score_submission.py`](../../../../tests/
 - **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
 ## Runtime scope
 > **Runtime scope**: unit only — use-case orchestration; the live coverage for the full scoring path is via @live test_docker_canonical_scorer_live at the Docker boundary.
+
+Test code: [`../../../../tests/tier1/use_cases/test_score_submission.py`](../../../../tests/tier1/use_cases/test_score_submission.py)::`test_when_score_submission_called_with_slow_env_then_returns_within_aggregate_walltime_budget`.

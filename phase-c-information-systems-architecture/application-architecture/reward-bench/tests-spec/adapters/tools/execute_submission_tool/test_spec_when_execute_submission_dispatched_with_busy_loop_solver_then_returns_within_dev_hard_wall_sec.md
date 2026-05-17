@@ -44,3 +44,5 @@ Test code:
 > runtime couldn't reproduce this bug (Fake's scripted dispatch
 > never burns C-level CPU). Live runtime is the only place
 > adversarial submissions reach real dev-runner sandboxing.
+
+Test code: [`../../../../tests/adapters/tools/test_execute_submission_tool_busy_loop_live.py`](../../../../tests/adapters/tools/test_execute_submission_tool_busy_loop_live.py)::`test_when_execute_submission_dispatched_with_busy_loop_solver_then_returns_within_dev_hard_wall_sec`.

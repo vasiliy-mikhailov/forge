@@ -19,7 +19,7 @@ independently.
 - **Seam**: none — pure import + equality check.
 - **Mode**: n/a.
 
-Test code: [`tests/adapters/test_tier1_tool_registry.py`](../../../tests/adapters/test_tier1_tool_registry.py)::`test_when_agent_loop_tool_schemas_imported_then_equals_registry_schemas`.
+Test code: [`../../tests/adapters/test_tier1_tool_registry.py`](../../tests/adapters/test_tier1_tool_registry.py)::`test_when_agent_loop_tool_schemas_imported_then_equals_registry_schemas`.
 
 ## Runtime scope
 

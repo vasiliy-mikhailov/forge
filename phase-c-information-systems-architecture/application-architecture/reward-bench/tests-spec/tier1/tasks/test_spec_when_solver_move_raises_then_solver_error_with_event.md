@@ -19,7 +19,7 @@ When `Solver.move` raises mid-game, the worker records a
 - **Seam**: `sys.modules['env_2048']` plus the on-disk submission file.
 - **Mode**: fake (in-process `_FakeBoard`, no Docker, no LLM).
 
-Test code: [`tests/tier1/tasks/test_runner_canonical.py`](../../../../tests/tier1/tasks/test_runner_canonical.py)::`test_when_solver_move_raises_then_solver_error_with_event`.
+Test code: [`../../../tests/tier1/tasks/test_runner_canonical.py`](../../../tests/tier1/tasks/test_runner_canonical.py)::`test_when_solver_move_raises_then_solver_error_with_event`.
 
 ## Runtime scope
 

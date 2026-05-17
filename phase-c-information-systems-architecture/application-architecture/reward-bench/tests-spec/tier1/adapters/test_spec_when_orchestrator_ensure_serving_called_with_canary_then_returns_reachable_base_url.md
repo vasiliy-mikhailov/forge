@@ -42,3 +42,5 @@ Test code:
 | production | `DockerVllmInferenceOrchestrator` | every model in MODEL_REGISTRY (one swap per model in canonical bench) |
 ## Runtime scope
 > **Runtime scope**: unit only — tier1 adapter contract; @live coverage at the production-scale boundary per the relevant cycle (123/124/125/128).
+
+Test code: [`../../../tests/tier1/adapters/test_docker_vllm_inference_orchestrator_live.py`](../../../tests/tier1/adapters/test_docker_vllm_inference_orchestrator_live.py)::`test_when_orchestrator_ensure_serving_called_with_canary_then_returns_reachable_base_url`.

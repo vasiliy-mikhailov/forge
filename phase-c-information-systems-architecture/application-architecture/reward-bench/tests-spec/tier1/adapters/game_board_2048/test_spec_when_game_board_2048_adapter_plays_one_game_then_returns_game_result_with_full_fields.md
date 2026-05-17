@@ -26,3 +26,5 @@ Test code: [`tests/tier1/adapters/test_game_board_2048.py`](../../../../tests/ti
 - **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
 ## Runtime scope
 > **Runtime scope**: unit only — GameBoard adapter pure-Python wrapper; scale-invariant.
+
+Test code: [`../../../../tests/tier1/adapters/test_game_board_2048.py`](../../../../tests/tier1/adapters/test_game_board_2048.py)::`test_when_game_board_2048_adapter_plays_one_game_then_returns_game_result_with_full_fields`.

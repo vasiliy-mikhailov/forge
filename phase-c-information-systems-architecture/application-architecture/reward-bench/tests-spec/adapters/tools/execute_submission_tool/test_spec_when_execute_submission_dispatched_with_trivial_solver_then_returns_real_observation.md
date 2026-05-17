@@ -40,3 +40,5 @@ Test code:
 | production | `ExecuteSubmissionTool()` + real `_execute_submission` | full agent_loop submissions; exercised by canonical bench |
 ## Runtime scope
 > **Runtime scope**: live + production — exercises real Docker dev runner via ExecuteSubmissionTool + DockerCanonicalScorer with trivial solver (5 dev seeds, ~10s). Production-runtime coverage via canonical bench + the cycle-128 busy-loop adversarial-input live test.
+
+Test code: [`../../../../tests/adapters/tools/test_execute_submission_tool_live.py`](../../../../tests/adapters/tools/test_execute_submission_tool_live.py)::`test_when_execute_submission_dispatched_with_trivial_solver_then_returns_real_observation`.

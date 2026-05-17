@@ -20,3 +20,5 @@ Test code: [`tests/reward_bench/use_cases/test_tier_registry.py`](../../../../te
 - **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
 ## Runtime scope
 > **Runtime scope**: unit only — TIER_REGISTRY tuple contract; pure-Python data; scale-invariant.
+
+Test code: [`../../../../tests/reward_bench/use_cases/test_tier_registry.py`](../../../../tests/reward_bench/use_cases/test_tier_registry.py)::`test_when_tier_registry_inspected_then_four_tiers_match_spec_md`.

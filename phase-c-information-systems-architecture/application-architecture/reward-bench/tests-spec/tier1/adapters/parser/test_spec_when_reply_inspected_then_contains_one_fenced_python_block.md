@@ -12,3 +12,5 @@ Test code: [\`tests/tier1/test_parser.py\`](../../tests/tier1/test_parser.py).
 - **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
 ## Runtime scope
 > **Runtime scope**: unit only — pure-function tool-call parser; scale-invariant.
+
+Test code: [`../../../../tests/tier1/adapters/test_parser.py`](../../../../tests/tier1/adapters/test_parser.py)::`test_when_reply_inspected_then_contains_one_fenced_python_block`.

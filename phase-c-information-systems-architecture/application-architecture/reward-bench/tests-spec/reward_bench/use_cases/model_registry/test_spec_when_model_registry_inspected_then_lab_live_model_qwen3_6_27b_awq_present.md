@@ -21,3 +21,5 @@ Test code: [`tests/reward_bench/use_cases/test_model_registry.py`](../../../../t
 - **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
 ## Runtime scope
 > **Runtime scope**: unit only — MODEL_REGISTRY tuple contract; pure-Python data; scale-invariant.
+
+Test code: [`../../../../tests/reward_bench/use_cases/test_model_registry.py`](../../../../tests/reward_bench/use_cases/test_model_registry.py)::`test_when_model_registry_inspected_then_lab_live_model_qwen3_6_27b_awq_present`.

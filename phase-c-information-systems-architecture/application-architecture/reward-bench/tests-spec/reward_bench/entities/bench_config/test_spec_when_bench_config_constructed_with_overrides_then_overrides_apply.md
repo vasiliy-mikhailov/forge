@@ -20,3 +20,5 @@ Test code: [`tests/reward_bench/entities/test_bench_config.py`](../../../../test
 - **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
 ## Runtime scope
 > **Runtime scope**: unit only — frozen-dataclass invariant; asserts on entity shape, no runtime boundary involved.
+
+Test code: [`../../../../tests/reward_bench/entities/test_bench_config.py`](../../../../tests/reward_bench/entities/test_bench_config.py)::`test_when_bench_config_constructed_with_overrides_then_overrides_apply`.
