@@ -26,7 +26,8 @@ composition with `_execute_submission`.
 - Writes `body` to `<workspace>/submission.py`.
 - Runs against dev seeds (default `(1, 2, 3, 4, 5)`).
 - Returns a JSON string with keys: `protocol_violations`,
- `per_seed`, `mean`, `max_tile_best`, `walltime_sec_total`.
+ `per_seed`, `mean`, `median`, `max_tile_best`,
+ `walltime_sec_total`, `budget_sec_per_seed` (= dev_hard_wall_sec / 5).
 - Honours `dev_hard_wall_sec` (per
  [SOLUTION-ARCHITECTURE](../../../../SOLUTION-ARCHITECTURE.md)
  Layer 1 /) — overshoot becomes per-seed `walltime_exceeded`.

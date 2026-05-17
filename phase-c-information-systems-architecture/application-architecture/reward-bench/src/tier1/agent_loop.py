@@ -127,6 +127,7 @@ def _execute_submission(body, workspace, tasks_dir,
         'median': 0,
         'max_tile_best': 0,
         'walltime_sec_total': 0.0,
+        'budget_sec_per_seed': round(dev_hard_wall_sec / len(_DEV_SEEDS), 4),
     }
     sub_path = Path(workspace) / 'submission.py'
     try:

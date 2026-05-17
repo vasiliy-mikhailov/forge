@@ -1670,3 +1670,64 @@ def test_when_execute_submission_solver_init_raises_then_protocol_violation_name
     assert payload['per_seed'] == [], (
         f'canonical scorer should not have run; got per_seed={payload["per_seed"]}'
     )
+
+
+
+def test_when_execute_submission_observation_inspected_then_includes_budget_sec_per_seed(
+        monkeypatch, tmp_path):
+    """observability: the dev_runner observation must include
+    `budget_sec_per_seed` so the model can size its solver to fit the
+    per-seed wall-time budget."""
+    import json as _json
+    from src.tier1 import agent_loop as al
+    from src.tier1.entities.attempt_result import AttemptResult
+
+    # Arrange: stub the Docker scorer so we reach the observation-building
+    # path without spawning a container.
+    class _FakeScorer:
+        def __init__(self, *a, **kw):
+            pass
+
+        def score(self, submission_path, seeds, *, hard_wall_sec=0.0,
+                  reports_root=None):
+            return AttemptResult(
+                mean_score=0.0, median_score=0.0, std_score=0.0,
+                max_max_tile=0, n_games=0,
+                aggregate_walltime_sec=0.0, games=(),
+                hard_wall_sec=hard_wall_sec,
+                stagnated_any=False, walltime_exceeded=False,
+            )
+
+    monkeypatch.setattr(
+        'src.tier1.adapters.docker_canonical_scorer.DockerCanonicalScorer',
+        _FakeScorer,
+    )
+
+    workspace = tmp_path / 'ws'
+    workspace.mkdir()
+    tasks_dir = tmp_path / 'tasks_dir'
+    tasks_dir.mkdir()
+
+    body = (
+        'from transitions import Machine\n'
+        'class Solver:\n'
+        '    def __init__(self): pass\n'
+        '    def move(self, board):\n'
+        "        return 'W'\n"
+    )
+
+    # Act
+    obs_str = al._execute_submission(
+        body, workspace, tasks_dir, dev_hard_wall_sec=15.0,
+    )
+    start = obs_str.index('<observation>') + len('<observation>')
+    end = obs_str.index('</observation>')
+    parsed = _json.loads(obs_str[start:end])
+
+    # Assert: budget_sec_per_seed present and equals dev_hard_wall_sec / 5.
+    assert 'budget_sec_per_seed' in parsed, (
+        f"missing 'budget_sec_per_seed' in observation; keys: {list(parsed)}"
+    )
+    assert parsed['budget_sec_per_seed'] == pytest.approx(3.0), (
+        f"expected 15.0 / 5 = 3.0; got {parsed['budget_sec_per_seed']!r}"
+    )
