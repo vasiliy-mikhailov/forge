@@ -1,13 +1,24 @@
 # `test_when_submission_validated_then_gym_style_returns_solver_violation`
-## Behaviour
+
+Pins the gym-style failure mode: a submission that defines `def
+solve(grid)` instead of `class Solver` yields at least one violation
+mentioning `Solver`.
+
 ## Contract
-- **Arrange**: (see test body — no `# Arrange/Act/Assert` markers in source)
-- **Act**: (see test body — no `# Arrange/Act/Assert` markers in source)
-- **Assert**: (see test body — no `# Arrange/Act/Assert` markers in source)
+
+- **Arrange**: `tmp_path/submission.py` containing only
+  `def solve(grid): return 0`.
+- **Act**: `load_submission(p)` then `validate_submission_protocol(mod)`.
+- **Assert**: `len(violations) >= 1`; some violation string contains
+  `'Solver'`.
+
 ## Model client injection point
-- **Seam**: conftest autouse `_bind_model_client`.
-- **Mode**: **fake** (default) — autouse `FakeModelClient` / `FakeVllmServer`.
-- **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
-Test code: [`tests/tier1/test_harness.py`](../../../../tests/tier1/test_harness.py)::`test_when_submission_validated_then_gym_style_returns_solver_violation`.
+
+- **Seam**: filesystem (tmp_path).
+- **Mode**: fake.
+
+Test code: [`../../tests/tier1/test_harness.py`](../../tests/tier1/test_harness.py)::`test_when_submission_validated_then_gym_style_returns_solver_violation`.
+
 ## Runtime scope
-> **Runtime scope**: unit only — tier1 use-case / parser contract; scale-invariant pure functions over Port mocks.
+
+> **Runtime scope**: unit only.

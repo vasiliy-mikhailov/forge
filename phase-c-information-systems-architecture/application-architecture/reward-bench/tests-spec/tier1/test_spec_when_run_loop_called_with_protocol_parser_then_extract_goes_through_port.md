@@ -1,15 +1,27 @@
 # `test_when_run_loop_called_with_protocol_parser_then_extract_goes_through_port`
-## Behaviour
-extract() decodes
- replies instead of the module-level parse_tool_calls.
+
+Pins the DI seam for `ProtocolParser`: when `run_loop(...,
+protocol_parser=P)`, `P.extract()` decodes replies instead of the
+module-level `parse_tool_calls`.
+
 ## Contract
-- **Arrange**: (see test body — no `# Arrange/Act/Assert` markers in source)
-- **Act**: (see test body — no `# Arrange/Act/Assert` markers in source)
-- **Assert**: (see test body — no `# Arrange/Act/Assert` markers in source)
+
+- **Arrange**: a `RecordingParser(ProtocolParser)` that records each
+  reply into `.calls` and always returns one `ToolCall(name='finish',
+  args={'note': 'parsed'})`. `FakeModelClient` with arbitrary
+  content (the parser ignores it).
+- **Act**: `run_loop(..., model_client=fake_client,
+  protocol_parser=parser, max_iters=3)`.
+- **Assert**: `parser.calls` has at least one entry (the parser was
+  consulted) AND the loop terminated via the synthetic `finish` call.
+
 ## Model client injection point
-- **Seam**: conftest autouse `_bind_model_client`.
-- **Mode**: **no_fake** — exercises real bench seam offline (autouse fake bypassed).
-- **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
-Test code: [`tests/tier1/test_run_loop_di.py`](../../../../tests/tier1/test_run_loop_di.py)::`test_when_run_loop_called_with_protocol_parser_then_extract_goes_through_port`.
+
+- **Seam**: `protocol_parser` constructor arg on `run_loop`.
+- **Mode**: fake (recording parser explicitly injected).
+
+Test code: [`../../tests/tier1/test_run_loop_di.py`](../../tests/tier1/test_run_loop_di.py)::`test_when_run_loop_called_with_protocol_parser_then_extract_goes_through_port`.
+
 ## Runtime scope
-> **Runtime scope**: unit only — tier1 use-case / parser contract; scale-invariant pure functions over Port mocks.
+
+> **Runtime scope**: unit only.

@@ -1,15 +1,24 @@
 # `test_when_structured_arguments_contains_sentencepiece_space_then_stripped_before_parsing`
-## Behaviour
-rendered JSON arguments. parse_tool_calls must strip them so
- json.loads succeeds.
+
+Pins the mistral-leak workaround in the legacy shim: SentencePiece
+artefacts `Ġ` (U+0120) and `▁` (U+2581) inside the JSON-string
+`function.arguments` are stripped before `json.loads`.
+
 ## Contract
-- **Arrange**: (see test body — no `# Arrange/Act/Assert` markers in source)
-- **Act**: (see test body — no `# Arrange/Act/Assert` markers in source)
-- **Assert**: (see test body — no `# Arrange/Act/Assert` markers in source)
+
+- **Arrange (case 1)**: `structured` with arguments
+  `'{"path":\u0120"SKILL_tier1.md"}'` (U+0120 between `:` and value).
+- **Act**: `parse_tool_calls('', structured_tool_calls=structured)`.
+- **Assert**: `calls == [('view', {'path': 'SKILL_tier1.md'})]`.
+- **Arrange (case 2)**: same but with `\u2581` instead.
+- **Act + Assert**: same expected output.
+
 ## Model client injection point
-- **Seam**: conftest autouse `_bind_model_client`.
-- **Mode**: **fake** (default) — autouse `FakeModelClient` / `FakeVllmServer`.
-- **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
-Test code: [`tests/tier1/test_agent_loop.py`](../../../../tests/tier1/test_agent_loop.py)::`test_when_structured_arguments_contains_sentencepiece_space_then_stripped_before_parsing`.
+
+- **Seam**: none — pure function.
+
+Test code: [`../../tests/tier1/test_agent_loop.py`](../../tests/tier1/test_agent_loop.py)::`test_when_structured_arguments_contains_sentencepiece_space_then_stripped_before_parsing`.
+
 ## Runtime scope
-> **Runtime scope**: unit only — tier1 use-case / parser contract; scale-invariant pure functions over Port mocks.
+
+> **Runtime scope**: unit only.

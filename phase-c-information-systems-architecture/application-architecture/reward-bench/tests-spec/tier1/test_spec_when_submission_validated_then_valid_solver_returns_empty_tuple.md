@@ -1,13 +1,23 @@
 # `test_when_submission_validated_then_valid_solver_returns_empty_tuple`
-## Behaviour
+
+Pins the happy-path of `validate_submission_protocol`: a submission
+with `class Solver` and `move(board) -> 'W'` returns an empty
+violations tuple.
+
 ## Contract
-- **Arrange**: (see test body — no `# Arrange/Act/Assert` markers in source)
-- **Act**: (see test body — no `# Arrange/Act/Assert` markers in source)
-- **Assert**: (see test body — no `# Arrange/Act/Assert` markers in source)
+
+- **Arrange**: `tmp_path/submission.py` with a minimal valid Solver
+  (no-arg `__init__`, `move(board)` returning `'W'`).
+- **Act**: `load_submission(p)` then `validate_submission_protocol(mod)`.
+- **Assert**: `violations == ()`.
+
 ## Model client injection point
-- **Seam**: conftest autouse `_bind_model_client`.
-- **Mode**: **fake** (default) — autouse `FakeModelClient` / `FakeVllmServer`.
-- **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
-Test code: [`tests/tier1/test_harness.py`](../../../../tests/tier1/test_harness.py)::`test_when_submission_validated_then_valid_solver_returns_empty_tuple`.
+
+- **Seam**: filesystem (tmp_path).
+- **Mode**: fake.
+
+Test code: [`../../tests/tier1/test_harness.py`](../../tests/tier1/test_harness.py)::`test_when_submission_validated_then_valid_solver_returns_empty_tuple`.
+
 ## Runtime scope
-> **Runtime scope**: unit only — tier1 use-case / parser contract; scale-invariant pure functions over Port mocks.
+
+> **Runtime scope**: unit only.
