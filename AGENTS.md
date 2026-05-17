@@ -77,6 +77,38 @@ room; an experiment is a run.
   [`phase-preliminary/cats.md`](phase-preliminary/cats.md). Per-lab
   application at `<lab>/CATS.md`.
 
+## Connecting to the lab
+
+The lab host is reachable as `mikhailov.tech` (DNS) on port 2222.
+
+**Always use `ssh mikhailov.tech` — never the IP, never a short alias
+like `ssh forge`.** Short aliases that resolve to the LAN IP only
+work from the operator's home network; agents running elsewhere fail
+silently or slowly.
+
+**Always run agents with SSH connection multiplexing enabled.** Without
+it, every command pays the full TCP/TLS/auth handshake (~3 s each); a
+single CATS cycle is 7–10 SSH calls, so multiplexing is roughly a
+10× speedup. Add this to `~/.ssh/config`:
+
+```
+Host mikhailov.tech
+  HostName mikhailov.tech
+  User vmihaylov
+  Port 2222
+  IdentityFile ~/.ssh/id_ed25519
+  IdentitiesOnly yes
+  StrictHostKeyChecking accept-new
+  ControlMaster auto
+  ControlPath ~/.ssh/cm/%C
+  ControlPersist 10m
+```
+
+The first call establishes a master socket under `~/.ssh/cm/`; every
+subsequent `ssh mikhailov.tech` or `scp ... mikhailov.tech:...` call
+within 10 minutes reuses it (~0.3 s instead of ~3 s). `mkdir -p
+~/.ssh/cm` if the directory doesn't exist.
+
 ## Architecture — TOGAF-style layered structure (navigation index)
 
 Organized by TOGAF ADM phase, with a Preliminary phase above the eight
