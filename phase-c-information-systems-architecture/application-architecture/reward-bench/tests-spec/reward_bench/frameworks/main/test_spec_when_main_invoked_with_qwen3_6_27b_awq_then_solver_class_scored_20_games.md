@@ -10,7 +10,8 @@ here. The shape-only test
 DOES accept sentinel.
 - **Arrange**: import `AttemptResult`, `BenchConfig`, and `main`.
  Build `_FAST = BenchConfig(max_iters=120, n_trials=1,
- temperature=0.7)` — the canonical defaults (500 iters / T=0.7)
+ temperature=0.7,
+  hard_wall_sec=60.0)` — the canonical defaults (500 iters / T=0.7)
  would take minutes; 120 iters is enough for qwen3.6-27b-awq at
  T=0.7 to converge on a non-trivial Solver. vLLM container
  serving `qwen3.6-27b-awq`.

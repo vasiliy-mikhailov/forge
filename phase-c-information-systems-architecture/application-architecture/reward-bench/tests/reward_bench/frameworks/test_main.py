@@ -5,7 +5,7 @@ from src.tier1.entities.attempt_result import AttemptResult
 
 
 # Test-friendly small config: keeps cycle wall time bounded.
-_FAST = BenchConfig(max_iters=120, n_trials=1, temperature=0.7)
+_FAST = BenchConfig(max_iters=120, n_trials=1, temperature=0.7, hard_wall_sec=60.0)
 
 
 @pytest.mark.live
