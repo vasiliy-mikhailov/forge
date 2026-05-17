@@ -5,7 +5,7 @@ by replacing older turns with a single summary message. The
 summarisation call is delegated to an injected callable so the
 adapter remains testable without a live LLM.
 
-Per [ADR 0001](../../../../docs/adr/0001-condenser-uses-same-model-as-bench.md),
+Per [ADR 0001](../../../../SOLUTION-ARCHITECTURE.md),
 the wiring layer supplies a callable backed by the bench-model vLLM
 endpoint (same `ModelTarget` as the model under test).
 

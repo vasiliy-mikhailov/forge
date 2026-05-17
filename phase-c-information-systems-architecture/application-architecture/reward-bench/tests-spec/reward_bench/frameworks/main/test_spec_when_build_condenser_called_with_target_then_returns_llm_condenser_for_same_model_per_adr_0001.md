@@ -3,7 +3,7 @@
 Pins that `main`'s `_build_condenser(target, base_url, api_key)`
 helper returns an `LlmCondenser` whose `model_id` equals the bench
 `ModelTarget.id`. This is the executable encoding of
-[ADR 0001](../../../../docs/adr/0001-condenser-uses-same-model-as-bench.md):
+[ADR 0001](../../../../SOLUTION-ARCHITECTURE.md):
 "the condenser uses the same `ModelTarget` as the model under
 bench".
 

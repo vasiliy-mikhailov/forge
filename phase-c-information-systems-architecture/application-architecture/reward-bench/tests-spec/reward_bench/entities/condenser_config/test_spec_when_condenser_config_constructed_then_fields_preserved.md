@@ -5,7 +5,7 @@ configuration for the context-compaction step described in SPEC.md
 ("A condenser summarises older turns when prompt + reserved output
 exceeds the budget"). Fields parallel the cycle-21 condenser knobs
 (`trigger_tokens`, `keep_recent`, `model_id`) consumed by the active
-`LlmCondenser` adapter (per [ADR 0001](../../../../docs/adr/0001-condenser-uses-same-model-as-bench.md)
+`LlmCondenser` adapter (per [ADR 0001](../../../../SOLUTION-ARCHITECTURE.md)
 same-model decision).
 
 - **Arrange**: import `CondenserConfig`.

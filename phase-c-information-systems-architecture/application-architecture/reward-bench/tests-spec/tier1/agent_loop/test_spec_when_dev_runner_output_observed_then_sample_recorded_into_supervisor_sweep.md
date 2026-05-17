@@ -10,7 +10,7 @@ accumulated tuple to `supervisor.judge(sweep)`.
 This is the seam that lets the [LlmSupervisor](
 ../../../../src-spec/reward_bench/adapters/llm_supervisor/src_spec_llm_supervisor.md)
 see real numbers instead of zeros, which is what [ADR 0005](
-../../../../docs/adr/0005-plateau-detection-supervisor-via-llm-self-judgment.md)
+../../../../SOLUTION-ARCHITECTURE.md)
 requires for plateau recognition.
 
 - **Arrange**: monkeypatch `_call_model` to emit a `bash` tool call

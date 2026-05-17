@@ -3,7 +3,7 @@
 Pins the **active-path** equivalent of cycle-34's
 [`_parse_dev_runner_summary`](../../../../src/tier1/agent_loop.py)
 which only matches the legacy bash-stdout `MEAN=N.N MEDIAN=... max-tile-best=N`
-format. Per [ADR 0008](../../../../docs/adr/0008-docker-sandboxed-execute-submission-tool.md)
+format. Per [ADR 0008](../../../../SOLUTION-ARCHITECTURE.md)
 the active tool `execute_submission` returns a JSON observation
 wrapped in `<observation>...</observation>`. Its `mean` field carries
 the dev-mean signal that needs to feed:

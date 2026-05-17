@@ -1,7 +1,7 @@
 # `test_when_execute_submission_called_with_gym_style_body_then_observation_has_protocol_violation`
 
 Pins the **protocol-violation** branch of the `execute_submission`
-dispatcher (cycle 58, [ADR 0008](../../../../docs/adr/0008-docker-sandboxed-execute-submission-tool.md))
+dispatcher (cycle 58, [ADR 0008](../../../../SOLUTION-ARCHITECTURE.md))
 when the model emits a Gym-style `def solve(state) -> int` instead
 of the SKILL_tier1.md contract (`class Solver` + `move(board) -> WASD`).
 

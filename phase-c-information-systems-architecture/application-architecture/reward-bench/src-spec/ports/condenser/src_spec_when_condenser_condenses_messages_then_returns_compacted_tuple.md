@@ -4,7 +4,7 @@
 runtime-boundary contract for context-compaction per SPEC.md.
 
 Relocated in cycle 116 from `src/reward_bench/use_cases/condenser_port.py`
-to comply with [ADR 0018](../../../docs/adr/0018-runtime-boundary-dependencies-port-fake-autouse.md)'s
+to comply with [ADR 0018](../../../SOLUTION-ARCHITECTURE.md)'s
 `src/ports/<name>.py` convention.
 
 ## Contract

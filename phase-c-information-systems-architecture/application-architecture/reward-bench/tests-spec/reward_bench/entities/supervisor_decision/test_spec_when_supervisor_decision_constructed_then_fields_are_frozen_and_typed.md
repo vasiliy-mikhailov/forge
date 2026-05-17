@@ -1,7 +1,7 @@
 # `test_when_supervisor_decision_constructed_then_fields_are_frozen_and_typed`
 
 Pins the [`SupervisorDecision`](../../../../src-spec/reward_bench/entities/supervisor_decision/src_spec_supervisor_decision.md)
-shape per [ADR 0005](../../../../docs/adr/0005-plateau-detection-supervisor-via-llm-self-judgment.md):
+shape per [ADR 0005](../../../../SOLUTION-ARCHITECTURE.md):
 the three-field frozen dataclass that the supervisor returns and the
 agent_loop hook reads. Three fields, frozen, no IO.
 

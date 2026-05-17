@@ -3,10 +3,10 @@
 [`ModelClient`](../../../src/ports/model_client.py) — the
 runtime-boundary contract for "send messages to a model server,
 get the assistant reply back". Established by
-[ADR 0011](../../../docs/adr/0011-clean-arch-ports-for-model-client-tool-registry-protocol-parser.md).
+[ADR 0011](../../../SOLUTION-ARCHITECTURE.md).
 
 Bound by the conftest autouse `_bind_model_client` fixture per
-[ADR 0014](../../../docs/adr/0014-test-specs-name-the-dependency-injection-seam.md);
+[ADR 0014](../../../SOLUTION-ARCHITECTURE.md);
 production callers use the `Tier1RunLoopConfig.model_client` field
 threaded through DI.
 
@@ -34,7 +34,7 @@ Semantics:
 - `messages` is OpenAI-style chat-completion shape:
   `[{"role": "system"|"user"|"assistant"|"tool", "content": str, ...}]`.
 - `tools` advertises the available tool surface per
-  [ADR 0010](../../../docs/adr/0010-mistral-devstral-gpt-oss-tool-calls-go-through-tools-advertisement-plus-structured-message-tool-calls.md).
+  [ADR 0010](../../../SOLUTION-ARCHITECTURE.md).
   Mistral-family models route tool calls into `message.tool_calls`;
   text-fenced families ignore the array and keep emitting fenced text
   in `content`. Implementations advertise regardless of family — the

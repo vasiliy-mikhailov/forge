@@ -3,10 +3,10 @@
 [`CanonicalScorerPort`](../../../src/ports/canonical_scorer.py) — the
 runtime-boundary contract for "play a submission against seeds and
 return the aggregated result". Established by
-[ADR 0018](../../../docs/adr/0018-runtime-boundary-dependencies-port-fake-autouse.md).
+[ADR 0018](../../../SOLUTION-ARCHITECTURE.md).
 
 The Docker production binding's `--cpus` + image-tag knobs live in
-[ADR 0006](../../../docs/adr/0006-sandboxed-scoring-docker-tier1-and-walltime-budget.md);
+[ADR 0006](../../../SOLUTION-ARCHITECTURE.md);
 they are not part of the Port contract.
 
 ## Contract
@@ -31,7 +31,7 @@ Semantics:
 - `seeds` is the deterministic seed set for the 2048 trial battery;
   the adapter plays one game per seed.
 - `hard_wall_sec` is the aggregate cap across all seeds (per ADR 0006
-  Layer 2 + [ADR 0015](../../../docs/adr/0015-canonical-bench-hard-wall-sec-300.md)).
+  Layer 2 + [ADR 0015](../../../SOLUTION-ARCHITECTURE.md)).
   `0.0` means no cap. Exceeded → per-seed `walltime_exceeded` sentinels
   fill out the result; the port does NOT raise.
 - `reports_root` (optional) is where per-game event logs land. `None`

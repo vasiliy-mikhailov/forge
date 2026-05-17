@@ -2,7 +2,7 @@
 
 Pins the **structured-tool-calls fallback** in
 [`parse_tool_calls`](../../../../src/tier1/agent_loop.py) per
-[ADR 0010 §Path forward](../../../../docs/adr/0010-mistral-special-tokens-incompatible-with-fenced-tool-protocol.md):
+[ADR 0010 §Path forward](../../../../SOLUTION-ARCHITECTURE.md):
 
 > A future cycle will extend `parse_tool_calls` and `_call_model` so that:
 >   1. `_call_model` returns BOTH `message.content` and `message.tool_calls`.

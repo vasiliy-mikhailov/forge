@@ -1,6 +1,6 @@
 # `test_when_first_reply_received_then_views_skill_spec_or_writes_protocol_valid_solver`
 
-The **prompt is software**: per [ADR 0008](../../../../docs/adr/0008-docker-sandboxed-execute-submission-tool.md)
+The **prompt is software**: per [ADR 0008](../../../../SOLUTION-ARCHITECTURE.md)
 and the cycle-56 CATS principle, the `SYSTEM_PROMPT + FIRST_USER` pair
 MUST cause the model under test to either:
 

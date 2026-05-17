@@ -2,7 +2,7 @@
 
 Pins that every `BenchConfig` field is overridable in the
 constructor — important because tests pass smaller values than
-[ADR 0003](../../../../docs/adr/0003-bench-defaults-500-iters-10-trials-temp-0.7.md)
+[ADR 0003](../../../../SOLUTION-ARCHITECTURE.md)
 to bound wall time. The override contract is the entity's only
 escape hatch; if any field hardcoded its value, tests would be
 stuck at 500 iters.

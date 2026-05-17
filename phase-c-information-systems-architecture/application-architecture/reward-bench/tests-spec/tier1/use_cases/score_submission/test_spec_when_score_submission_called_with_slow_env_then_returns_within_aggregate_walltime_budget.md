@@ -4,7 +4,7 @@ Pins the **cap-API contract** that mitigates the cycle-22 real-system
 hang: `score_submission` accepts a `hard_wall_sec` parameter; when
 > 0, aggregate walltime is capped; the use case returns within
 the budget (plus the cost of one in-flight game). Per
-[ADR 0006 layer 1](../../../../docs/adr/0006-sandboxed-scoring-docker-tier1-and-walltime-budget.md).
+[ADR 0006 layer 1](../../../../SOLUTION-ARCHITECTURE.md).
 
 What this test does **not** do:
 - It does NOT literally reproduce a 34-min hang — that would take

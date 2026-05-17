@@ -1,7 +1,7 @@
 # `test_spec_when_main_invoked_then_canonical_path_uses_docker_scorer`
 
 Pins the **`main()` → `DockerCanonicalScorer`** wiring per the
-[ADR 0006 Layer 2 amendment](../../../../docs/adr/0006-sandboxed-scoring-docker-tier1-and-walltime-budget.md).
+[ADR 0006 Layer 2 amendment](../../../../SOLUTION-ARCHITECTURE.md).
 
 ## Why
 

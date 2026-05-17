@@ -40,9 +40,9 @@ Semantics:
 - [`DockerVllmInferenceOrchestrator`](../../../src/tier1/adapters/docker_vllm_inference_orchestrator.py)
   — production binding. Delegates to `ensure_serving_model` which
   spawns/reconciles the `reward-bench-vllm` Docker container per
-  [ADR 0001](../../../docs/adr/0001-condenser-uses-same-model-as-bench.md)
+  [ADR 0001](../../../SOLUTION-ARCHITECTURE.md)
   +
-  [ADR 0006](../../../docs/adr/0006-sandboxed-scoring-docker-tier1-and-walltime-budget.md).
+  [ADR 0006](../../../SOLUTION-ARCHITECTURE.md).
 - [`FakeInferenceOrchestrator`](../../../src/adapters/fakes/fake_inference_orchestrator.py)
   — test adapter. Records calls on `self.calls`, returns scripted
   `base_url`, configurable to raise `TimeoutError` for specific

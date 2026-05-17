@@ -1,7 +1,7 @@
 # `test_when_system_prompt_inspected_then_advertises_execute_submission_as_primary_tool`
 
 Pins [`SYSTEM_PROMPT`](../../../../src/tier1/agent_loop.py) shape per
-[ADR 0008](../../../../docs/adr/0008-docker-sandboxed-execute-submission-tool.md):
+[ADR 0008](../../../../SOLUTION-ARCHITECTURE.md):
 
 - MUST advertise `execute_submission` as a tool with a working example.
 - MUST advertise `view` and `finish` (still active per SPEC.md).

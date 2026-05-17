@@ -8,7 +8,7 @@ FIRST_USER is the message that opens every agent loop. Per cycles
 56 + 61 it MUST:
   - point the model at `/tasks/2048/SKILL_tier1.md` as the spec to
     read first;
-  - mention `execute_submission` as the active tool ([ADR 0008](../../../../docs/adr/0008-docker-sandboxed-execute-submission-tool.md))
+  - mention `execute_submission` as the active tool ([ADR 0008](../../../../SOLUTION-ARCHITECTURE.md))
     so the model knows the primary submit path.
 
 This is a non-literal-equality contract — the prompt evolves; the

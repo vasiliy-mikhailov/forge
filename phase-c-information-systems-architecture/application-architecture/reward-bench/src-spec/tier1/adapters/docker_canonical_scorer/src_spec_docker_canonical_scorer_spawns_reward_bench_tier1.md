@@ -1,7 +1,7 @@
 # `src_spec_docker_canonical_scorer_spawns_reward_bench_tier1`
 
 [`DockerCanonicalScorer`](../../../../src/tier1/adapters/docker_canonical_scorer.py) —
-cycle 105 / [ADR 0006 Layer 2](../../../../docs/adr/0006-sandboxed-scoring-docker-tier1-and-walltime-budget.md)
+cycle 105 / [ADR 0006 Layer 2](../../../../SOLUTION-ARCHITECTURE.md)
 implementation. Spawns the `reward-bench-tier1:0.4` container per attempt.
 
 ## Contract

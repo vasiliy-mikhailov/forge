@@ -12,7 +12,7 @@ an `AttemptResult`.
         config: BenchConfig = BenchConfig(),
     ) -> AttemptResult
 
-The `config` parameter is the [ADR 0003](../../../../docs/adr/0003-bench-defaults-500-iters-10-trials-temp-0.7.md)
+The `config` parameter is the [ADR 0003](../../../../SOLUTION-ARCHITECTURE.md)
 knob panel — `max_iters`, `temperature`, `n_trials`,
 `max_no_improve`, `finish_floor`. Default `BenchConfig()` yields the
 ADR 0003 defaults; tests pass smaller values for fast runs.
@@ -27,7 +27,7 @@ ADR 0003 defaults; tests pass smaller values for fast runs.
    `AttributeError` (no `Solver`) or `FileNotFoundError` (no
    submission file), return a sentinel `AttemptResult(n_games=0,
    games=(), ...)`. Per
-   [ADR 0002](../../../../docs/adr/0002-main-emits-sentinel-on-malformed-submission.md).
+   [ADR 0002](../../../../SOLUTION-ARCHITECTURE.md).
 5. Happy path: `score_submission(Solver, seeds,
    GameBoard2048Adapter())` produces a populated `AttemptResult`.
 6. Print key fields; return.

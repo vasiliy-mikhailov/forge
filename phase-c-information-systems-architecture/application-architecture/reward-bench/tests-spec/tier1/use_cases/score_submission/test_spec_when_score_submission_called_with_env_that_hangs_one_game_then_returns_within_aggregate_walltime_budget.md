@@ -4,7 +4,7 @@ Reproduces the cycle-26 real-system bug: cycle 23 added a
 `hard_wall_sec` AGGREGATE cap checked **between games**, but a
 single `play_one_game` call that hangs (or sleeps very long) blocks
 the cap because the check never fires while inside `play_one_game`.
-Per [ADR 0006 layer 1](../../../../docs/adr/0006-sandboxed-scoring-docker-tier1-and-walltime-budget.md),
+Per [ADR 0006 layer 1](../../../../SOLUTION-ARCHITECTURE.md),
 the aggregate cap is necessary but not sufficient.
 
 This cycle adds **per-game preemption**: each `play_one_game` call

@@ -2,7 +2,7 @@
 
 `src.reward_bench.entities.supervisor_decision.SupervisorDecision`
 is the frozen-entity return type of the supervisor (see [ADR 0005](
-../../../../docs/adr/0005-plateau-detection-supervisor-via-llm-self-judgment.md)).
+../../../../SOLUTION-ARCHITECTURE.md)).
 
 The supervisor watches sweep data — a sequence of dev_runner scores
 over recent iterations — and decides whether the bench has plateaued

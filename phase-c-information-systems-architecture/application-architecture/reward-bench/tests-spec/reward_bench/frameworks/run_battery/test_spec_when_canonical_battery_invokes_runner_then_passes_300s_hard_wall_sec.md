@@ -1,7 +1,7 @@
 # `test_spec_when_canonical_battery_invokes_runner_then_passes_300s_hard_wall_sec`
 
 Pins the **canonical `hard_wall_sec = 300` default** per
-[ADR 0015](../../../../docs/adr/0015-canonical-bench-hard-wall-sec-300.md).
+[ADR 0015](../../../../SOLUTION-ARCHITECTURE.md).
 
 ## Why
 

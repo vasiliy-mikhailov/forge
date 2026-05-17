@@ -4,7 +4,7 @@
 single-run `runner` (default: `main`) `config.n_trials` times and
 returns the resulting `AttemptResult`s as a tuple. This is the
 multi-trial driver layer for the
-[ADR 0003](../../../../docs/adr/0003-bench-defaults-500-iters-10-trials-temp-0.7.md)
+[ADR 0003](../../../../SOLUTION-ARCHITECTURE.md)
 `n_trials=10` campaign default.
 
 ## Function

@@ -13,7 +13,7 @@ called `importlib`'s loader which raised `SyntaxError: invalid
 syntax`. The exception propagated out of `main()` and aborted the
 campaign mid-trial.
 
-This is an extension of [ADR 0002](../../../../docs/adr/0002-main-emits-sentinel-on-malformed-submission.md):
+This is an extension of [ADR 0002](../../../../SOLUTION-ARCHITECTURE.md):
 the malformed-submission catch set now covers FileNotFoundError +
 AttributeError + SyntaxError.
 

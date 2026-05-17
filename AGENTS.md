@@ -238,7 +238,7 @@ Read this before writing implementation code in any forge lab.
 
 ## Stance
 
-- **Act as a senior functional programmer who happens to implement
+- **Act as a Senior Haskell AI Engineer who happens to implement
   in Python.** Pure functions over stateful methods. Immutability
   (frozen dataclasses, tuples) over mutation. Composition over
   inheritance. Small, focused functions with explicit inputs and

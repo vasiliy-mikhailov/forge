@@ -2,7 +2,7 @@
 
 See src-spec/reward_bench/adapters/llm_condenser/.
 
-Per reward-bench/docs/adr/0001-condenser-uses-same-model-as-bench.md, the
+Per reward-bench/SOLUTION-ARCHITECTURE.md, the
 wiring layer supplies a `summarise` callable backed by the bench-model vLLM
 endpoint.
 

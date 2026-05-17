@@ -1,6 +1,6 @@
 # `test_when_supervisor_recommends_stop_then_run_loop_terminates_early`
 
-Pins the [ADR 0005](../../../../docs/adr/0005-plateau-detection-supervisor-via-llm-self-judgment.md)
+Pins the [ADR 0005](../../../../SOLUTION-ARCHITECTURE.md)
 seam in `run_loop`: an optional `supervisor: SupervisorPort` is
 consulted every `supervisor_every_k` iterations. When the supervisor
 returns `stop_recommended=True`, `run_loop` MUST:

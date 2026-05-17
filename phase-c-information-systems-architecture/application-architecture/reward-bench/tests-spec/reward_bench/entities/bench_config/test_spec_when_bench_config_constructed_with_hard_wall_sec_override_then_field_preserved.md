@@ -6,7 +6,7 @@ reads it back. The companion default pin lives in
 where `hard_wall_sec == 0.0` is added alongside the existing ADR 0003
 default knobs.
 
-Per [ADR 0006 layer 1](../../../../docs/adr/0006-sandboxed-scoring-docker-tier1-and-walltime-budget.md),
+Per [ADR 0006 layer 1](../../../../SOLUTION-ARCHITECTURE.md),
 `score_submission` accepts a `hard_wall_sec` cap; the bench
 composition root (`main()`) needs a way to pass that knob through.
 `BenchConfig` is where every other input knob lives (max_iters,

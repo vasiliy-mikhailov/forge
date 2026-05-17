@@ -9,7 +9,7 @@ The `runner` parameter is injectable so the unit test substitutes a
 stub for `main()`; the wiring layer defaults to the real
 `main()` for production use.
 
-Per [ADR 0003](../../../../docs/adr/0003-bench-defaults-500-iters-10-trials-temp-0.7.md),
+Per [ADR 0003](../../../../SOLUTION-ARCHITECTURE.md),
 `n_trials=10` is the default; tests use small values to bound
 walltime.
 

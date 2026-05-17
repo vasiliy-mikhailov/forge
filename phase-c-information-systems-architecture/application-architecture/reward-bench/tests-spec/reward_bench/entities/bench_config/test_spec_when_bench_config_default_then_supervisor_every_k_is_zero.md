@@ -4,7 +4,7 @@ Adds `supervisor_every_k: int = 0` to [`BenchConfig`](
 ../../../../src-spec/reward_bench/entities/bench_config/src_spec_bench_config.md)
 so [main()](../../../../src/reward_bench/frameworks/main.py) can read
 the cadence per [ADR 0005](
-../../../../docs/adr/0005-plateau-detection-supervisor-via-llm-self-judgment.md).
+../../../../SOLUTION-ARCHITECTURE.md).
 
 Default 0 = supervisor disabled (matches cycle-12 behavior; no
 existing campaign data points are perturbed).

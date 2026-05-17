@@ -3,7 +3,7 @@
 [`ProtocolParser`](../../../src/ports/protocol_parser.py) — the
 runtime-boundary contract for "given an `AssistantReply`, extract the
 tool invocations". Established by
-[ADR 0011](../../../docs/adr/0011-clean-arch-ports-for-model-client-tool-registry-protocol-parser.md).
+[ADR 0011](../../../SOLUTION-ARCHITECTURE.md).
 
 This port also defines the canonical reply types `AssistantReply` and
 `ToolCall` that the rest of the agent loop consumes.
@@ -52,7 +52,7 @@ Semantics:
 - [`StructuredOpenAIParser`](../../../src/adapters/parsers/structured_openai_parser.py)
   — extractor over `reply["tool_calls"]` with SentencePiece-leak
   workaround per
-  [ADR 0010](../../../docs/adr/0010-mistral-devstral-gpt-oss-tool-calls-go-through-tools-advertisement-plus-structured-message-tool-calls.md).
+  [ADR 0010](../../../SOLUTION-ARCHITECTURE.md).
   Its src_spec covers the U+0120 / U+2581 strip.
 - [`CompositeParser`](../../../src/adapters/parsers/composite_parser.py)
   — first-non-empty-wins chainer. Its src_spec covers the chaining

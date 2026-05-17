@@ -3,7 +3,7 @@
 The cycle-122 live-runtime test for
 [`ExecuteSubmissionTool`](../../../../src-spec/adapters/tools/execute_submission_tool/src_spec_execute_submission_tool_composes_dev_runner.md).
 Actually invokes the dev sandbox per
-[ADR 0008](../../../../docs/adr/0008-docker-sandboxed-execute-submission-tool.md)
+[ADR 0008](../../../../SOLUTION-ARCHITECTURE.md)
 and verifies the returned JSON observation has the expected shape
 (non-empty `per_seed`, zero `protocol_violations` for a trivial
 Solver, positive `walltime_sec_total`).

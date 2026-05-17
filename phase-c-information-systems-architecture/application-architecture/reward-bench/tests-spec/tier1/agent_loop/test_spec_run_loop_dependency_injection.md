@@ -1,7 +1,7 @@
 # `test_spec_run_loop_dependency_injection`
 
 Pins the **run_loop port-DI seam** introduced in cycle 99 proper per
-[ADR 0011 step 2](../../../../docs/adr/0011-clean-arch-ports-for-model-client-tool-registry-protocol-parser.md).
+[ADR 0011 step 2](../../../../SOLUTION-ARCHITECTURE.md).
 
 ## Why
 

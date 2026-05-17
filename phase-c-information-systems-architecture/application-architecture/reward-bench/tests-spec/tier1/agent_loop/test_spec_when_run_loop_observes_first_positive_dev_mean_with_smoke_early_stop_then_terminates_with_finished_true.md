@@ -2,7 +2,7 @@
 
 Pins the **smoke early-stop seam** in
 [`run_loop`](../../../../src/tier1/agent_loop.py) per
-[ADR 0009 v2](../../../../docs/adr/0009-multi-model-smoke-bench-convention.md).
+[ADR 0009 v2](../../../../SOLUTION-ARCHITECTURE.md).
 
 When `run_loop` is invoked with `smoke_early_stop=True` and an
 `execute_submission` observation produces `dev_mean > 0`, the loop

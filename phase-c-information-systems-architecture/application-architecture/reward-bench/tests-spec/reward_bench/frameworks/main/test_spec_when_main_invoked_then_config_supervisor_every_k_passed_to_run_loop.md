@@ -4,7 +4,7 @@ Pins the orchestrator-to-agent_loop wiring for the supervisor: `main()`
 constructs an [`LlmSupervisor`](
 ../../../../src-spec/reward_bench/adapters/llm_supervisor/src_spec_llm_supervisor.md)
 backed by the bench vLLM endpoint (per [ADR 0001](
-../../../../docs/adr/0001-condenser-uses-same-model-as-bench.md), same
+../../../../SOLUTION-ARCHITECTURE.md), same
 model as bench + condenser) and forwards both `supervisor=` and
 `supervisor_every_k=config.supervisor_every_k` to `run_loop`.
 

@@ -1,7 +1,7 @@
 # `test_when_execute_submission_called_with_syntax_error_body_then_observation_has_syntax_violation`
 
 Pins the **SyntaxError** branch of the `execute_submission`
-dispatcher (cycle 58, [ADR 0008](../../../../docs/adr/0008-docker-sandboxed-execute-submission-tool.md)).
+dispatcher (cycle 58, [ADR 0008](../../../../SOLUTION-ARCHITECTURE.md)).
 
 When the model emits Python that does not parse, the dispatcher
 MUST NOT raise. It MUST return a structured observation JSON with:
@@ -9,7 +9,7 @@ MUST NOT raise. It MUST return a structured observation JSON with:
   - `per_seed == []`
   - `mean == 0`
 
-Per [ADR 0002](../../../../docs/adr/0002-main-emits-sentinel-on-malformed-submission.md)
+Per [ADR 0002](../../../../SOLUTION-ARCHITECTURE.md)
 sentinel-on-malformed pattern, the bench converts the parse failure
 into a structured signal the model can read.
 

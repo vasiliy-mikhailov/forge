@@ -1,7 +1,7 @@
 # `test_when_no_dev_runner_line_then_supervisor_sweep_has_placeholder_sample`
 
 Pins the **placeholder** branch of the supervisor sweep accumulator
-introduced in cycle 34 per [ADR 0005](../../../../docs/adr/0005-plateau-detection-supervisor-via-llm-self-judgment.md).
+introduced in cycle 34 per [ADR 0005](../../../../SOLUTION-ARCHITECTURE.md).
 
 The supervisor consults `_sweep_samples` every `supervisor_every_k`
 iters. Each iter contributes a sample `(iter_n, mean_score,

@@ -5,7 +5,7 @@ Pins the composition root's **shape contract**:
 `AttemptResult` — happy path (model produces working `class Solver`,
 20 games played) and sad path (model produces wrong-shape submission,
 sentinel `AttemptResult(n_games=0, games=())` emitted per
-[ADR 0002](../../../../docs/adr/0002-main-emits-sentinel-on-malformed-submission.md))
+[ADR 0002](../../../../SOLUTION-ARCHITECTURE.md))
 both produce the same return type. The bench never crashes on a
 malformed submission.
 
@@ -16,7 +16,7 @@ solver correctness) is pinned in
 - **Arrange**: import `AttemptResult`, `BenchConfig`, and `main`.
   Build `_FAST = BenchConfig(max_iters=30, n_trials=1,
   temperature=0.0)` — test-friendly knobs that bound wall time;
-  [ADR 0003](../../../../docs/adr/0003-bench-defaults-500-iters-10-trials-temp-0.7.md)
+  [ADR 0003](../../../../SOLUTION-ARCHITECTURE.md)
   defaults (500 iters / T=0.7) would take minutes. vLLM container
   `reward-bench-vllm` serving `qwen3.6-27b-awq` (`ensure_serving`
   brings it up if down).

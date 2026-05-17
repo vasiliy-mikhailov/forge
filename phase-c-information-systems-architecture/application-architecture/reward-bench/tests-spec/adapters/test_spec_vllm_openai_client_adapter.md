@@ -1,7 +1,7 @@
 # `test_spec_vllm_openai_client_adapter`
 
 Pins the **ModelClient port + VllmOpenAIClient adapter** introduced in
-cycle 98b per [ADR 0011](../../../docs/adr/0011-clean-arch-ports-for-model-client-tool-registry-protocol-parser.md).
+cycle 98b per [ADR 0011](../../../SOLUTION-ARCHITECTURE.md).
 
 ## Why
 

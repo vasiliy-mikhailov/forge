@@ -5,7 +5,7 @@ Pins the **submission protocol** that
 declares as required. Until this cycle the contract was enforced
 implicitly: `load_submission` ran the module, and `score_submission`
 later raised `AttributeError` when `Solver` or `move` were missing —
-caught by [ADR 0002](../../../../docs/adr/0002-main-emits-sentinel-on-malformed-submission.md)
+caught by [ADR 0002](../../../../SOLUTION-ARCHITECTURE.md)
 sentinel as `final_state='solver_error'`. Result: shape-only campaign
 tests cannot distinguish "model wrote Gym-style API" from "Solver
 crashed during play".

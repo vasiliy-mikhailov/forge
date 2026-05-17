@@ -3,7 +3,7 @@
 [`CpuCountPort`](../../../src/ports/cpu_count.py) — the
 runtime-boundary contract for "how many CPU cores does this process
 get to use". Established by
-[ADR 0006](../../../docs/adr/0006-sandboxed-scoring-docker-tier1-and-walltime-budget.md)
+[ADR 0006](../../../SOLUTION-ARCHITECTURE.md)
 Layer 2.
 
 Use-case modules (anything under `src/.../use_cases/`) cannot import

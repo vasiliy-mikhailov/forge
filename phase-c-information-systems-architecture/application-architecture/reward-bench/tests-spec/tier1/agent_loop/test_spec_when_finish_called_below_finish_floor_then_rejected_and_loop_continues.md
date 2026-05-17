@@ -17,7 +17,7 @@ because the model never produced dev-mean data.
 The data source for `best_dev_mean` depends on which tool the model
 uses:
 
-- **Active path** ([ADR 0008](../../../../docs/adr/0008-docker-sandboxed-execute-submission-tool.md)):
+- **Active path** ([ADR 0008](../../../../SOLUTION-ARCHITECTURE.md)):
   `execute_submission` returns a structured JSON observation whose
   `mean` field updates `best_dev_mean`.
 

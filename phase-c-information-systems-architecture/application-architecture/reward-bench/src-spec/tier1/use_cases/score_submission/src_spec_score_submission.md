@@ -31,7 +31,7 @@ and returns an `AttemptResult` aligned with SPEC.md.
 
 ## `hard_wall_sec` cap
 
-Per [ADR 0006](../../../../docs/adr/0006-sandboxed-scoring-docker-tier1-and-walltime-budget.md)
+Per [ADR 0006](../../../../SOLUTION-ARCHITECTURE.md)
 layer 1. The cap is AGGREGATE — it fires between games once total
 elapsed exceeds the budget; the FIRST slow game still runs to
 completion before the cap kicks in. Per-game preemption is the

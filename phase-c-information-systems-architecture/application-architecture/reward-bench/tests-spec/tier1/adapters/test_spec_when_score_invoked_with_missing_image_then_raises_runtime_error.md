@@ -15,7 +15,7 @@ This wasted compute and polluted the canonical battery for the
 observation.
 
 The contract per
-[ADR 0018](../../../docs/adr/0018-runtime-boundary-dependencies-port-fake-autouse.md)
+[ADR 0018](../../../SOLUTION-ARCHITECTURE.md)
 and the [CanonicalScorerPort src_spec](../../../src-spec/ports/canonical_scorer/src_spec_when_canonical_scorer_score_called_then_returns_attempt_result.md):
 
   > **MAY raise on infrastructure failure** (Docker unavailable, image

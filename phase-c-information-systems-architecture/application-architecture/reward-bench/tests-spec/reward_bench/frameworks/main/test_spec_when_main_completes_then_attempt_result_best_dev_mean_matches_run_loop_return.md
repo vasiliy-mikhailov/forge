@@ -1,6 +1,6 @@
 # `test_when_main_completes_then_attempt_result_best_dev_mean_matches_run_loop_return`
 
-Pins the **best_dev_mean wiring** per [ADR 0009 v3](../../../../docs/adr/0009-multi-model-smoke-bench-convention.md):
+Pins the **best_dev_mean wiring** per [ADR 0009 v3](../../../../SOLUTION-ARCHITECTURE.md):
 when [`main()`](../../../../src/reward_bench/frameworks/main.py) finishes, the
 returned `AttemptResult.best_dev_mean` equals the `best_dev_mean` field
 that [`run_loop`](../../../../src/tier1/agent_loop.py) returned. This is

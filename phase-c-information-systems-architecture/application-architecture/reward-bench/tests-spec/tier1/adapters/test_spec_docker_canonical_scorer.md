@@ -2,7 +2,7 @@
 
 Pins the **`DockerCanonicalScorer`** adapter introduced in cycle 105
 sub-B per the
-[ADR 0006 Layer 2 amendment](../../../../docs/adr/0006-sandboxed-scoring-docker-tier1-and-walltime-budget.md).
+[ADR 0006 Layer 2 amendment](../../../../SOLUTION-ARCHITECTURE.md).
 
 ## Why
 

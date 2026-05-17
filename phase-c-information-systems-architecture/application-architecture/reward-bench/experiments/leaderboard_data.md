@@ -251,7 +251,7 @@ Commit: cycle 70 = 17ef812 (the refactor).
 
 ### Cycle 72 multi-model smoke screen (22 models, 10 iters, n_trials=1, T=0.7, finish_floor=0)
 
-Per [ADR 0009](../docs/adr/0009-multi-model-smoke-bench-convention.md).
+Per [ADR 0009](../SOLUTION-ARCHITECTURE.md).
 Pytest result: **6 passed, 16 failed in 9500.93s (2:38:20)**.
 
 Discoveries made by this sweep:
@@ -368,7 +368,7 @@ Each model was driven through its own per-model smoke task (task list
   - `qwen3.6-27b-nvfp4` → dev 2206.4
 
 **Bench-side bugs documented and queued for fixes** (not model verdicts):
-  - [ADR 0010 (cycle 82)](../docs/adr/0010-mistral-special-tokens-incompatible-with-fenced-tool-protocol.md):
+  - [ADR 0010 (cycle 82)](../SOLUTION-ARCHITECTURE.md):
     Mistral / GPT-OSS special-token tool format → `parse_tool_calls` only
     reads text content for fenced blocks. Affects: `devstral-small-2-24b`,
     `mistral-small-3.2-24b`, `devstral-2-123b*`, `gpt-oss-20b`, `gpt-oss-120b`.
@@ -384,7 +384,7 @@ Once cycle 77 + 83 land, the projected coverage rises to ~18 of 22 PASS.
 
 ### Cycle 97 — mistral-cohort rerun (post cycles 83 + 77 + 96)
 
-Six models flagged by [ADR 0010](../docs/adr/0010-mistral-special-tokens-incompatible-with-fenced-tool-protocol.md)
+Six models flagged by [ADR 0010](../SOLUTION-ARCHITECTURE.md)
 re-tested after the bench-side fixes landed:
   - cycle 83 (parse_tool_calls reads structured `message.tool_calls`)
   - cycle 77 (dev / canonical per-seed budget alignment)

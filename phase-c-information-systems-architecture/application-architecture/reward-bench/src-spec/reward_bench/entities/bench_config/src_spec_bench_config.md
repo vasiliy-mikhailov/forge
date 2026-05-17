@@ -2,7 +2,7 @@
 
 `BenchConfig` is a frozen dataclass — the orchestrator-side knob
 panel for a bench run. Defaults are codified in
-[ADR 0003](../../../../docs/adr/0003-bench-defaults-500-iters-10-trials-temp-0.7.md);
+[ADR 0003](../../../../SOLUTION-ARCHITECTURE.md);
 this entity is the Python embodiment of those defaults.
 
 ## Fields
@@ -20,7 +20,7 @@ Notes on what is NOT in `BenchConfig`:
 
 - `max_model_len` lives on `ModelTarget` (per-model vLLM config).
 - Condenser `model_id` is decided at the wiring layer; per
-  [ADR 0001](../../../../docs/adr/0001-condenser-uses-same-model-as-bench.md)
+  [ADR 0001](../../../../SOLUTION-ARCHITECTURE.md)
   it equals the bench model's `id`.
 - `hard_wall_sec` is now a BenchConfig field (cycle 24) AND an AttemptResult observation field. Input lives on config; output reflects what cap applied to a given run.
   Default 0 (disabled), per SPEC.md.

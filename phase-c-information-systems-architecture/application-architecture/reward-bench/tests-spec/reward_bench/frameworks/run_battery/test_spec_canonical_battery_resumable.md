@@ -4,7 +4,7 @@ Pins the **`run_canonical_battery`** function added in cycle 102.
 
 ## Why
 
-Per [ADR 0003](../../../../docs/adr/0003-bench-defaults-500-iters-10-trials-temp-0.7.md)
+Per [ADR 0003](../../../../SOLUTION-ARCHITECTURE.md)
 the canonical campaign is `max_iters=500, n_trials=10, T=0.7` across
 every model in `MODEL_REGISTRY` whose registry entry has
 `bench_skip != true`. A single sweep takes 24-48 hours on the lab

@@ -1,6 +1,6 @@
 # `test_when_loop_ends_then_last_successful_execute_submission_body_promoted_to_workspace_submission_py`
 
-Pins the [ADR 0008 finish-time promotion clause](../../../../docs/adr/0008-docker-sandboxed-execute-submission-tool.md#finish-time-promotion-to-workspace-submission-py).
+Pins the [ADR 0008 finish-time promotion clause](../../../../SOLUTION-ARCHITECTURE.md#finish-time-promotion-to-workspace-submission-py).
 `execute_submission` writes the body to a transient location during
 the ralph loop — not directly to `/workspace/submission.py`. But the
 canonical scoring path (`GameBoard2048Adapter` →

@@ -3,7 +3,7 @@
 [`ToolRegistry`](../../../src/ports/tool_registry.py) — the
 runtime-boundary contract for "advertise the agent's tool surface
 and dispatch tool calls". Established by
-[ADR 0011](../../../docs/adr/0011-clean-arch-ports-for-model-client-tool-registry-protocol-parser.md).
+[ADR 0011](../../../SOLUTION-ARCHITECTURE.md).
 
 Different tiers will provide different registries (tier 1 today;
 tier 2-4 future: langgraph, openhands, orchestrator). The agent loop
@@ -37,7 +37,7 @@ Semantics:
 
 - `schemas` is the OpenAI tool-call advertisement array passed in
   `ModelClient.call(..., tools=registry.schemas)`. Per
-  [ADR 0010](../../../docs/adr/0010-mistral-devstral-gpt-oss-tool-calls-go-through-tools-advertisement-plus-structured-message-tool-calls.md)
+  [ADR 0010](../../../SOLUTION-ARCHITECTURE.md)
   this advertisement is sent on every request.
 - `dispatch(name, args, ctx)` runs the named tool and returns the
   observation string that becomes the `role:"tool"` content in the

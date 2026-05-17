@@ -11,7 +11,7 @@ Cycle 28 added a sentinel for crashes inside `solver.move()` (caught in
 `__init__` crashes — the solver never gets passed to `play_one_game`
 because construction itself raises.
 
-Per [ADR 0002](../../../../docs/adr/0002-main-emits-sentinel-on-malformed-submission.md)
+Per [ADR 0002](../../../../SOLUTION-ARCHITECTURE.md)
 the bench should NEVER raise on a malformed submission. ADR 0002 covers
 static malformations + cycle 28 extended to `move()` runtime errors. This
 cycle extends sentinel discipline to **constructor** runtime errors.

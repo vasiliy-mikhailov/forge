@@ -3,7 +3,7 @@
 Pins the **parallel-per-seed worker** in
 [`tasks/2048/runner_canonical.py`](../../../../tasks/2048/runner_canonical.py)
 introduced in cycle 105 sub-A per the
-[ADR 0006 Layer 2 amendment](../../../../docs/adr/0006-sandboxed-scoring-docker-tier1-and-walltime-budget.md).
+[ADR 0006 Layer 2 amendment](../../../../SOLUTION-ARCHITECTURE.md).
 
 ## Why
 

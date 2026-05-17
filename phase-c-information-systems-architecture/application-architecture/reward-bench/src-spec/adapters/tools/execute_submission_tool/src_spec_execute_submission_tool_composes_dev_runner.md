@@ -28,7 +28,7 @@ composition with `_execute_submission` (cycle 58 / ADR 0008).
 3. Returns the JSON observation string the dev runner produces.
 
 ### Dev-runner contract (per
-[ADR 0008](../../../../docs/adr/0008-docker-sandboxed-execute-submission-tool.md))
+[ADR 0008](../../../../SOLUTION-ARCHITECTURE.md))
 
 `_execute_submission`:
 
@@ -37,7 +37,7 @@ composition with `_execute_submission` (cycle 58 / ADR 0008).
 - Returns a JSON string with keys: `protocol_violations`,
   `per_seed`, `mean`, `max_tile_best`, `walltime_sec_total`.
 - Honours `dev_hard_wall_sec` (per
-  [ADR 0006](../../../../docs/adr/0006-sandboxed-scoring-docker-tier1-and-walltime-budget.md)
+  [ADR 0006](../../../../SOLUTION-ARCHITECTURE.md)
   Layer 1 / cycle 77) — overshoot becomes per-seed `walltime_exceeded`.
 - Sandboxes the body inside the `reward-bench-tier1` Docker image
   per ADR 0008 — hostile submissions cannot escape.

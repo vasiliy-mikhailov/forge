@@ -30,7 +30,7 @@ module's `CondenserPort`). The orchestrator (`reward_bench.frameworks.main`)
 adapts a `CondenserPort` to the callable at the boundary so the
 inner-cannot-import-outer rule holds.
 
-Per [ADR 0001](../../../docs/adr/0001-condenser-uses-same-model-as-bench.md),
+Per [ADR 0001](../../../SOLUTION-ARCHITECTURE.md),
 the LLM-backed condenser adapter (cycle 16) will use the same
 `ModelTarget` as the model under bench; cycle 15 only pins the seam,
 the model decision lands when the adapter does.

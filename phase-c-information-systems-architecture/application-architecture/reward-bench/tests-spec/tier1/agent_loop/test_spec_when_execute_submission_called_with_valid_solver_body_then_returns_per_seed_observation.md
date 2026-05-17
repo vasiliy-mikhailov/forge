@@ -1,7 +1,7 @@
 # `test_when_execute_submission_called_with_valid_solver_body_then_returns_per_seed_observation`
 
 Pins the **happy-path** for the `execute_submission` dispatcher
-introduced in cycle 58 ([ADR 0008](../../../../docs/adr/0008-docker-sandboxed-execute-submission-tool.md)).
+introduced in cycle 58 ([ADR 0008](../../../../SOLUTION-ARCHITECTURE.md)).
 
 When the model emits a valid `Solver` class via the
 `===FILE_BODY===` separator inside an `execute_submission` tool

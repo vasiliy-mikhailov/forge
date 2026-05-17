@@ -2,10 +2,10 @@
 
 [`SupervisorPort`](../../../src/ports/supervisor.py) — the
 runtime-boundary contract for plateau-detection per
-[ADR 0005](../../../docs/adr/0005-plateau-detection-supervisor-via-llm-self-judgment.md).
+[ADR 0005](../../../SOLUTION-ARCHITECTURE.md).
 
 Relocated in cycle 115 from `src/reward_bench/use_cases/supervisor_port.py`
-to comply with [ADR 0018](../../../docs/adr/0018-runtime-boundary-dependencies-port-fake-autouse.md)'s
+to comply with [ADR 0018](../../../SOLUTION-ARCHITECTURE.md)'s
 `src/ports/<name>.py` convention.
 
 ## Types

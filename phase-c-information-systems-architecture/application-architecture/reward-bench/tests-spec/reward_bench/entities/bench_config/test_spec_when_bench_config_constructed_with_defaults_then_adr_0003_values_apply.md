@@ -1,6 +1,6 @@
 # `test_when_bench_config_constructed_with_defaults_then_adr_0003_values_apply`
 
-Pins the [ADR 0003 default knobs](../../../../docs/adr/0003-bench-defaults-500-iters-10-trials-temp-0.7.md)
+Pins the [ADR 0003 default knobs](../../../../SOLUTION-ARCHITECTURE.md)
 on the `BenchConfig` entity: 500 iters, 10 trials, temperature 0.7,
 no-improve never triggers (999999), finish-floor 0. These are what
 every leaderboard publication runs under unless explicitly overridden.

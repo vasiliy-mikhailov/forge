@@ -1,7 +1,7 @@
 # `test_spec_protocol_parser_adapters`
 
 Pins the **ProtocolParser port** introduced in cycle 98 per
-[ADR 0011](../../../../docs/adr/0011-clean-arch-ports-for-model-client-tool-registry-protocol-parser.md).
+[ADR 0011](../../../../SOLUTION-ARCHITECTURE.md).
 
 ## Why
 

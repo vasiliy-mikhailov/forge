@@ -3,9 +3,9 @@
 `src.reward_bench.adapters.llm_supervisor.LlmSupervisor` implements
 [`SupervisorPort`](../../../use_cases/supervisor_port/src_spec_supervisor_port.md)
 by delegating plateau judgment to the bench LLM under test, per [ADR
-0001](../../../../docs/adr/0001-condenser-uses-same-model-as-bench.md)
+0001](../../../../SOLUTION-ARCHITECTURE.md)
 (same model as bench) + [ADR 0005](
-../../../../docs/adr/0005-plateau-detection-supervisor-via-llm-self-judgment.md)
+../../../../SOLUTION-ARCHITECTURE.md)
 (LLM self-judges plateau from sweep data).
 
 Construction: `LlmSupervisor(ask, model_id)` where `ask` is a

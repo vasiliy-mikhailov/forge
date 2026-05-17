@@ -164,7 +164,7 @@ reply:
     {"name": "<active-tool-name>", "args": {<...>}}
     ```
 
-Active tool set (per [ADR 0008](docs/adr/0008-docker-sandboxed-execute-submission-tool.md)):
+Active tool set (per [ADR 0008](SOLUTION-ARCHITECTURE.md)):
   - view(path)              read file contents into the next prompt.
   - execute_submission(content) write the submission body into a
                             sandboxed `reward-bench-tier${TIER}` Docker

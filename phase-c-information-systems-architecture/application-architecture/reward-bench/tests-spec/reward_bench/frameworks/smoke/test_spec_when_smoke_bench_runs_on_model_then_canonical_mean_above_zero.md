@@ -1,7 +1,7 @@
 # `test_when_smoke_bench_runs_on_model_then_canonical_mean_above_zero`
 
 Pins the **smoke screen** per
-[ADR 0009](../../../../docs/adr/0009-multi-model-smoke-bench-convention.md)
+[ADR 0009](../../../../SOLUTION-ARCHITECTURE.md)
 for every model in
 [`MODEL_REGISTRY`](../../../../src/reward_bench/use_cases/model_registry.py).
 

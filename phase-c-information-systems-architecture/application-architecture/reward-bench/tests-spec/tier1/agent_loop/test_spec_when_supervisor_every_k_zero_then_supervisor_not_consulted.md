@@ -1,7 +1,7 @@
 # `test_when_supervisor_every_k_zero_then_supervisor_not_consulted`
 
 Pins the **back-compat / default-off** path for the supervisor
-hook (cycle 33, [ADR 0005](../../../../docs/adr/0005-plateau-detection-supervisor-via-llm-self-judgment.md)).
+hook (cycle 33, [ADR 0005](../../../../SOLUTION-ARCHITECTURE.md)).
 
 When `supervisor_every_k=0` (the BenchConfig default), the bench
 MUST never call the supervisor — regardless of whether one is
