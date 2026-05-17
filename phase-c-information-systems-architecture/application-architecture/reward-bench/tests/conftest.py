@@ -192,9 +192,13 @@ def vllm_api_key():
     return os.environ.get('VLLM_API_KEY', 'fake-key')
 
 
-@pytest.fixture(scope='session')
-def vllm_base_url():
-    return 'http://fake:8000'   # autouse urlopen mock handles the real path
+@pytest.fixture
+def vllm_base_url(request):
+    """Return the real vLLM URL for @live tests, fake URL otherwise."""
+    if request.node.get_closest_marker('live') is not None:
+        from src.tier1.inference import ensure_serving
+        return ensure_serving()
+    return 'http://fake:8000'   # autouse urlopen mock handles the fake path
 
 
 @pytest.fixture
