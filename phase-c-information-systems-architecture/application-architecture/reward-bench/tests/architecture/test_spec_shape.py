@@ -15,6 +15,7 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 TESTS_SPEC = REPO_ROOT / "tests-spec"
+SRC_SPEC = REPO_ROOT / "src-spec"
 
 
 _ARCHAEOLOGY_PATTERNS = (
@@ -40,6 +41,23 @@ def _discover_test_specs() -> tuple[Path, ...]:
     )
 
 
+def _discover_src_specs() -> tuple[Path, ...]:
+    """All src_spec_*.md under src-spec/."""
+    return tuple(sorted(SRC_SPEC.rglob("src_spec_*.md")))
+
+
+def _archaeology_violations(specs: tuple[Path, ...]) -> list[tuple[str, int, str]]:
+    out: list[tuple[str, int, str]] = []
+    for spec in specs:
+        for lineno, line in enumerate(spec.read_text().splitlines(), start=1):
+            for pat in _ARCHAEOLOGY_PATTERNS:
+                if pat.search(line):
+                    rel = spec.relative_to(REPO_ROOT)
+                    out.append((str(rel), lineno, line.strip()[:120]))
+                    break
+    return out
+
+
 def test_when_test_spec_corpus_walked_then_no_cycle_archaeology_present():
     """Arrange / Act / Assert."""
     # Arrange
@@ -47,14 +65,7 @@ def test_when_test_spec_corpus_walked_then_no_cycle_archaeology_present():
     assert specs, f"no test_specs found under {TESTS_SPEC}"
 
     # Act
-    violations: list[tuple[str, int, str]] = []
-    for spec in specs:
-        for lineno, line in enumerate(spec.read_text().splitlines(), start=1):
-            for pat in _ARCHAEOLOGY_PATTERNS:
-                if pat.search(line):
-                    rel = spec.relative_to(REPO_ROOT)
-                    violations.append((str(rel), lineno, line.strip()[:120]))
-                    break
+    violations = _archaeology_violations(specs)
 
     # Assert
     if violations:
@@ -63,7 +74,28 @@ def test_when_test_spec_corpus_walked_then_no_cycle_archaeology_present():
         )
         more = f'\n  ... and {len(violations) - 20} more' if len(violations) > 20 else ''
         pytest.fail(
-            f'cycle/ADR archaeology in {len(violations)} spec line(s) '
+            f'cycle/ADR archaeology in {len(violations)} test_spec line(s) '
+            f'(git-is-history rule):\n{head}{more}'
+        )
+
+
+def test_when_src_spec_corpus_walked_then_no_cycle_archaeology_present():
+    """Arrange / Act / Assert."""
+    # Arrange
+    specs = _discover_src_specs()
+    assert specs, f"no src_specs found under {SRC_SPEC}"
+
+    # Act
+    violations = _archaeology_violations(specs)
+
+    # Assert
+    if violations:
+        head = '\n'.join(
+            f'  {p}:{ln}  {snippet}' for p, ln, snippet in violations[:20]
+        )
+        more = f'\n  ... and {len(violations) - 20} more' if len(violations) > 20 else ''
+        pytest.fail(
+            f'cycle/ADR archaeology in {len(violations)} src_spec line(s) '
             f'(git-is-history rule):\n{head}{more}'
         )
 
