@@ -1,14 +1,29 @@
 # `test_when_solver_valid_then_game_result_returned`
+
 ## Behaviour
-sub-A worker: valid Solver -> game played, dict returned.
+
+A well-formed Solver class drives the worker loop to completion and
+`_play_one_collect_events` returns a populated game dict alongside an
+event list.
+
 ## Contract
-- **Arrange**: (see test body — no `# Arrange/Act/Assert` markers in source)
-- **Act**: (see test body — no `# Arrange/Act/Assert` markers in source)
-- **Assert**: (see test body — no `# Arrange/Act/Assert` markers in source)
+
+- **Arrange**: install a fake `env_2048` module, reimport
+  `runner_canonical`, and write a `submission.py` whose `Solver.move`
+  always returns `'W'`.
+- **Act**: call `_play_one_collect_events((sub, 1, 2048, 100, 60.0, None))`.
+- **Assert**: `game['seed'] == 1`, `game['score'] >= 0`,
+  `game['moves'] > 0`, `game['final_state']` is one of
+  `('won', 'lost', 'max_moves')`, and `events` is a list.
+
 ## Model client injection point
-- **Seam**: conftest autouse `_bind_model_client`.
-- **Mode**: **no_fake** — exercises real bench seam offline (autouse fake bypassed).
-- **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
+
+- **Seam**: `sys.modules['env_2048']` plus the on-disk submission file.
+- **Mode**: fake (in-process `_FakeBoard`, no Docker, no LLM).
+
 Test code: [`tests/tier1/tasks/test_runner_canonical.py`](../../../../tests/tier1/tasks/test_runner_canonical.py)::`test_when_solver_valid_then_game_result_returned`.
+
 ## Runtime scope
-> **Runtime scope**: unit only — runner_canonical worker contracts; live coverage via @live test_docker_canonical_scorer_live which invokes runner_canonical inside Docker against a real solver.
+
+> **Runtime scope**: unit only — runner_canonical worker contract;
+> Docker coverage lives in the @live canonical scorer test.

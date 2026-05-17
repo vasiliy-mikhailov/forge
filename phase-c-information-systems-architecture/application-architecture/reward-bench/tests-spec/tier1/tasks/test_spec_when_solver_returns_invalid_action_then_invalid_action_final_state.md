@@ -1,12 +1,27 @@
 # `test_when_solver_returns_invalid_action_then_invalid_action_final_state`
+
+## Behaviour
+
+A non-WASD return value from `Solver.move` ends the game with
+`final_state == 'invalid_action'` and records an `invalid_action`
+event.
+
 ## Contract
-- **Arrange**: (see test body — no `# Arrange/Act/Assert` markers in source)
-- **Act**: (see test body — no `# Arrange/Act/Assert` markers in source)
-- **Assert**: (see test body — no `# Arrange/Act/Assert` markers in source)
+
+- **Arrange**: write `submission.py` whose `Solver.move` returns
+  `'Q'` (outside the valid WASD set).
+- **Act**: call `_play_one_collect_events((sub, 1, 2048, 100, 60.0, None))`.
+- **Assert**: `game['final_state'] == 'invalid_action'` and at least
+  one event in `events` has `event == 'invalid_action'`.
+
 ## Model client injection point
-- **Seam**: conftest autouse `_bind_model_client`.
-- **Mode**: **no_fake** — exercises real bench seam offline (autouse fake bypassed).
-- **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
+
+- **Seam**: `sys.modules['env_2048']` plus the on-disk submission file.
+- **Mode**: fake (in-process `_FakeBoard`, no Docker, no LLM).
+
 Test code: [`tests/tier1/tasks/test_runner_canonical.py`](../../../../tests/tier1/tasks/test_runner_canonical.py)::`test_when_solver_returns_invalid_action_then_invalid_action_final_state`.
+
 ## Runtime scope
-> **Runtime scope**: unit only — runner_canonical worker contracts; live coverage via @live test_docker_canonical_scorer_live which invokes runner_canonical inside Docker against a real solver.
+
+> **Runtime scope**: unit only — runner_canonical worker contract;
+> Docker coverage lives in the @live canonical scorer test.

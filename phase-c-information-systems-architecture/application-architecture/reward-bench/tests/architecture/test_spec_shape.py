@@ -27,7 +27,7 @@ _PLACEHOLDER_PATTERN = re.compile(r'\(see test body[^)]*\)')
 
 # Ratchet: decrement each cycle that rewrites a stub. When 0, the test
 # becomes a strict equality and the defect class is permanently extinct.
-EXPECTED_MAX_PLACEHOLDERS = 69
+EXPECTED_MAX_PLACEHOLDERS = 54
 
 
 def _discover_test_specs() -> tuple[Path, ...]:

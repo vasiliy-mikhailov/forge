@@ -1,12 +1,21 @@
 # `test_when_composite_given_neither_then_returns_empty`
+
+Pins the empty-input branch of `CompositeParser`: when no child parser
+finds anything, the result is `[]` (not exception, not sentinel).
+
 ## Contract
-- **Arrange**: (see test body — no `# Arrange/Act/Assert` markers in source)
-- **Act**: (see test body — no `# Arrange/Act/Assert` markers in source)
-- **Assert**: (see test body — no `# Arrange/Act/Assert` markers in source)
+
+- **Arrange**: empty reply `_reply()` (no content, no tool_calls).
+  Parser: `CompositeParser([FencedTextParser(), StructuredOpenAIParser()])`.
+- **Act**: `parser.extract(reply)`.
+- **Assert**: returns `[]`.
+
 ## Model client injection point
-- **Seam**: conftest autouse `_bind_model_client`.
-- **Mode**: **fake** (default) — autouse `FakeModelClient` / `FakeVllmServer`.
-- **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
-Test code: [`tests/adapters/parsers/test_protocol_parser_adapters.py`](../../../../tests/adapters/parsers/test_protocol_parser_adapters.py)::`test_when_composite_given_neither_then_returns_empty`.
+
+- **Seam**: none — pure function over `AssistantReply`.
+
+Test code: [`../../../tests/adapters/parsers/test_protocol_parser_adapters.py`](../../../tests/adapters/parsers/test_protocol_parser_adapters.py)::`test_when_composite_given_neither_then_returns_empty`.
+
 ## Runtime scope
-> **Runtime scope**: unit only — pure function over `AssistantReply`; no runtime boundary.
+
+> **Runtime scope**: unit only.

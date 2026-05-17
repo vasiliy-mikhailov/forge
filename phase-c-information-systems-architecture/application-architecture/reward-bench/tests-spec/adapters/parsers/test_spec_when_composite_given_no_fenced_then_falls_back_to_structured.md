@@ -1,12 +1,23 @@
 # `test_when_composite_given_no_fenced_then_falls_back_to_structured`
+
+Pins the fallback branch of `CompositeParser`: when the fenced parser
+yields zero calls, the next parser in the list (structured) runs and
+its result is returned.
+
 ## Contract
-- **Arrange**: (see test body — no `# Arrange/Act/Assert` markers in source)
-- **Act**: (see test body — no `# Arrange/Act/Assert` markers in source)
-- **Assert**: (see test body — no `# Arrange/Act/Assert` markers in source)
+
+- **Arrange**: `reply` with empty content and a single structured
+  `view` tool_call. Parser:
+  `CompositeParser([FencedTextParser(), StructuredOpenAIParser()])`.
+- **Act**: `calls = parser.extract(reply)`.
+- **Assert**: `len(calls) == 1`; `calls[0].name == 'view'`.
+
 ## Model client injection point
-- **Seam**: conftest autouse `_bind_model_client`.
-- **Mode**: **fake** (default) — autouse `FakeModelClient` / `FakeVllmServer`.
-- **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
-Test code: [`tests/adapters/parsers/test_protocol_parser_adapters.py`](../../../../tests/adapters/parsers/test_protocol_parser_adapters.py)::`test_when_composite_given_no_fenced_then_falls_back_to_structured`.
+
+- **Seam**: none — pure function over `AssistantReply`.
+
+Test code: [`../../../tests/adapters/parsers/test_protocol_parser_adapters.py`](../../../tests/adapters/parsers/test_protocol_parser_adapters.py)::`test_when_composite_given_no_fenced_then_falls_back_to_structured`.
+
 ## Runtime scope
-> **Runtime scope**: unit only — pure function over `AssistantReply`; no runtime boundary.
+
+> **Runtime scope**: unit only.
