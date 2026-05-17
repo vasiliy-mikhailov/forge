@@ -26,11 +26,16 @@ from src.tier1.agent_loop import parse_tool_calls
 _FAST = BenchConfig(max_iters=120, n_trials=1, temperature=0.7, hard_wall_sec=60.0)
 
 
-JUDGE_PROMPT = """You are a code reviewer. Below is a Python Solver class for the 2048 puzzle. Decide: does this Solver have any actual strategy that uses board state (the 4x4 grid) to choose its move?
+JUDGE_PROMPT = """You are a code reviewer. Below is a Python Solver class for the 2048 puzzle. Classify it as TRIVIAL or NON-TRIVIAL based ONLY on the move() method body.
 
-Reply on a single line with exactly one of these two words:
-TRIVIAL — if the move() method always returns the same action, picks randomly without using board, or has no logic that inspects board values.
-NON-TRIVIAL — if move() uses board state in a way that changes its output based on the grid contents.
+TRIVIAL — move() does ANY of:
+  (a) returns a hardcoded string literal: `return 'W'` (or 'A', 'S', 'D');
+  (b) returns `random.choice([...])` or similar random selection WITHOUT inspecting the board parameter;
+  (c) returns the same action regardless of board contents (even with surrounding code that does not affect the return value).
+
+NON-TRIVIAL — move() reads at least one value from the `board` parameter and uses it to decide which action to return.
+
+Reply on a single line: exactly TRIVIAL or NON-TRIVIAL.
 
 ```python
 {body}

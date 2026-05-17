@@ -142,8 +142,93 @@ The condenser (ADR-0001), supervisor (ADR-0005), and bench model all hit the sam
 - A model that can't summarise its own context or judge its own progress *should* score worse — that's signal, not noise.
 - Condenser and supervisor cost extra inferences; mitigated by trigger thresholds (`trigger_tokens=80000`, `supervisor_every_k=5`).
 
-## 7. Open items / known tensions
+## 7. Target architecture: subagent-per-iter
 
+Current architecture (§§1-6) has the agent loop as a single long-lived
+process accumulating context across iters. This produces several
+known failure modes captured in §8 Open items: W-fallback drift,
+observability gaps, context-window pressure at high `max_iters`.
+
+The planned architecture inverts the responsibility split:
+
+```
+Main agent (ralph-loop orchestrator — top-level, long-lived)
+├── Holds cumulative state:
+│   - best submission so far + its score
+│   - history digest (prior iters' submissions + scores, compressed)
+│   - remaining time budget, remaining iter count
+│
+└── Per iter, spawns a fresh subagent with its own context:
+    │  Receives FROM main:
+    │    - history digest (prior submissions + scores)
+    │    - time budget for THIS iter
+    │    - iters remaining in the loop
+    │    - env spec reference (if first time)
+    │  Does (autonomously):
+    │    - reads env spec, prior best, sees its constraints
+    │    - writes code, runs it in Docker sandbox
+    │    - inspects exec results, iterates within the iter if budget allows
+    │  Returns to main:
+    │    - submission body
+    │    - runtime_sec, score, max_tile
+    │    (NOT its deliberation tokens — those die with subagent context)
+```
+
+Why this addresses the observed failure modes:
+
+- **W-fallback drift** (model gives up after many iters): subagent
+  doesn't carry "30 iters in, I'm tired" baggage. Each iter starts
+  fresh; the cumulative state in main is structured signal (scores
+  and code), not raw deliberation.
+- **Observability gaps**: subagent's context is *constructed* by
+  main with every signal we want it to have — time budget, iters
+  remaining, prior scores. No accidental omissions.
+- **Context-window pressure**: main keeps a small compressed
+  digest; subagent context is freshly built per iter and discarded.
+  No condenser/compaction at the main loop level.
+- **Reward gradient**: subagent sees prior iters' scores explicitly
+  and is asked to do better — a numeric gradient, not "vibes".
+
+### Implementation: OpenHands
+
+The subagent-per-iter pattern is OpenHands' native model. Each iter
+becomes an OpenHands task with a fresh agent context; the main
+orchestrator becomes a thin wrapper that constructs the task input
+from cumulative state and aggregates results.
+
+This collapses several things we currently maintain ourselves:
+- `src/tier1/agent_loop.py::run_loop` orchestration — replaced by
+  OpenHands' agent loop.
+- `Tool` / `ToolRegistry` / `ProtocolParser` ports + adapters —
+  replaced by OpenHands' tool surface.
+- Custom Docker bind-mount + env-var threading
+  (`DockerCanonicalScorer`) — replaced by OpenHands' sandbox
+  primitive.
+- `_execute_submission` dev runner — recast as an OpenHands action.
+
+What we KEEP:
+- `SPEC.md` (lab contract) and this `SOLUTION-ARCHITECTURE.md`.
+- The canonical scoring port + adapter (the reward signal is
+  ours; OpenHands shouldn't see it).
+- The cycle-133 quality floor and other fitness functions.
+- `MODEL_REGISTRY`, `BenchConfig`, leaderboard generation.
+
+The cycles 158-159 work on observability informs the
+context-construction layer (what the main → subagent message
+should contain) but doesn't survive as code.
+
+### Decision status
+
+**Pending.** Migration cost estimated 2-3 weeks. Trigger: when the
+next 1-2 cycles' worth of features would be implementing OpenHands
+primitives ourselves.
+
+## 8. Open items / known tensions
+
+- **Subagent-per-iter architecture pending.** See §7. Implementation
+  path is the OpenHands pivot. Current code is single-process
+  ralph loop that accumulates context across iters; planned shape
+  spawns a fresh subagent per iter.
 - **Bench bug — zero-score artifacts from bench-spawned Docker.** Live test reproduces it; canonical Docker invocations sometimes return `score=0` artifacts despite a working submission. Under investigation; suspected in the canonical scorer path, not the model.
 - **`MODEL_REGISTRY` duplication.** YAML and Python tuple disagree (e.g. `qwen3.6-27b-awq` vs `qwen3.6-27b-awq-int4-community`, missing `qwen3.6-35b-a3b-fp8`). Rewrite to load-from-YAML pending (ADR-0013 cycle 101).
 - **Condenser token estimation is heuristic.** 4-chars-per-token may be off ±30 %. Trigger has 18 K headroom; future cycle to lift `trigger_tokens` onto `BenchConfig` per `ModelTarget.max_model_len`.
@@ -152,7 +237,7 @@ The condenser (ADR-0001), supervisor (ADR-0005), and bench model all hit the sam
 - **Static submission protocol is not implemented.** SPEC describes it; only the interactive tool-using agent loop currently exists.
 - **Tier 2-4 ports.** Future tier runners (LangGraph, orchestrator) will follow the ADR-0018 Port + Fake + autouse pattern; not yet added to the manifest.
 
-## 8. Cross-references
+## 9. Cross-references
 
 ### Lab docs
 - `SPEC.md` — contract this implementation realises.
