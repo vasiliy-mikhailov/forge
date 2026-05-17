@@ -1,15 +1,20 @@
 # `test_when_canonical_battery_runner_raises_keyboard_interrupt_then_no_artifact`
-## Behaviour
-Ctrl-C mid-run -> the interrupted (model, trial) artifact is NOT
- written. On resume, that trial is re-attempted.
+
+Pins Ctrl-C safety: when the runner raises `KeyboardInterrupt`, NO artifact is written for the interrupted `(model, trial)`. On a future resume the trial is re-attempted.
+
 ## Contract
-- **Arrange**: (see test body — no `# Arrange/Act/Assert` markers in source)
-- **Act**: (see test body — no `# Arrange/Act/Assert` markers in source)
-- **Assert**: (see test body — no `# Arrange/Act/Assert` markers in source)
+
+- **Arrange**: tmp yml with `[only]`; runner that raises `KeyboardInterrupt`.
+- **Act**: `run_canonical_battery(n_trials=2, registry_path=yml, experiments_root=exp, runner=raising_runner)` inside `pytest.raises(KeyboardInterrupt)`.
+- **Assert**: `canonical_artifact_path('only', 0, ...)` does NOT exist after the raise.
+
 ## Model client injection point
-- **Seam**: conftest autouse `_bind_model_client`.
-- **Mode**: **fake** (default) — autouse `FakeModelClient` / `FakeVllmServer`.
-- **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
-Test code: [`tests/reward_bench/frameworks/test_canonical_battery.py`](../../../../tests/reward_bench/frameworks/test_canonical_battery.py)::`test_when_canonical_battery_runner_raises_keyboard_interrupt_then_no_artifact`.
+
+- **Seam**: filesystem + injected `runner`.
+- **Mode**: fake.
+
+Test code: [`../../../tests/reward_bench/frameworks/test_canonical_battery.py`](../../../tests/reward_bench/frameworks/test_canonical_battery.py)::`test_when_canonical_battery_runner_raises_keyboard_interrupt_then_no_artifact`.
+
 ## Runtime scope
-> **Runtime scope**: unit only — framework orchestration; production-runtime coverage via canonical bench (run_canonical_battery) and @smoke multi-model battery.
+
+> **Runtime scope**: unit only.

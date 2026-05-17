@@ -1,14 +1,20 @@
 # `test_when_main_signature_inspected_then_canonical_scorer_parameter_present`
-## Behaviour
-sub-C: main() gains canonical_scorer DI parameter.
+
+Pins that `main()` exposes a `canonical_scorer` DI parameter (default `None`) so tests can inject a recording scorer instead of spawning real Docker.
+
 ## Contract
-- **Arrange**: (see test body — no `# Arrange/Act/Assert` markers in source)
-- **Act**: (see test body — no `# Arrange/Act/Assert` markers in source)
-- **Assert**: (see test body — no `# Arrange/Act/Assert` markers in source)
+
+- **Arrange**: import `main` and `inspect`.
+- **Act**: read `inspect.signature(main).parameters`.
+- **Assert**: `'canonical_scorer' in sig.parameters` AND `sig.parameters['canonical_scorer'].default is None`.
+
 ## Model client injection point
-- **Seam**: conftest autouse `_bind_model_client`.
-- **Mode**: **no_fake** — exercises real bench seam offline (autouse fake bypassed).
-- **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
-Test code: [`tests/reward_bench/frameworks/test_main_docker_scorer.py`](../../../../tests/reward_bench/frameworks/test_main_docker_scorer.py)::`test_when_main_signature_inspected_then_canonical_scorer_parameter_present`.
+
+- **Seam**: none — pure function.
+- **Mode**: `@pytest.mark.no_fake` — pure signature inspection.
+
+Test code: [`../../../tests/reward_bench/frameworks/test_main_docker_scorer.py`](../../../tests/reward_bench/frameworks/test_main_docker_scorer.py)::`test_when_main_signature_inspected_then_canonical_scorer_parameter_present`.
+
 ## Runtime scope
-> **Runtime scope**: unit only — framework orchestration; production-runtime coverage via canonical bench (run_canonical_battery) and @smoke multi-model battery.
+
+> **Runtime scope**: unit only.

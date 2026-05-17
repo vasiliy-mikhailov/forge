@@ -1,14 +1,20 @@
 # `test_when_play_one_game_prints_then_stdout_not_captured`
-## Behaviour
-bench's stdout.
+
+Pins the stdout-redirection contract: `print()` issued inside the env's call path during `_play_with_timeout` MUST NOT leak to the bench process's stdout (would flood the bench log).
+
 ## Contract
-- **Arrange**: (see test body — no `# Arrange/Act/Assert` markers in source)
-- **Act**: (see test body — no `# Arrange/Act/Assert` markers in source)
-- **Assert**: (see test body — no `# Arrange/Act/Assert` markers in source)
+
+- **Arrange**: `_PrintingEnv(marker='solver-stdout-marker')` that prints the marker during `play_one_game`. `capsys` fixture.
+- **Act**: `_play_with_timeout(env, solver=None, seed=0, timeout=5)`.
+- **Assert**: `result.score == 42`; `'solver-stdout-marker' not in capsys.readouterr().out`.
+
 ## Model client injection point
-- **Seam**: conftest autouse `_bind_model_client`.
-- **Mode**: **no_fake** — exercises real bench seam offline (autouse fake bypassed).
-- **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
-Test code: [`tests/tier1/use_cases/test_solver_stdout.py`](../../../../tests/tier1/use_cases/test_solver_stdout.py)::`test_when_play_one_game_prints_then_stdout_not_captured`.
+
+- **Seam**: stdout (redirected by `_play_with_timeout`).
+- **Mode**: `@pytest.mark.no_fake` — real `_play_with_timeout` code, synthetic env.
+
+Test code: [`../../../tests/tier1/use_cases/test_solver_stdout.py`](../../../tests/tier1/use_cases/test_solver_stdout.py)::`test_when_play_one_game_prints_then_stdout_not_captured`.
+
 ## Runtime scope
-> **Runtime scope**: unit only — use-case orchestration over Port mocks; scale-invariant by construction.
+
+> **Runtime scope**: unit only.

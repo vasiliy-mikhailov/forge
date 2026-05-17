@@ -1,15 +1,20 @@
 # `test_when_main_invoked_with_nonzero_hard_wall_sec_then_run_loop_receives_scaled_dev_budget`
-## Behaviour
-dev_hard_wall_sec = config.hard_wall_sec * 5 / len(seeds)
- and threads it into run_loop. Pins the wiring.
+
+Pins the per-seed budget derivation: `dev_hard_wall_sec = config.hard_wall_sec * 5 / len(seeds)`. With canonical 60s + 20 seeds → dev=15.0s.
+
 ## Contract
-- **Arrange**: (see test body — no `# Arrange/Act/Assert` markers in source)
-- **Act**: (see test body — no `# Arrange/Act/Assert` markers in source)
-- **Assert**: (see test body — no `# Arrange/Act/Assert` markers in source)
+
+- **Arrange**: Monkeypatch `run_loop` with a `fake_run_loop` recorder; stub `ensure_serving_model`, `VLLM_API_KEY`, `score_submission` to a synthetic `AttemptResult`.
+- **Act**: `main(model_id='qwen3.6-27b-awq', seeds=range(1000,1020), config=BenchConfig(max_iters=1, n_trials=1, hard_wall_sec=60.0))`.
+- **Assert**: `captured['dev_hard_wall_sec'] == 15.0`.
+
 ## Model client injection point
-- **Seam**: conftest autouse `_bind_model_client`.
-- **Mode**: **fake** (default) — autouse `FakeModelClient` / `FakeVllmServer`.
-- **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
-Test code: [`tests/reward_bench/frameworks/test_main.py`](../../../../tests/reward_bench/frameworks/test_main.py)::`test_when_main_invoked_with_nonzero_hard_wall_sec_then_run_loop_receives_scaled_dev_budget`.
+
+- **Seam**: `run_loop` (monkeypatched in main_mod).
+- **Mode**: fake.
+
+Test code: [`../../../tests/reward_bench/frameworks/test_main.py`](../../../tests/reward_bench/frameworks/test_main.py)::`test_when_main_invoked_with_nonzero_hard_wall_sec_then_run_loop_receives_scaled_dev_budget`.
+
 ## Runtime scope
-> **Runtime scope**: unit only — framework orchestration; production-runtime coverage via canonical bench (run_canonical_battery) and @smoke multi-model battery.
+
+> **Runtime scope**: unit only.
