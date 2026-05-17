@@ -1,28 +1,23 @@
 # `test_when_default_image_then_v04_used`
 
-> Auto-generated stub (cycle 106 backfill). Refine the Arrange / Act /
-> Assert sections with prose that could reconstruct the test if the
-> code is lost.
-
-## Behaviour
-
-The Dockerfile bumped to v0.4 in cycle 105 sub-A; adapter default must match.
+Pins the module-level default image constant. Catches drift between
+`_DEFAULT_IMAGE` in the adapter and the `Dockerfile.tier1` image tag.
 
 ## Contract
 
-- **Arrange**: (see test body — no `# Arrange/Act/Assert` markers in source)
-- **Act**: (see test body — no `# Arrange/Act/Assert` markers in source)
-- **Assert**: (see test body — no `# Arrange/Act/Assert` markers in source)
+- **Arrange**: import `_DEFAULT_IMAGE` from
+  `src.tier1.adapters.docker_canonical_scorer`.
+- **Act**: read the constant.
+- **Assert**: `_DEFAULT_IMAGE == 'reward-bench-tier1:0.4'`.
 
 ## Model client injection point
 
-- **Seam**: conftest autouse `_bind_model_client` per ADR 0014.
-- **Mode**: **no_fake** — exercises real bench seam offline (autouse fake bypassed).
-- **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
+- **Seam**: none — pure module-level constant.
+- **Mode**: n/a.
+- **Marker**: `@pytest.mark.no_fake`.
 
-Test code: [`tests/tier1/adapters/test_docker_canonical_scorer.py`](../../../../tests/tier1/adapters/test_docker_canonical_scorer.py)::`test_when_default_image_then_v04_used`.
+Test code: [`../../../../tests/tier1/adapters/test_docker_canonical_scorer.py`](../../../../tests/tier1/adapters/test_docker_canonical_scorer.py)::`test_when_default_image_then_v04_used`.
 
 ## Runtime scope
 
-> **Runtime scope**: unit only — tier1 adapter contract; @live coverage at the production-scale boundary per the relevant cycle (123/124/125/128).
-
+> **Runtime scope**: unit only.

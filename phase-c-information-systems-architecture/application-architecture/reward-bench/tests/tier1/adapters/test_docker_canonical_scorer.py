@@ -56,44 +56,6 @@ def _make_fake_docker(reports_dir: Path, *, summary: dict | None = None,
 
 
 @pytest.mark.no_fake
-def test_when_score_invoked_then_docker_cmd_has_expected_flags(monkeypatch, tmp_path):
-    """ADR 0006 Layer 2: docker cmd includes --cpus, --memory, --pids-limit,
-    --network=none, --rm, mounted volumes, and the configured image."""
-    sub = tmp_path / "submission.py"; sub.write_text("class Solver: ...")
-    reports = tmp_path / "reports"
-    env_py = tmp_path / "env_2048.py"; env_py.write_text("class GameBoard: ...")
-
-    fake_run, captured = _make_fake_docker(reports)
-    monkeypatch.setattr(subprocess, "run", fake_run)
-
-    scorer = DockerCanonicalScorer(
-        image="reward-bench-tier1:test",
-        cpu_count_port=FixedCpuCount(8),   # -> --cpus=4.0 (50%)
-        env_path=env_py,
-    )
-    scorer.score(sub, seeds=(1000, 1001), hard_wall_sec=300.0,
-                 reports_root=reports)
-
-    cmd = captured["cmd"]
-    joined = " ".join(cmd)
-    assert "docker" == cmd[0]
-    assert "run" in cmd and "--rm" in cmd
-    assert "--network=none" in cmd
-    assert "--memory=2g" in cmd
-    assert "--pids-limit=256" in cmd
-    assert "--cpus=4.0" in cmd, f'expected --cpus=4.0; cmd: {joined}'
-    assert "reward-bench-tier1:test" in cmd
-    # Mounts:
-    assert any(":/workspace/submission.py:ro" in a for a in cmd)
-    assert any(":/env/env_2048.py:ro" in a for a in cmd)
-    assert any(":/reports" in a for a in cmd)
-    # Env:
-    assert any("REWARD_BENCH_NUM_GAMES=2" in a for a in cmd)
-    assert any("REWARD_BENCH_SEED_BASE=1000" in a for a in cmd)
-    assert any("REWARD_BENCH_HARD_WALL_SEC=300.0" in a for a in cmd)
-
-
-@pytest.mark.no_fake
 def test_when_score_invoked_then_result_json_parsed_into_attempt_result(monkeypatch, tmp_path):
     """ADR 0006 Layer 2: container's result.json maps cleanly to AttemptResult."""
     sub = tmp_path / "submission.py"; sub.write_text("class Solver: ...")

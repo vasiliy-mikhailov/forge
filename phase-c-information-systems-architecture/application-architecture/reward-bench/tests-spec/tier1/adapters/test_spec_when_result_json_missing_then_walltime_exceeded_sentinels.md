@@ -1,29 +1,31 @@
 # `test_when_result_json_missing_then_walltime_exceeded_sentinels`
 
-> Auto-generated stub (cycle 106 backfill). Refine the Arrange / Act /
-> Assert sections with prose that could reconstruct the test if the
-> code is lost.
-
-## Behaviour
-
-If container crashed before writing result.json, all seeds get
-    walltime_exceeded sentinels (defensive).
+Pins the defensive branch: when the container exits without writing
+`/reports/result.json`, every seed gets a `walltime_exceeded`
+sentinel rather than `.score()` raising. Triggers the diagnostic
+log (cmd + returncode + stdout/stderr tails + reports_dir contents)
+so the silent failure is self-explaining.
 
 ## Contract
 
-- **Arrange**: (see test body — no `# Arrange/Act/Assert` markers in source)
-- **Act**: (see test body — no `# Arrange/Act/Assert` markers in source)
-- **Assert**: (see test body — no `# Arrange/Act/Assert` markers in source)
+- **Arrange**: `tmp_path/submission.py` stub; `tmp_path/reports/`.
+  Monkeypatch `subprocess.run` with a fake that returns
+  `CompletedProcess(returncode=1, stdout='', stderr='crash')` and
+  does **not** write `result.json`.
+- **Act**: `scorer.score(sub, seeds=(1, 2, 3), hard_wall_sec=300.0,
+  reports_root=reports)`.
+- **Assert**: `result.n_games == 3`; every
+  `g.final_state == 'walltime_exceeded'`;
+  `result.walltime_exceeded is True`.
 
 ## Model client injection point
 
-- **Seam**: conftest autouse `_bind_model_client` per ADR 0014.
-- **Mode**: **no_fake** — exercises real bench seam offline (autouse fake bypassed).
-- **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
+- **Seam**: `subprocess.run` (monkeypatched).
+- **Mode**: fake returns non-zero exit without writing result.json.
+- **Marker**: `@pytest.mark.no_fake`.
 
-Test code: [`tests/tier1/adapters/test_docker_canonical_scorer.py`](../../../../tests/tier1/adapters/test_docker_canonical_scorer.py)::`test_when_result_json_missing_then_walltime_exceeded_sentinels`.
+Test code: [`../../../../tests/tier1/adapters/test_docker_canonical_scorer.py`](../../../../tests/tier1/adapters/test_docker_canonical_scorer.py)::`test_when_result_json_missing_then_walltime_exceeded_sentinels`.
 
 ## Runtime scope
 
-> **Runtime scope**: unit only — tier1 adapter contract; @live coverage at the production-scale boundary per the relevant cycle (123/124/125/128).
-
+> **Runtime scope**: unit only.
