@@ -1,10 +1,4 @@
-"""Cycle 98b / ADR 0011: ModelClient port.
-
-A ModelClient sends messages to a model server and returns the
-assistant's reply. Implementations encapsulate the wire protocol
-(HTTP path, auth, payload shape) so the agent loop stays
-implementation-free.
-"""
+"""ModelClient port."""
 from __future__ import annotations
 
 from typing import Protocol

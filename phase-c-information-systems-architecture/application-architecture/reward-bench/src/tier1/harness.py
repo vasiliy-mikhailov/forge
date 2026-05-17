@@ -1,6 +1,6 @@
-"""Tier 1 harness. See src-spec/tier1/src_spec_when_extracted_module_*.md.
+"""Tier 1 harness.
 
-Also exposes `validate_submission_protocol` (cycle 53) for the
+Exposes `load_submission` + `validate_submission_protocol` for the
 tier-1 submission contract from tasks/2048/SKILL_tier1.md."""
 import importlib.util
 import inspect
@@ -22,9 +22,6 @@ def validate_submission_protocol(module, source: str | None = None):
     Empty tuple = the module satisfies the SKILL_tier1.md contract:
     `class Solver` with a `move(self, board) -> 'W'|'A'|'S'|'D'`
     method that can be instantiated with no args.
-
-    Cycle 53: pinned by tests-spec/tier1/harness/
-    test_spec_when_submission_validated_then_returns_violations_*.md.
     """
     violations = []
 
@@ -82,9 +79,7 @@ def validate_submission_protocol(module, source: str | None = None):
         )
         return tuple(violations)
 
-    # Cycle 91 / SPEC.md §Tier 1: soft-grep for `from transitions import`.
-    # Only when caller passes the body source; back-compat for older
-    # callers that don't have / don't pass the source.
+    # Soft-grep for `from transitions import` when source supplied.
     if source is not None and 'from transitions import' not in source:
         violations.append(
             "submission does not `from transitions import ...` (SPEC.md "

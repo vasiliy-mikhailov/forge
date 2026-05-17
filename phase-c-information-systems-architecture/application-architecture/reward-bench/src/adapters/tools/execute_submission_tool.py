@@ -1,9 +1,4 @@
-"""ExecuteSubmissionTool — runs a submission body in the dev sandbox.
-
-`Tool` Port adapter. Behaviour lifted verbatim from
-`Tier1ToolRegistry.dispatch` (cycle 114). The Docker invocation lives
-in `_execute_submission` (ADR 0008); this adapter wraps it as a Tool.
-"""
+"""ExecuteSubmissionTool — runs a submission body in the dev sandbox."""
 from __future__ import annotations
 
 from src.ports.tool import Tool
@@ -51,9 +46,7 @@ class ExecuteSubmissionTool(Tool):
         return _EXECUTE_SUBMISSION_SCHEMA
 
     def dispatch(self, args: dict, ctx: ToolContext) -> str:
-        # Lazy import keeps this adapter constructable in tests that
-        # don't exercise the dev runner (and avoids agent_loop -> tools
-        # -> agent_loop cycles).
+        # Lazy import to avoid agent_loop <-> tools import cycle.
         from src.tier1.agent_loop import _execute_submission
         workspace = ctx['workspace']
         tasks_dir = ctx['tasks_dir']

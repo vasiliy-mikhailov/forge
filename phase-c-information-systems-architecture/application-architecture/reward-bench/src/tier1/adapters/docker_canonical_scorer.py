@@ -1,4 +1,4 @@
-"""Cycle 105 / ADR 0006 Layer 2: DockerCanonicalScorer adapter.
+"""DockerCanonicalScorer adapter.
 
 Spawns `reward-bench-tier1:${TAG}` per attempt with:
   - `--cpus=N` host-side cap (N = `cpu_count() // 2` by default)
@@ -8,9 +8,6 @@ Spawns `reward-bench-tier1:${TAG}` per attempt with:
 
 Waits for the container with a deadline-based timeout. Reads
 /reports/result.json. Returns an AttemptResult.
-
-Lives in the frameworks layer because it uses subprocess (forbidden
-in use_cases by the architecture test).
 """
 from __future__ import annotations
 
@@ -48,7 +45,6 @@ class DockerCanonicalScorer(CanonicalScorerPort):
         self.image = image
         port = cpu_count_port or MultiprocessingCpuCount()
         if cpus is None:
-            # ADR 0006 Layer 2: 50% of host cores.
             cpus = max(1.0, port.cpu_count() / 2.0)
         self.cpus = float(cpus)
         self.memory = memory
@@ -67,8 +63,8 @@ class DockerCanonicalScorer(CanonicalScorerPort):
     ) -> AttemptResult:
         """Score one submission across `seeds` inside the Docker sandbox.
 
-        Returns an AttemptResult with cycle-23/27 sentinel semantics
-        preserved (per-seed walltime_exceeded / solver_error / stagnated).
+        Returns an AttemptResult with per-seed sentinel semantics
+        (walltime_exceeded / solver_error / stagnated).
         """
         sub_path = Path(submission_path).resolve()
         seeds_t = tuple(seeds)
@@ -84,10 +80,6 @@ class DockerCanonicalScorer(CanonicalScorerPort):
 
         seed_base = int(seeds_t[0])
         n_games = len(seeds_t)
-        # The runner walks seeds_base .. seed_base+n_games-1. Our caller
-        # may pass a non-contiguous list; we cope by passing the whole
-        # range and discarding seeds we didn't ask for after the run.
-        # In practice main.py passes range(1000, 1020) — contiguous.
 
         cmd = [
             self.docker_bin, "run", "--rm",
@@ -109,10 +101,8 @@ class DockerCanonicalScorer(CanonicalScorerPort):
         ]
 
         start = time.monotonic()
+        # +30s grace over hard_wall_sec: in-container runner enforces its own deadline.
         deadline = (start + hard_wall_sec + 30.0) if hard_wall_sec > 0 else None
-        # ^ +30 s grace: in-container runner enforces hard_wall_sec itself
-        #   via its own deadline; the outer subprocess timeout is just
-        #   a safety net.
 
         try:
             timeout = (deadline - start) if deadline is not None else None
@@ -123,21 +113,14 @@ class DockerCanonicalScorer(CanonicalScorerPort):
             stderr = proc.stderr
             returncode = proc.returncode
         except subprocess.TimeoutExpired:
-            # The container blew past our outer cap. Force-stop any
-            # leftover (the --rm flag removes on stop).
             stdout = ""
             stderr = "docker run exceeded outer timeout"
             returncode = 124
-            # Best-effort: docker stop by image name. The --rm makes
-            # cleanup automatic if SIGTERM completes.
 
         elapsed = time.monotonic() - start
 
-        # Cycle 121: distinguish infrastructure failure from runner
-        # crash. Infra failure (image missing, daemon down) must
-        # RAISE per ADR 0018 Port contract — silently sentinelizing
-        # them produces zero-score artifacts that look like "slow
-        # solver hit timeout" but actually mean "bench broken."
+        # Infra failure (image missing, daemon down) RAISES;
+        # runner crashes sentinelise to per-seed walltime_exceeded.
         if _is_infra_failure(returncode, stderr):
             raise RuntimeError(
                 f"docker run infrastructure failure (returncode={returncode}); "
@@ -146,10 +129,6 @@ class DockerCanonicalScorer(CanonicalScorerPort):
 
         result_path = reports_dir / "result.json"
         if not result_path.exists():
-            # No result file => container started and crashed before
-            # writing. Emit walltime_exceeded sentinels per seed —
-            # this is submission-side / runner-side failure, not
-            # infrastructure.
             games = tuple(_walltime_exceeded(seed) for seed in seeds_t)
             return _aggregate(games, elapsed, hard_wall_sec)
 
@@ -181,9 +160,7 @@ class DockerCanonicalScorer(CanonicalScorerPort):
 
 # ---- helpers ----
 
-# Cycle 121: docker stderr patterns that indicate infrastructure
-# failure (image missing, daemon unreachable, exec error). Match
-# these AND treat returncode 125/126/127 as infra-failure as well.
+# Docker stderr patterns that indicate infrastructure failure.
 _INFRA_FAIL_STDERR_PATTERNS = (
     "Unable to find image",
     "No such image",
@@ -198,10 +175,7 @@ _INFRA_FAIL_STDERR_PATTERNS = (
 
 
 def _is_infra_failure(returncode: int, stderr: str) -> bool:
-    # docker run returncodes for infra failure:
-    #   125 — daemon error, image not found
-    #   126 — container command not executable
-    #   127 — container command not found
+    # 125: daemon error / image not found; 126: not executable; 127: not found.
     if returncode in (125, 126, 127):
         return True
     if returncode != 0 and stderr:

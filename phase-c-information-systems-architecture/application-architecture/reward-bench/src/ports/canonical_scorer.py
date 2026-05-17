@@ -1,9 +1,7 @@
-"""Cycle 109 / ADR 0018: CanonicalScorerPort.
+"""CanonicalScorerPort.
 
 A CanonicalScorerPort plays a submission against a set of seeds and
-returns the aggregated AttemptResult. Production binding spawns a
-reward-bench-tier1 Docker container (Layer 2 per ADR 0006). Test
-binding returns scripted results in-memory.
+returns the aggregated AttemptResult.
 """
 from __future__ import annotations
 

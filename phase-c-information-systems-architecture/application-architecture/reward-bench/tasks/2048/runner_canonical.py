@@ -1,28 +1,20 @@
 """tier-1 runner — runs INSIDE the Docker sandbox.
 
-Cycle 105 / ADR 0006 Layer 2: parallelises the N-seed eval using
-`multiprocessing.Pool(processes=multiprocessing.cpu_count())`. The
-container sees only the cgroup-allocated cores (Docker `--cpus=N`
-sets the quota), so cpu_count() naturally bounds the parallelism
-without any host-side `max_workers` parameter.
+Parallelises the N-seed eval using `multiprocessing.Pool(
+processes=multiprocessing.cpu_count())`. Container sees only the
+cgroup-allocated cores (Docker `--cpus=N` sets the quota).
 
-Loads the submitted Solver from /workspace/submission.py, plays N games of
-2048 (deterministic seed sequence), writes structured result.json + events.jsonl.
+Loads /workspace/submission.py, plays N games of 2048 (deterministic
+seed sequence), writes /reports/result.json + /reports/events.jsonl.
 
 Inputs (env vars):
-    REWARD_BENCH_NUM_GAMES        default 20
-    REWARD_BENCH_SEED_BASE        default 0
-    REWARD_BENCH_TARGET           default 2048
-    REWARD_BENCH_MAX_MOVES        default 10000
-    REWARD_BENCH_STAGNATION_SEC   default 60.
-    REWARD_BENCH_HARD_WALL_SEC    default 0 (disabled). Outer
-                                  runaway-protection cap across the whole
-                                  eval. Cycle 104 / ADR 0015 sets the
-                                  canonical default to 300.
-
-Output paths (matched to /reports mount inside the container):
-    /reports/result.json
-    /reports/events.jsonl
+    REWARD_BENCH_NUM_GAMES         default 20
+    REWARD_BENCH_SEED_BASE         default 0
+    REWARD_BENCH_TARGET            default 2048
+    REWARD_BENCH_MAX_MOVES         default 10000
+    REWARD_BENCH_STAGNATION_SEC    default 60
+    REWARD_BENCH_HARD_WALL_SEC     default 0 (disabled)
+    REWARD_BENCH_MOVES_STAGNATION  default 100 (moves-wise stagnation)
 """
 from __future__ import annotations
 
@@ -35,16 +27,12 @@ import time
 import traceback
 from pathlib import Path
 
-# /env is the read-only mount where env_2048 lives
 sys.path.insert(0, "/env")
 from env_2048 import GameBoard  # type: ignore
 
 
-# Cycle 132: moves-wise stagnation threshold. If a solver makes
-# MOVES_STAGNATION consecutive moves without score or max_tile
-# increase, the worker marks the game `stagnated` (instead of
-# running all the way to max_moves=10000 which qwen3.6 misread
-# as "my solver is broken" -> trivial fallback).
+# Moves-wise stagnation: if MOVES_STAGNATION consecutive moves pass
+# without score or max_tile increase, mark the game `stagnated`.
 MOVES_STAGNATION = int(os.environ.get("REWARD_BENCH_MOVES_STAGNATION", "100"))
 
 
@@ -60,14 +48,10 @@ def _load_submission(submission_path: str):
 
 
 def _play_one_collect_events(args):
-    """Run one game in a worker process. Each worker re-imports the
-    submission for clean state.
+    """Run one game in a worker process; returns (game_result_dict, list_of_event_dicts).
 
-    Returns (game_result_dict, list_of_event_dicts).
-
-    The hard_deadline_wall arg is an absolute time.time() seconds. We
-    pass wall (not monotonic) because monotonic isn't portable across
-    processes.
+    hard_deadline_wall is absolute time.time() seconds (wall time is
+    cross-process portable; monotonic isn't).
     """
     (submission_path, seed, target, max_moves,
      stagnation_sec, hard_deadline_wall) = args
@@ -103,7 +87,7 @@ def _play_one_collect_events(args):
     moves = 0
     final_state = "max_moves"
     last_progress_t = time.monotonic()
-    last_progress_move = 0   # cycle 132: moves-wise stagnation
+    last_progress_move = 0
     last_progress_score = game.score
     last_progress_tile = game.max_tile
     t_game_start = time.time()
@@ -127,7 +111,6 @@ def _play_one_collect_events(args):
             final_state = "stagnated"
             break
         if (moves - last_progress_move) >= MOVES_STAGNATION:
-            # Cycle 132: fast-but-stuck solver detection.
             events.append({
                 "seed": seed, "move": moves, "event": "stagnated_moves",
                 "score": game.score, "max_tile": game.max_tile,
@@ -196,7 +179,6 @@ def main():
     t0_wall = time.time()
     hard_deadline_wall = t0_wall + hard_wall_sec if hard_wall_sec > 0 else None
 
-    # Sanity load to surface load errors early.
     try:
         _load_submission(submission_path)
     except Exception as e:
@@ -210,7 +192,6 @@ def main():
         }, indent=2))
         return 1
 
-    # Cycle 105: parallel pool sized by cgroup-visible cores.
     n_workers = max(1, multiprocessing.cpu_count())
 
     # Build per-seed work items.
@@ -226,8 +207,6 @@ def main():
     stagnated_any = False
 
     with multiprocessing.Pool(processes=n_workers) as pool:
-        # imap_unordered: results stream back as workers complete.
-        # We sort by seed at the end for deterministic order.
         for game, ev in pool.imap_unordered(_play_one_collect_events, work):
             games.append(game)
             events.extend(ev)
@@ -235,19 +214,15 @@ def main():
                 walltime_exceeded = True
             if game["final_state"] == "stagnated":
                 stagnated_any = True
-            # Honour the host-side hard cap proactively: if we're past
-            # the deadline, kill pending workers (terminate the pool).
             if hard_deadline_wall is not None and time.time() >= hard_deadline_wall:
                 pool.terminate()
                 walltime_exceeded = True
                 break
 
-    # Sort games by seed for deterministic artifact shape.
     games.sort(key=lambda g: g["seed"])
     events.sort(key=lambda e: (e.get("seed", 0), e.get("move", 0)))
 
-    # Backfill missing seeds with walltime_exceeded sentinels (pool.terminate
-    # may have killed some before they reported).
+    # Backfill missing seeds with walltime_exceeded sentinels.
     completed_seeds = {g["seed"] for g in games}
     for i in range(n_games):
         seed = seed_base + i
@@ -280,7 +255,7 @@ def main():
         "hard_wall_sec": hard_wall_sec,
         "walltime_exceeded": walltime_exceeded,
         "stagnated_any": stagnated_any,
-        "n_workers": n_workers,    # cycle 105: visibility into parallelism
+        "n_workers": n_workers,
     }
     result_path.write_text(json.dumps(summary, indent=2))
     return 0

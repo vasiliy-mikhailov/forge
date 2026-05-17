@@ -1,8 +1,4 @@
-"""ViewTool — reads a file from /workspace, /env, or /tasks; defends ../ escape.
-
-`Tool` Port adapter. Behaviour lifted verbatim from
-`Tier1ToolRegistry.dispatch` (cycle 114).
-"""
+"""ViewTool — reads a file from /workspace, /env, or /tasks; defends ../ escape."""
 from __future__ import annotations
 
 from pathlib import Path

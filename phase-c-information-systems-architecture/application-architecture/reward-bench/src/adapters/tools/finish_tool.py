@@ -1,9 +1,4 @@
-"""FinishTool — signals end of loop; emits `<finish>{note}</finish>`.
-
-`Tool` Port adapter. Behaviour lifted verbatim from
-`Tier1ToolRegistry.dispatch` (cycle 114). The agent loop interprets
-the returned string and terminates.
-"""
+"""FinishTool — signals end of loop; emits `<finish>{note}</finish>`."""
 from __future__ import annotations
 
 from src.ports.tool import Tool
