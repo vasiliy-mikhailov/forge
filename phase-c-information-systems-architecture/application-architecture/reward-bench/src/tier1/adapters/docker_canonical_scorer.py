@@ -1,19 +1,19 @@
 """DockerCanonicalScorer adapter.
 
-Spawns `reward-bench-tier1:${TAG}` per attempt with:
-  - `--cpus=N` host-side cap (N = `cpu_count() // 2` by default)
-  - `--memory=2g --pids-limit=256 --network=none` isolation
-  - REWARD_BENCH_* env vars threaded from BenchConfig
-  - mounts: submission.py:ro, env_2048.py:ro, reports:rw
+Spawns `reward-bench-tier1:${TAG}` per attempt. Reads
+`/reports/result.json`. Returns an AttemptResult.
 
-Waits for the container with a deadline-based timeout. Reads
-/reports/result.json. Returns an AttemptResult.
+The imperative `.score()` is thin orchestration over three pure
+helpers (`build_docker_cmd`, `parse_result_payload`,
+`aggregate_attempt`); side effects (subprocess + filesystem) sit at
+the edges.
 """
 from __future__ import annotations
 
 import json
 import statistics
 import subprocess
+import sys
 import tempfile
 import time
 from pathlib import Path
@@ -27,6 +27,100 @@ from src.tier1.entities.game_result import GameResult
 
 _DEFAULT_IMAGE = "reward-bench-tier1:0.4"
 
+
+# ---- pure helpers (no I/O) ----
+
+def build_docker_cmd(
+    *,
+    image: str,
+    submission_path: Path,
+    env_path: Path | None,
+    reports_dir: Path,
+    cpus: float,
+    memory: str,
+    pids_limit: int,
+    stagnation_sec: int,
+    hard_wall_sec: float,
+    seed_base: int,
+    n_games: int,
+    docker_bin: str = "docker",
+) -> tuple[str, ...]:
+    """Build the `docker run` arg tuple from pure inputs. No side effects."""
+    parts: list[str] = [
+        docker_bin, "run", "--rm",
+        "--network=none",
+        f"--memory={memory}",
+        f"--pids-limit={pids_limit}",
+        f"--cpus={cpus}",
+        "-v", f"{submission_path}:/workspace/submission.py:ro",
+    ]
+    if env_path is not None:
+        parts += ["-v", f"{env_path}:/env/env_2048.py:ro"]
+    parts += [
+        "-v", f"{reports_dir}:/reports",
+        "-e", f"REWARD_BENCH_NUM_GAMES={n_games}",
+        "-e", f"REWARD_BENCH_SEED_BASE={seed_base}",
+        "-e", f"REWARD_BENCH_STAGNATION_SEC={stagnation_sec}",
+        "-e", f"REWARD_BENCH_HARD_WALL_SEC={hard_wall_sec}",
+        image,
+    ]
+    return tuple(parts)
+
+
+def parse_result_payload(
+    payload: dict,
+    seeds: tuple[int, ...],
+) -> tuple[GameResult, ...]:
+    """Map a runner result.json payload + seed list to a tuple of GameResults.
+
+    Seeds missing from the payload get walltime_exceeded sentinels.
+    """
+    by_seed: dict[int, dict] = {
+        int(g["seed"]): g for g in payload.get("games", [])
+    }
+    return tuple(
+        GameResult(
+            seed=int(seed),
+            score=int(by_seed[int(seed)].get("score", 0)),
+            max_tile=int(by_seed[int(seed)].get("max_tile", 2)),
+            moves=int(by_seed[int(seed)].get("moves", 0)),
+            final_state=str(by_seed[int(seed)].get("final_state", "max_moves")),
+            walltime_sec=float(by_seed[int(seed)].get("walltime_sec", 0.0)),
+        ) if int(seed) in by_seed else _walltime_exceeded(seed)
+        for seed in seeds
+    )
+
+
+def aggregate_attempt(
+    games: tuple[GameResult, ...],
+    elapsed_sec: float,
+    hard_wall_sec: float,
+) -> AttemptResult:
+    """Aggregate a tuple of GameResults into an AttemptResult. Pure."""
+    if not games:
+        return AttemptResult(
+            mean_score=0.0, median_score=0.0, std_score=0.0,
+            max_max_tile=0, n_games=0, aggregate_walltime_sec=elapsed_sec,
+            games=(), hard_wall_sec=hard_wall_sec,
+            stagnated_any=False, walltime_exceeded=False,
+        )
+    scores = [g.score for g in games]
+    tiles = [g.max_tile for g in games]
+    return AttemptResult(
+        mean_score=sum(scores) / len(scores),
+        median_score=statistics.median(scores),
+        std_score=statistics.pstdev(scores) if len(scores) > 1 else 0.0,
+        max_max_tile=max(tiles),
+        n_games=len(scores),
+        aggregate_walltime_sec=elapsed_sec,
+        games=games,
+        hard_wall_sec=hard_wall_sec,
+        stagnated_any=any(g.final_state == "stagnated" for g in games),
+        walltime_exceeded=any(g.final_state == "walltime_exceeded" for g in games),
+    )
+
+
+# ---- adapter (orchestrates pure helpers + side effects) ----
 
 class DockerCanonicalScorer(CanonicalScorerPort):
     """Per-attempt Docker-sandboxed canonical scorer."""
@@ -67,60 +161,45 @@ class DockerCanonicalScorer(CanonicalScorerPort):
         (walltime_exceeded / solver_error / stagnated).
         """
         sub_path = Path(submission_path).resolve()
-        seeds_t = tuple(seeds)
+        seeds_t = tuple(int(s) for s in seeds)
         if not seeds_t:
-            return _empty_result(hard_wall_sec)
+            return aggregate_attempt((), elapsed_sec=0.0, hard_wall_sec=hard_wall_sec)
 
-        # Reports go into a fresh dir under reports_root (or tmp).
         if reports_root is not None:
             reports_dir = Path(reports_root).resolve()
             reports_dir.mkdir(parents=True, exist_ok=True)
         else:
             reports_dir = Path(tempfile.mkdtemp(prefix="reward-bench-docker-"))
 
-        seed_base = int(seeds_t[0])
-        n_games = len(seeds_t)
-
-        cmd = [
-            self.docker_bin, "run", "--rm",
-            "--network=none",
-            f"--memory={self.memory}",
-            f"--pids-limit={self.pids_limit}",
-            f"--cpus={self.cpus}",
-            "-v", f"{sub_path}:/workspace/submission.py:ro",
-        ]
-        if self.env_path is not None:
-            cmd += ["-v", f"{self.env_path.resolve()}:/env/env_2048.py:ro"]
-        cmd += [
-            "-v", f"{reports_dir}:/reports",
-            "-e", f"REWARD_BENCH_NUM_GAMES={n_games}",
-            "-e", f"REWARD_BENCH_SEED_BASE={seed_base}",
-            "-e", f"REWARD_BENCH_STAGNATION_SEC={self.stagnation_sec}",
-            "-e", f"REWARD_BENCH_HARD_WALL_SEC={hard_wall_sec}",
-            self.image,
-        ]
+        cmd = build_docker_cmd(
+            image=self.image,
+            submission_path=sub_path,
+            env_path=self.env_path.resolve() if self.env_path is not None else None,
+            reports_dir=reports_dir,
+            cpus=self.cpus,
+            memory=self.memory,
+            pids_limit=self.pids_limit,
+            stagnation_sec=self.stagnation_sec,
+            hard_wall_sec=hard_wall_sec,
+            seed_base=seeds_t[0],
+            n_games=len(seeds_t),
+            docker_bin=self.docker_bin,
+        )
 
         start = time.monotonic()
         # +30s grace over hard_wall_sec: in-container runner enforces its own deadline.
-        deadline = (start + hard_wall_sec + 30.0) if hard_wall_sec > 0 else None
+        timeout = (hard_wall_sec + 30.0) if hard_wall_sec > 0 else None
 
         try:
-            timeout = (deadline - start) if deadline is not None else None
             proc = subprocess.run(
-                cmd, capture_output=True, text=True, timeout=timeout,
+                list(cmd), capture_output=True, text=True, timeout=timeout,
             )
-            stdout = proc.stdout
-            stderr = proc.stderr
-            returncode = proc.returncode
+            stdout, stderr, returncode = proc.stdout, proc.stderr, proc.returncode
         except subprocess.TimeoutExpired:
-            stdout = ""
-            stderr = "docker run exceeded outer timeout"
-            returncode = 124
+            stdout, stderr, returncode = "", "docker run exceeded outer timeout", 124
 
         elapsed = time.monotonic() - start
 
-        # Infra failure (image missing, daemon down) RAISES;
-        # runner crashes sentinelise to per-seed walltime_exceeded.
         if _is_infra_failure(returncode, stderr):
             raise RuntimeError(
                 f"docker run infrastructure failure (returncode={returncode}); "
@@ -129,36 +208,23 @@ class DockerCanonicalScorer(CanonicalScorerPort):
 
         result_path = reports_dir / "result.json"
         if not result_path.exists():
-            games = tuple(_walltime_exceeded(seed) for seed in seeds_t)
-            return _aggregate(games, elapsed, hard_wall_sec)
+            _log_missing_result_diagnostic(cmd, returncode, stdout, stderr,
+                                           reports_dir, elapsed)
+            games = tuple(_walltime_exceeded(s) for s in seeds_t)
+            return aggregate_attempt(games, elapsed, hard_wall_sec)
 
         try:
             payload = json.loads(result_path.read_text())
-        except Exception:
-            games = tuple(_solver_error(seed, "result.json unparseable")
-                          for seed in seeds_t)
-            return _aggregate(games, elapsed, hard_wall_sec)
+        except Exception as e:
+            _log_unparseable_result_diagnostic(cmd, result_path, e)
+            games = tuple(_solver_error(s, "result.json unparseable") for s in seeds_t)
+            return aggregate_attempt(games, elapsed, hard_wall_sec)
 
-        # Map the runner's JSON game list -> GameResult entities.
-        by_seed: dict[int, dict] = {int(g["seed"]): g for g in payload.get("games", [])}
-        games_list: list[GameResult] = []
-        for seed in seeds_t:
-            g = by_seed.get(int(seed))
-            if g is None:
-                games_list.append(_walltime_exceeded(seed))
-                continue
-            games_list.append(GameResult(
-                seed=int(seed),
-                score=int(g.get("score", 0)),
-                max_tile=int(g.get("max_tile", 2)),
-                moves=int(g.get("moves", 0)),
-                final_state=str(g.get("final_state", "max_moves")),
-                walltime_sec=float(g.get("walltime_sec", 0.0)),
-            ))
-        return _aggregate(tuple(games_list), elapsed, hard_wall_sec)
+        games = parse_result_payload(payload, seeds_t)
+        return aggregate_attempt(games, elapsed, hard_wall_sec)
 
 
-# ---- helpers ----
+# ---- side-effect helpers (used by adapter) ----
 
 # Docker stderr patterns that indicate infrastructure failure.
 _INFRA_FAIL_STDERR_PATTERNS = (
@@ -195,27 +261,41 @@ def _solver_error(seed: int, _why: str) -> GameResult:
                       final_state="solver_error", walltime_sec=0.0)
 
 
-def _empty_result(hard_wall_sec: float) -> AttemptResult:
-    return AttemptResult(
-        mean_score=0.0, median_score=0.0, std_score=0.0,
-        max_max_tile=0, n_games=0, aggregate_walltime_sec=0.0,
-        games=(), hard_wall_sec=hard_wall_sec,
-        stagnated_any=False, walltime_exceeded=False,
+def _log_missing_result_diagnostic(
+    cmd: tuple[str, ...],
+    returncode: int,
+    stdout: str,
+    stderr: str,
+    reports_dir: Path,
+    elapsed: float,
+) -> None:
+    """Surface the silent-zero-score pattern: container ran but wrote no result.json."""
+    try:
+        ls = sorted(p.name for p in reports_dir.iterdir())
+    except Exception:
+        ls = ['<unreadable>']
+    print(
+        f"[DockerCanonicalScorer] result.json missing after {elapsed:.2f}s "
+        f"(returncode={returncode}). "
+        f"cmd={list(cmd)} "
+        f"reports_dir={reports_dir} contents={ls} "
+        f"stdout_tail={stdout[-500:]!r} "
+        f"stderr_tail={stderr[-500:]!r}",
+        file=sys.stderr, flush=True,
     )
 
 
-def _aggregate(games: tuple, elapsed: float, hard_wall_sec: float) -> AttemptResult:
-    scores = [g.score for g in games]
-    tiles = [g.max_tile for g in games]
-    return AttemptResult(
-        mean_score=(sum(scores) / len(scores)) if scores else 0.0,
-        median_score=statistics.median(scores) if scores else 0.0,
-        std_score=statistics.pstdev(scores) if len(scores) > 1 else 0.0,
-        max_max_tile=max(tiles) if tiles else 0,
-        n_games=len(scores),
-        aggregate_walltime_sec=elapsed,
-        games=games,
-        hard_wall_sec=hard_wall_sec,
-        stagnated_any=any(g.final_state == "stagnated" for g in games),
-        walltime_exceeded=any(g.final_state == "walltime_exceeded" for g in games),
+def _log_unparseable_result_diagnostic(
+    cmd: tuple[str, ...], result_path: Path, exc: Exception,
+) -> None:
+    try:
+        head = result_path.read_text()[:500]
+    except Exception:
+        head = '<unreadable>'
+    print(
+        f"[DockerCanonicalScorer] result.json unparseable at {result_path}: "
+        f"{type(exc).__name__}: {exc}. "
+        f"cmd={list(cmd)} "
+        f"file_head={head!r}",
+        file=sys.stderr, flush=True,
     )
