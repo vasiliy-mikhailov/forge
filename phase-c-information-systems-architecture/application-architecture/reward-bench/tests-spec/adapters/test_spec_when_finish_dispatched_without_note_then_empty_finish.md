@@ -1,12 +1,22 @@
 # `test_when_finish_dispatched_without_note_then_empty_finish`
+
+Pins the no-note branch of `finish`: when `args` has no `note` key,
+the dispatcher returns `'<finish></finish>'` (empty body, still a
+valid finish signal).
+
 ## Contract
-- **Arrange**: (see test body — no `# Arrange/Act/Assert` markers in source)
-- **Act**: (see test body — no `# Arrange/Act/Assert` markers in source)
-- **Assert**: (see test body — no `# Arrange/Act/Assert` markers in source)
+
+- **Arrange**: any tmp_path (unused).
+- **Act**: `Tier1ToolRegistry().dispatch('finish', {},
+  _ctx(tmp_path, tmp_path, tmp_path))`.
+- **Assert**: returned string equals `'<finish></finish>'`.
+
 ## Model client injection point
-- **Seam**: conftest autouse `_bind_model_client`.
-- **Mode**: **fake** (default) — autouse `FakeModelClient` / `FakeVllmServer`.
-- **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
-Test code: [`tests/adapters/test_tier1_tool_registry.py`](../../../../tests/adapters/test_tier1_tool_registry.py)::`test_when_finish_dispatched_without_note_then_empty_finish`.
+
+- **Seam**: none — pure string construction.
+
+Test code: [`../../tests/adapters/test_tier1_tool_registry.py`](../../tests/adapters/test_tier1_tool_registry.py)::`test_when_finish_dispatched_without_note_then_empty_finish`.
+
 ## Runtime scope
-> **Runtime scope**: unit only — adapter contract; the live coverage for the boundary it crosses lives in the adapter-specific @live test.
+
+> **Runtime scope**: unit only.

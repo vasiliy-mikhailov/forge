@@ -1,12 +1,26 @@
 # `test_when_response_has_tool_calls_then_returned_in_reply`
+
+Pins that structured `tool_calls` in the OpenAI response pass through
+the adapter unchanged into the returned reply, available to the
+`StructuredOpenAIParser` downstream.
+
 ## Contract
-- **Arrange**: (see test body — no `# Arrange/Act/Assert` markers in source)
-- **Act**: (see test body — no `# Arrange/Act/Assert` markers in source)
-- **Assert**: (see test body — no `# Arrange/Act/Assert` markers in source)
+
+- **Arrange**: monkeypatched `urllib.request.urlopen` returning
+  `{'choices': [{'message': {'content': '', 'tool_calls':
+  [{'type':'function','function':{'name':'view','arguments':'{}'}}]}}]}`.
+  Construct `client = VllmOpenAIClient('http://stub', 'k')`.
+- **Act**: `reply = client.call([{'role':'user','content':'x'}])`.
+- **Assert**: `len(reply['tool_calls']) == 1`;
+  `reply['tool_calls'][0]['function']['name'] == 'view'`.
+
 ## Model client injection point
-- **Seam**: conftest autouse `_bind_model_client`.
-- **Mode**: **fake** (default) — autouse `FakeModelClient` / `FakeVllmServer`.
-- **Override**: pass `model_client=` per-test, OR mark `@pytest.mark.live` / `@pytest.mark.no_fake`.
-Test code: [`tests/adapters/test_vllm_client_adapter.py`](../../../../tests/adapters/test_vllm_client_adapter.py)::`test_when_response_has_tool_calls_then_returned_in_reply`.
+
+- **Seam**: `urllib.request.urlopen` (monkeypatched).
+- **Mode**: fake.
+
+Test code: [`../../tests/adapters/test_vllm_client_adapter.py`](../../tests/adapters/test_vllm_client_adapter.py)::`test_when_response_has_tool_calls_then_returned_in_reply`.
+
 ## Runtime scope
-> **Runtime scope**: unit only — adapter contract; the live coverage for the boundary it crosses lives in the adapter-specific @live test.
+
+> **Runtime scope**: unit only.
