@@ -1,8 +1,10 @@
 """§7 bench main — production binding of bench() to MODEL_REGISTRY.
 
-Replaces the procedural main.py with a thin composition that uses
-the §7 chain: bench(OrchestrateRalphSingleContext(default_run_loop_fn()),
-env, cfg). Includes a CLI block for direct invocation.
+Replaces the procedural main.py with a thin composition that wires
+the §2 three-role chain (OrchestrateSubagentPerIter +
+OpenHandsSolutionGenerator + DockerCanonicalScorer as Runner) per
+SOLUTION-ARCHITECTURE.md §4 (OpenHands committed). Includes a CLI
+block for direct invocation.
 """
 from __future__ import annotations
 
@@ -45,11 +47,22 @@ def _default_env_factory(target: ModelTarget) -> Env:
     )
 
 
-def _default_orchestrator_factory():
-    from src.reward_bench.adapters.orchestrate_ralph_single_context import (
-        OrchestrateRalphSingleContext, default_run_loop_fn,
+def _default_orchestrator_factory(env: Env):
+    """§2 three-role default: OrchestrateSubagentPerIter wrapping
+    OpenHandsSolutionGenerator (model_client from env) and
+    env.canonical_scorer as Runner."""
+    from src.reward_bench.adapters.openhands_solution_generator import (
+        OpenHandsSolutionGenerator,
     )
-    return OrchestrateRalphSingleContext(run_loop_fn=default_run_loop_fn())
+    from src.reward_bench.adapters.orchestrate_subagent_per_iter import (
+        OrchestrateSubagentPerIter,
+    )
+    return OrchestrateSubagentPerIter(
+        solution_generator=OpenHandsSolutionGenerator(
+            model_client=env.model_client,
+        ),
+        runner=env.canonical_scorer,
+    )
 
 
 def bench_main(
@@ -57,13 +70,13 @@ def bench_main(
     cfg: BenchConfig,
     *,
     env_factory: Callable[[ModelTarget], Env] | None = None,
-    orchestrator_factory: Callable[[], object] | None = None,
+    orchestrator_factory: Callable[[Env], object] | None = None,
 ) -> Submission:
     env_factory = env_factory or _default_env_factory
     orchestrator_factory = orchestrator_factory or _default_orchestrator_factory
 
     env = env_factory(target)
-    orchestrator = orchestrator_factory()
+    orchestrator = orchestrator_factory(env)
     return bench(orchestrator, env, cfg)
 
 

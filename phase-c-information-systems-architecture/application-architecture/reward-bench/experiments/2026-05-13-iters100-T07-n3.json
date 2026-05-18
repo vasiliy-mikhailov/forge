@@ -7,22 +7,23 @@
     "max_no_improve": 999999,
     "finish_floor": 7211.0,
     "hard_wall_sec": 60.0,
-    "supervisor_every_k": 10
+    "supervisor_every_k": 10,
+    "smoke_early_stop": false
   },
   "n_trials": 3,
   "per_trial_mean": [
-    122.6,
-    15307.0,
-    9375.8
+    0.0,
+    0.0,
+    0.0
   ],
   "per_trial_protocol_valid": [
     true,
     true,
     true
   ],
-  "mean_of_means": 8268.466666666665,
-  "best_mean": 15307.0,
-  "worst_mean": 122.6,
-  "max_max_tile": 2048,
-  "aggregate_walltime_sec": 62.422053374000825
+  "mean_of_means": 0.0,
+  "best_mean": 0.0,
+  "worst_mean": 0.0,
+  "max_max_tile": 0,
+  "aggregate_walltime_sec": 0.0
 }

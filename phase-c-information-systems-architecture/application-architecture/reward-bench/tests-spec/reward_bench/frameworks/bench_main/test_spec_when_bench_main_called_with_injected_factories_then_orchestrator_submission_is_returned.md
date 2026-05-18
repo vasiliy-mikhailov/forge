@@ -5,21 +5,30 @@ Pins the §7 production binding per
 `bench_main` is the thin composition that the production CLI calls:
 it takes a `ModelTarget` and `BenchConfig`, builds an `Env` via
 `env_factory(target)`, constructs an `Orchestrator` via
-`orchestrator_factory()`, calls `bench(orchestrator, env, cfg)`,
+`orchestrator_factory(env)`, calls `bench(orchestrator, env, cfg)`,
 returns the resulting `Submission`.
 
 Both factories are injectable so tests pin the composition without
-spawning Docker or vLLM. The defaults wire the real
-`OrchestrateRalphSingleContext(run_loop_fn=default_run_loop_fn())`
-and a real `Env` (Docker scorer + VllmOpenAIClient + repo tasks dir).
+spawning Docker or vLLM. The defaults wire the
+`OrchestrateSubagentPerIter(OpenHandsSolutionGenerator(env.model_client),
+env.canonical_scorer)` chain and a real `Env` (Docker scorer +
+VllmOpenAIClient + repo tasks dir).
+
+`orchestrator_factory` receives `env` so it can read
+`env.model_client` (for the SolutionGenerator) and
+`env.canonical_scorer` (for the Runner) without bench_main having
+to thread those through.
 
 - **Arrange**: a `ModelTarget` sentinel; a fake `env_factory` that
-  asserts it was called with that target and returns `object()` as
-  the env; a fake `orchestrator_factory` returning
+  asserts it was called with that target and returns a sentinel
+  env; a fake `orchestrator_factory` that asserts it was called
+  with that env and returns
   `FakeOrchestrator(submissions=(expected,))`; `BenchConfig()`.
 - **Act**: `bench_main(target, cfg, env_factory=fake_env_factory,
   orchestrator_factory=fake_orch_factory)`.
-- **Assert**: returns `expected` (the scripted Submission).
+- **Assert**: returns `expected` (the scripted Submission); the
+  env captured by orchestrator_factory is the one env_factory
+  produced.
 
 Test code: [`../../../../tests/reward_bench/frameworks/test_bench_main.py`](../../../../tests/reward_bench/frameworks/test_bench_main.py)::`test_when_bench_main_called_with_injected_factories_then_orchestrator_submission_is_returned`.
 

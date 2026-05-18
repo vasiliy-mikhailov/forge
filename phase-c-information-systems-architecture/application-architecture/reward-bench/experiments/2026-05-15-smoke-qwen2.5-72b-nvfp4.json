@@ -10,7 +10,7 @@
     "supervisor_every_k": 0,
     "smoke_early_stop": true
   },
-  "best_dev_mean": 2206.4,
+  "best_dev_mean": 14.4,
   "mean_score": 0.0,
   "median_score": 0.0,
   "max_max_tile": 0,

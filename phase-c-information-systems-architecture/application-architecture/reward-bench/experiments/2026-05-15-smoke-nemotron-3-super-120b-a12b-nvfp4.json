@@ -10,12 +10,7 @@
     "supervisor_every_k": 0,
     "smoke_early_stop": true
   },
-  "best_dev_mean": 1120.8,
-  "mean_score": 0.0,
-  "median_score": 0.0,
-  "max_max_tile": 0,
-  "n_games": 0,
-  "aggregate_walltime_sec": 0.0,
-  "solver_protocol_valid": true,
-  "smoke_passed": true
+  "error": "RemoteDisconnected: Remote end closed connection without response",
+  "mean_score": null,
+  "smoke_passed": false
 }

@@ -13,11 +13,11 @@
   "per_trial_mean": [
     0.0,
     0.0,
-    6525.2
+    0.0
   ],
-  "mean_of_means": 2175.0666666666666,
-  "best_mean": 6525.2,
+  "mean_of_means": 0.0,
+  "best_mean": 0.0,
   "worst_mean": 0.0,
-  "max_max_tile": 1024,
-  "aggregate_walltime_sec": 121.80794730398338
+  "max_max_tile": 0,
+  "aggregate_walltime_sec": 0.0
 }
