@@ -96,7 +96,7 @@ def default_run_loop_fn(*, _run_loop=None, _time_fn=None, _body_reader=None):
                 _run_loop=_run_loop,
                 _time_fn=_time_fn,
                 _body_reader=_body_reader,
-                workspace=td,
+                workspace=Path(td),
                 **kwargs,
             )
     return _fn
