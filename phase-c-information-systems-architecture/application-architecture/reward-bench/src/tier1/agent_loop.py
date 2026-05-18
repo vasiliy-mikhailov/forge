@@ -129,10 +129,17 @@ def _execute_submission(body, workspace, tasks_dir,
         'walltime_sec_total': 0.0,
         'budget_sec_per_seed': round(dev_hard_wall_sec / len(_DEV_SEEDS), 4),
     }
-    import types as _types
-    module = _types.ModuleType('execute_submission_module')
+    sub_path = Path(workspace) / 'submission.py'
     try:
-        exec(compile(body, '<submission>', 'exec'), module.__dict__)
+        sub_path.write_text(body)
+    except Exception as e:
+        obs['protocol_violations'].append(f'write failed: {type(e).__name__}: {e}')
+        return '<observation>' + _json.dumps(obs) + '</observation>'
+
+    try:
+        spec = _ilu.spec_from_file_location('execute_submission_module', str(sub_path))
+        module = _ilu.module_from_spec(spec)
+        spec.loader.exec_module(module)
     except SyntaxError as e:
         obs['protocol_violations'].append(f'SyntaxError: {e}')
         return '<observation>' + _json.dumps(obs) + '</observation>'
