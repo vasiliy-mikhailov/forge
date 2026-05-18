@@ -1475,7 +1475,7 @@ def test_when_execute_submission_called_with_dev_hard_wall_sec_then_score_submis
     class _FakeScorer:
         def __init__(self, *a, **kw):
             pass
-        def score(self, submission_path, seeds, *, hard_wall_sec=0.0, reports_root=None):
+        def score_body(self, body, seeds, *, hard_wall_sec=0.0, reports_root=None):
             captured['hard_wall_sec'] = hard_wall_sec
             captured['n_seeds'] = len(tuple(seeds))
             return AttemptResult(
@@ -1520,7 +1520,7 @@ def test_when_execute_submission_called_without_dev_hard_wall_sec_then_module_de
     class _FakeScorer:
         def __init__(self, *a, **kw):
             pass
-        def score(self, submission_path, seeds, *, hard_wall_sec=0.0, reports_root=None):
+        def score_body(self, body, seeds, *, hard_wall_sec=0.0, reports_root=None):
             captured['hard_wall_sec'] = hard_wall_sec
             return AttemptResult(
                 mean_score=0.0, median_score=0.0, std_score=0.0,
@@ -1731,3 +1731,53 @@ def test_when_execute_submission_observation_inspected_then_includes_budget_sec_
     assert parsed['budget_sec_per_seed'] == pytest.approx(3.0), (
         f"expected 15.0 / 5 = 3.0; got {parsed['budget_sec_per_seed']!r}"
     )
+
+
+def test_when_execute_submission_called_then_scorer_score_body_invoked_with_body_string(monkeypatch, tmp_path):
+    """Pins §7.5 migration of agent_loop._execute_submission: the
+    dev-runner call goes through score_body(body=...), not
+    score(submission_path=...)."""
+    # Arrange
+    from src.tier1 import agent_loop as al
+    from src.tier1.entities.attempt_result import AttemptResult
+
+    BODY = (
+        'from transitions import Machine\n'
+        'class Solver:\n'
+        '    def __init__(self): pass\n'
+        '    def move(self, board):\n'
+        "        return 'W'\n"
+    )
+
+    captured: dict = {}
+
+    class _FakeScorer:
+        def __init__(self, *a, **kw):
+            pass
+
+        def score_body(self, body, seeds, *, hard_wall_sec=0.0,
+                       reports_root=None):
+            captured['body'] = body
+            return AttemptResult(
+                mean_score=0.0, median_score=0.0, std_score=0.0,
+                max_max_tile=0, n_games=0, aggregate_walltime_sec=0.0,
+                games=(), hard_wall_sec=hard_wall_sec,
+                stagnated_any=False, walltime_exceeded=False,
+            )
+
+    monkeypatch.setattr(
+        'src.tier1.adapters.docker_canonical_scorer.DockerCanonicalScorer',
+        _FakeScorer,
+    )
+
+    workspace = tmp_path / 'ws'
+    workspace.mkdir()
+    tasks_dir = tmp_path / 'tasks'
+    tasks_dir.mkdir()
+
+    # Act
+    al._execute_submission(BODY, workspace, tasks_dir,
+                           dev_hard_wall_sec=15.0)
+
+    # Assert
+    assert captured['body'] == BODY

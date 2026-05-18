@@ -158,8 +158,8 @@ def _execute_submission(body, workspace, tasks_dir,
     from src.tier1.adapters.docker_canonical_scorer import DockerCanonicalScorer
     try:
         _scorer = DockerCanonicalScorer(env_path=Path(tasks_dir) / '2048' / 'env.py')
-        _attempt = _scorer.score(
-            sub_path,
+        _attempt = _scorer.score_body(
+            body,
             _DEV_SEEDS,
             hard_wall_sec=dev_hard_wall_sec,
         )
