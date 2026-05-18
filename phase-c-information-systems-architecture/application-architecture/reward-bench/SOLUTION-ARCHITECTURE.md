@@ -254,6 +254,77 @@ OpenHands primitives ourselves, or when
 _per_iter_score_dominates_ralph_single_context` is implementable in
 prototype form and shows dominance.
 
+## 7.5. No file APIs across module boundaries
+
+Files exist; file APIs at module boundaries do not. Bench-side code
+communicates exclusively in **strings, scalars, and value objects**.
+The only file IO in the bench lives inside `DockerCanonicalScorer`'s
+private temporary area, where Docker bind-mounts force a real host
+path. That path never escapes the scorer's body.
+
+### What this rules out
+
+- **`workspace` as a parameter of any port or use case.** The dev
+  runner needs a tempdir to write `submission.py` for Docker
+  mounting; that tempdir is constructed and cleaned up inside the
+  scorer adapter, never threaded through the bench API.
+- **`submission_path: Path` on `CanonicalScorerPort`.** Replaced by
+  `body: str`. The scorer marshals body → its private tempfile →
+  bind-mount → container.
+- **Reading `workspace/submission.best.py` from the wrapper.**
+  Replaced by `Submission.body` being returned from the orchestrator
+  in-memory.
+- **`env_path`, `tasks_dir`, `env_dir` as wrapper kwargs.** These
+  are scorer- and runner-internal; the bench passes a SCORER
+  INSTANCE, not paths.
+
+### What this requires
+
+- `CanonicalScorerPort.score(body: str, seeds, ...) -> AttemptResult`
+  — body as string in, AttemptResult out. No paths cross the port.
+- `Orchestrator.orchestrate(env, cfg) -> Iterable[Submission]` —
+  `Submission(body, score, walltime_sec)` is the only thing crossing
+  back to the bench. `body` is the full Python source text.
+- The agent loop's `execute_submission` tool returns its scored
+  observation IN MEMORY (it already does — the body string is
+  scored by calling the port; only the SCORER writes a tempfile
+  internally for Docker).
+- Per-iter snapshotting ("best so far") lives in the
+  orchestrator's process memory as the running-best `Submission`,
+  not in a `submission.best.py` on disk. The orchestrator yields
+  the in-memory best at the end.
+
+### Why this matters (operational symptom, May 2026)
+
+A path-arithmetic mistake in a new `bench_main.py` (`parents[4]`
+instead of `parents[3]`) made the dev-runner's Docker bind-mount
+point at a non-existent host path. Docker silently materialised an
+empty mount; `from env_2048 import GameBoard` failed deterministically
+inside every container. The live test for the §7 chain still passed
+because the test file's `parents[3]` happened to resolve correctly
+— the bug only existed where one specific module computed paths,
+and the live test didn't exercise that module. Different file
+paths in different call sites, different mistakes possible in each.
+
+This class of bug is unrepresentable when paths don't cross module
+boundaries. The scorer's bind-mount tempfile lives in its own
+constructor; no other module computes the env path; there's no
+"derive env_dir from tasks_dir.parent" to get wrong by one level.
+
+### Decision status
+
+**Pending refactor.** The file-API surface today:
+
+- `CanonicalScorerPort.score(submission_path: str | Path, seeds, ...)`
+- `agent_loop._execute_submission(body, workspace, tasks_dir, ...)`
+- `run_loop(workspace, env_dir, tasks_dir, ...)`
+- `default_run_loop_fn`'s tempdir + `_body_reader` reading
+  `workspace/submission.best.py`
+
+Each is a candidate for the string/in-memory rewrite. The smallest
+first step is `CanonicalScorerPort.score(body: str, ...)`: once
+that lands, every caller becomes string-typed and the rest cascades.
+
 ## 8. Open items / known tensions
 
 - **Subagent-per-iter orchestrator pending.** See §7. The fitness
