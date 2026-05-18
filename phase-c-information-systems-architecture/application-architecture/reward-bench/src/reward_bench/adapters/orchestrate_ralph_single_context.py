@@ -26,6 +26,10 @@ class OrchestrateRalphSingleContext:
         result = self._run_loop(
             tasks_dir=env.tasks_dir,
             max_iters=cfg.max_iters,
+            temperature=cfg.temperature,
+            finish_floor=cfg.finish_floor,
+            supervisor_every_k=cfg.supervisor_every_k,
+            smoke_early_stop=cfg.smoke_early_stop,
         )
         yield Submission(
             body=result['body'],

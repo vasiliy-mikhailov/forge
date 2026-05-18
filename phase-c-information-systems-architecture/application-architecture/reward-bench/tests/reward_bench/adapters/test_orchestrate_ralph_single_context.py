@@ -294,3 +294,47 @@ def test_when_orchestrate_called_then_run_loop_fn_receives_max_iters_from_cfg(tm
 
     # Assert
     assert captured['max_iters'] == 42
+
+
+def test_when_orchestrate_called_then_run_loop_fn_receives_cfg_passthrough_kwargs(tmp_path):
+    """Pins §7 ralph adapter cfg pass-through batch: temperature,
+    finish_floor, supervisor_every_k, smoke_early_stop all flow
+    unchanged from BenchConfig to run_loop_fn kwargs."""
+    # Arrange
+    from src.adapters.fakes.fake_canonical_scorer import FakeCanonicalScorer
+    from src.reward_bench.adapters.orchestrate_ralph_single_context import (
+        OrchestrateRalphSingleContext,
+    )
+    from src.reward_bench.entities.bench_config import BenchConfig
+    from src.reward_bench.entities.env import Env
+
+    captured: dict = {}
+
+    def fake_run_loop(**kwargs):
+        captured.update(kwargs)
+        return {
+            'iterations': 0,
+            'messages': [],
+            'finished': False,
+            'best_dev_mean': 0.0,
+            'body': '',
+            'walltime_sec': 0.0,
+        }
+
+    adapter = OrchestrateRalphSingleContext(run_loop_fn=fake_run_loop)
+    env = Env(tasks_dir=tmp_path, canonical_scorer=FakeCanonicalScorer())
+    cfg = BenchConfig(
+        temperature=0.5,
+        finish_floor=0.3,
+        supervisor_every_k=7,
+        smoke_early_stop=True,
+    )
+
+    # Act
+    list(adapter.orchestrate(env, cfg))
+
+    # Assert
+    assert captured['temperature'] == 0.5
+    assert captured['finish_floor'] == 0.3
+    assert captured['supervisor_every_k'] == 7
+    assert captured['smoke_early_stop'] is True
