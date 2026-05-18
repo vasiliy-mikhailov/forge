@@ -1,9 +1,13 @@
-"""OpenHands-backed SolutionGenerator adapter.
+"""§4 OpenHands-backed SolutionGenerator adapter.
 
-Per SOLUTION-ARCHITECTURE.md §4. OpenHands IS the SolutionGenerator
-runtime. The adapter renders a ContextSnapshot into a prompt,
-hands it to a runner closure that wraps an OpenHands Conversation,
-returns the body.
+Per SOLUTION-ARCHITECTURE.md §4: OpenHands IS the SolutionGenerator
+runtime. The adapter renders a ContextSnapshot into a prompt
+(task + budget + fenced-output instruction), hands it to a runner
+closure that wraps an OpenHands Conversation, and returns the
+fenced python block from the agent's last assistant message.
+
+No file IO across the binding — the body lives in the message,
+not in a tempdir.
 
 Wiring:
 
@@ -43,6 +47,7 @@ class OpenHandsSolutionGenerator:
 
     @staticmethod
     def _render_prompt(snapshot) -> str:
+        """Per §4 binding interface: task + budget + output."""
         lines = [
             '# Task',
             snapshot.env_spec,
@@ -63,20 +68,29 @@ class OpenHandsSolutionGenerator:
             f'budget_sec_per_seed: {snapshot.budget_sec_per_seed}',
             '',
             '# Output',
-            'Return the full Python source of a new Solver class.',
+            'Emit your final Solver code as a fenced ```python ... ``` '
+            'block in your last assistant message. The harness extracts '
+            'the last fenced block as the submission body. Do not write '
+            'to any file — the body lives in the message only.',
         ])
         return '\n'.join(lines)
 
 
 def make_default_openhands_runner(model_client):
     """Production runner factory. Returns a closure that constructs
-    an OpenHands Conversation per call and returns the resulting
-    submission body. SDK imports are lazy — the closure raises
-    ImportError if openhands.sdk is not installed."""
+    an OpenHands Conversation per call and returns the fenced
+    python block extracted from the agent's last assistant message.
+    SDK imports are lazy — the closure raises ImportError if
+    openhands.sdk is not installed."""
     def _runner(prompt: str) -> str:
         from openhands.sdk import LLM, Agent, Conversation
+        from openhands.sdk.event import MessageEvent
         from openhands.tools.preset.default import (
             get_default_tools, register_default_tools,
+        )
+
+        from src.reward_bench.adapters.extract_fenced_python import (
+            extract_fenced_python,
         )
 
         # FileEditor + Terminal + TaskTracker; no browser.
@@ -93,15 +107,37 @@ def make_default_openhands_runner(model_client):
             usage_id='reward-bench-solution-generator',
         )
         agent = Agent(llm=llm, tools=tools)
-        # Private workspace tempdir; OpenHands writes submission.py
-        # here, we read it back as the body. Tempdir lives only for
-        # this call.
+
+        # OpenHands SDK requires a workspace dir; agent uses it as
+        # scratch. We do NOT read submission.py back — the body
+        # comes from the last agent message.
         import tempfile
-        from pathlib import Path
         with tempfile.TemporaryDirectory() as td:
             conv = Conversation(agent=agent, workspace=str(td))
             conv.send_message(prompt)
             conv.run()
-            sp = Path(td) / 'submission.py'
-            return sp.read_text() if sp.exists() else ''
+
+            final_text = _last_agent_message_text(conv)
+            return extract_fenced_python(final_text)
+
     return _runner
+
+
+def _last_agent_message_text(conv) -> str:
+    """Scan conv.state.events in reverse for the last
+    MessageEvent with source == 'agent'; concat its text content."""
+    from openhands.sdk.event import MessageEvent
+
+    for event in reversed(list(conv.state.events)):
+        if not isinstance(event, MessageEvent):
+            continue
+        if getattr(event, 'source', None) != 'agent':
+            continue
+        msg = event.llm_message
+        parts = []
+        for c in getattr(msg, 'content', []) or []:
+            text = getattr(c, 'text', None)
+            if text:
+                parts.append(text)
+        return '\n'.join(parts)
+    return ''

@@ -88,6 +88,46 @@ def test_when_openhands_solution_generator_constructed_with_model_client_then_de
     assert body == 'class Solver: pass\n'
 
 
+def test_when_openhands_solution_generator_generate_called_then_prompt_instructs_agent_to_emit_fenced_python_block():
+    """Per §4 binding: the rendered prompt must instruct the agent
+    to emit its final Solver code as a fenced ```python ... ```
+    block in the last assistant message — that's the body
+    extraction contract."""
+    # Arrange
+    from src.reward_bench.adapters.openhands_solution_generator import (
+        OpenHandsSolutionGenerator,
+    )
+    from src.reward_bench.entities.context_snapshot import ContextSnapshot
+    from src.tier1.entities.submission import Submission
+
+    captured = {}
+
+    def stub_runner(prompt: str) -> str:
+        captured['prompt'] = prompt
+        return ''
+
+    adapter = OpenHandsSolutionGenerator(_openhands_runner=stub_runner)
+    snap = ContextSnapshot(
+        env_spec='SPEC',
+        best_so_far=Submission(body='', score=0.0, walltime_sec=0.0),
+        history_digest=(),
+        iters_remaining=0,
+        time_remaining_sec=0.0,
+        budget_sec_per_seed=0.0,
+    )
+
+    # Act
+    adapter.generate(snap)
+
+    # Assert: prompt names the fenced-block convention.
+    prompt = captured['prompt']
+    assert '```python' in prompt
+    assert 'fenced' in prompt.lower() or 'last assistant message' in prompt
+    # And: the prompt does NOT instruct the agent to write to a file.
+    assert 'submission.py' not in prompt
+    assert '/workspace/' not in prompt
+
+
 import pytest
 
 
@@ -95,7 +135,8 @@ import pytest
 def test_when_openhands_solution_generator_generate_called_with_real_vllm_then_returns_python_source_with_solver_class(
         vllm_base_url, vllm_api_key):
     """§4 live: OpenHands SDK + real vLLM + simple snapshot → Python
-    source containing a Solver class."""
+    source containing a Solver class extracted from the agent's
+    final fenced python block."""
     # Arrange
     from src.adapters.vllm_openai_client import VllmOpenAIClient
     from src.reward_bench.adapters.openhands_solution_generator import (
@@ -114,8 +155,7 @@ def test_when_openhands_solution_generator_generate_called_with_real_vllm_then_r
     snap = ContextSnapshot(
         env_spec=(
             'Write a Python class Solver with a method '
-            '`move(self, board) -> str` that returns the string "W". '
-            'Save your implementation to /workspace/submission.py.'
+            '`move(self, board) -> str` that returns the string "W".'
         ),
         best_so_far=Submission(body='', score=0.0, walltime_sec=0.0),
         history_digest=(),
