@@ -14,10 +14,11 @@ def dominates_at_budget(
 ) -> bool: ...
 ```
 
-Returns `True` iff `best_score(strong.orchestrate(env, cfg), t)`
-exceeds `best_score(weak.orchestrate(env, cfg), t)`. Pure
-composition over `Orchestrator.orchestrate` and `best_score`; any
-IO is the orchestrators'.
+Returns `True` iff `best_score(strong.orchestrate(env, cfg), t)` is
+*strictly greater than* `best_score(weak.orchestrate(env, cfg), t)`.
+A tie returns `False` — the planned shape must beat the current one,
+not merely match it. Pure composition over `Orchestrator.orchestrate`
+and `best_score`; any IO is the orchestrators'.
 
 The §7 fitness test asserts this returns `True` for
 `(strong=orchestrate_subagent_per_iter, weak=orchestrate_ralph_single_context)`
