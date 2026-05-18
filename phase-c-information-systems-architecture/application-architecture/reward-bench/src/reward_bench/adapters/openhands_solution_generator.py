@@ -74,7 +74,14 @@ def make_default_openhands_runner(model_client):
     submission body. SDK imports are lazy — the closure raises
     ImportError if openhands.sdk is not installed."""
     def _runner(prompt: str) -> str:
-        from openhands.sdk import LLM, Agent, Conversation, Tool
+        from openhands.sdk import LLM, Agent, Conversation
+        from openhands.tools.preset.default import (
+            get_default_tools, register_default_tools,
+        )
+
+        # FileEditor + Terminal + TaskTracker; no browser.
+        register_default_tools(enable_browser=False)
+        tools = get_default_tools(enable_browser=False)
 
         llm = LLM(
             model=f'openai/{model_client.model_id}',
@@ -82,10 +89,10 @@ def make_default_openhands_runner(model_client):
             base_url=model_client.base_url,
             usage_id='reward-bench-solution-generator',
         )
-        agent = Agent(llm=llm, tools=[Tool(name='task_tool_set')])
-        # Workspace tempdir owned by this closure: OpenHands writes
-        # submission.py here, we read it back as the body. The
-        # tempdir lives only for this call.
+        agent = Agent(llm=llm, tools=tools)
+        # Private workspace tempdir; OpenHands writes submission.py
+        # here, we read it back as the body. Tempdir lives only for
+        # this call.
         import tempfile
         from pathlib import Path
         with tempfile.TemporaryDirectory() as td:
