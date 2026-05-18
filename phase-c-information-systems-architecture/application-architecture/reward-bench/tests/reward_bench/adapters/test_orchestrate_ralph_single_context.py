@@ -411,3 +411,35 @@ def test_when_default_run_loop_fn_invoked_without_workspace_then_inner_run_loop_
 
     # Assert
     assert captured['workspace_exists_during_call'] is True
+
+
+def test_when_default_run_loop_fn_invoked_with_tasks_dir_then_inner_run_loop_receives_env_dir_as_parent():
+    """Pins §7 wrapper env_dir derivation: env_dir = tasks_dir.parent."""
+    # Arrange
+    from pathlib import Path
+
+    from src.reward_bench.adapters.orchestrate_ralph_single_context import (
+        default_run_loop_fn,
+    )
+
+    captured: dict = {}
+
+    def fake_inner_run_loop(**kwargs):
+        captured.update(kwargs)
+        return {
+            'iterations': 0,
+            'messages': [],
+            'finished': False,
+            'best_dev_mean': 0.0,
+        }
+
+    fn = default_run_loop_fn(
+        _run_loop=fake_inner_run_loop,
+        _time_fn=lambda: 0.0,
+    )
+
+    # Act
+    fn(tasks_dir=Path('/x/y/z'))
+
+    # Assert
+    assert captured['env_dir'] == Path('/x/y')

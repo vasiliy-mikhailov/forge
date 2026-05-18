@@ -86,3 +86,8 @@ never see a workspace — they only see structured `Submission`
 data, matching the §7 "code and execution results, not files"
 principle. Tests that pass `workspace=` explicitly keep working;
 the wrapper respects an explicit kwarg over its own tempdir.
+
+The wrapper also derives `env_dir = Path(tasks_dir).parent` when
+`tasks_dir` is supplied without an explicit `env_dir`. Mirrors the
+existing `main.py` derivation; keeps the derivation out of the
+adapter API.

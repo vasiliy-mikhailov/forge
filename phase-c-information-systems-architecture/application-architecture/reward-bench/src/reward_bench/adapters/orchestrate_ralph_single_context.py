@@ -72,6 +72,8 @@ def default_run_loop_fn(*, _run_loop=None, _time_fn=None, _body_reader=None):
         _body_reader = _default_body_reader
 
     def _fn(**kwargs):
+        if 'tasks_dir' in kwargs and 'env_dir' not in kwargs:
+            kwargs['env_dir'] = Path(kwargs['tasks_dir']).parent
         if 'workspace' in kwargs:
             return run_loop_with_metrics(
                 _run_loop=_run_loop,
