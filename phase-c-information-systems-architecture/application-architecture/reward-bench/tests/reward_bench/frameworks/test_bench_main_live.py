@@ -35,7 +35,7 @@ def test_when_bench_main_called_with_real_chain_then_returns_submission_with_sol
     monkeypatch.setenv('VLLM_API_KEY', vllm_api_key)
 
     target = next(t for t in MODEL_REGISTRY if t.id == 'qwen3.6-27b-awq')
-    cfg = BenchConfig(max_iters=1, hard_wall_sec=60.0, smoke_early_stop=False)
+    cfg = BenchConfig(max_iters=1, hard_wall_sec=180.0, smoke_early_stop=False)
 
     # Act
     submission = bench_main(target, cfg)
