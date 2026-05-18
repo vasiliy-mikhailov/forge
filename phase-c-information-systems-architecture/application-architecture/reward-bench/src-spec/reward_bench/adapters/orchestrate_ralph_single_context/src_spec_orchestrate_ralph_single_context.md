@@ -25,6 +25,7 @@ def orchestrate(self, env: Env, cfg: BenchConfig) -> Iterable[Submission]: ...
 Calls `self._run_loop` with kwargs derived from `env`/`cfg`:
 
     tasks_dir          ← env.tasks_dir
+    model_client       ← env.model_client
     max_iters          ← cfg.max_iters
     temperature        ← cfg.temperature
     finish_floor       ← cfg.finish_floor

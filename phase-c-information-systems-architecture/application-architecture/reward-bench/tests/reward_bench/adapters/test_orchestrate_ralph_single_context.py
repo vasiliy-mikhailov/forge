@@ -443,3 +443,43 @@ def test_when_default_run_loop_fn_invoked_with_tasks_dir_then_inner_run_loop_rec
 
     # Assert
     assert captured['env_dir'] == Path('/x/y')
+
+
+def test_when_orchestrate_called_then_run_loop_fn_receives_model_client_from_env(tmp_path):
+    """Pins §7 ralph adapter env pass-through: env.model_client reaches
+    the inner run_loop_fn as a model_client kwarg."""
+    # Arrange
+    from src.adapters.fakes.fake_canonical_scorer import FakeCanonicalScorer
+    from src.reward_bench.adapters.orchestrate_ralph_single_context import (
+        OrchestrateRalphSingleContext,
+    )
+    from src.reward_bench.entities.bench_config import BenchConfig
+    from src.reward_bench.entities.env import Env
+
+    captured: dict = {}
+
+    def fake_run_loop(**kwargs):
+        captured.update(kwargs)
+        return {
+            'iterations': 0,
+            'messages': [],
+            'finished': False,
+            'best_dev_mean': 0.0,
+            'body': '',
+            'walltime_sec': 0.0,
+        }
+
+    fake_mc = object()
+    adapter = OrchestrateRalphSingleContext(run_loop_fn=fake_run_loop)
+    env = Env(
+        tasks_dir=tmp_path,
+        canonical_scorer=FakeCanonicalScorer(),
+        model_client=fake_mc,
+    )
+    cfg = BenchConfig()
+
+    # Act
+    list(adapter.orchestrate(env, cfg))
+
+    # Assert
+    assert captured['model_client'] is fake_mc

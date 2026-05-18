@@ -25,6 +25,7 @@ class OrchestrateRalphSingleContext:
     def orchestrate(self, env, cfg) -> Iterable[Submission]:
         result = self._run_loop(
             tasks_dir=env.tasks_dir,
+            model_client=env.model_client,
             max_iters=cfg.max_iters,
             temperature=cfg.temperature,
             finish_floor=cfg.finish_floor,
