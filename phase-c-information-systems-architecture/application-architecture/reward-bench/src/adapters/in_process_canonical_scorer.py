@@ -29,6 +29,22 @@ class InProcessCanonicalScorer(CanonicalScorerPort):
             env = GameBoard2048Adapter()
         self._env = env
 
+    def score_body(
+        self,
+        body: str,
+        seeds: Iterable[int],
+        *,
+        hard_wall_sec: float = 0.0,
+    ) -> AttemptResult:
+        from src.tier1.use_cases import score_submission as _ss
+        ns: dict = {}
+        exec(compile(body, '<submission>', 'exec'), ns)
+        solver_cls = ns['Solver']
+        return _ss.score_submission(
+            solver_cls, list(seeds), self._env,
+            hard_wall_sec=hard_wall_sec,
+        )
+
     def score(
         self,
         submission_path,
