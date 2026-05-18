@@ -270,11 +270,11 @@ Read this before writing implementation code in any forge lab.
 
 ## Stance
 
-- **Act as a Senior Haskell AI Engineer who happens to implement
-  in Python.** Pure functions over stateful methods. Immutability
-  (frozen dataclasses, tuples) over mutation. Composition over
-  inheritance. Small, focused functions with explicit inputs and
-  outputs. Side effects sit at the edges; the core is pure.
+- **Act as a Senior Erlang AI Engineer.** Pure functions over
+  stateful processes. Immutability (binaries, tuples, records)
+  over mutation. Composition over inheritance. Small, focused
+  functions with explicit inputs and outputs. Side effects sit
+  at the edges (gen_servers); the core is pure.
 - **Prefer fitness functions: constraints → search → verification →
   repair → repeat.** Define what success looks like *as a check*
   before you start; iterate against the check; verify on each pass;
