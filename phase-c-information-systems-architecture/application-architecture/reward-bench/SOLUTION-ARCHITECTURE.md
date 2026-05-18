@@ -108,9 +108,11 @@ Live end-to-end (one check gates the whole chain):
   whose `walltime_sec > 1.0`.
 
 
-## 4. SolutionGenerator runtime: OpenHands
+## 4. SolutionGenerator runtime: OpenHands in docker
 
-**OpenHands is the SolutionGenerator runtime.** Decision committed.
+**OpenHands is the SolutionGenerator runtime, and it runs inside
+an ephemeral docker container per `generate()` call.** Decision
+committed.
 
 ### Binding interface
 
@@ -127,41 +129,87 @@ the env_factory. Three sections:
 3. **Budget** — wallclock seconds and iteration count.
 
 The agent reads the prompt, iterates in its own scratch (bash
-tool + dev harness via docker, observing stdout), then emits the
-final Solver code as a fenced ```` ```python ... ``` ```` block
-in its last assistant message. The runner factory extracts that
-block as the returned body.
+tool + dev harness via docker-in-docker, observing stdout), then
+emits the final Solver code as a fenced ```` ```python ... ``` ````
+block in its last assistant message. That fenced block IS the
+submission.
+
+### Time budget — binding requirement
+
+`snapshot.time_remaining_sec` is a **contract**, not advisory:
+the runtime MUST be killed at this deadline. The orchestrator
+passes `cfg.hard_wall_sec` here per iter; the SolutionGenerator
+adapter passes it to its runner; the runner wraps the container
+spawn in `timeout N docker run ...`. When the kernel SIGTERMs the
+container at the deadline, the host reads whatever stdout the
+agent flushed before then — partial answer or empty.
+
+This rules out cooperative deadlines (`threading.Timer`,
+`Conversation.pause()`) which won't take effect until the next
+LLM call boundary — too much slack inside a small budget.
 
 ### What does NOT cross the boundary
 
 - **No `submission.py` file** between runner and agent. The body
-  lives in the final assistant message, period. No tempdir read
-  on the runner side.
+  lives in the final assistant message, period.
 - **No mounted task directory.** The agent reads `env_spec`; the
   dev harness command already contains every host path it needs.
 - **No structured callback** from OpenHands back to the Runner.
-  The agent uses its own bash tool to invoke docker for dev
-  scoring; the canonical Runner runs separately later.
+  The agent uses its own bash tool to invoke docker; the canonical
+  Runner runs separately later.
 
 ### Process model
 
-OpenHands SDK runs in-process. The agent's `TerminalTool` runs
-bash on the host. Docker invocations from the agent reach the
-host docker daemon — the dev harness spawns an isolated
-`reward-bench-tier1:0.4` container per call with a wallclock
-timeout. The canonical `DockerCanonicalScorer` does the same
-later on held-out seeds. Same daemon, different seed sets.
+```
+host (bench_main)
+  → subprocess.run([timeout, N, docker, run, --rm, -i, --network=host,
+                   -v /var/run/docker.sock:/var/run/docker.sock,
+                   -e OPENAI_API_KEY=..., ...
+                   reward-bench-openhands-runner:0.1],
+                   input=prompt, capture_output=True)
+                                ↓
+                       container starts (tini → python entrypoint.py)
+                                ↓
+                       reads prompt from stdin
+                                ↓
+                       OpenHands Conversation runs
+                          - LLM calls go to vLLM via --network=host
+                          - agent's bash tool runs `docker run reward-bench-tier1:0.4 ...`
+                            using the mounted docker.sock
+                                ↓
+                       prints last agent message text to stdout
+                                ↓
+                  (host) extract_fenced_python(stdout) → body
+```
+
+The container's `/workspace` is ephemeral; nothing crosses to the
+host filesystem from the agent's scratch. Wallclock is enforced
+by the host's `timeout` wrapper, not by any in-SDK mechanism.
 
 ### Reference shape
 
 ```python
 class OpenHandsSolutionGenerator:
     def generate(self, snapshot: ContextSnapshot) -> str:
-        prompt = render(snapshot)          # task + harness + budget
-        conv = Conversation(agent=self._agent)
-        conv.send_message(prompt)
-        conv.run()
-        return extract_fenced_python(conv.final_message)
+        prompt = render(snapshot)             # task + harness + budget
+        deadline = snapshot.time_remaining_sec or DEFAULT_DEADLINE_SEC
+        return self._runner(prompt, deadline)
+
+def make_default_openhands_runner(model_client, image=DEFAULT_IMAGE):
+    def _runner(prompt: str, deadline_sec: float) -> str:
+        proc = subprocess.run(
+            ['timeout', str(int(deadline_sec)),
+             'docker', 'run', '--rm', '-i',
+             '--network=host',
+             '-v', '/var/run/docker.sock:/var/run/docker.sock',
+             '-e', f'OPENAI_API_KEY={model_client.api_key}',
+             '-e', f'OPENAI_BASE_URL={model_client.base_url}',
+             '-e', f'OPENAI_MODEL_ID={model_client.model_id}',
+             image],
+            input=prompt.encode(), capture_output=True, check=False,
+        )
+        return extract_fenced_python(proc.stdout.decode(errors='replace'))
+    return _runner
 ```
 
 What stays ours (independent of OpenHands):
@@ -172,8 +220,6 @@ What stays ours (independent of OpenHands):
 - `MODEL_REGISTRY` and `BenchConfig` typed configuration
 - Architecture fitness tests in `tests/architecture/`
 - Leaderboard generation
-
-
 ## 5. No file APIs across module boundaries
 
 Bench-side code communicates only in **strings, scalars, value

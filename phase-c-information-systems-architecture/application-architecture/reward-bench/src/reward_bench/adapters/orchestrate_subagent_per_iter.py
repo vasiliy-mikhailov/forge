@@ -8,7 +8,9 @@ best and the tuple of prior submissions.
 Each iter's snapshot reflects what the orchestrator knows from
 iters 1..k-1 — fresh per-iter context, no token carry-over. The
 task description (`env_spec`) comes from `env.env_spec`, set once
-by the env_factory.
+by the env_factory. The per-iter wallclock budget
+(`time_remaining_sec`) comes from `cfg.hard_wall_sec` — the §4
+SolutionGenerator runtime enforces it.
 """
 from __future__ import annotations
 
@@ -35,7 +37,7 @@ class OrchestrateSubagentPerIter:
                 best_so_far=best,
                 history_digest=tuple(history),
                 iters_remaining=cfg.max_iters,
-                time_remaining_sec=0.0,
+                time_remaining_sec=cfg.hard_wall_sec,
                 budget_sec_per_seed=0.0,
             )
             body = self._gen.generate(snapshot)

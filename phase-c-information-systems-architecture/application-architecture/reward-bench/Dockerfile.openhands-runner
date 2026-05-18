@@ -1,0 +1,45 @@
+# §4 SolutionGenerator runtime — runs OpenHands SDK inside an
+# ephemeral container per generate() call. Host invokes:
+#
+#   timeout N docker run --rm -i \
+#     --network=host \
+#     -v /var/run/docker.sock:/var/run/docker.sock \
+#     -e OPENAI_API_KEY=... -e OPENAI_BASE_URL=... -e OPENAI_MODEL_ID=... \
+#     reward-bench-openhands-runner:0.1
+#
+# Stdin = the rendered prompt; stdout = the last agent message
+# text (extract_fenced_python applied on host).
+#
+# Wallclock enforced by the host's `timeout` wrapper — kernel
+# SIGTERM at deadline. No threading.Timer / conv.pause() races.
+#
+# docker.io is installed so the in-container agent can spawn its
+# own docker containers (the dev harness in env_spec) via the
+# socket mount.
+
+FROM python:3.12-slim
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    OPENHANDS_SUPPRESS_BANNER=1 \
+    PYTHONUNBUFFERED=1
+
+# docker CLI for the agent's dev harness; tini for clean signal
+# propagation (so host SIGTERM kills the python process + any
+# child shells cleanly).
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        docker.io \
+        tini \
+    && rm -rf /var/lib/apt/lists/*
+
+# OpenHands SDK + its agent-tools preset (FileEditor / Terminal /
+# TaskTracker). litellm + openai come transitively.
+RUN pip install --no-cache-dir \
+        "openhands-sdk==1.17.0" \
+        "openhands-tools==1.17.0"
+
+COPY openhands_runner_entry.py /entrypoint.py
+RUN chmod +x /entrypoint.py
+
+# tini -- entrypoint.py keeps SIGTERM behaviour predictable on
+# `timeout` expiration; tini reaps zombies + forwards signals.
+ENTRYPOINT ["/usr/bin/tini", "--", "python3", "/entrypoint.py"]

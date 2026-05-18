@@ -15,8 +15,9 @@ def test_when_openhands_solution_generator_generate_called_then_runner_receives_
 
     captured = {}
 
-    def stub_runner(prompt: str) -> str:
+    def stub_runner(prompt: str, deadline_sec: float) -> str:
         captured['prompt'] = prompt
+        captured['deadline_sec'] = deadline_sec
         return 'class Solver: pass\n'
 
     adapter = OpenHandsSolutionGenerator(_openhands_runner=stub_runner)
@@ -36,6 +37,40 @@ def test_when_openhands_solution_generator_generate_called_then_runner_receives_
     # Assert
     assert 'SPEC: write a Solver' in captured['prompt']
     assert body == 'class Solver: pass\n'
+
+
+def test_when_openhands_solution_generator_generate_called_with_snapshot_time_then_runner_receives_that_deadline():
+    """Per §4 binding time-budget contract: the runner closure
+    receives snapshot.time_remaining_sec as its deadline argument.
+    The host uses this to wrap docker in `timeout N`."""
+    # Arrange
+    from src.reward_bench.adapters.openhands_solution_generator import (
+        OpenHandsSolutionGenerator,
+    )
+    from src.reward_bench.entities.context_snapshot import ContextSnapshot
+    from src.tier1.entities.submission import Submission
+
+    captured = {}
+
+    def stub_runner(prompt: str, deadline_sec: float) -> str:
+        captured['deadline_sec'] = deadline_sec
+        return ''
+
+    adapter = OpenHandsSolutionGenerator(_openhands_runner=stub_runner)
+    snap = ContextSnapshot(
+        env_spec='SPEC',
+        best_so_far=Submission(body='', score=0.0, walltime_sec=0.0),
+        history_digest=(),
+        iters_remaining=0,
+        time_remaining_sec=42.5,
+        budget_sec_per_seed=0.0,
+    )
+
+    # Act
+    adapter.generate(snap)
+
+    # Assert
+    assert captured['deadline_sec'] == 42.5
 
 
 def test_when_openhands_solution_generator_constructed_with_model_client_then_default_runner_uses_clients_url_and_key():
@@ -59,8 +94,9 @@ def test_when_openhands_solution_generator_constructed_with_model_client_then_de
     def fake_factory(model_client):
         captured['model_client'] = model_client
 
-        def stub_runner(prompt):
+        def stub_runner(prompt, deadline_sec):
             captured['prompt'] = prompt
+            captured['deadline_sec'] = deadline_sec
             return 'class Solver: pass\n'
 
         return stub_runner
@@ -102,7 +138,7 @@ def test_when_openhands_solution_generator_generate_called_then_prompt_instructs
 
     captured = {}
 
-    def stub_runner(prompt: str) -> str:
+    def stub_runner(prompt: str, deadline_sec: float) -> str:
         captured['prompt'] = prompt
         return ''
 
@@ -135,9 +171,9 @@ import pytest
 @pytest.mark.live
 def test_when_openhands_solution_generator_generate_called_with_real_vllm_then_returns_python_source_with_solver_class(
         vllm_base_url, vllm_api_key):
-    """§4 live: OpenHands SDK + real vLLM + simple snapshot → Python
-    source containing a Solver class extracted from the agent's
-    final fenced python block."""
+    """§4 live: docker-wrapped OpenHands runner + real vLLM +
+    simple snapshot → Python source containing a Solver class
+    extracted from the agent's final fenced python block."""
     # Arrange
     from src.adapters.vllm_openai_client import VllmOpenAIClient
     from src.reward_bench.adapters.openhands_solution_generator import (
