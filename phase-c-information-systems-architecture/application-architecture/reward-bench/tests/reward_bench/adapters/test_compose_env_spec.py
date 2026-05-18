@@ -37,10 +37,10 @@ def test_when_compose_env_spec_called_with_skill_text_then_task_section_contains
     assert 'UNIQUE_TASK_BODY_42' in spec
 
 
-def test_when_compose_env_spec_called_then_dev_harness_section_embeds_docker_command_with_env_path():
-    """The dev-harness section is an executable docker invocation
-    with the absolute host path to env.py baked in (no path
-    arithmetic at agent runtime)."""
+def test_when_compose_env_spec_called_then_dev_harness_streams_solver_via_heredoc_with_no_host_filesystem_writes():
+    """Per §5 (no file APIs above the Runner): the dev harness
+    must not mount a host-side submission.py. The Solver source
+    flows via heredoc → docker stdin → cat inside the container."""
     # Arrange
     from pathlib import Path
     from src.reward_bench.adapters.compose_env_spec import compose_env_spec
@@ -55,9 +55,19 @@ def test_when_compose_env_spec_called_then_dev_harness_section_embeds_docker_com
         dev_timeout_sec=60,
     )
 
-    # Assert
+    # Assert — runs docker with stdin attached
     assert 'docker run' in spec
+    assert ' -i ' in spec or '\\\n' in spec  # -i = attach stdin
+    # heredoc carries the source code (negative on host file path)
+    assert "<<'SOLVER_END'" in spec
+    assert 'SOLVER_END' in spec
+    assert 'cat > /workspace/submission.py' in spec
+    # env.py mount stays (task runtime, not bench-agent communication)
     assert '/abs/tasks/2048/env.py:/env/env_2048.py:ro' in spec
+    # but no host mount for submission.py
+    assert ':/workspace/submission.py' not in spec
+    assert '/tmp/sub.py' not in spec
+    # image + env vars + timeout still embedded
     assert 'reward-bench-tier1:0.4' in spec
     assert 'REWARD_BENCH_NUM_GAMES=5' in spec
     assert 'REWARD_BENCH_SEED_BASE=2000' in spec
