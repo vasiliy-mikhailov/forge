@@ -22,6 +22,13 @@ from __future__ import annotations
 from typing import Callable
 
 
+# Inner-loop cap. Each iteration = one LLM response (may include
+# tool calls). Default SDK value is 500 — way too high for a
+# 60s-ish wallclock budget. Eight iterations is enough for ~3-5
+# dev-test cycles plus a final-answer emission.
+_DEFAULT_MAX_ITER = 8
+
+
 class OpenHandsSolutionGenerator:
     def __init__(
         self,
@@ -68,10 +75,17 @@ class OpenHandsSolutionGenerator:
             f'budget_sec_per_seed: {snapshot.budget_sec_per_seed}',
             '',
             '# Output',
-            'Emit your final Solver code as a fenced ```python ... ``` '
-            'block in your last assistant message. The harness extracts '
-            'the last fenced block as the submission body. Do not write '
-            'to any file — the body lives in the message only.',
+            'IMPORTANT — converge fast. You have ~5 minutes total and only '
+            f'~{_DEFAULT_MAX_ITER} inner iterations before the harness '
+            'force-stops you. Use the dev test harness 2-3 times to '
+            'validate, then COMMIT.',
+            '',
+            'When ready, emit your final Solver code as a fenced '
+            '```python ... ``` block in your last assistant message. '
+            'The harness extracts the last fenced block as the '
+            'submission body. The fenced block IS the submission — '
+            'put your best version there. Do not append more tool calls '
+            'after the final block.',
         ])
         return '\n'.join(lines)
 
@@ -84,7 +98,6 @@ def make_default_openhands_runner(model_client):
     openhands.sdk is not installed."""
     def _runner(prompt: str) -> str:
         from openhands.sdk import LLM, Agent, Conversation
-        from openhands.sdk.event import MessageEvent
         from openhands.tools.preset.default import (
             get_default_tools, register_default_tools,
         )
@@ -113,7 +126,11 @@ def make_default_openhands_runner(model_client):
         # comes from the last agent message.
         import tempfile
         with tempfile.TemporaryDirectory() as td:
-            conv = Conversation(agent=agent, workspace=str(td))
+            conv = Conversation(
+                agent=agent,
+                workspace=str(td),
+                max_iteration_per_run=_DEFAULT_MAX_ITER,
+            )
             conv.send_message(prompt)
             conv.run()
 
