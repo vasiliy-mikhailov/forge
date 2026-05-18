@@ -36,10 +36,11 @@ import pytest
 
 
 @pytest.mark.live
-def test_when_bench_called_with_real_ralph_chain_then_returns_submission(
+def test_when_bench_called_with_real_ralph_chain_then_returns_submission_with_solver_body_and_non_negative_score(
         vllm_base_url, vllm_api_key):
     """§7 end-to-end live: bench → adapter → wrapper → real run_loop
-    against real vLLM + real Docker scorer returns a Submission."""
+    against real vLLM + real Docker scorer must produce a meaningful
+    Submission (solver code body + scored, not a no-op shape)."""
     # Arrange
     from pathlib import Path
 
@@ -68,7 +69,7 @@ def test_when_bench_called_with_real_ralph_chain_then_returns_submission(
             default_model_id='qwen3.6-27b-awq',
         ),
     )
-    cfg = BenchConfig(max_iters=2, hard_wall_sec=60.0)
+    cfg = BenchConfig(max_iters=30, hard_wall_sec=60.0)
     adapter = OrchestrateRalphSingleContext(
         run_loop_fn=default_run_loop_fn(),
     )
@@ -78,3 +79,17 @@ def test_when_bench_called_with_real_ralph_chain_then_returns_submission(
 
     # Assert
     assert isinstance(submission, Submission)
+    assert 'class Solver' in submission.body, (
+        f'submission.body missing Solver class; got first 200 chars: '
+        f'{submission.body[:200]!r}'
+    )
+    assert 'from transitions' in submission.body, (
+        f'submission.body missing transitions import; got first 200 chars: '
+        f'{submission.body[:200]!r}'
+    )
+    assert isinstance(submission.score, float) and submission.score >= 0, (
+        f'submission.score expected non-negative float; got {submission.score!r}'
+    )
+    assert submission.walltime_sec > 1.0, (
+        f'submission.walltime_sec expected > 1.0; got {submission.walltime_sec!r}'
+    )
