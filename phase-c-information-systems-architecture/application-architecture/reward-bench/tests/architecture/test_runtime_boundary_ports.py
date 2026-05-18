@@ -37,7 +37,7 @@ MANIFEST = [
     ("src.ports.inference_orchestrator", "InferenceOrchestrator",
      "src.adapters.fakes.fake_inference_orchestrator", "FakeInferenceOrchestrator"),
     ("src.ports.orchestrator", "Orchestrator",
-     None, None),   # bench() takes the orchestrator as a param; no autouse Fake needed
+     "src.adapters.fakes.fake_orchestrator", "FakeOrchestrator"),
 ]
 
 

@@ -17,3 +17,20 @@ def test_when_fake_orchestrator_orchestrate_called_then_yields_scripted_submissi
 
     # Assert
     assert result == [a, b]
+
+
+def test_when_runtime_boundary_manifest_inspected_then_fake_orchestrator_module_is_referenced():
+    """Pins ADR-0018 Fake registration for the §7 Orchestrator Port."""
+    # Arrange
+    from pathlib import Path
+
+    manifest_file = (
+        Path(__file__).resolve().parents[1]
+        / 'architecture' / 'test_runtime_boundary_ports.py'
+    )
+
+    # Act
+    text = manifest_file.read_text()
+
+    # Assert
+    assert 'fake_orchestrator' in text
