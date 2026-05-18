@@ -1,373 +1,230 @@
-# reward-bench — Solution Architecture
+# SOLUTION-ARCHITECTURE.md — reward-bench
 
-How the SPEC contract is realised. SPEC describes *what*; this doc describes *how*.
+Companion to [SPEC.md](SPEC.md) (lab contract) and
+[CATS.md](CATS.md) (implementation discipline). One decision per
+section. Current state only. Git holds the chronology.
 
-## 1. Architectural overview
 
-```
-┌────────────────────────────────────────────────────────────────────┐
-│  Orchestrator (host, Python — src/reward_bench/frameworks/main.py) │
-│   - resolves ModelTarget from MODEL_REGISTRY (mirror of YAML)      │
-│   - builds production ports (ModelClient, ToolRegistry, Parser,    │
-│     Condenser, Supervisor, CanonicalScorer)                        │
-│   - runs agent loop (src/tier1/agent_loop.py::run_loop)            │
-│   - promotes last-good execute_submission body to submission.py    │
-│   - hands off to CanonicalScorerPort for final scoring             │
-│   - emits AttemptResult (sentinel on malformed submission)         │
-│   - writes artifacts to ${STORAGE_ROOT}/labs/reward-bench/...      │
-└──────────────────┬──────────────────────────────────┬──────────────┘
-                   │                                  │
-       inference   │ HTTPS                            │ docker run --rm
-   (chat / tools / │ ${INFERENCE_BASE_URL}            │ --network=none
-    condenser /    │                                  │ --memory=2g
-    supervisor)    ▼                                  │ --pids-limit=256
-  ┌──────────────────────────┐                        │ --cpus=N/2
-  │  vLLM container          │                        ▼
-  │  (provisioned externally │  ┌─────────────────────────────────────┐
-  │   by wiki-compiler or    │  │ Per-attempt sandbox                 │
-  │   inference mode)        │  │ reward-bench-tier1:${VERSION}       │
-  │                          │  │  /workspace/submission.py  (rw)     │
-  │  serves model under      │  │  /env/env_2048.py          (ro)     │
-  │  test + condenser +      │  │  /reports/                 (rw)     │
-  │  supervisor              │  │  runs runner_canonical.py           │
-  └──────────────────────────┘  │  mp.Pool(cpu_count()) over seeds    │
-                                │  honours REWARD_BENCH_* env vars    │
-                                └────────────┬────────────────────────┘
-                                             │ result.json + events.jsonl
-                                             ▼
-                       ${STORAGE_ROOT}/labs/reward-bench/experiments/<run_id>/
-```
-
-Single vLLM endpoint serves three roles: bench model under test, condenser, supervisor (see §6).
-
-## 2. Components
-
-| Component | Module path | Role |
-|---|---|---|
-| **Orchestrator** | `src/reward_bench/frameworks/main.py` | Composition root. Resolves `ModelTarget`, wires ports, invokes loop and scorer, marshals `AttemptResult`. |
-| **Agent loop** | `src/tier1/agent_loop.py::run_loop` | Reads model reply via `ProtocolParser`, dispatches tool calls via `ToolRegistry`, feeds observations back, calls `CondenserPort` and `SupervisorPort` between turns. Knows nothing about HTTP, Docker, or specific tool implementations. |
-| **Canonical scorer (Docker)** | `src/tier1/adapters/docker_canonical_scorer.py` | Implements `CanonicalScorerPort`. Spawns `reward-bench-tier1:${VERSION}`, reads `/reports/result.json`, maps to `AttemptResult`. Used for both final canonical scoring (20 seeds) and the `execute_submission` dev runner (5 seeds). |
-| **Inference provisioning** | external (`wiki-compiler` mode or `inference` mode) | vLLM container at `${INFERENCE_BASE_URL}` is a prerequisite, not provisioned by this lab. Orchestrator calls it as a client. |
-| **Condenser** | `src/reward_bench/adapters/llm_condenser.py` | Implements `CondenserPort`. Collapses older turns to a summary via the bench-model endpoint when input tokens cross the trigger threshold. `keep_recent` preserves the tail verbatim. |
-| **Supervisor** | `src/reward_bench/adapters/llm_supervisor.py` | Implements `SupervisorPort`. Every `supervisor_every_k` iterations, posts `(iter, dev_mean, max_tile, walltime)` sweep tuples to the bench-model endpoint and parses a `SupervisorDecision`. If `stop_recommended`, injects a `finish` call. Replaces mechanical `max_no_improve`. |
-
-## 3. Port discipline
-
-Per the runtime-boundary rule, every dependency that crosses a runtime boundary (network, subprocess, Docker, file system depending on host state, OS process state) has: Protocol under `src/ports/`, production adapter, in-memory Fake under `src/adapters/fakes/`, and (if it has side effects) an autouse conftest binding.
-
-| Port | Production adapter | Default test binding | Role |
-|---|---|---|---|
-| `CanonicalScorerPort` | `DockerCanonicalScorer` | `FakeCanonicalScorer` (autouse) | Score a `submission.py` over a seed list inside a sandbox; return `AttemptResult`. Backs both canonical and dev. |
-| `InferenceOrchestrator` | external mode (`wiki-compiler` / `inference`) | n/a — `ModelClient` faked instead | Provision and serve the model at `${INFERENCE_BASE_URL}`. Out of scope for this lab. |
-| `Tool` | `ViewTool`, `ExecuteSubmissionTool`, `FinishTool` | recording fakes per-test | Single unit of side-effectful action invoked from a reply. |
-| `ToolRegistry` | `Tier1ToolRegistry` | inline `RecordingRegistry` (autouse via `fake_execute_tool`) | Owns the per-tier tool catalogue + schemas; dispatches by name. Tier 2-4 swap their own registry. |
-| `ProtocolParser` | `CompositeParser([FencedTextParser, StructuredOpenAIParser])` | trivial recorder (autouse via `fake_execute_tool`) | Decode `AssistantReply` into `list[ToolCall]`. Fenced wins when both present; structured is the Mistral-family fallback. |
-| `ModelClient` | `VllmOpenAIClient` | `FakeModelClient` (autouse) | OpenAI chat-completions call against vLLM with `tools=[...]` advertised. |
-| `SupervisorPort` | `LlmSupervisor` | `NullSupervisor` (default) | `judge(sweep) -> SupervisorDecision`. |
-| `CondenserPort` | `LlmCondenser` | `NullCondenser` (default) | Compact older turns when input tokens cross trigger. |
-| `CpuCountPort` | `MultiprocessingCpuCount` | `FixedCpuCount(N)` (DI param) | OS-process state seam so use cases don't import `os.cpu_count`. |
-
-Architecture test `tests/architecture/test_runtime_boundary_ports.py` asserts the manifest is complete (port file, adapter file, fake file, autouse binding) and fails on drift.
-
-## 4. Runtime architecture (Docker sandbox)
-
-Layer 2 (Docker) is the production path for **both** canonical scoring and the in-loop `execute_submission` dev runner. The legacy in-process Layer 1 (`InProcessCanonicalScorer`) remains for hermetic algorithm tests only.
-
-### Docker invocation
-
-```
-docker run --rm \
-  --network=none \
-  --memory=2g \
-  --pids-limit=256 \
-  --cpus=${CANONICAL_CPUS} \                # host-side: cpu_count() // 2
-  -v <workspace>:/workspace \               # rw — submission.py promoted
-  -v <env_dir>:/env:ro \                    # ro — env_2048.py
-  -v <reports_dir>:/reports \               # rw — result.json, events.jsonl
-  -e REWARD_BENCH_NUM_GAMES=20 \
-  -e REWARD_BENCH_SEED_BASE=1000 \
-  -e REWARD_BENCH_STAGNATION_SEC=60 \
-  -e REWARD_BENCH_HARD_WALL_SEC=300 \
-  -e REWARD_BENCH_MOVES_STAGNATION=...      # optional move-count guard
-  reward-bench-tier1:${VERSION}
-```
-
-`--network=none` is mandatory at tier 1 (anti-exfil). Tier 2-4 swap to `--network proxy-net` with iptables egress restricted to `${INFERENCE_DOMAIN}` (per SPEC); the same `CanonicalScorerPort` shape applies — only the network policy and image change.
-
-### CPU policy
-
-Host side: `--cpus=N` is the only knob, picked as `port.cpu_count() // 2` from `CpuCountPort`. Container side: `runner_canonical.py` runs `multiprocessing.Pool(processes=cpu_count())` — `mp.cpu_count()` reads the cgroup CPU quota, so the container uses exactly the slice Docker gave it. No `max_workers` threads through the codebase.
-
-### Walltime enforcement
-
-`hard_wall_sec` is enforced **by Docker**, not Python. `docker stop --time=N` issues SIGTERM then SIGKILL. A Solver wedged in a tight Python loop dies at the OS level. The in-container per-game stagnation detector (60 s of no `score` or `max_tile` change) handles the common case and writes `final_state="stagnated"`.
-
-### Env-var contract (orchestrator → container)
-
-| Env var | Default | Purpose |
-|---|---|---|
-| `REWARD_BENCH_NUM_GAMES` | 20 (canonical) / 5 (dev) | Number of seeded games to play. |
-| `REWARD_BENCH_SEED_BASE` | 1000 | Starting seed; `[base, base+1, ..., base+N-1]`. |
-| `REWARD_BENCH_STAGNATION_SEC` | 60 | Per-game progress watchdog inside the container. |
-| `REWARD_BENCH_HARD_WALL_SEC` | 300 (canonical) / 75 (dev) / 60 (smoke) | Aggregate Docker walltime cap. 0 = disabled. |
-| `REWARD_BENCH_MOVES_STAGNATION` | (set per run) | Move-count guard complementing the time-based detector. |
-
-### dev/canonical alignment
-
-`dev_hard_wall_sec = canonical_hard_wall_sec * 5 / len(canonical_seeds)`. With canonical=300 and 20 seeds, dev=75 s — keeps dev observations proportional to canonical scoring.
-
-## 5. Cross-cutting decisions
-
-Compressed from the 15 ADRs. ADR numbers retained as audit pointers.
-
-- **Same model for bench + condenser + supervisor** (0001). One vLLM endpoint, one `ModelTarget`. `CondenserConfig.model_id` and `LlmSupervisor` both default to the bench `ModelTarget.id`. Eliminates a second container, a second registry entry, and the "model A had a better condenser" confound. Each model summarises and judges itself.
-- **Malformed submission → sentinel `AttemptResult`, never raise** (0002). `main()` catches `FileNotFoundError` (no submission written) and `AttributeError` on `module.Solver` (no `Solver` class) and returns `AttemptResult(n_games=0, games=(), mean_score=0.0, ...)`. The discriminator is `n_games == 0`. Any other exception propagates as infra failure. Lets 21-model campaigns survive one bad submission.
-- **Canonical bench defaults** (0003, 0015): `max_iters=500`, `n_trials=10`, `temperature=0.7`, `max_model_len=131072`, `max_no_improve=999999`, `finish_floor=0`, `hard_wall_sec=300`. Lives as a frozen `BenchConfig` value object (`src/reward_bench/entities/bench_config.py`); every leaderboard publication reports it. T=0.7 only affects Stage-1 author sampling — Stage-2 `Solver.move` is greedy by construction, so canonical scoring stays deterministic.
-- **Condenser trigger at ~80 % of effective input budget** (0004). `_CONDENSER_TRIGGER_TOKENS = 80000` in `main.py`, derived as `0.8 × (131072 − 32768) ≈ 78643`, rounded up. ~18 K headroom for the last pre-compaction turn. 4-chars-per-token heuristic; future cycle will derive per-model from `ModelTarget.max_model_len`.
-- **Plateau detection asks the bench model itself** (0005). `SupervisorPort.judge(sweep)` posts recent `(iter, dev_mean, max_tile, walltime)` tuples and parses `{"plateau": bool, "reasoning": str, "stop_recommended": bool}` with a conservative-bias prompt. Fires every `supervisor_every_k` turns (default 5). On `stop_recommended`, the loop injects `finish(note=reasoning)`. Replaces brittle threshold-based `max_no_improve`.
-- **Docker sandbox + walltime budget** (0006, 0015). All scoring (canonical and dev) goes through `CanonicalScorerPort` → `DockerCanonicalScorer`. `--network=none`, `--memory=2g`, `--pids-limit=256`, `--cpus=N/2`. Hard kill via cgroup. Image digest pinned in `meta.json` for reproducibility.
-- **`execute_submission` tool runs in Docker** (0008). Single sandboxed tool replaces the old `write_file` + `bash dev_runner` pair. The model emits the full submission body inline; the tool writes it to a transient container path, runs the dev runner on 5 seeds, returns a structured JSON observation (per-seed scores, max-tile, protocol violations, runtime tracebacks). NEVER raises — failures surface as fields. At `finish`, the LAST body that produced `per_seed != []` is promoted to host `/workspace/submission.py` for canonical scoring.
-- **Smoke convention: early-stop on first `dev_mean > 0`** (0009). `SMOKE_CONFIG`: `max_iters=100`, `n_trials=1`, `T=0.7`, `hard_wall_sec=60`, `supervisor_every_k=0`, `smoke_early_stop=True`. Canonical scoring skipped — the smoke signal *is* the verdict. A `0.0` / `None` is a bench-side bug signal, never a model verdict. Per-model wall ~3 min on warm vLLM.
-- **Mistral-family routes through structured tool_calls** (0010). Mistral / devstral / gpt-oss emit `[TOOL_CALLS]` which vLLM's `--tool-call-parser mistral` converts to OpenAI structured `message.tool_calls`; `message.content` is stripped. `_call_model` therefore advertises `tools=TOOL_SCHEMAS` on every request. `CompositeParser` reads both surfaces: `FencedTextParser` over `message.content` wins when both are present; `StructuredOpenAIParser` over `message.tool_calls` is the fallback. The structured parser strips U+0120 / U+2581 SentencePiece leaks from `function.arguments` before `json.loads`.
-- **Ports for `ModelClient` / `ToolRegistry` / `ProtocolParser`** (0011, 0018). `run_loop` no longer imports `urllib.request`, hardcodes tool schemas, or knows about two parser surfaces. It orchestrates `client.call → parser.extract → registry.dispatch`. New tier surface = `ToolRegistry` swap. New model API = new `ModelClient` adapter. New protocol = new `ProtocolParser` adapter. The discipline generalises to every runtime boundary (ADR-0018 manifest).
-- **Fakes + autouse for offline testing** (0012, 0014). `FakeModelClient` returns scripted `AssistantReply` values; `FakeCanonicalScorer` returns scripted `AttemptResult`s. `tests/conftest.py` autouse fixture binds Fakes unless the test is marked `live` (real production stack) or `no_fake` (real code, hermetic sandbox). Every `test_spec` MUST declare a *Model client injection point* subsection naming the seam, default mode, and override mechanism. CI runs the suite via fakes in ~3 s; live-marked tests run on demand.
-- **`models.yml` is the source of truth; `MODEL_REGISTRY` is a mirror smell** (0013). `wiki-compiler/configs/models.yml` is canonical. `src/reward_bench/use_cases/model_registry.py::MODEL_REGISTRY` is being rewritten as a thin wrapper that loads the YAML at import time (via `run_battery.load_models`), filters `bench_skip: true`, and maps to `ModelTarget`. The hand-maintained Python literal is queued for deletion — currently both coexist with observed drift.
-
-## 6. Source-of-truth collapse: same vLLM endpoint serves three roles
-
-The condenser (ADR-0001), supervisor (ADR-0005), and bench model all hit the same `${INFERENCE_BASE_URL}` with the same `ModelTarget`. Concrete consequences:
-
-- One container, one GPU mutex, one `MODEL_REGISTRY` entry.
-- A/B comparisons are end-to-end including each model's self-summarisation and self-judgment behaviour.
-- A model that can't summarise its own context or judge its own progress *should* score worse — that's signal, not noise.
-- Condenser and supervisor cost extra inferences; mitigated by trigger thresholds (`trigger_tokens=80000`, `supervisor_every_k=5`).
-
-## 7. Target architecture: fitness function over orchestrators
-
-The bench, type-signature first:
+## 1. What the bench is
 
 ```haskell
 bench :: Env -> BenchConfig -> Submission
-bench env cfg = argmaxBy (score env) (orchestrate env cfg)
+bench env cfg = argmaxBy (.score) (orchestrator env cfg)
 ```
 
-`orchestrate` is a strategy that enumerates candidate submissions
-under `cfg`. The bench is the `argmax` over its output. The fitness
-function we are optimising is not "agent loop runs", it is:
+A bench-run is the `argmax`-by-score over candidate `Submission`s
+enumerated by an `orchestrator` strategy under a fixed `Env` and
+`BenchConfig`. Everything else — context construction, sandbox
+spawning, prompt shape — is a free parameter of `orchestrator`.
 
-```
-best_score : Env -> BenchConfig -> Walltime -> Score
-best_score env cfg t =
-    max { score env s
-        | s in orchestrate env cfg,
-          submission_walltime s <= t }
-```
-
-i.e. given a fixed env and a fixed time budget, which orchestration
-strategy produces the highest-scoring submission. Everything else —
-context construction, sandbox spawning, prompt shape — is a free
-parameter of `orchestrate`.
-
-Two strategies share that signature:
-
-```haskell
-orchestrate_ralph_single_context  :: Env -> BenchConfig -> [Submission]
-orchestrate_subagent_per_iter     :: Env -> BenchConfig -> [Submission]
+```python
+Submission = (body: str, score: float, walltime_sec: float)
+Env        = (tasks_dir: Path, canonical_scorer: Runner,
+              model_client: ModelClient)
 ```
 
-Current code implements the first: one long-lived agent context
-accumulating across iters. Planned code implements the second: main
-process holds cumulative state (best-so-far, history digest, time
-remaining); each iter spawns a fresh subagent context constructed
-from that state and returning only `(body, score, walltime)`. The
-subagent's deliberation tokens die with its context.
 
-### The fitness function, made testable
+## 2. Three roles
+
+Strict separation. The current ralph code fuses Orchestrator +
+SolutionGenerator into one long-lived agent context; the target
+architecture decomposes them.
 
 ```
-test_when_orchestrators_compared_at_same_time_budget_then_
-  subagent_per_iter_score_dominates_ralph_single_context
+Orchestrator        :: Env -> BenchConfig -> [Submission]
+SolutionGenerator   :: ContextSnapshot -> SolverBody
+Runner              :: SolverBody -> Seeds -> AttemptResult
 ```
 
-Given identical `Env` and identical wall-clock budget `t`, compare
-`best_score env cfg_ralph t` against `best_score env cfg_subagent t`.
-The subagent strategy is justified iff it dominates across the
-model registry. This is the only test that decides whether we
-migrate; everything below is the implementation hypothesis.
+```python
+ContextSnapshot = {
+    env_spec            : TaskSpec    # SPEC.md + env source + Solver contract
+    best_so_far         : Submission  # running best body + its score
+    history_digest      : [PriorIter] # prior bodies + scores, compressed
+    iters_remaining     : int
+    time_remaining_sec  : float
+    budget_sec_per_seed : float
+}
+```
 
-### Why subagent-per-iter is the hypothesis
+### Orchestrator
 
-Failure modes of the single-context strategy, observed on the
-current bench:
+Owns cumulative state. Constructs a `ContextSnapshot` per iter
+from that state. Hands the snapshot to the `SolutionGenerator`.
+Hands the returned body to the `Runner`. Updates state from the
+`AttemptResult`. Decides when to stop. Holds no model context.
 
-- **W-fallback drift**: cumulative context carries "30 iters in,
-  scores not improving" as deliberation, model gives up to `return W`.
-  Subagent context is freshly constructed; "tired" is not a state
-  the strategy can be in.
-- **Observability gaps** (cycles 158-161): every signal the model
-  needs (budget per seed, iters remaining, prior scores, walltime
-  margin) has to be threaded into the long context. With per-iter
-  subagents, the main process builds the context from cumulative
-  state — the signals are inputs to a pure function, not accidents
-  of message history.
-- **Context-window pressure**: at `max_iters=120` the single context
-  pushes against the window; compaction becomes a meta-problem.
-  Per-iter subagent context is bounded by construction.
-- **Reward gradient**: subagent receives prior iters' scores as a
-  numeric gradient over its constructed input, not as buried
-  history.
+The orchestrator's process is short and self-evident — it never
+asks "what did I do five iters ago" because that lives in
+`history_digest` as structured data.
 
-### Implementation pivot: OpenHands
+### SolutionGenerator
 
-The per-iter subagent pattern is OpenHands' native model. Each iter
-becomes an OpenHands task with a freshly-constructed agent context;
-the main orchestrator becomes a thin wrapper that constructs the
-task input from cumulative state and reduces results.
+Pure function from a fresh `ContextSnapshot` to a `SolverBody`
+string. The LLM that writes code. Fresh context every iter — no
+memory across iters except what the snapshot carries.
+Deliberation tokens die with the iter.
 
-Collapsing onto OpenHands removes code we would otherwise maintain:
+The SolutionGenerator's context is bounded by the snapshot — 16K
+tokens suffice when the snapshot is compact. Models with small
+context windows compete fairly because the iter context is reset
+each call.
 
-- `src/tier1/agent_loop.py::run_loop` orchestration
-- `Tool` / `ToolRegistry` / `ProtocolParser` ports and adapters
-- Docker bind-mount + env-var threading in `DockerCanonicalScorer`
-- `_execute_submission` dev-runner action
+### Runner
 
-What survives the pivot — the parts that are ours, not OpenHands':
+The canonical scorer. Body string in, `AttemptResult` out. No path
+crosses this boundary (see §5). Already typed in code as:
 
-- `SPEC.md` (the lab contract) and this `SOLUTION-ARCHITECTURE.md`.
-- `CanonicalScorerPort` + its Docker adapter (the reward signal is
-  the bench, not the agent framework).
-- The cycle-133 quality floor and other fitness functions in
-  `tests/architecture/`.
-- `MODEL_REGISTRY`, `BenchConfig`, leaderboard generation.
+```python
+CanonicalScorerPort.score_body(body: str, seeds, *,
+                               hard_wall_sec) -> AttemptResult
+```
 
-The cycles 158-162 observability work informs `construct_subagent_input
-:: CumulativeState -> SubagentInput` — what fields the main → subagent
-message must contain — but does not survive as procedural code in
-`agent_loop.py`.
 
-### Decision status
+## 3. Fitness functions
 
-**Pending.** Migration cost estimated 2-3 weeks. Trigger: when the
-next 1-2 cycles' worth of features would be re-implementing
-OpenHands primitives ourselves, or when
-`test_when_orchestrators_compared_at_same_time_budget_then_subagent
-_per_iter_score_dominates_ralph_single_context` is implementable in
-prototype form and shows dominance.
+Architectural shape (three checks gate role separation):
 
-## 7.5. No file APIs across module boundaries
+- `test_when_orchestrator_called_then_returns_iterable_of_submissions`
+- `test_when_solution_generator_called_with_context_snapshot_then_returns_solver_body`
+- `test_when_runner_score_body_called_then_returns_attempt_result`
 
-Files exist; file APIs at module boundaries do not. Bench-side code
-communicates exclusively in **strings, scalars, and value objects**.
-The only file IO in the bench lives inside `DockerCanonicalScorer`'s
-private temporary area, where Docker bind-mounts force a real host
-path. That path never escapes the scorer's body.
+Domain quality (one check gates output):
 
-### What this rules out
+```
+best_score env cfg t = max { score env s
+                            | s in orchestrator env cfg,
+                              s.walltime_sec <= t }
+```
 
-- **`workspace` as a parameter of any port or use case.** The dev
-  runner needs a tempdir to write `submission.py` for Docker
-  mounting; that tempdir is constructed and cleaned up inside the
-  scorer adapter, never threaded through the bench API.
-- **`submission_path: Path` on `CanonicalScorerPort`.** Replaced by
-  `body: str`. The scorer marshals body → its private tempfile →
-  bind-mount → container.
-- **Reading `workspace/submission.best.py` from the wrapper.**
-  Replaced by `Submission.body` being returned from the orchestrator
-  in-memory.
-- **`env_path`, `tasks_dir`, `env_dir` as wrapper kwargs.** These
-  are scorer- and runner-internal; the bench passes a SCORER
-  INSTANCE, not paths.
+— for fixed `env` and walltime budget `t`, the highest-scoring
+candidate submission.
 
-### What this requires
+Live end-to-end (one check gates the whole chain):
 
-- `CanonicalScorerPort.score(body: str, seeds, ...) -> AttemptResult`
-  — body as string in, AttemptResult out. No paths cross the port.
-- `Orchestrator.orchestrate(env, cfg) -> Iterable[Submission]` —
-  `Submission(body, score, walltime_sec)` is the only thing crossing
-  back to the bench. `body` is the full Python source text.
-- The agent loop's `execute_submission` tool returns its scored
-  observation IN MEMORY (it already does — the body string is
-  scored by calling the port; only the SCORER writes a tempfile
-  internally for Docker).
-- Per-iter snapshotting ("best so far") lives in the
-  orchestrator's process memory as the running-best `Submission`,
-  not in a `submission.best.py` on disk. The orchestrator yields
-  the in-memory best at the end.
+- `test_when_bench_called_with_real_ralph_chain_then_returns_submission_with_solver_body_and_non_negative_score`
+  — produces a `Submission` whose `body` contains `class Solver`
+  and `from transitions`, whose `score` is a non-negative float,
+  whose `walltime_sec > 1.0`.
 
-### Why this matters (operational symptom, May 2026)
 
-A path-arithmetic mistake in a new `bench_main.py` (`parents[4]`
-instead of `parents[3]`) made the dev-runner's Docker bind-mount
-point at a non-existent host path. Docker silently materialised an
-empty mount; `from env_2048 import GameBoard` failed deterministically
-inside every container. The live test for the §7 chain still passed
-because the test file's `parents[3]` happened to resolve correctly
-— the bug only existed where one specific module computed paths,
-and the live test didn't exercise that module. Different file
-paths in different call sites, different mistakes possible in each.
+## 4. SolutionGenerator runtime: OpenHands
 
-This class of bug is unrepresentable when paths don't cross module
-boundaries. The scorer's bind-mount tempfile lives in its own
-constructor; no other module computes the env path; there's no
-"derive env_dir from tasks_dir.parent" to get wrong by one level.
+**OpenHands is the SolutionGenerator runtime.** Decision committed.
 
-### Decision status
+Each iter constructs an OpenHands task with:
 
-**Pending refactor.** The file-API surface today:
+- the `ContextSnapshot` rendered as the task prompt
+- a tool surface bounded by what the SolutionGenerator needs
+  (read env spec, write `submission.py`, request a `score_body`
+  call from the Runner)
+- the OpenHands agent context, freshly built per iter
 
-- `CanonicalScorerPort.score(submission_path: str | Path, seeds, ...)`
-- `agent_loop._execute_submission(body, workspace, tasks_dir, ...)`
-- `run_loop(workspace, env_dir, tasks_dir, ...)`
-- `default_run_loop_fn`'s tempdir + `_body_reader` reading
-  `workspace/submission.best.py`
+The agent runs the task to completion (or its task-internal
+budget), returns the final `submission.py` body as a string. The
+orchestrator takes it from there.
 
-Each is a candidate for the string/in-memory rewrite. The smallest
-first step is `CanonicalScorerPort.score(body: str, ...)`: once
-that lands, every caller becomes string-typed and the rest cascades.
+OpenHands replaces:
 
-## 8. Open items / known tensions
+- `src/tier1/agent_loop.py::run_loop` (the long-lived ralph loop)
+- `Tool` / `ToolRegistry` / `ProtocolParser` ports (OpenHands has
+  its own tool surface)
+- The `execute_submission` dev-runner action
 
-- **Subagent-per-iter orchestrator pending.** See §7. The fitness
-  test is `test_when_orchestrators_compared_at_same_time_budget_then_
-  subagent_per_iter_score_dominates_ralph_single_context`; the
-  implementation path is the OpenHands pivot.
-- **Bench bug — zero-score artifacts from bench-spawned Docker.** Live test reproduces it; canonical Docker invocations sometimes return `score=0` artifacts despite a working submission. Under investigation; suspected in the canonical scorer path, not the model.
-- **`MODEL_REGISTRY` duplication.** YAML and Python tuple disagree (e.g. `qwen3.6-27b-awq` vs `qwen3.6-27b-awq-int4-community`, missing `qwen3.6-35b-a3b-fp8`). Rewrite to load-from-YAML pending (ADR-0013 cycle 101).
-- **Condenser token estimation is heuristic.** 4-chars-per-token may be off ±30 %. Trigger has 18 K headroom; future cycle to lift `trigger_tokens` onto `BenchConfig` per `ModelTarget.max_model_len`.
-- **`validate_submission_protocol`** still calls `instance.move(test_board)` in the bench main thread — same wedge pattern Layer 2 fixed elsewhere. Future cycle wraps it in `multiprocessing.Process` with hard timeout.
-- **`max_iters=500` blows past 128 K** on long conversations. Condenser must function for the full canonical defaults to be achievable end-to-end; long runs await condenser hardening.
-- **Static submission protocol is not implemented.** SPEC describes it; only the interactive tool-using agent loop currently exists.
-- **Tier 2-4 ports.** Future tier runners (LangGraph, orchestrator) will follow the ADR-0018 Port + Fake + autouse pattern; not yet added to the manifest.
+What stays ours (independent of OpenHands):
 
-## 9. Cross-references
+- `Submission`, `Env`, `BenchConfig`, `ContextSnapshot`,
+  `AttemptResult` value types
+- `CanonicalScorerPort.score_body` (the Runner Port)
+- `MODEL_REGISTRY` and `BenchConfig` typed configuration
+- Architecture fitness tests in `tests/architecture/`
+- Leaderboard generation
 
-### Lab docs
-- `SPEC.md` — contract this implementation realises.
-- `CATS.md` — testing/spec discipline (specs language-agnostic; injection-point rule from ADR-0014).
-- `AGENTS.md` — operating runbook.
 
-### Source-code anchors
-- `src/reward_bench/frameworks/main.py` — orchestrator / composition root. Holds `_CONDENSER_TRIGGER_TOKENS`, sentinel construction.
-- `src/reward_bench/frameworks/run_battery.py` — `make reward-battery` driver; reads `models.yml`.
-- `src/tier1/agent_loop.py` — `run_loop`, `_call_model` (transitional), tool dispatch.
-- `src/tier1/adapters/docker_canonical_scorer.py` — `DockerCanonicalScorer` (production).
-- `src/adapters/in_process_canonical_scorer.py` — Layer-1 hermetic scorer (testing only).
-- `src/adapters/parsers/fenced_text_parser.py`, `structured_openai_parser.py` — the two protocol surfaces.
-- `src/adapters/fakes/` — `FakeModelClient`, `FakeCanonicalScorer`, etc.
-- `src/ports/` — `model_client.py`, `tool_registry.py`, `protocol_parser.py`, `canonical_scorer.py`, `supervisor.py`, `condenser.py`, `cpu_count.py`.
-- `src/reward_bench/entities/bench_config.py` — frozen `BenchConfig` value object.
-- `src/reward_bench/entities/condenser_config.py`, `supervisor_decision.py`.
-- `src/reward_bench/adapters/llm_condenser.py`, `llm_supervisor.py`, `null_condenser.py`, `null_supervisor.py`.
-- `src/reward_bench/use_cases/model_registry.py` — `MODEL_REGISTRY` (YAML mirror, smell).
-- `tasks/2048/runner_canonical.py` — in-container runner; reads `REWARD_BENCH_*` env vars.
-- `tasks/2048/env.py` — `GameBoard` (lifted from rl-2048).
-- `Dockerfile.tier1` — `reward-bench-tier1:${VERSION}` image.
-- `tests/architecture/test_runtime_boundary_ports.py` — ADR-0018 manifest enforcement.
-- `tests/conftest.py` — autouse Fake bindings.
-- `wiki-compiler/configs/models.yml` — canonical model registry.
+## 5. No file APIs across module boundaries
 
-### Upstream forge ADRs
-- Forge ADR 0028 — inference mode (single vLLM endpoint pattern).
-- Forge ADR 0029 — reward-bench (parent design).
-- Forge ADR 0015 — verifiable agent rewards (first principle this lab realises).
-- Wiki-compiler ADR 0008 — model-registry single source of truth.
+Bench-side code communicates only in **strings, scalars, value
+objects**. The only file IO sits inside
+`DockerCanonicalScorer.score_body`'s private bind-mount tempfile —
+invisible above the Runner.
+
+This rules out `submission_path`, `workspace`, `env_dir`,
+`tasks_dir` as parameters of any port or use case above the
+Runner. The scorer constructs its own private tempfile, mounts it
+into the container, scores, returns the `AttemptResult`. The path
+never escapes the method.
+
+The class of bug that path arithmetic produces — a wrong
+`parents[N]` silently misrouting a Docker mount — is
+unrepresentable when no module above the Runner computes paths.
+
+
+## 6. Components
+
+```
+src/reward_bench/
+    entities/      Submission, Env, BenchConfig, ModelTarget, ContextSnapshot
+    use_cases/     bench, best_submission, best_score, dominates_at_budget
+    adapters/      OrchestrateOpenHands (planned),
+                   OrchestrateRalphSingleContext (legacy)
+    frameworks/    main, bench_main (CLI entrypoints)
+
+src/ports/         Orchestrator, CanonicalScorerPort, ModelClient
+src/adapters/fakes/  Fake* for testing
+src/tier1/         agent_loop (ralph, retiring),
+                   DockerCanonicalScorer (the Runner adapter)
+```
+
+Per-module clean architecture: `entities` are pure value types,
+`use_cases` are pure functions over ports, `adapters` cross
+runtime boundaries, `frameworks` are CLI/wiring. Dependency
+direction enforced by
+[`tests/architecture/test_dependency_direction.py`](tests/architecture/test_dependency_direction.py).
+
+
+## 7. Open items
+
+- **`OrchestrateOpenHands` adapter** does not yet exist. The §3
+  role-separation fitness tests gate it; building it is the next
+  major implementation effort.
+- **`bench_main.py` `REPO`/`TASKS_DIR` constants** still compute
+  paths. §5 says no paths above the Runner; these constants are
+  legacy and disappear with the OpenHands cutover.
+- **`agent_loop._execute_submission` writes
+  `workspace/submission.py`** for the snapshot pipeline (cycle 205
+  reverted an attempt to drop it). The replacement is the §2
+  SolutionGenerator returning the body in-memory; the workspace
+  disappears with `agent_loop`'s retirement.
+- **Bench bug — zero-score artifacts.** Some canonical Docker
+  invocations return `score=0` despite a working submission. Under
+  investigation; suspected in the canonical scorer path, not the
+  model.
+- **`MODEL_REGISTRY.max_model_len`** varies 16K–262K across
+  registry entries. Today's ralph loop's accumulating history
+  makes the smoke comparison context-window-biased. The §2
+  SolutionGenerator with fresh per-iter context normalises this —
+  all models compete inside the snapshot's bounded budget.
+- **`MODEL_REGISTRY` duplication** between YAML and Python tuple.
+  Load-from-YAML pending.
+- **Condenser** trigger heuristic (4-chars-per-token estimate) is
+  retired by §2: per-iter contexts don't accumulate, no condenser
+  needed.
+- **`validate_submission_protocol`** still calls
+  `instance.move(test_board)` in the bench main thread — a wedge
+  pattern. Wrap in `multiprocessing.Process` with hard timeout.
+- **Static submission protocol** described in SPEC.md but not
+  implemented; only the interactive tool-using SolutionGenerator
+  loop currently exists.
+
+
+## 8. Cross-references
+
+- [SPEC.md](SPEC.md) — lab contract (Solver shape, scoring rules,
+  task definition).
+- [`forge/AGENTS.md`](../../../AGENTS.md) — repo-wide rules; this
+  file inherits the Twain principle and Senior Haskell AI Engineer
+  stance from there.
+- [`tests/architecture/`](tests/architecture/) — fitness tests
+  that enforce §§2-3, 5 invariants.
+
+Forge phase reference: <https://www.opengroup.org/togaf>.
