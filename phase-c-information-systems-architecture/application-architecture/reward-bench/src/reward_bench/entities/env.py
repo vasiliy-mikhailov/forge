@@ -13,9 +13,11 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from src.ports.canonical_scorer import CanonicalScorerPort
+from src.ports.model_client import ModelClient
 
 
 @dataclass(frozen=True)
 class Env:
     tasks_dir: Path
     canonical_scorer: CanonicalScorerPort
+    model_client: ModelClient | None = None
