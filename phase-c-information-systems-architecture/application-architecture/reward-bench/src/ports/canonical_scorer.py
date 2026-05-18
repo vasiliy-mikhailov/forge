@@ -19,6 +19,14 @@ class CanonicalScorerPort(Protocol):
     on the returned AttemptResult.
     """
 
+    def score_body(
+        self,
+        body: str,
+        seeds: Iterable[int],
+        *,
+        hard_wall_sec: float = 0.0,
+    ) -> AttemptResult: ...
+
     def score(
         self,
         submission_path: str | Path,
