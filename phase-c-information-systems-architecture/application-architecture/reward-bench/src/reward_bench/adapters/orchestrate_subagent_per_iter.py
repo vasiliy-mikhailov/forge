@@ -6,7 +6,9 @@ context; cumulative state lives in process memory as the running
 best and the tuple of prior submissions.
 
 Each iter's snapshot reflects what the orchestrator knows from
-iters 1..k-1 — fresh per-iter context, no token carry-over.
+iters 1..k-1 — fresh per-iter context, no token carry-over. The
+task description (`env_spec`) comes from `env.env_spec`, set once
+by the env_factory.
 """
 from __future__ import annotations
 
@@ -29,7 +31,7 @@ class OrchestrateSubagentPerIter:
         best = _BASELINE
         for _ in range(cfg.max_iters):
             snapshot = ContextSnapshot(
-                env_spec='',
+                env_spec=env.env_spec,
                 best_so_far=best,
                 history_digest=tuple(history),
                 iters_remaining=cfg.max_iters,

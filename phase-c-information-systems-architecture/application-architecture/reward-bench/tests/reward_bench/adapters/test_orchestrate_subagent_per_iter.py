@@ -114,3 +114,51 @@ def test_when_orchestrate_subagent_per_iter_runs_three_iters_then_each_snapshot_
     assert captured[2].history_digest[0].score == 10.0
     assert captured[2].history_digest[1].score == 5.0
     assert captured[2].history_digest[1].body == 'body-2'
+
+
+def test_when_orchestrate_subagent_per_iter_called_with_env_spec_then_snapshot_env_spec_equals_env_env_spec(
+        tmp_path):
+    """§2: the orchestrator stamps env.env_spec into every per-iter
+    snapshot. Without this the SolutionGenerator has no task
+    description."""
+    # Arrange
+    from src.reward_bench.adapters.orchestrate_subagent_per_iter import (
+        OrchestrateSubagentPerIter,
+    )
+    from src.reward_bench.entities.bench_config import BenchConfig
+    from src.reward_bench.entities.env import Env
+    from src.tier1.entities.attempt_result import AttemptResult
+
+    captured = []
+
+    class RecordingGen:
+        def generate(self, snapshot):
+            captured.append(snapshot)
+            return ''
+
+    class StubRunner:
+        def score_body(self, body, seeds, *, hard_wall_sec):
+            return AttemptResult(
+                mean_score=0.0, median_score=0.0, std_score=0.0,
+                max_max_tile=0, n_games=1, aggregate_walltime_sec=0.0,
+                games=(), hard_wall_sec=hard_wall_sec,
+                stagnated_any=False, walltime_exceeded=False,
+            )
+
+    runner = StubRunner()
+    adapter = OrchestrateSubagentPerIter(
+        solution_generator=RecordingGen(),
+        runner=runner,
+    )
+    env = Env(
+        tasks_dir=tmp_path,
+        canonical_scorer=runner,
+        env_spec='SENTINEL-TASK-SPEC',
+    )
+    cfg = BenchConfig(max_iters=1)
+
+    # Act
+    list(adapter.orchestrate(env, cfg))
+
+    # Assert
+    assert captured[0].env_spec == 'SENTINEL-TASK-SPEC'

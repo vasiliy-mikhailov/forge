@@ -5,6 +5,10 @@ the §2 three-role chain (OrchestrateSubagentPerIter +
 OpenHandsSolutionGenerator + DockerCanonicalScorer as Runner) per
 SOLUTION-ARCHITECTURE.md §4 (OpenHands committed). Includes a CLI
 block for direct invocation.
+
+The default env loads the 2048 task spec (SKILL_tier1.md) once at
+construction so the orchestrator can stamp it into every per-iter
+snapshot without re-reading from disk.
 """
 from __future__ import annotations
 
@@ -24,6 +28,7 @@ from src.tier1.entities.submission import Submission
 
 REPO = Path(__file__).resolve().parents[4]
 TASKS_DIR = REPO / 'tasks'
+TASK_SPEC_PATH = TASKS_DIR / '2048' / 'SKILL_tier1.md'
 
 
 def _default_env_factory(target: ModelTarget) -> Env:
@@ -44,6 +49,7 @@ def _default_env_factory(target: ModelTarget) -> Env:
             base_url=base_url, api_key=api_key,
             default_model_id=target.served_name,
         ),
+        env_spec=TASK_SPEC_PATH.read_text(),
     )
 
 

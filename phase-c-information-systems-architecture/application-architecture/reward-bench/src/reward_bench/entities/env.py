@@ -6,6 +6,10 @@
 
 Frozen so two orchestrators in a dominance comparison run against
 the same Env without mutation drift.
+
+`env_spec` is the task description string handed to the
+SolutionGenerator via ContextSnapshot. Defaults to '' for tests
+that don't exercise the §2 pipeline.
 """
 from __future__ import annotations
 
@@ -21,3 +25,4 @@ class Env:
     tasks_dir: Path
     canonical_scorer: CanonicalScorerPort
     model_client: ModelClient | None = None
+    env_spec: str = ''
