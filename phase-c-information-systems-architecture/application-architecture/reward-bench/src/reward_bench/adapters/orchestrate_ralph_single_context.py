@@ -29,7 +29,13 @@ class OrchestrateRalphSingleContext:
         )
 
 
-def run_loop_with_metrics(*, _run_loop=None, _time_fn=None, **kwargs) -> dict:
+def run_loop_with_metrics(
+    *,
+    _run_loop=None,
+    _time_fn=None,
+    _body_reader=None,
+    **kwargs,
+) -> dict:
     import time as _time
     if _run_loop is None:
         from src.tier1.agent_loop import run_loop as _rl
@@ -41,4 +47,6 @@ def run_loop_with_metrics(*, _run_loop=None, _time_fn=None, **kwargs) -> dict:
     result = _run_loop(**kwargs)
     t1 = _time_fn()
     result['walltime_sec'] = t1 - t0
+    if _body_reader is not None:
+        result['body'] = _body_reader(kwargs['workspace'])
     return result

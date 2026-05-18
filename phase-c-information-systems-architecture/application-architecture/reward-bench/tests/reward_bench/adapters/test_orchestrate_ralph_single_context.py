@@ -134,3 +134,37 @@ def test_when_run_loop_with_metrics_called_then_result_walltime_sec_equals_time_
 
     # Assert
     assert result['walltime_sec'] == 37.25
+
+
+def test_when_run_loop_with_metrics_given_body_reader_then_result_body_equals_reader_output():
+    """Pins the §7 ralph wrapper's body-lifting seam: result['body']
+    comes from an injected _body_reader, not from run_loop."""
+    # Arrange
+    from src.reward_bench.adapters.orchestrate_ralph_single_context import (
+        run_loop_with_metrics,
+    )
+
+    def fake_body_reader(workspace):
+        return 'class Solver: pass\n'
+
+    def fake_time_fn():
+        return 0.0
+
+    def fake_run_loop(**_):
+        return {
+            'iterations': 0,
+            'messages': [],
+            'finished': False,
+            'best_dev_mean': 0.0,
+        }
+
+    # Act
+    result = run_loop_with_metrics(
+        _run_loop=fake_run_loop,
+        _time_fn=fake_time_fn,
+        _body_reader=fake_body_reader,
+        workspace='/tmp/ws',
+    )
+
+    # Assert
+    assert result['body'] == 'class Solver: pass\n'

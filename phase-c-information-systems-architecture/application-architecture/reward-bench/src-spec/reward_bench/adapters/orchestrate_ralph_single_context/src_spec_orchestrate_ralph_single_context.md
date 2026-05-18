@@ -31,15 +31,23 @@ Field mapping from the `run_loop_fn` return dict to `Submission`:
 ## Production wrapper
 
 ```python
-def run_loop_with_metrics(*, _run_loop=None, _time_fn=None, **kwargs) -> dict: ...
+def run_loop_with_metrics(
+    *,
+    _run_loop=None,
+    _time_fn=None,
+    _body_reader=None,
+    **kwargs,
+) -> dict: ...
 ```
 
-Closes the contract gap between the real `run_loop` (which does
-not produce `'walltime_sec'`) and the adapter (which reads it).
-Measures monotonic time around the inner-loop call and injects
-`walltime_sec` into the returned dict. `_run_loop` defaults to
-`src.tier1.agent_loop.run_loop`; `_time_fn` defaults to
-`time.monotonic`. `**kwargs` are forwarded to the inner loop.
+Closes the contract gap between the real `run_loop` and the adapter.
 
-Body lifting (reading `workspace/submission.best.py` into
-`result['body']`) is a separate concern.
+- Measures monotonic time around the inner-loop call and injects
+  `walltime_sec` into the returned dict.
+- When `_body_reader` is supplied, sets `result['body'] =
+  _body_reader(kwargs['workspace'])`. The real binding reads
+  `Path(workspace) / 'submission.best.py'`.
+
+`_run_loop` defaults to `src.tier1.agent_loop.run_loop`; `_time_fn`
+defaults to `time.monotonic`. `**kwargs` are forwarded to the
+inner loop.
