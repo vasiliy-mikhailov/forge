@@ -28,6 +28,18 @@ class VllmOpenAIClient(ModelClient):
         self._default_model_id = default_model_id
         self._timeout_sec = timeout_sec
 
+    @property
+    def base_url(self) -> str:
+        return self._base_url
+
+    @property
+    def api_key(self) -> str:
+        return self._api_key
+
+    @property
+    def model_id(self) -> str:
+        return self._default_model_id
+
     def call(
         self,
         messages: list[dict],

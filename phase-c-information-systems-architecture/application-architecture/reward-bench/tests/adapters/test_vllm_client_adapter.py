@@ -130,3 +130,22 @@ def test_when_response_message_content_is_none_then_normalized_to_empty(monkeypa
     reply = client.call([{'role': 'user', 'content': 'x'}])
 
     assert reply['content'] == '', f'expected "" got {reply["content"]!r}'
+
+
+def test_when_vllm_openai_client_constructed_then_base_url_api_key_model_id_attrs_match():
+    """Pins the public URL-attr surface on VllmOpenAIClient that the
+    §7 ralph wrapper uses via hasattr."""
+    # Arrange
+    from src.adapters.vllm_openai_client import VllmOpenAIClient
+
+    # Act
+    client = VllmOpenAIClient(
+        base_url='http://my-vllm:8000',
+        api_key='secret',
+        default_model_id='m-42',
+    )
+
+    # Assert
+    assert client.base_url == 'http://my-vllm:8000'
+    assert client.api_key == 'secret'
+    assert client.model_id == 'm-42'
