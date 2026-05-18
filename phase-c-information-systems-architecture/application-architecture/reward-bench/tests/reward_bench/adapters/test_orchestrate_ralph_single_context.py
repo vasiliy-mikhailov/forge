@@ -338,3 +338,38 @@ def test_when_orchestrate_called_then_run_loop_fn_receives_cfg_passthrough_kwarg
     assert captured['finish_floor'] == 0.3
     assert captured['supervisor_every_k'] == 7
     assert captured['smoke_early_stop'] is True
+
+
+def test_when_orchestrate_called_then_run_loop_fn_receives_dev_hard_wall_sec_from_cfg_hard_wall_sec(tmp_path):
+    """Pins §7 ralph adapter dev_hard_wall_sec mapping: passes
+    cfg.hard_wall_sec straight through (canonical-5-seeds case)."""
+    # Arrange
+    from src.adapters.fakes.fake_canonical_scorer import FakeCanonicalScorer
+    from src.reward_bench.adapters.orchestrate_ralph_single_context import (
+        OrchestrateRalphSingleContext,
+    )
+    from src.reward_bench.entities.bench_config import BenchConfig
+    from src.reward_bench.entities.env import Env
+
+    captured: dict = {}
+
+    def fake_run_loop(**kwargs):
+        captured.update(kwargs)
+        return {
+            'iterations': 0,
+            'messages': [],
+            'finished': False,
+            'best_dev_mean': 0.0,
+            'body': '',
+            'walltime_sec': 0.0,
+        }
+
+    adapter = OrchestrateRalphSingleContext(run_loop_fn=fake_run_loop)
+    env = Env(tasks_dir=tmp_path, canonical_scorer=FakeCanonicalScorer())
+    cfg = BenchConfig(hard_wall_sec=60.0)
+
+    # Act
+    list(adapter.orchestrate(env, cfg))
+
+    # Assert
+    assert captured['dev_hard_wall_sec'] == 60.0

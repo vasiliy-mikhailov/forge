@@ -30,6 +30,7 @@ Calls `self._run_loop` with kwargs derived from `env`/`cfg`:
     finish_floor       ← cfg.finish_floor
     supervisor_every_k ← cfg.supervisor_every_k
     smoke_early_stop   ← cfg.smoke_early_stop
+    dev_hard_wall_sec  ← cfg.hard_wall_sec
 
 Field mapping from the `run_loop_fn` return dict to `Submission`:
 

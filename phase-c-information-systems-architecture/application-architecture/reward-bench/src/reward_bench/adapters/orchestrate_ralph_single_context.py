@@ -30,6 +30,7 @@ class OrchestrateRalphSingleContext:
             finish_floor=cfg.finish_floor,
             supervisor_every_k=cfg.supervisor_every_k,
             smoke_early_stop=cfg.smoke_early_stop,
+            dev_hard_wall_sec=cfg.hard_wall_sec,
         )
         yield Submission(
             body=result['body'],
