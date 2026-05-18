@@ -373,3 +373,41 @@ def test_when_orchestrate_called_then_run_loop_fn_receives_dev_hard_wall_sec_fro
 
     # Assert
     assert captured['dev_hard_wall_sec'] == 60.0
+
+
+def test_when_default_run_loop_fn_invoked_without_workspace_then_inner_run_loop_receives_workspace_that_exists():
+    """Pins §7 workspace encapsulation: when the wrapper's _fn is
+    invoked without a workspace kwarg, it creates a tempdir, threads
+    it to the inner loop, and the dir exists at call time."""
+    # Arrange
+    from pathlib import Path
+
+    from src.reward_bench.adapters.orchestrate_ralph_single_context import (
+        default_run_loop_fn,
+    )
+
+    captured: dict = {}
+
+    def fake_inner_run_loop(**kwargs):
+        ws = kwargs.get('workspace')
+        captured['workspace'] = ws
+        captured['workspace_exists_during_call'] = (
+            ws is not None and Path(ws).exists()
+        )
+        return {
+            'iterations': 0,
+            'messages': [],
+            'finished': False,
+            'best_dev_mean': 0.0,
+        }
+
+    fn = default_run_loop_fn(
+        _run_loop=fake_inner_run_loop,
+        _time_fn=lambda: 0.0,
+    )
+
+    # Act
+    fn()  # no workspace kwarg
+
+    # Assert
+    assert captured['workspace_exists_during_call'] is True

@@ -72,10 +72,20 @@ def default_run_loop_fn(*, _run_loop=None, _time_fn=None, _body_reader=None):
         _body_reader = _default_body_reader
 
     def _fn(**kwargs):
-        return run_loop_with_metrics(
-            _run_loop=_run_loop,
-            _time_fn=_time_fn,
-            _body_reader=_body_reader,
-            **kwargs,
-        )
+        if 'workspace' in kwargs:
+            return run_loop_with_metrics(
+                _run_loop=_run_loop,
+                _time_fn=_time_fn,
+                _body_reader=_body_reader,
+                **kwargs,
+            )
+        import tempfile
+        with tempfile.TemporaryDirectory() as td:
+            return run_loop_with_metrics(
+                _run_loop=_run_loop,
+                _time_fn=_time_fn,
+                _body_reader=_body_reader,
+                workspace=td,
+                **kwargs,
+            )
     return _fn

@@ -77,3 +77,12 @@ run_loop_fn=...)` with production defaults already bound. The
 default `_body_reader` reads
 `Path(workspace) / 'submission.best.py'` and returns its text
 (empty string if the file is missing).
+
+The returned callable owns the workspace tempdir lifecycle: when
+invoked without a `workspace` kwarg, it creates a
+`tempfile.TemporaryDirectory`, threads its path to the inner loop
+and the body reader, and cleans up on exit. The adapter and bench
+never see a workspace — they only see structured `Submission`
+data, matching the §7 "code and execution results, not files"
+principle. Tests that pass `workspace=` explicitly keep working;
+the wrapper respects an explicit kwarg over its own tempdir.
