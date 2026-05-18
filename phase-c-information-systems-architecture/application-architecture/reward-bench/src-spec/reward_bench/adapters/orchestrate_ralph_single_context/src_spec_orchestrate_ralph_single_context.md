@@ -92,3 +92,9 @@ The wrapper also derives `env_dir = Path(tasks_dir).parent` when
 `tasks_dir` is supplied without an explicit `env_dir`. Mirrors the
 existing `main.py` derivation; keeps the derivation out of the
 adapter API.
+
+When `model_client` is supplied and exposes `base_url` / `api_key` /
+`model_id` attributes, the wrapper derives the corresponding
+legacy `vllm_base_url`, `vllm_api_key`, and `model_id` kwargs the
+inner `run_loop` still requires. Explicit URL kwargs on the call
+take precedence over derived ones.

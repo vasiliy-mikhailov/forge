@@ -483,3 +483,39 @@ def test_when_orchestrate_called_then_run_loop_fn_receives_model_client_from_env
 
     # Assert
     assert captured['model_client'] is fake_mc
+
+
+def test_when_default_run_loop_fn_invoked_with_model_client_having_url_attrs_then_vllm_kwargs_supplied():
+    """Pins §7 wrapper URL extraction: derives vllm_base_url /
+    vllm_api_key / model_id from model_client attributes when present
+    and not already supplied as explicit kwargs."""
+    # Arrange
+    from src.reward_bench.adapters.orchestrate_ralph_single_context import (
+        default_run_loop_fn,
+    )
+
+    class MockClient:
+        base_url = 'http://my-vllm:8000'
+        api_key = 'secret'
+        model_id = 'm-42'
+
+    captured: dict = {}
+
+    def fake_inner(**kwargs):
+        captured.update(kwargs)
+        return {
+            'iterations': 0,
+            'messages': [],
+            'finished': False,
+            'best_dev_mean': 0.0,
+        }
+
+    fn = default_run_loop_fn(_run_loop=fake_inner, _time_fn=lambda: 0.0)
+
+    # Act
+    fn(model_client=MockClient())
+
+    # Assert
+    assert captured['vllm_base_url'] == 'http://my-vllm:8000'
+    assert captured['vllm_api_key'] == 'secret'
+    assert captured['model_id'] == 'm-42'

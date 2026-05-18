@@ -75,6 +75,14 @@ def default_run_loop_fn(*, _run_loop=None, _time_fn=None, _body_reader=None):
     def _fn(**kwargs):
         if 'tasks_dir' in kwargs and 'env_dir' not in kwargs:
             kwargs['env_dir'] = Path(kwargs['tasks_dir']).parent
+        mc = kwargs.get('model_client')
+        if mc is not None:
+            if 'vllm_base_url' not in kwargs and hasattr(mc, 'base_url'):
+                kwargs['vllm_base_url'] = mc.base_url
+            if 'vllm_api_key' not in kwargs and hasattr(mc, 'api_key'):
+                kwargs['vllm_api_key'] = mc.api_key
+            if 'model_id' not in kwargs and hasattr(mc, 'model_id'):
+                kwargs['model_id'] = mc.model_id
         if 'workspace' in kwargs:
             return run_loop_with_metrics(
                 _run_loop=_run_loop,
