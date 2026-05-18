@@ -1,7 +1,6 @@
 # SOLUTION-ARCHITECTURE.md — reward-bench
 
-Companion to [SPEC.md](SPEC.md) (lab contract) and
-[CATS.md](CATS.md) (implementation discipline). One decision per
+Companion to [SPEC.md](SPEC.md) (lab contract). One decision per
 section. Current state only. Git holds the chronology.
 
 

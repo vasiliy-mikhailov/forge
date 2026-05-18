@@ -1,0 +1,17 @@
+# Dev container: Erlang/OTP 27 + rebar3.
+# Used by Makefile to run rebar3 compile / eunit / ct / shell.
+# The deployment Dockerfile (built via rebar3 release) is separate.
+
+FROM erlang:27
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        curl ca-certificates make \
+    && rm -rf /var/lib/apt/lists/*
+
+ARG REBAR3_VERSION=3.24.0
+RUN curl -sSL "https://github.com/erlang/rebar3/releases/download/${REBAR3_VERSION}/rebar3" \
+        -o /usr/local/bin/rebar3 \
+    && chmod +x /usr/local/bin/rebar3 \
+    && rebar3 --version
+
+WORKDIR /work

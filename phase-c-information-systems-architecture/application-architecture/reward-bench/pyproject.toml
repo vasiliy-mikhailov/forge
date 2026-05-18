@@ -1,9 +1,0 @@
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-markers = [
-  "smoke: ADR 0009 multi-model smoke bench",
-  "campaign: long-running live-model campaign tests; opt-in via -m campaign",
-  "live: test requires live vLLM serving + VLLM_API_KEY; opt-in via -m live (slow)",
-  "no_fake: test exercises real bench seams (not via the autouse FakeModelClient / FakeVllmServer)",
-  "production: cycle-122 production-runtime test — full-scale config (max_iters=500, n_trials=10, 20 seeds, hard_wall_sec=300); opt-in via -m production (very slow, hours)",
-]

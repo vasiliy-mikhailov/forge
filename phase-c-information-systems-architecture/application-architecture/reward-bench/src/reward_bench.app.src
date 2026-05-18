@@ -1,0 +1,10 @@
+{application, reward_bench,
+ [{description, "reward-bench — 2048 tier-1 bench for LLM-written Erlang Solvers"},
+  {vsn, "0.1.0"},
+  {registered, [reward_bench_sup]},
+  {mod, {reward_bench_app, []}},
+  {applications, [kernel, stdlib, hackney, jsx]},
+  {env, []},
+  {modules, []},
+  {licenses, ["Proprietary"]},
+  {links, []}]}.

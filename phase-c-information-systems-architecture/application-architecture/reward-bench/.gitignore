@@ -1,5 +1,8 @@
-.coverage
-*.pyc
-__pycache__/
-.pytest_cache/
-htmlcov/
+_build/
+.rebar3/
+rebar.lock
+*.beam
+erl_crash.dump
+.eunit/
+ebin/
+logs/
