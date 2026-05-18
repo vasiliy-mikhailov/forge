@@ -83,10 +83,13 @@ def make_default_openhands_runner(model_client):
         register_default_tools(enable_browser=False)
         tools = get_default_tools(enable_browser=False)
 
+        base_url = model_client.base_url.rstrip('/')
+        if not base_url.endswith('/v1'):
+            base_url = base_url + '/v1'
         llm = LLM(
             model=f'openai/{model_client.model_id}',
             api_key=model_client.api_key,
-            base_url=model_client.base_url,
+            base_url=base_url,
             usage_id='reward-bench-solution-generator',
         )
         agent = Agent(llm=llm, tools=tools)
