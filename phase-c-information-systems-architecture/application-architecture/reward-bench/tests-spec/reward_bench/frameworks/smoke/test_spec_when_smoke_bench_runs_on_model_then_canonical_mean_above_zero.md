@@ -35,7 +35,7 @@ if the per-model behaviour is genuinely different from "smoke screen
 passes").
 ## Model client injection point
 - **Seam**: conftest autouse `_bind_model_client`.
-- **Mode**: **smoke** — opt-in via `pytest -m smoke`; uses live vLLM.
+- **Mode**: **smoke** + **live** — marked both. Opt-in via `pytest -m smoke` for smoke-suite runs; auto-skipped by default `-m "not live"` runs because the test requires real vLLM spawn-per-model.
 - **Override**: pass `model_client=` per-test, OR mark
  `@pytest.mark.live` / `@pytest.mark.no_fake`.
 ## Runtime scope

@@ -42,6 +42,7 @@ def _artifact_path(model_id: str) -> Path:
 
 
 @pytest.mark.smoke
+@pytest.mark.live
 @pytest.mark.parametrize("target", MODEL_REGISTRY, ids=lambda t: t.id)
 def test_when_smoke_bench_runs_on_model_then_canonical_mean_above_zero(target):
     """ADR 0009 smoke screen for one model in MODEL_REGISTRY."""
