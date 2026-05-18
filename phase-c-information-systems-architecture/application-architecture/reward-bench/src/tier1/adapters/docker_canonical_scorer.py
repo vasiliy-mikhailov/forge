@@ -125,6 +125,19 @@ def aggregate_attempt(
 class DockerCanonicalScorer(CanonicalScorerPort):
     """Per-attempt Docker-sandboxed canonical scorer."""
 
+    def score_body(
+        self,
+        body: str,
+        seeds,
+        *,
+        hard_wall_sec: float = 0.0,
+    ):
+        import tempfile
+        with tempfile.TemporaryDirectory() as td:
+            sp = Path(td) / 'submission.py'
+            sp.write_text(body)
+            return self.score(sp, seeds, hard_wall_sec=hard_wall_sec)
+
     def __init__(
         self,
         image: str = _DEFAULT_IMAGE,
