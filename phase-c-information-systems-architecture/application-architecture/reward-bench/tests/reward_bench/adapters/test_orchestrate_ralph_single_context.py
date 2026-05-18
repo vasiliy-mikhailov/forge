@@ -224,3 +224,38 @@ def test_when_default_run_loop_fn_called_with_empty_workspace_then_body_is_empty
 
     # Assert
     assert result['body'] == ''
+
+
+def test_when_orchestrate_called_then_run_loop_fn_receives_tasks_dir_from_env(tmp_path):
+    """Pins §7 ralph adapter kwarg pass-through: env.tasks_dir reaches
+    the inner run_loop_fn as a tasks_dir kwarg."""
+    # Arrange
+    from src.adapters.fakes.fake_canonical_scorer import FakeCanonicalScorer
+    from src.reward_bench.adapters.orchestrate_ralph_single_context import (
+        OrchestrateRalphSingleContext,
+    )
+    from src.reward_bench.entities.bench_config import BenchConfig
+    from src.reward_bench.entities.env import Env
+
+    captured: dict = {}
+
+    def fake_run_loop(**kwargs):
+        captured.update(kwargs)
+        return {
+            'iterations': 0,
+            'messages': [],
+            'finished': False,
+            'best_dev_mean': 0.0,
+            'body': '',
+            'walltime_sec': 0.0,
+        }
+
+    adapter = OrchestrateRalphSingleContext(run_loop_fn=fake_run_loop)
+    env = Env(tasks_dir=tmp_path, canonical_scorer=FakeCanonicalScorer())
+    cfg = BenchConfig()
+
+    # Act
+    list(adapter.orchestrate(env, cfg))
+
+    # Assert
+    assert captured['tasks_dir'] == tmp_path
