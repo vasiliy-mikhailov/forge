@@ -19,4 +19,8 @@ class OrchestrateRalphSingleContext:
 
     def orchestrate(self, env, cfg) -> Iterable[Submission]:
         result = self._run_loop()
-        yield Submission(body='', score=result['best_dev_mean'], walltime_sec=0.0)
+        yield Submission(
+            body=result['body'],
+            score=result['best_dev_mean'],
+            walltime_sec=0.0,
+        )

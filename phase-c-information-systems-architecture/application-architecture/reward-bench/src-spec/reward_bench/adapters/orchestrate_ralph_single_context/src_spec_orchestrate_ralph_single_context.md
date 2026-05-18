@@ -22,7 +22,10 @@ Method:
 def orchestrate(self, env: Env, cfg: BenchConfig) -> Iterable[Submission]: ...
 ```
 
-Field mapping from run_loop's `{iterations, messages, finished,
-best_dev_mean}` dict to `Submission`:
+Field mapping from the `run_loop_fn` return dict to `Submission`:
 
+    body    ← result['body']
     score   ← result['best_dev_mean']
+
+The real `run_loop` does not currently produce `'body'`; a wrapper
+that lifts `workspace/submission.best.py` into the dict supplies it.
