@@ -196,3 +196,31 @@ def test_when_default_run_loop_fn_called_then_body_is_read_from_workspace_submis
 
     # Assert
     assert result['body'] == body_text
+
+
+def test_when_default_run_loop_fn_called_with_empty_workspace_then_body_is_empty_string(tmp_path):
+    """Pins §7 ralph production binding: when submission.best.py is
+    absent (ralph finished without writing a best snapshot), the
+    default _body_reader returns '' rather than raising."""
+    # Arrange
+    from src.reward_bench.adapters.orchestrate_ralph_single_context import (
+        default_run_loop_fn,
+    )
+
+    # tmp_path is intentionally empty — no submission.best.py
+
+    def fake_inner(**_):
+        return {
+            'iterations': 0,
+            'messages': [],
+            'finished': False,
+            'best_dev_mean': 0.0,
+        }
+
+    fn = default_run_loop_fn(_run_loop=fake_inner, _time_fn=lambda: 0.0)
+
+    # Act
+    result = fn(workspace=str(tmp_path))
+
+    # Assert
+    assert result['body'] == ''
