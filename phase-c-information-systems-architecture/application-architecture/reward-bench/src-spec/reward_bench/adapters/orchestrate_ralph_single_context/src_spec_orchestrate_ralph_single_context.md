@@ -28,6 +28,18 @@ Field mapping from the `run_loop_fn` return dict to `Submission`:
     score         ← result['best_dev_mean']
     walltime_sec  ← result['walltime_sec']
 
-The real `run_loop` does not currently produce `'body'` or
-`'walltime_sec'`; a wrapper that lifts `workspace/submission.best.py`
-and measures loop time supplies them.
+## Production wrapper
+
+```python
+def run_loop_with_metrics(*, _run_loop=None, _time_fn=None, **kwargs) -> dict: ...
+```
+
+Closes the contract gap between the real `run_loop` (which does
+not produce `'walltime_sec'`) and the adapter (which reads it).
+Measures monotonic time around the inner-loop call and injects
+`walltime_sec` into the returned dict. `_run_loop` defaults to
+`src.tier1.agent_loop.run_loop`; `_time_fn` defaults to
+`time.monotonic`. `**kwargs` are forwarded to the inner loop.
+
+Body lifting (reading `workspace/submission.best.py` into
+`result['body']`) is a separate concern.

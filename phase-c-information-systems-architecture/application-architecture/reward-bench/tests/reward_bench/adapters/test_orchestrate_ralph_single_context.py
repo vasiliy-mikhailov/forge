@@ -102,3 +102,35 @@ def test_when_orchestrate_ralph_single_context_called_then_yielded_submission_wa
 
     # Assert
     assert submissions[0].walltime_sec == 137.25
+
+
+def test_when_run_loop_with_metrics_called_then_result_walltime_sec_equals_time_delta():
+    """Pins the §7 ralph production wrapper's walltime measurement:
+    result['walltime_sec'] equals the monotonic delta around the inner
+    run_loop call."""
+    # Arrange
+    from src.reward_bench.adapters.orchestrate_ralph_single_context import (
+        run_loop_with_metrics,
+    )
+
+    times = iter([100.0, 137.25])
+
+    def fake_time_fn():
+        return next(times)
+
+    def fake_run_loop(**_):
+        return {
+            'iterations': 0,
+            'messages': [],
+            'finished': False,
+            'best_dev_mean': 0.0,
+        }
+
+    # Act
+    result = run_loop_with_metrics(
+        _run_loop=fake_run_loop,
+        _time_fn=fake_time_fn,
+    )
+
+    # Assert
+    assert result['walltime_sec'] == 37.25
