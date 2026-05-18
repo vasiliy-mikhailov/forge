@@ -25,6 +25,31 @@ class FakeCanonicalScorer(CanonicalScorerPort):
         self._i = 0
         self.calls: list[dict] = []
 
+    def score_body(
+        self,
+        body: str,
+        seeds: Iterable[int],
+        *,
+        hard_wall_sec: float = 0.0,
+    ) -> AttemptResult:
+        self.calls.append({
+            "body": body,
+            "seeds": tuple(seeds),
+            "hard_wall_sec": hard_wall_sec,
+        })
+        if self._i < len(self._script):
+            r = self._script[self._i]
+            self._i += 1
+            return r
+        if self._default is not None:
+            return self._default
+        return AttemptResult(
+            mean_score=0.0, median_score=0.0, std_score=0.0,
+            max_max_tile=0, n_games=0, aggregate_walltime_sec=0.0,
+            games=(), hard_wall_sec=hard_wall_sec,
+            stagnated_any=False, walltime_exceeded=False,
+        )
+
     def score(
         self,
         submission_path,
