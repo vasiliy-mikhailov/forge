@@ -26,7 +26,7 @@ from src.reward_bench.use_cases.bench import bench
 from src.tier1.entities.submission import Submission
 
 
-REPO = Path(__file__).resolve().parents[4]
+REPO = Path(__file__).resolve().parents[3]
 TASKS_DIR = REPO / 'tasks'
 TASK_SPEC_PATH = TASKS_DIR / '2048' / 'SKILL_tier1.md'
 TASK_ENV_PATH = TASKS_DIR / '2048' / 'env.py'
