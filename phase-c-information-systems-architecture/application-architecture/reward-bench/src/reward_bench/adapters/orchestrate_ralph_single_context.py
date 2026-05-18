@@ -23,7 +23,10 @@ class OrchestrateRalphSingleContext:
         self._run_loop = run_loop_fn
 
     def orchestrate(self, env, cfg) -> Iterable[Submission]:
-        result = self._run_loop(tasks_dir=env.tasks_dir)
+        result = self._run_loop(
+            tasks_dir=env.tasks_dir,
+            max_iters=cfg.max_iters,
+        )
         yield Submission(
             body=result['body'],
             score=result['best_dev_mean'],

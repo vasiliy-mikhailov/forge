@@ -25,6 +25,7 @@ def orchestrate(self, env: Env, cfg: BenchConfig) -> Iterable[Submission]: ...
 Calls `self._run_loop` with kwargs derived from `env`/`cfg`:
 
     tasks_dir   ← env.tasks_dir
+    max_iters   ← cfg.max_iters
 
 Field mapping from the `run_loop_fn` return dict to `Submission`:
 
