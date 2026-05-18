@@ -223,12 +223,10 @@ def main(
 
     if canonical_scorer is None:
         canonical_scorer = _default_canonical_scorer()
-    reports_dir = workspace / 'reports'
-    reports_dir.mkdir(parents=True, exist_ok=True)
-    result = canonical_scorer.score(
-        submission_path, seeds,
+    body = submission_path.read_text()
+    result = canonical_scorer.score_body(
+        body, seeds,
         hard_wall_sec=config.hard_wall_sec,
-        reports_root=reports_dir,
     )
     import dataclasses as _dc
     result = _dc.replace(result, best_dev_mean=(_run_loop_result or {}).get('best_dev_mean'))

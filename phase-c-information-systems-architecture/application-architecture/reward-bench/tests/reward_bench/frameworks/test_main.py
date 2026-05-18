@@ -161,9 +161,9 @@ def test_when_main_invoked_then_config_hard_wall_sec_passed_to_score_submission(
     # Cycle 105 sub-C: main now invokes canonical_scorer.score(...)
     # instead of in-process score_submission. Inject a recorder.
     captured = {'calls': []}
-    def stub_score(submission_path, seeds, *, hard_wall_sec=0.0, reports_root=None):
+    def stub_score(body, seeds, *, hard_wall_sec=0.0):
         captured['calls'].append({
-            'submission_path': str(submission_path),
+            'body': body,
             'seeds': tuple(seeds),
             'hard_wall_sec': hard_wall_sec,
         })
@@ -174,7 +174,7 @@ def test_when_main_invoked_then_config_hard_wall_sec_passed_to_score_submission(
                               final_state='lost', walltime_sec=0.0),),
         )
     class _StubScorer:
-        score = staticmethod(stub_score)
+        score_body = staticmethod(stub_score)
 
     # Act
     main_mod.main(
@@ -319,13 +319,13 @@ def test_when_main_completes_then_attempt_result_best_dev_mean_matches_run_loop_
     monkeypatch.setattr(main_mod, 'run_loop', fake_run_loop)
 
     # Cycle 105 sub-C: canonical scoring goes via canonical_scorer DI.
-    def stub_score(submission_path, seeds, *, hard_wall_sec=0.0, reports_root=None):
+    def stub_score(body, seeds, *, hard_wall_sec=0.0):
         return AR(
             mean_score=42.0, median_score=42.0, std_score=0.0,
             max_max_tile=16, n_games=20, aggregate_walltime_sec=0.1,
         )
     class _StubScorer:
-        score = staticmethod(stub_score)
+        score_body = staticmethod(stub_score)
 
     result = main_mod.main(
         model_id='qwen3.6-27b-awq',
@@ -460,4 +460,63 @@ def test_when_main_invoked_with_zero_hard_wall_sec_then_run_loop_dev_budget_is_n
     assert captured.get('dev_hard_wall_sec') is None, (
         f'expected None (-> module default); '
         f'got {captured.get("dev_hard_wall_sec")}'
+    )
+
+
+def test_when_main_called_then_canonical_scorer_score_body_invoked_with_body_string(monkeypatch, tmp_path):
+    """Pins §7.5 main.py canonical scoring migration: score_body(body)
+    instead of score(submission_path). Body read from workspace
+    submission.py written by the agent loop."""
+    # Arrange
+    from src.reward_bench.entities.bench_config import BenchConfig
+    from src.reward_bench.frameworks import main as main_mod
+    from src.tier1.entities.attempt_result import AttemptResult
+    from src.tier1.entities.game_result import GameResult
+
+    BODY = (
+        'from transitions import Machine\n'
+        'class Solver:\n'
+        "    def move(self, board): return 'W'\n"
+    )
+
+    def fake_run_loop(**kwargs):
+        ws = Path(kwargs['workspace'])
+        (ws / 'submission.py').write_text(BODY)
+        return {
+            'iterations': 1, 'messages': [], 'finished': True,
+            'best_dev_mean': 5.0,
+        }
+    from pathlib import Path
+    monkeypatch.setattr(main_mod, 'run_loop', fake_run_loop)
+
+    captured: dict = {'calls': []}
+
+    def stub_score_body(body, seeds, *, hard_wall_sec=0.0):
+        captured['calls'].append({
+            'body': body,
+            'seeds': tuple(seeds),
+            'hard_wall_sec': hard_wall_sec,
+        })
+        return AttemptResult(
+            mean_score=0.0, median_score=0.0, std_score=0.0,
+            max_max_tile=2, n_games=1, aggregate_walltime_sec=0.0,
+            games=(GameResult(seed=1, score=0, max_tile=2, moves=0,
+                              final_state='lost', walltime_sec=0.0),),
+        )
+
+    class _StubScorer:
+        score_body = staticmethod(stub_score_body)
+
+    # Act
+    main_mod.main(
+        model_id='qwen3.6-27b-awq',
+        config=BenchConfig(max_iters=1, n_trials=1, temperature=0.0,
+                           hard_wall_sec=42.0),
+        canonical_scorer=_StubScorer(),
+    )
+
+    # Assert
+    assert len(captured['calls']) == 1
+    assert captured['calls'][0]['body'] == BODY, (
+        f'body not forwarded; got {captured["calls"][0]["body"]!r}'
     )
