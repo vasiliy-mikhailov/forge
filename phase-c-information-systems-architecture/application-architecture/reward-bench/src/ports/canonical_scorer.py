@@ -27,11 +27,3 @@ class CanonicalScorerPort(Protocol):
         hard_wall_sec: float = 0.0,
     ) -> AttemptResult: ...
 
-    def score(
-        self,
-        submission_path: str | Path,
-        seeds: Iterable[int],
-        *,
-        hard_wall_sec: float = 0.0,
-        reports_root: str | Path | None = None,
-    ) -> AttemptResult: ...

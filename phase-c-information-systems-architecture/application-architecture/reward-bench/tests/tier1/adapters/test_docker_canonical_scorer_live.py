@@ -54,7 +54,7 @@ def test_when_score_invoked_with_trivial_solver_then_returns_real_attempt_result
     # Act — really run docker; live config (3 seeds, 60s aggregate cap
     # per cycle-122 LIVE_CONFIG conventions).
     seeds = (1, 2, 3)
-    result = scorer.score(
+    result = scorer._score_path(
         sub_path, seeds,
         hard_wall_sec=60.0,
         reports_root=reports_dir,

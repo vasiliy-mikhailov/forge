@@ -31,10 +31,10 @@ def test_when_main_invoked_with_canonical_scorer_then_scorer_score_called(
 
     # Recorder scorer.
     calls = []
-    def recorder_score(submission_path, seeds, *, hard_wall_sec=0.0,
+    def recorder_score(body, seeds, *, hard_wall_sec=0.0,
                        reports_root=None):
         calls.append({
-            'submission_path': str(submission_path),
+            'body': body,
             'seeds': tuple(seeds),
             'hard_wall_sec': hard_wall_sec,
         })
@@ -46,7 +46,7 @@ def test_when_main_invoked_with_canonical_scorer_then_scorer_score_called(
         )
 
     class RecordingScorer:
-        score = staticmethod(recorder_score)
+        score_body = staticmethod(recorder_score)
 
     recorder = RecordingScorer()
 
@@ -79,7 +79,7 @@ def test_when_main_invoked_with_canonical_scorer_then_scorer_score_called(
     assert len(calls) == 1, f'expected 1 score() call; got {len(calls)}'
     assert calls[0]['seeds'] == (1000, 1001, 1002)
     assert calls[0]['hard_wall_sec'] == 300.0
-    assert calls[0]['submission_path'].endswith('/submission.py')
+    assert 'class Solver' in calls[0]['body']
 
     # main() returns the scorer's result unchanged.
     assert result.mean_score == 1234.5
@@ -100,7 +100,7 @@ def test_when_main_default_canonical_scorer_is_docker_canonical_scorer(monkeypat
         self._test_sentinel = True
     monkeypatch.setattr(DockerCanonicalScorer, '__init__', capture_init)
 
-    def capture_score(self, submission_path, seeds, **kwargs):
+    def capture_score(self, body, seeds, **kwargs):
         captured['scored'] = True
         return AttemptResult(
             mean_score=0.0, median_score=0.0, std_score=0.0,
@@ -108,7 +108,7 @@ def test_when_main_default_canonical_scorer_is_docker_canonical_scorer(monkeypat
             games=(), hard_wall_sec=kwargs.get('hard_wall_sec', 0.0),
             stagnated_any=False, walltime_exceeded=False,
         )
-    monkeypatch.setattr(DockerCanonicalScorer, 'score', capture_score)
+    monkeypatch.setattr(DockerCanonicalScorer, 'score_body', capture_score)
 
     # Stubs.
     monkeypatch.setattr(main_mod, 'ensure_serving_model',

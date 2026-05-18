@@ -16,15 +16,14 @@ from src.tier1.entities.attempt_result import AttemptResult
 # ---------------------------------------------------------------
 
 @pytest.mark.no_fake
-def test_when_canonical_scorer_port_inspected_then_has_score_method():
-    """ADR 0018: CanonicalScorerPort declares `score(submission_path,
-    seeds, *, hard_wall_sec, reports_root) -> AttemptResult`."""
-    sig = inspect.signature(CanonicalScorerPort.score)
+def test_when_canonical_scorer_port_inspected_then_has_score_body_method():
+    """ADR 0018 + §7.5: CanonicalScorerPort declares
+    `score_body(body, seeds, *, hard_wall_sec) -> AttemptResult`."""
+    sig = inspect.signature(CanonicalScorerPort.score_body)
     params = sig.parameters
-    assert "submission_path" in params
+    assert "body" in params
     assert "seeds" in params
     assert "hard_wall_sec" in params
-    assert "reports_root" in params
 
 
 # ---------------------------------------------------------------
@@ -35,8 +34,8 @@ def test_when_canonical_scorer_port_inspected_then_has_score_method():
 def test_when_fake_scorer_invoked_then_records_call_and_returns_default():
     """Default-construct FakeCanonicalScorer: returns an n_games=0 default."""
     fake = FakeCanonicalScorer()
-    result = fake.score("/tmp/sub.py", seeds=(1, 2, 3),
-                        hard_wall_sec=42.0, reports_root="/tmp/r")
+    result = fake.score_body("class Solver: pass\n", seeds=(1, 2, 3),
+                             hard_wall_sec=42.0)
     assert isinstance(result, AttemptResult)
     assert result.n_games == 0
     assert result.hard_wall_sec == 42.0
@@ -61,9 +60,9 @@ def test_when_fake_scorer_given_script_then_returns_in_order():
         stagnated_any=False, walltime_exceeded=False,
     )
     fake = FakeCanonicalScorer(script=(r1, r2))
-    out1 = fake.score("/x", seeds=(1,), hard_wall_sec=10.0)
-    out2 = fake.score("/x", seeds=(2,), hard_wall_sec=10.0)
-    out3 = fake.score("/x", seeds=(3,), hard_wall_sec=10.0)
+    out1 = fake.score_body("BODY1", seeds=(1,), hard_wall_sec=10.0)
+    out2 = fake.score_body("BODY2", seeds=(2,), hard_wall_sec=10.0)
+    out3 = fake.score_body("BODY3", seeds=(3,), hard_wall_sec=10.0)
     assert out1.mean_score == 100.0
     assert out2.mean_score == 200.0
     # Exhausted -> returns default empty.
@@ -76,16 +75,13 @@ def test_when_fake_scorer_given_script_then_returns_in_order():
 
 @pytest.mark.no_fake
 def test_when_docker_scorer_inspected_then_implements_canonical_scorer_port():
-    """ADR 0018: DockerCanonicalScorer is a CanonicalScorerPort."""
+    """ADR 0018 + §7.5: DockerCanonicalScorer.score_body matches the Port."""
     from src.tier1.adapters.docker_canonical_scorer import DockerCanonicalScorer
-    # Protocol check: any class with a matching `score` method satisfies
-    # the Protocol structurally. We assert the method shape directly.
-    sig = inspect.signature(DockerCanonicalScorer.score)
+    sig = inspect.signature(DockerCanonicalScorer.score_body)
     params = sig.parameters
-    assert "submission_path" in params
+    assert "body" in params
     assert "seeds" in params
     assert "hard_wall_sec" in params
-    assert "reports_root" in params
 
 
 # ---------------------------------------------------------------

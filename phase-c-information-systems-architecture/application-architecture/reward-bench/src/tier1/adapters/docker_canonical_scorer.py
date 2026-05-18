@@ -136,7 +136,7 @@ class DockerCanonicalScorer(CanonicalScorerPort):
         with tempfile.TemporaryDirectory() as td:
             sp = Path(td) / 'submission.py'
             sp.write_text(body)
-            return self.score(sp, seeds, hard_wall_sec=hard_wall_sec)
+            return self._score_path(sp, seeds, hard_wall_sec=hard_wall_sec)
 
     def __init__(
         self,
@@ -160,7 +160,7 @@ class DockerCanonicalScorer(CanonicalScorerPort):
         self.stagnation_sec = int(stagnation_sec)
         self.docker_bin = docker_bin
 
-    def score(
+    def _score_path(
         self,
         submission_path: str | Path,
         seeds,

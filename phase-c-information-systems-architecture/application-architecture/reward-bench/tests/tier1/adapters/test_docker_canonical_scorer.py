@@ -65,7 +65,7 @@ def test_when_score_invoked_then_result_json_parsed_into_attempt_result(monkeypa
     monkeypatch.setattr(subprocess, "run", fake_run)
 
     scorer = DockerCanonicalScorer(cpu_count_port=FixedCpuCount(24))
-    result = scorer.score(sub, seeds=(1000, 1001),
+    result = scorer._score_path(sub, seeds=(1000, 1001),
                           hard_wall_sec=300.0, reports_root=reports)
 
     assert result.n_games == 2
@@ -91,7 +91,7 @@ def test_when_result_json_missing_then_walltime_exceeded_sentinels(monkeypatch, 
     monkeypatch.setattr(subprocess, "run", fake_run)
 
     scorer = DockerCanonicalScorer(cpu_count_port=FixedCpuCount(8))
-    result = scorer.score(sub, seeds=(1, 2, 3),
+    result = scorer._score_path(sub, seeds=(1, 2, 3),
                           hard_wall_sec=300.0, reports_root=reports)
 
     assert result.n_games == 3
@@ -111,7 +111,7 @@ def test_when_outer_timeout_fires_then_walltime_exceeded_sentinels(monkeypatch, 
     monkeypatch.setattr(subprocess, "run", fake_run)
 
     scorer = DockerCanonicalScorer(cpu_count_port=FixedCpuCount(8))
-    result = scorer.score(sub, seeds=(1, 2),
+    result = scorer._score_path(sub, seeds=(1, 2),
                           hard_wall_sec=10.0, reports_root=reports)
     assert result.walltime_exceeded is True
 
@@ -126,7 +126,7 @@ def test_when_cpus_not_set_then_defaults_to_half_of_cpu_count(monkeypatch, tmp_p
     monkeypatch.setattr(subprocess, "run", fake_run)
 
     scorer = DockerCanonicalScorer(cpu_count_port=FixedCpuCount(24))
-    scorer.score(sub, seeds=(1, 2), hard_wall_sec=10.0, reports_root=reports)
+    scorer._score_path(sub, seeds=(1, 2), hard_wall_sec=10.0, reports_root=reports)
 
     cmd = captured["cmd"]
     assert "--cpus=12.0" in cmd, f'expected --cpus=12.0 (24/2); cmd: {cmd}'

@@ -41,7 +41,7 @@ def test_when_score_invoked_with_missing_image_then_raises_runtime_error(
 
     # Act + Assert
     with pytest.raises(RuntimeError) as exc_info:
-        scorer.score(sub_path, seeds=(1, 2, 3),
+        scorer._score_path(sub_path, seeds=(1, 2, 3),
                      hard_wall_sec=5.0,
                      reports_root=tmp_path / "reports")
 
@@ -78,7 +78,7 @@ def test_when_score_invoked_with_runtime_failure_then_sentinels_per_seed(
     )
 
     # Act — should NOT raise; should produce walltime_exceeded sentinels.
-    result = scorer.score(sub_path, seeds=(1, 2, 3),
+    result = scorer._score_path(sub_path, seeds=(1, 2, 3),
                           hard_wall_sec=5.0,
                           reports_root=tmp_path / "reports")
 

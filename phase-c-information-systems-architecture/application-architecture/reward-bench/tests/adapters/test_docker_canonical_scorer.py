@@ -30,7 +30,7 @@ def test_when_docker_canonical_scorer_score_body_called_then_inner_score_receive
         captured['body_contents'] = Path(submission_path).read_text()
         return stub_result
 
-    scorer.score = stub_score
+    scorer._score_path = stub_score
 
     # Act
     result = scorer.score_body(body='class Solver: pass\n', seeds=(1,))

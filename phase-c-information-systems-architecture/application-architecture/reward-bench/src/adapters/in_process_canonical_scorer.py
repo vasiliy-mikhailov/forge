@@ -45,19 +45,3 @@ class InProcessCanonicalScorer(CanonicalScorerPort):
             hard_wall_sec=hard_wall_sec,
         )
 
-    def score(
-        self,
-        submission_path,
-        seeds: Iterable[int],
-        *,
-        hard_wall_sec: float = 0.0,
-        reports_root=None,
-    ) -> AttemptResult:
-        from src.tier1.harness import load_submission
-        from src.tier1.use_cases.score_submission import score_submission
-
-        module = load_submission(Path(submission_path))
-        return score_submission(
-            module.Solver, list(seeds), self._env,
-            hard_wall_sec=hard_wall_sec,
-        )
