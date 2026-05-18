@@ -20,7 +20,7 @@ spawning, prompt shape — is a free parameter of `orchestrator`.
 ```python
 Submission = (body: str, score: float, walltime_sec: float)
 Env        = (tasks_dir: Path, canonical_scorer: Runner,
-              model_client: ModelClient)
+              model_client: ModelClient, env_spec: str)
 ```
 
 
@@ -38,9 +38,9 @@ Runner              :: SolverBody -> Seeds -> AttemptResult
 
 ```python
 ContextSnapshot = {
-    env_spec            : TaskSpec    # SPEC.md + env source + Solver contract
+    env_spec            : str         # self-contained prompt — see §4
     best_so_far         : Submission  # running best body + its score
-    history_digest      : [PriorIter] # prior bodies + scores, compressed
+    history_digest      : [PriorIter] # prior bodies + scores
     iters_remaining     : int
     time_remaining_sec  : float
     budget_sec_per_seed : float
@@ -102,7 +102,7 @@ candidate submission.
 
 Live end-to-end (one check gates the whole chain):
 
-- `test_when_bench_called_with_real_ralph_chain_then_returns_submission_with_solver_body_and_non_negative_score`
+- `test_when_bench_called_with_real_chain_then_returns_submission_with_solver_body_and_non_negative_score`
   — produces a `Submission` whose `body` contains `class Solver`
   and `from transitions`, whose `score` is a non-negative float,
   whose `walltime_sec > 1.0`.
@@ -112,24 +112,57 @@ Live end-to-end (one check gates the whole chain):
 
 **OpenHands is the SolutionGenerator runtime.** Decision committed.
 
-Each iter constructs an OpenHands task with:
+### Binding interface
 
-- the `ContextSnapshot` rendered as the task prompt
-- a tool surface bounded by what the SolutionGenerator needs
-  (read env spec, write `submission.py`, request a `score_body`
-  call from the Runner)
-- the OpenHands agent context, freshly built per iter
+`env_spec` is a **self-contained prompt** built once at startup by
+the env_factory. Three sections:
 
-The agent runs the task to completion (or its task-internal
-budget), returns the final `submission.py` body as a string. The
-orchestrator takes it from there.
+1. **Task** — the SKILL contract (FSM Solver class, `move(board)
+   -> str` returning W/A/S/D).
+2. **Dev test harness** — an inline shell command the agent runs
+   via its bash tool to measure a candidate solver against dev
+   seeds. The command is executable as-is — every host path is
+   already baked in. OpenHands captures its stdout; the agent
+   reads game scores from there.
+3. **Budget** — wallclock seconds and iteration count.
 
-OpenHands replaces:
+The agent reads the prompt, iterates in its own scratch (bash
+tool + dev harness via docker, observing stdout), then emits the
+final Solver code as a fenced ```` ```python ... ``` ```` block
+in its last assistant message. The runner factory extracts that
+block as the returned body.
 
-- `src/tier1/agent_loop.py::run_loop` (the long-lived ralph loop)
-- `Tool` / `ToolRegistry` / `ProtocolParser` ports (OpenHands has
-  its own tool surface)
-- The `execute_submission` dev-runner action
+### What does NOT cross the boundary
+
+- **No `submission.py` file** between runner and agent. The body
+  lives in the final assistant message, period. No tempdir read
+  on the runner side.
+- **No mounted task directory.** The agent reads `env_spec`; the
+  dev harness command already contains every host path it needs.
+- **No structured callback** from OpenHands back to the Runner.
+  The agent uses its own bash tool to invoke docker for dev
+  scoring; the canonical Runner runs separately later.
+
+### Process model
+
+OpenHands SDK runs in-process. The agent's `TerminalTool` runs
+bash on the host. Docker invocations from the agent reach the
+host docker daemon — the dev harness spawns an isolated
+`reward-bench-tier1:0.4` container per call with a wallclock
+timeout. The canonical `DockerCanonicalScorer` does the same
+later on held-out seeds. Same daemon, different seed sets.
+
+### Reference shape
+
+```python
+class OpenHandsSolutionGenerator:
+    def generate(self, snapshot: ContextSnapshot) -> str:
+        prompt = render(snapshot)          # task + harness + budget
+        conv = Conversation(agent=self._agent)
+        conv.send_message(prompt)
+        conv.run()
+        return extract_fenced_python(conv.final_message)
+```
 
 What stays ours (independent of OpenHands):
 
@@ -146,7 +179,9 @@ What stays ours (independent of OpenHands):
 Bench-side code communicates only in **strings, scalars, value
 objects**. The only file IO sits inside
 `DockerCanonicalScorer.score_body`'s private bind-mount tempfile —
-invisible above the Runner.
+invisible above the Runner. The OpenHands binding obeys the same
+rule (§4): no `submission.py` flows between runner factory and
+agent.
 
 This rules out `submission_path`, `workspace`, `env_dir`,
 `tasks_dir` as parameters of any port or use case above the
@@ -165,14 +200,16 @@ unrepresentable when no module above the Runner computes paths.
 src/reward_bench/
     entities/      Submission, Env, BenchConfig, ModelTarget, ContextSnapshot
     use_cases/     bench, best_submission, best_score, dominates_at_budget
-    adapters/      OrchestrateOpenHands (planned),
+    adapters/      OrchestrateSubagentPerIter (default),
+                   OpenHandsSolutionGenerator,
                    OrchestrateRalphSingleContext (legacy)
     frameworks/    main, bench_main (CLI entrypoints)
 
-src/ports/         Orchestrator, CanonicalScorerPort, ModelClient
+src/ports/         Orchestrator, SolutionGenerator,
+                   CanonicalScorerPort, ModelClient
 src/adapters/fakes/  Fake* for testing
-src/tier1/         agent_loop (ralph, retiring),
-                   DockerCanonicalScorer (the Runner adapter)
+src/tier1/         DockerCanonicalScorer (the Runner adapter);
+                   agent_loop (legacy, retiring)
 ```
 
 Per-module clean architecture: `entities` are pure value types,
@@ -184,17 +221,13 @@ direction enforced by
 
 ## 7. Open items
 
-- **`OrchestrateOpenHands` adapter** does not yet exist. The §3
-  role-separation fitness tests gate it; building it is the next
-  major implementation effort.
 - **`bench_main.py` `REPO`/`TASKS_DIR` constants** still compute
-  paths. §5 says no paths above the Runner; these constants are
-  legacy and disappear with the OpenHands cutover.
-- **`agent_loop._execute_submission` writes
-  `workspace/submission.py`** for the snapshot pipeline (cycle 205
-  reverted an attempt to drop it). The replacement is the §2
-  SolutionGenerator returning the body in-memory; the workspace
-  disappears with `agent_loop`'s retirement.
+  paths to load env_spec at startup. The dev harness command
+  inside env_spec also embeds absolute host paths. Acceptable for
+  single-task tier-1; revisits when task selection lands.
+- **`agent_loop`** still in tree, used by the legacy ralph
+  orchestrator. Retires when OrchestrateRalphSingleContext is
+  deleted.
 - **Bench bug — zero-score artifacts.** Some canonical Docker
   invocations return `score=0` despite a working submission. Under
   investigation; suspected in the canonical scorer path, not the
@@ -206,9 +239,6 @@ direction enforced by
   all models compete inside the snapshot's bounded budget.
 - **`MODEL_REGISTRY` duplication** between YAML and Python tuple.
   Load-from-YAML pending.
-- **Condenser** trigger heuristic (4-chars-per-token estimate) is
-  retired by §2: per-iter contexts don't accumulate, no condenser
-  needed.
 - **`validate_submission_protocol`** still calls
   `instance.move(test_board)` in the bench main thread — a wedge
   pattern. Wrap in `multiprocessing.Process` with hard timeout.
