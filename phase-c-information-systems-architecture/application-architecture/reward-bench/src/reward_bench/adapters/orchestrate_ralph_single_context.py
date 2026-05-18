@@ -4,10 +4,12 @@ The adapter wraps `src.tier1.agent_loop.run_loop` (via a `run_loop_fn`
 seam) and re-shapes its dict return into `Submission` value objects
 for the bench. `run_loop_with_metrics` closes the contract gap
 between the real run_loop (which produces no walltime / body) and
-the adapter (which reads `result['walltime_sec']`, `result['body']`).
+the adapter. `default_run_loop_fn` is the production factory that
+binds real defaults.
 """
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Iterable
 
 from src.tier1.entities.submission import Submission
@@ -50,3 +52,22 @@ def run_loop_with_metrics(
     if _body_reader is not None:
         result['body'] = _body_reader(kwargs['workspace'])
     return result
+
+
+def _default_body_reader(workspace) -> str:
+    p = Path(workspace) / 'submission.best.py'
+    return p.read_text() if p.exists() else ''
+
+
+def default_run_loop_fn(*, _run_loop=None, _time_fn=None, _body_reader=None):
+    if _body_reader is None:
+        _body_reader = _default_body_reader
+
+    def _fn(**kwargs):
+        return run_loop_with_metrics(
+            _run_loop=_run_loop,
+            _time_fn=_time_fn,
+            _body_reader=_body_reader,
+            **kwargs,
+        )
+    return _fn

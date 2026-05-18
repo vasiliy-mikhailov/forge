@@ -45,9 +45,25 @@ Closes the contract gap between the real `run_loop` and the adapter.
 - Measures monotonic time around the inner-loop call and injects
   `walltime_sec` into the returned dict.
 - When `_body_reader` is supplied, sets `result['body'] =
-  _body_reader(kwargs['workspace'])`. The real binding reads
-  `Path(workspace) / 'submission.best.py'`.
+  _body_reader(kwargs['workspace'])`.
 
 `_run_loop` defaults to `src.tier1.agent_loop.run_loop`; `_time_fn`
 defaults to `time.monotonic`. `**kwargs` are forwarded to the
 inner loop.
+
+## Production factory
+
+```python
+def default_run_loop_fn(
+    *,
+    _run_loop=None,
+    _time_fn=None,
+    _body_reader=None,
+) -> Callable[..., dict]: ...
+```
+
+Returns a callable suitable for `OrchestrateRalphSingleContext(
+run_loop_fn=...)` with production defaults already bound. The
+default `_body_reader` reads
+`Path(workspace) / 'submission.best.py'` and returns its text
+(empty string if the file is missing).

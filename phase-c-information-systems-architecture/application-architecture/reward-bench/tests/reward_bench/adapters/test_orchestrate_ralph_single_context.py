@@ -168,3 +168,31 @@ def test_when_run_loop_with_metrics_given_body_reader_then_result_body_equals_re
 
     # Assert
     assert result['body'] == 'class Solver: pass\n'
+
+
+def test_when_default_run_loop_fn_called_then_body_is_read_from_workspace_submission_best_py(tmp_path):
+    """Pins the §7 ralph production binding: the default factory's
+    _body_reader reads workspace/submission.best.py from disk."""
+    # Arrange
+    from src.reward_bench.adapters.orchestrate_ralph_single_context import (
+        default_run_loop_fn,
+    )
+
+    body_text = 'class Solver: pass\n'
+    (tmp_path / 'submission.best.py').write_text(body_text)
+
+    def fake_inner(**_):
+        return {
+            'iterations': 0,
+            'messages': [],
+            'finished': False,
+            'best_dev_mean': 0.0,
+        }
+
+    fn = default_run_loop_fn(_run_loop=fake_inner, _time_fn=lambda: 0.0)
+
+    # Act
+    result = fn(workspace=str(tmp_path))
+
+    # Assert
+    assert result['body'] == body_text
