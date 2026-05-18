@@ -38,6 +38,8 @@ MANIFEST = [
      "src.adapters.fakes.fake_inference_orchestrator", "FakeInferenceOrchestrator"),
     ("src.ports.orchestrator", "Orchestrator",
      "src.adapters.fakes.fake_orchestrator", "FakeOrchestrator"),
+    ("src.ports.solution_generator", "SolutionGenerator",
+     "src.adapters.fakes.fake_solution_generator", "FakeSolutionGenerator"),
 ]
 
 

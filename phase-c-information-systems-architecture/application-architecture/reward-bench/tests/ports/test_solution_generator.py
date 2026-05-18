@@ -15,3 +15,20 @@ def test_when_solution_generator_port_inspected_then_generate_takes_snapshot():
 
     # Assert
     assert params == ['self', 'snapshot']
+
+
+def test_when_runtime_boundary_manifest_inspected_then_solution_generator_is_listed():
+    """Pins §2 SolutionGenerator Port registration in the architecture manifest."""
+    # Arrange
+    from pathlib import Path
+
+    manifest_file = (
+        Path(__file__).resolve().parents[1]
+        / 'architecture' / 'test_runtime_boundary_ports.py'
+    )
+
+    # Act
+    text = manifest_file.read_text()
+
+    # Assert
+    assert 'SolutionGenerator' in text
