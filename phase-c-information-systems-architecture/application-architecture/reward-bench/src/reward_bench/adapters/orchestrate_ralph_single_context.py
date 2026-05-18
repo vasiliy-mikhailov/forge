@@ -22,5 +22,5 @@ class OrchestrateRalphSingleContext:
         yield Submission(
             body=result['body'],
             score=result['best_dev_mean'],
-            walltime_sec=0.0,
+            walltime_sec=result['walltime_sec'],
         )

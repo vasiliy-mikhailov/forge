@@ -22,6 +22,7 @@ def test_when_orchestrate_ralph_single_context_called_then_yielded_submission_sc
             'finished': True,
             'best_dev_mean': 42.5,
             'body': '',
+            'walltime_sec': 0.0,
         }
 
     adapter = OrchestrateRalphSingleContext(run_loop_fn=fake_run_loop)
@@ -55,6 +56,7 @@ def test_when_orchestrate_ralph_single_context_called_then_yielded_submission_bo
             'finished': True,
             'best_dev_mean': 42.5,
             'body': 'class Solver: pass\n',
+            'walltime_sec': 0.0,
         }
 
     adapter = OrchestrateRalphSingleContext(run_loop_fn=fake_run_loop)
@@ -66,3 +68,37 @@ def test_when_orchestrate_ralph_single_context_called_then_yielded_submission_bo
 
     # Assert
     assert submissions[0].body == 'class Solver: pass\n'
+
+
+def test_when_orchestrate_ralph_single_context_called_then_yielded_submission_walltime_sec_equals_run_loop_result_walltime_sec():
+    """Pins the §7 ralph-adapter walltime mapping:
+    run_loop_fn result['walltime_sec'] → Submission.walltime_sec."""
+    # Arrange
+    from pathlib import Path
+
+    from src.adapters.fakes.fake_canonical_scorer import FakeCanonicalScorer
+    from src.reward_bench.adapters.orchestrate_ralph_single_context import (
+        OrchestrateRalphSingleContext,
+    )
+    from src.reward_bench.entities.bench_config import BenchConfig
+    from src.reward_bench.entities.env import Env
+
+    def fake_run_loop(**_):
+        return {
+            'iterations': 5,
+            'messages': [],
+            'finished': True,
+            'best_dev_mean': 42.5,
+            'body': '',
+            'walltime_sec': 137.25,
+        }
+
+    adapter = OrchestrateRalphSingleContext(run_loop_fn=fake_run_loop)
+    env = Env(tasks_dir=Path('/tmp/x'), canonical_scorer=FakeCanonicalScorer())
+    cfg = BenchConfig()
+
+    # Act
+    submissions = list(adapter.orchestrate(env, cfg))
+
+    # Assert
+    assert submissions[0].walltime_sec == 137.25

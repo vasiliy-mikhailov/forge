@@ -24,8 +24,10 @@ def orchestrate(self, env: Env, cfg: BenchConfig) -> Iterable[Submission]: ...
 
 Field mapping from the `run_loop_fn` return dict to `Submission`:
 
-    body    ← result['body']
-    score   ← result['best_dev_mean']
+    body          ← result['body']
+    score         ← result['best_dev_mean']
+    walltime_sec  ← result['walltime_sec']
 
-The real `run_loop` does not currently produce `'body'`; a wrapper
-that lifts `workspace/submission.best.py` into the dict supplies it.
+The real `run_loop` does not currently produce `'body'` or
+`'walltime_sec'`; a wrapper that lifts `workspace/submission.best.py`
+and measures loop time supplies them.
