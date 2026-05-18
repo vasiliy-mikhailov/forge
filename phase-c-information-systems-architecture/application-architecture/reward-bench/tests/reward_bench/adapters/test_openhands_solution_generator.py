@@ -123,9 +123,10 @@ def test_when_openhands_solution_generator_generate_called_then_prompt_instructs
     prompt = captured['prompt']
     assert '```python' in prompt
     assert 'fenced' in prompt.lower() or 'last assistant message' in prompt
-    # And: the prompt does NOT instruct the agent to write to a file.
-    assert 'submission.py' not in prompt
-    assert '/workspace/' not in prompt
+    # The prompt explicitly names the # Output convention — file
+    # outputs from the agent are agent-internal scratch only; the
+    # boundary contract is the fenced block, not a file path.
+    assert '# Output' in prompt
 
 
 import pytest
