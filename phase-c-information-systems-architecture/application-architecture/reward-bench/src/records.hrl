@@ -25,3 +25,18 @@
     games = []             :: [#game_result{}],
     compile_error          :: undefined | term()
 }).
+
+-record(submission, {
+    body         :: binary(),
+    score        :: float(),
+    walltime_sec :: float()
+}).
+
+-record(context_snapshot, {
+    env_spec            :: binary(),
+    best_so_far         = undefined :: #submission{} | undefined,
+    history_digest      = []        :: [#submission{}],
+    iters_remaining     = 1         :: non_neg_integer(),
+    time_remaining_sec              :: float(),
+    budget_sec_per_seed = 5.0       :: float()
+}).
