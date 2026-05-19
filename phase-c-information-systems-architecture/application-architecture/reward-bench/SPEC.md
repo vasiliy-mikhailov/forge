@@ -50,7 +50,11 @@ infrastructure.
 - `VLLM_MODEL_ID` — id the endpoint advertises for the candidate
   model.
 - `MAX_ITERS` — orchestrator iterations per attempt (default 1).
-- `HARD_WALL_SEC` — total wallclock budget per attempt (default 60).
+- `HARD_WALL_SEC` — per-game Solver-execution wallclock cap, in
+  seconds (default 60). The canonical scorer kills any game whose
+  Solver runs past this. **NOT** a budget for LLM generation,
+  compilation, observation, or orchestration — those run as long
+  as they need, bounded only by `MAX_ITERS`.
 - `SKILL_PATH` — path to the SKILL spec for the task (default
   `tasks/2048/SKILL_tier1.md`).
 
@@ -66,7 +70,7 @@ harness:
 3. Runs N canonical games in monitored Erlang processes, one process
    per seed.
 4. Feeds aggregate scores back to the LLM as the next user message;
-   the LLM may iterate within the per-iter wallclock budget.
+   the LLM iterates until it is satisfied or `MAX_ITERS` is reached.
 5. Final body = the highest-scoring fenced block across iters.
 
 No tool-call JSON. No file IO. No docker per Solver.
@@ -90,8 +94,11 @@ No tool-call JSON. No file IO. No docker per Solver.
   so two runs of the same Solver against the same seeds must produce
   identical scores.
 - **Author context**: solution_generator's reasoning loop, bounded
-  by `time_remaining_sec` (the orchestrator's per-iter slice of
-  `HARD_WALL_SEC`).
+  by `MAX_ITERS` inner iterations. Each iteration is one LLM call
+  plus one dev test against dev seeds; the observation message to
+  the agent reports per-seed scores. The agent stops when it is
+  satisfied or `MAX_ITERS` is reached — there is no wallclock cap
+  on its reasoning.
 
 ### Tier 2-4
 
@@ -118,10 +125,9 @@ make release     build the deployment release
 Each canonical game runs in its own monitored Erlang process. Two
 caps guard runaway Solvers:
 
-- **Wallclock**: each game has a hard deadline (currently
-  `?GAME_HARD_WALL_SEC` = 5.0s in `orchestrator.erl`); on expiry
-  the process is killed and the game's state is recorded as
-  `wall_clock_expired`.
+- **Wallclock**: each game has a hard deadline (`HARD_WALL_SEC`,
+  flowed through from `bench_config`); on expiry the process is
+  killed and the game's state is recorded as `wall_clock_expired`.
 - **Move count**: capped at `?GAME_MOVE_CAP` (10000) in
   `beam_canonical_scorer`; on expiry the game ends as
   `max_moves_reached`.
