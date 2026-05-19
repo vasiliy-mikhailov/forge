@@ -16,3 +16,12 @@
     walltime_sec :: float(),
     error        :: undefined | term()
 }).
+
+-record(attempt_result, {
+    mean_score             :: float(),
+    median_score           :: float(),
+    n_games                :: non_neg_integer(),
+    aggregate_walltime_sec :: float(),
+    games = []             :: [#game_result{}],
+    compile_error          :: undefined | term()
+}).
