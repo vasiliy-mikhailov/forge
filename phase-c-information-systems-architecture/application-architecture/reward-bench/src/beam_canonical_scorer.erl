@@ -17,6 +17,12 @@
 -define(GAME_MOVE_CAP, 10000).
 -define(COLLECT_GRACE_MS, 5000).
 
+%% Per-game process heap cap. 10_000_000 words ≈ 80 MB on 64-bit.
+%% The 2048 game state is sub-1 MB; this cap kills runaway Solvers
+%% (infinite recursion building lists, etc.) before they OOM the
+%% whole BEAM. See SOLUTION-ARCHITECTURE.md §5.
+-define(MAX_HEAP_WORDS, 10_000_000).
+
 -spec score_body(binary(), [non_neg_integer()], number()) ->
     #attempt_result{}.
 score_body(BodyBin, Seeds, HardWallSec) ->
@@ -90,6 +96,9 @@ run_games(ModuleName, Seeds, HardWallSec) ->
     Parent = self(),
     PidsRefs = lists:map(fun(Seed) ->
         spawn_monitor(fun() ->
+            process_flag(max_heap_size, #{size => ?MAX_HEAP_WORDS,
+                                          kill => true,
+                                          error_logger => false}),
             R = runner_canonical:play_game(ModuleName, Seed, HardWallSec,
                                            ?GAME_MOVE_CAP),
             Parent ! {self(), R}

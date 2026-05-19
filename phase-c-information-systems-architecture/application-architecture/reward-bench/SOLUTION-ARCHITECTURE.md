@@ -326,12 +326,18 @@ actually need:
 - **Crash isolation**: `spawn_monitor` per game seed; a Solver
   exception kills only that game's process. The
   `canonical_scorer` records the failed game and continues.
-- **Memory cap**: `process_flag(max_heap_size, #{size => ...,
-  kill => true})` on the game process — BEAM kills the process
-  on overflow rather than letting it OOM the VM.
-- **Wallclock cap**: `erlang:send_after(DeadlineMs, self(),
-  {kill_game, MonitorRef})` plus monitor on the spawned process.
-  When the timer fires we `exit(Pid, kill)`.
+- **Memory cap**: `process_flag(max_heap_size, #{size => 10_000_000,
+  kill => true, error_logger => false})` on the per-game process,
+  set in `beam_canonical_scorer` before `runner_canonical:play_game/4`
+  runs. BEAM kills the process on heap overflow; the DOWN signal
+  arrives with reason `killed` and the scorer records the game
+  as `state=error, error={process_died, killed}` and moves on
+  to the next seed.
+- **Wallclock cap**: `runner_canonical:play_game/4` checks
+  `erlang:monotonic_time(millisecond) >= Deadline` on every loop
+  iteration. On expiry the game terminates with
+  `state=wall_clock_expired`, keeping the score / moves
+  accumulated so far. Cooperative; no out-of-band kill needed.
 - **No filesystem / network access by accident**: the BEAM
   doesn't open files or sockets unless we call those modules.
   The `submission` module the LLM emits has `move/1` exported

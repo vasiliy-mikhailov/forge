@@ -54,3 +54,25 @@ aggregate_mean_computed_correctly_test() ->
     R = beam_canonical_scorer:score_body(?TRIVIAL_W_SOURCE, [42], 5.0),
     [G] = R#attempt_result.games,
     ?assertEqual(float(G#game_result.score), R#attempt_result.mean_score).
+
+memory_bombing_solver_gets_killed_test() ->
+    %% Per SOLUTION-ARCHITECTURE.md §5: a Solver that tries to
+    %% allocate a huge data structure hits the per-game process'''s
+    %% max_heap_size cap and is killed cleanly. Game state goes to
+    %% error; the bench continues with the next seed.
+    Body = <<
+        "-module(submission).
+"
+        "-export([move/1]).
+"
+        "move(_) ->
+"
+        "    _ = lists:duplicate(100000000, deadbeef),
+"
+        "    w.
+"
+    >>,
+    R = beam_canonical_scorer:score_body(Body, [42], 5.0),
+    [G] = R#attempt_result.games,
+    ?assertEqual(error, G#game_result.state),
+    ?assertMatch({process_died, _}, G#game_result.error).
