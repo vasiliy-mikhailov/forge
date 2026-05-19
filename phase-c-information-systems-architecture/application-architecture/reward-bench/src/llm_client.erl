@@ -2,14 +2,20 @@
 %% vLLM-compatible /v1/chat/completions endpoint.
 %%
 %% Config map keys:
-%%   base_url    :: binary()  required
-%%   api_key     :: binary()  required
-%%   model_id    :: binary()  required
-%%   temperature :: float()   default 0.7
-%%   http_fn     :: optional callable for testing; injects an
-%%                  HTTP responder. Default uses hackney.
+%%   base_url        :: binary()  required
+%%   api_key         :: binary()  required
+%%   model_id        :: binary()  required
+%%   temperature     :: float()   default 0.7
+%%   connect_timeout :: integer() default 30_000 (ms)
+%%   recv_timeout    :: integer() | infinity     default infinity
+%%   http_fn         :: optional 3-arg callable for testing; injects
+%%                     an HTTP responder. Default forwards to
+%%                     hackney with the configured timeouts.
 %%
-%% Public API: start_link/1, chat/2, stop/1.
+%% LLM endpoints take seconds-to-minutes to generate. Hackney's
+%% built-in defaults (8 s connect, 5 s recv) are wrong for this
+%% workload — they fire mid-generation. The explicit values
+%% above match what production endpoints actually deliver.
 -module(llm_client).
 -behaviour(gen_server).
 
@@ -46,12 +52,19 @@ stop(Pid) ->
 %% gen_server callbacks
 
 init(Config) ->
+    ConnectTimeout = maps:get(connect_timeout, Config, 30_000),
+    RecvTimeout    = maps:get(recv_timeout,    Config, infinity),
+    HttpFn = maps:get(
+        http_fn, Config,
+        fun(Url, Headers, Body) ->
+            hackney_post(Url, Headers, Body, ConnectTimeout, RecvTimeout)
+        end),
     {ok, #state{
-        base_url    = maps:get(base_url, Config),
-        api_key     = maps:get(api_key, Config),
-        model_id    = maps:get(model_id, Config),
+        base_url    = maps:get(base_url,    Config),
+        api_key     = maps:get(api_key,     Config),
+        model_id    = maps:get(model_id,    Config),
         temperature = maps:get(temperature, Config, 0.7),
-        http_fn     = maps:get(http_fn, Config, fun default_http/3)
+        http_fn     = HttpFn
     }}.
 
 handle_call({chat, Messages}, _From, S) ->
@@ -107,8 +120,11 @@ extract_content(RespBody) ->
         _:Reason -> {error, {decode, Reason, RespBody}}
     end.
 
-default_http(Url, Headers, Body) ->
-    case hackney:post(Url, Headers, Body, [with_body]) of
+hackney_post(Url, Headers, Body, ConnectTimeout, RecvTimeout) ->
+    Opts = [with_body,
+            {connect_timeout, ConnectTimeout},
+            {recv_timeout,    RecvTimeout}],
+    case hackney:post(Url, Headers, Body, Opts) of
         {ok, Status, _RespHeaders, RespBody} -> {ok, Status, RespBody};
         {error, _} = E -> E
     end.
