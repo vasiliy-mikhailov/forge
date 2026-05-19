@@ -239,26 +239,6 @@ meta-capability; periodic working-tree audits. Drill in:
 Reference: <https://www.opengroup.org/togaf>. Style only.
 
 
-## Daily ritual — write to [`й.md`](й.md)
-
-At least once per working day, append an anecdote to
-[`й.md`](й.md). Do not ask permission — standing approval; the user
-edits afterwards if it lands wrong.
-
-Trigger: any session with a non-trivial bug, an ADR, an unexpected
-reveal, an embarrassed laugh, or a cause smaller than the theory
-built around it. Writing it is internalising the lesson.
-
-Entry rules live at the top of [`й.md`](й.md). Short version: lead
-with the symptom, walk every wrong theory in order, put the cause in
-the last paragraph, name names, 150-300 words.
-
-If a working day passes without an entry, the next session opens with
-adding it. If nothing happened — rare — write that down.
-
-
----
-
 ## CATS methodology
 
 ## Stance

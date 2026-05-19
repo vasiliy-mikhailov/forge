@@ -40,3 +40,14 @@
     time_remaining_sec              :: float(),
     budget_sec_per_seed = 5.0       :: float()
 }).
+
+-record(env, {
+    canonical_scorer :: module(),
+    model_client     :: pid(),
+    env_spec         :: binary()
+}).
+
+-record(bench_config, {
+    max_iters     = 1    :: pos_integer(),
+    hard_wall_sec = 60.0 :: float()
+}).
