@@ -92,8 +92,7 @@ wrapper that passes `dev_seeds()` from `compose_env_spec`.
     best_so_far         :: #submission{},
     history_digest      :: [#submission{}],
     iters_remaining     :: non_neg_integer(),
-    time_remaining_sec  :: float(),
-    budget_sec_per_seed :: float()
+    budget_sec_per_seed :: float()    %% HARD_WALL_SEC, per-game cap
 }).
 ```
 
@@ -132,8 +131,7 @@ process state between calls.
 
 Fresh context every `generate` — no memory across iters except
 what `#context_snapshot{}` carries. The loop is bounded by
-wallclock deadline + max iterations (§4). Returns module source
-as a binary.
+`max_iters` only (§4). Returns module source as a binary.
 
 ### Runner (canonical scorer)
 
@@ -204,47 +202,38 @@ next user message.
 ### Reasoning loop
 
 ```erlang
-loop(Messages, Best, Deadline, Env) ->
+loop(Messages, Best, Iter, MaxIters, Env) when Iter >= MaxIters ->
+    Best#submission.body;
+loop(Messages, Best, Iter, MaxIters, Env) ->
     {ok, RespText} = llm_client:call(Env#env.model_client, Messages),
     Body = extract_fenced_erlang(RespText),
-    {Score, Stdout} = dev_test(Body, Env),
-    Best1 = case Score > Best#submission.score of
-        true  -> #submission{body=Body, score=Score};
-        false -> Best
-    end,
-    case time_left(Deadline) of
-        T when T > ?MIN_ITER_TIME ->
-            Observation = format_observation(Stdout, Score),
-            Messages1 = Messages ++ [
-                #{role => assistant, content => RespText},
-                #{role => user,      content => Observation}
-            ],
-            loop(Messages1, Best1, Deadline, Env);
-        _ ->
-            Best1#submission.body
-    end.
+    AR = canonical_scorer:score_body(Env#env.canonical_scorer,
+                                     Body, ?DEV_SEEDS,
+                                     Env#env.hard_wall_sec),
+    Best1 = update_best(Best, Body, AR),
+    Observation = format_observation(AR),
+    Messages1 = Messages ++ [
+        #{role => assistant, content => RespText},
+        #{role => user,      content => Observation}
+    ],
+    loop(Messages1, Best1, Iter + 1, MaxIters, Env).
 ```
 
-`?MIN_ITER_TIME` is conservative (~30s) — we stop with time to
-spare so the last response actually arrives.
+### Bounded by max_iters only
 
-### Wallclock enforcement
+The reasoning loop runs **exactly `max_iters` iterations** unless
+the LLM client returns an error (in which case the loop exits
+with the current Best). There is no wallclock check on the
+reasoning loop itself — per SPEC.md, `HARD_WALL_SEC` is the
+per-game Solver-execution cap, **not** a budget for LLM
+generation, dev testing, or orchestration. Those run as long as
+the agent needs.
 
-The orchestrator passes a deadline via
-`snapshot.time_remaining_sec`. The reasoning loop checks
-remaining time before each LLM turn:
-
-```erlang
-case Deadline - Now < MinIterMs of
-    true  -> Best#submission.body;        %% out of budget; return best so far
-    false -> iter(Cfg, Msgs, Best, Deadline, Iter)
-end
-```
-
-`MinIterTime` (default ~5 s) is conservative so the final
-response has time to arrive. No threads, no SIGTERM races, no
-`send_after` — the BEAM is cooperative, the loop is the
-mechanism, and we own both ends.
+Practical implication: a single `bench:bench/2` run with
+`max_iters=3` and a model that takes ~70 s per response will take
+roughly `3 × (70s LLM + dev test time)` per orchestrator iter,
+plus one canonical scoring at the end. Tune `max_iters` to fit
+your time tolerance; the per-game cap is independent.
 
 ### LLM client
 
@@ -303,7 +292,8 @@ module → spawned game process in one BEAM.
 2. **Output rule** — "Emit your module as a fenced
    ```` ```erlang ... ``` ```` block in your last assistant message.
    The harness reads the last fenced block."
-3. **Budget hint** — `time_remaining_sec` from snapshot.
+3. **Budget hint** — `iters_remaining` from snapshot, so the agent
+   knows how many more times it can iterate.
 
 No tool registration, no JSON tool-call schemas. The agent writes
 Erlang; we test it; we report results in the next user message.

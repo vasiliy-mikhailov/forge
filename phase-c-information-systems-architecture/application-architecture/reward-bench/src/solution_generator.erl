@@ -3,23 +3,22 @@
 %%   prompt -> LLM -> extract fenced erlang -> dev_test (canonical_scorer)
 %%          -> append observation -> loop
 %%
-%% Bounded by:
-%%   max_iters         hard cap on conversation turns
-%%   min_iter_time_sec stops if remaining wallclock < this
-%%   time_remaining_sec from #context_snapshot{} (the deadline)
+%% Bounded by `max_iters` only. There is NO wallclock cap on the
+%% reasoning loop — per SPEC.md, HARD_WALL_SEC is the per-game
+%% Solver-execution cap (used inside canonical_scorer), not a budget
+%% for LLM generation. If the LLM hangs, llm_client's hackney
+%% configuration handles it.
 %%
 %% Returns the highest-scoring body seen across all iters (may be
-%% empty if no iter ever produced a fenced block).
+%% empty if no iter ever produced a compilable fenced block).
 -module(solution_generator).
 
 -export([generate/3, generate/4]).
 
 -include("records.hrl").
 
--define(DEFAULT_MAX_ITERS, 8).
--define(DEFAULT_MIN_ITER_TIME_SEC, 5.0).
+-define(DEFAULT_MAX_ITERS, 5).
 -define(DEFAULT_DEV_SEEDS, [2000, 2001, 2002, 2003, 2004]).
--define(DEFAULT_DEV_HARD_WALL_SEC, 3.0).
 
 -spec generate(pid(), module(), #context_snapshot{}) -> binary().
 generate(LLM, Scorer, Snapshot) ->
@@ -27,56 +26,52 @@ generate(LLM, Scorer, Snapshot) ->
 
 -spec generate(pid(), module(), #context_snapshot{}, map()) -> binary().
 generate(LLM, Scorer, Snapshot, Opts) ->
-    MaxIters    = maps:get(max_iters,         Opts, ?DEFAULT_MAX_ITERS),
-    MinIterTime = maps:get(min_iter_time_sec, Opts, ?DEFAULT_MIN_ITER_TIME_SEC),
-    DevSeeds    = maps:get(dev_seeds,         Opts, ?DEFAULT_DEV_SEEDS),
-    DevHardWall = maps:get(dev_hard_wall_sec, Opts, ?DEFAULT_DEV_HARD_WALL_SEC),
+    MaxIters = maps:get(max_iters, Opts, ?DEFAULT_MAX_ITERS),
+    DevSeeds = maps:get(dev_seeds, Opts, ?DEFAULT_DEV_SEEDS),
+    %% dev_hard_wall_sec defaults to snapshot.budget_sec_per_seed
+    %% (which the orchestrator sets from bench_config.hard_wall_sec).
+    %% Tests can override via Opts.
+    DevHardWall = maps:get(dev_hard_wall_sec, Opts,
+                           Snapshot#context_snapshot.budget_sec_per_seed),
     Spec = Snapshot#context_snapshot.env_spec,
     Msgs = [#{role => <<"user">>, content => Spec}],
-    Deadline = erlang:monotonic_time(millisecond)
-             + trunc(Snapshot#context_snapshot.time_remaining_sec * 1000),
     Best0 = #submission{body = <<>>, score = -1.0, walltime_sec = 0.0},
-    Cfg = #{llm         => LLM,
-            scorer      => Scorer,
-            max_iters   => MaxIters,
-            min_iter_ms => trunc(MinIterTime * 1000),
-            dev_seeds   => DevSeeds,
-            dev_hwsec   => DevHardWall},
-    loop(Cfg, Msgs, Best0, Deadline, 0).
+    Cfg = #{llm        => LLM,
+            scorer     => Scorer,
+            max_iters  => MaxIters,
+            dev_seeds  => DevSeeds,
+            dev_hwsec  => DevHardWall},
+    loop(Cfg, Msgs, Best0, 0).
 
 %% =====================================================================
 %% Private
 
-loop(#{max_iters := Max}, _Msgs, Best, _Deadline, Iter) when Iter >= Max ->
+loop(#{max_iters := Max}, _Msgs, Best, Iter) when Iter >= Max ->
     Best#submission.body;
-loop(Cfg, Msgs, Best, Deadline, Iter) ->
-    Now = erlang:monotonic_time(millisecond),
-    case Deadline - Now < maps:get(min_iter_ms, Cfg) of
-        true  -> Best#submission.body;
-        false -> iter(Cfg, Msgs, Best, Deadline, Iter)
-    end.
+loop(Cfg, Msgs, Best, Iter) ->
+    iter(Cfg, Msgs, Best, Iter).
 
-iter(Cfg, Msgs, Best, Deadline, Iter) ->
+iter(Cfg, Msgs, Best, Iter) ->
     case llm_client:chat(maps:get(llm, Cfg), Msgs) of
         {error, _Reason} ->
             Best#submission.body;
         {ok, RespText} ->
-            handle_response(Cfg, Msgs, Best, Deadline, Iter, RespText)
+            handle_response(Cfg, Msgs, Best, Iter, RespText)
     end.
 
-handle_response(Cfg, Msgs, Best, Deadline, Iter, RespText) ->
+handle_response(Cfg, Msgs, Best, Iter, RespText) ->
     case extract_fenced_erlang:extract(RespText,
                                        <<"-module(submission)">>) of
         <<>> ->
             NudgeMsg = append_turn(Msgs, RespText,
                 <<"No fenced erlang block in your response. "
                   "Emit your Solver as a ```erlang ... ``` block.">>),
-            loop(Cfg, NudgeMsg, Best, Deadline, Iter + 1);
+            loop(Cfg, NudgeMsg, Best, Iter + 1);
         Body ->
-            score_and_observe(Cfg, Msgs, Best, Deadline, Iter, RespText, Body)
+            score_and_observe(Cfg, Msgs, Best, Iter, RespText, Body)
     end.
 
-score_and_observe(Cfg, Msgs, Best, Deadline, Iter, RespText, Body) ->
+score_and_observe(Cfg, Msgs, Best, Iter, RespText, Body) ->
     AR = canonical_scorer:score_body(
             maps:get(scorer, Cfg),
             Body,
@@ -85,7 +80,7 @@ score_and_observe(Cfg, Msgs, Best, Deadline, Iter, RespText, Body) ->
     Best1 = update_best(Best, Body, AR),
     Obs = format_observation(AR),
     NewMsgs = append_turn(Msgs, RespText, Obs),
-    loop(Cfg, NewMsgs, Best1, Deadline, Iter + 1).
+    loop(Cfg, NewMsgs, Best1, Iter + 1).
 
 update_best(Best, Body, #attempt_result{compile_error = CE} = AR)
   when CE =:= undefined ->

@@ -36,13 +36,12 @@ start_llm(Responses) ->
     }),
     Pid.
 
-snapshot(Spec, Sec) ->
+snapshot(Spec) ->
     #context_snapshot{
         env_spec            = Spec,
         best_so_far         = undefined,
         history_digest      = [],
         iters_remaining     = 1,
-        time_remaining_sec  = Sec,
         budget_sec_per_seed = 3.0
     }.
 
@@ -53,7 +52,7 @@ generate_returns_fenced_body_test() ->
     LLM = start_llm([ok_response(Wrapped)]),
     try
         Result = solution_generator:generate(
-            LLM, beam_canonical_scorer, snapshot(<<"task">>, 30.0),
+            LLM, beam_canonical_scorer, snapshot(<<"task">>),
             #{max_iters => 1, dev_seeds => [42], dev_hard_wall_sec => 3.0}),
         ?assertEqual(?TRIVIAL_W, Result)
     after
@@ -76,7 +75,7 @@ generate_picks_higher_scoring_body_test() ->
     LLM = start_llm([R1, R2]),
     try
         Result = solution_generator:generate(
-            LLM, beam_canonical_scorer, snapshot(<<"task">>, 60.0),
+            LLM, beam_canonical_scorer, snapshot(<<"task">>),
             #{max_iters => 2, dev_seeds => [42], dev_hard_wall_sec => 3.0}),
         %% Either A or B can win — both are valid submissions.
         ?assert(Result =:= A orelse Result =:= B)
@@ -93,7 +92,7 @@ generate_handles_missing_fence_gracefully_test() ->
     LLM = start_llm([NoFence, Good]),
     try
         Result = solution_generator:generate(
-            LLM, beam_canonical_scorer, snapshot(<<"task">>, 60.0),
+            LLM, beam_canonical_scorer, snapshot(<<"task">>),
             #{max_iters => 2, dev_seeds => [42], dev_hard_wall_sec => 3.0}),
         ?assertEqual(?TRIVIAL_W, Result)
     after
@@ -107,7 +106,7 @@ generate_returns_empty_when_no_fence_ever_test() ->
     LLM = start_llm([NoFence]),
     try
         Result = solution_generator:generate(
-            LLM, beam_canonical_scorer, snapshot(<<"task">>, 30.0),
+            LLM, beam_canonical_scorer, snapshot(<<"task">>),
             #{max_iters => 1, dev_seeds => [42], dev_hard_wall_sec => 3.0}),
         ?assertEqual(<<>>, Result)
     after
@@ -124,7 +123,7 @@ generate_returns_best_so_far_on_llm_error_test() ->
     }),
     try
         Result = solution_generator:generate(
-            LLM, beam_canonical_scorer, snapshot(<<"task">>, 30.0),
+            LLM, beam_canonical_scorer, snapshot(<<"task">>),
             #{max_iters => 1, dev_seeds => [42], dev_hard_wall_sec => 3.0}),
         ?assertEqual(<<>>, Result)
     after
@@ -139,7 +138,7 @@ generate_recovers_from_compile_error_test() ->
     LLM = start_llm([BadResp, GoodResp]),
     try
         Result = solution_generator:generate(
-            LLM, beam_canonical_scorer, snapshot(<<"task">>, 60.0),
+            LLM, beam_canonical_scorer, snapshot(<<"task">>),
             #{max_iters => 2, dev_seeds => [42], dev_hard_wall_sec => 3.0}),
         ?assertEqual(?TRIVIAL_W, Result)
     after

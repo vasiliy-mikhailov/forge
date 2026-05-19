@@ -30,7 +30,7 @@
 >>).
 
 suite() ->
-    [{timetrap, {minutes, 5}}].
+    [{timetrap, {minutes, 20}}].
 
 all() ->
     [llm_probe, bench_against_real_vllm].
@@ -120,7 +120,10 @@ bench_against_real_vllm(_Config) ->
             model_client     = LLM,
             env_spec         = EnvSpec
         },
-        Cfg = #bench_config{max_iters = 1, hard_wall_sec = 60.0},
+        %% max_iters=1 outer; solution_generator's inner reasoning
+        %% loop default is 5, so we get ~5 LLM rounds with feedback.
+        %% hard_wall_sec=5.0 per-game (HARD_WALL_SEC per cycle 254).
+        Cfg = #bench_config{max_iters = 1, hard_wall_sec = 5.0},
         Sub = bench:bench(Env, Cfg),
 
         true = is_record(Sub, submission),

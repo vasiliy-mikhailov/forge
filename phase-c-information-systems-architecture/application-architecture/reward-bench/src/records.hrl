@@ -37,7 +37,10 @@
     best_so_far         = undefined :: #submission{} | undefined,
     history_digest      = []        :: [#submission{}],
     iters_remaining     = 1         :: non_neg_integer(),
-    time_remaining_sec              :: float(),
+    %% Per-game Solver-execution wallclock cap (HARD_WALL_SEC,
+    %% see SPEC.md). Flows through to canonical_scorer's dev test
+    %% from solution_generator and to canonical_scorer's canonical
+    %% scoring from orchestrator.
     budget_sec_per_seed = 5.0       :: float()
 }).
 
