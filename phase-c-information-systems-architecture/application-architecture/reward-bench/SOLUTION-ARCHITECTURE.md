@@ -156,25 +156,42 @@ Behaviour with two implementations:
 
 ## 3. Fitness functions
 
-Architectural shape (three checks gate role separation):
+**Per-module behavior** — EUnit suites under `test/*_tests.erl`,
+run by `make eunit` (~5 s, 62 tests).
 
-- `test_when_orchestrator_run_called_then_yields_submissions/0`
-- `test_when_solution_generator_generate_called_with_snapshot_then_returns_body_binary/0`
-- `test_when_canonical_scorer_score_body_called_then_returns_attempt_result/0`
+| module | suite | what it pins |
+|---|---|---|
+| env_2048              | env_2048_tests              | row compress/merge; board init determinism; step |
+| runner_canonical      | runner_canonical_tests      | wallclock cap; max-moves cap; solver error capture |
+| beam_canonical_scorer | beam_canonical_scorer_tests | compile + load + score; module purge; memory-bomb kill |
+| extract_fenced_erlang | extract_fenced_erlang_tests | last-fenced-block extraction; prefer_contains anchor |
+| compose_env_spec      | compose_env_spec_tests      | prompt shape (Task + Output + Budget) |
+| llm_client            | llm_client_tests            | HTTP plumbing via injectable http_fn |
+| solution_generator    | solution_generator_tests    | reasoning loop; missing fence; compile-error recovery |
+| bench                 | bench_tests                 | argmax composition over orchestrator |
 
-Domain quality:
+**Cross-cutting architecture** — invoked on demand via the
+[cats-review skill](../../../../phase-preliminary/cats-review/SKILL.md).
+Audits stance × artifact (Twain · Senior Erlang AI · Constraints are
+tests · Fitness functions) and produces a remediation plan.
+
+**Live end-to-end** — Common Test suite `test/bench_live_SUITE.erl`
+runs `bench:bench/2` against real vLLM (requires `VLLM_API_KEY`).
+Pins:
+
+- `body` parses as a valid Erlang module exporting `move/1`
+- `score` is a non-negative float
+- `walltime_sec > 0`
+
+`make ct` runs it.
+
+Domain quality (mathematical shape, not a runnable check):
 
 ```
 best_score(Env, Cfg, T) = max { S#submission.score
-                              | S <- orchestrator:run(Env, Cfg),
+                              | S <- orchestrator:orchestrate(Env, Cfg),
                                 S#submission.walltime_sec =< T }
 ```
-
-Live end-to-end (one check gates the whole chain):
-
-- `test_when_bench_called_with_real_chain_then_returns_submission_with_solver_body_and_non_negative_score/0`
-  — `body` parses as a valid Erlang module exporting `move/1`,
-  `score` is a non-negative float.
 
 
 ## 4. SolutionGenerator runtime: Erlang, no SDK
