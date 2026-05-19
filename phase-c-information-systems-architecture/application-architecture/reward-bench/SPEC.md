@@ -2,304 +2,154 @@
 
 ## Purpose
 
-Server-side, Docker-sandboxed evaluator. Runs a candidate LLM through a 4-tier ladder of agentic puzzle-solving tasks; each tier asks the model to produce an FSM (or FSM-of-agents) maximising a verifiable quantitative reward. First task: 2048; harness is task-agnostic.
+BEAM-sandboxed evaluator. Runs a candidate LLM through a 4-tier
+ladder of agentic puzzle-solving tasks; each tier asks the model to
+produce an FSM (or FSM-of-agents) maximising a verifiable quantitative
+reward. First task: 2048. Harness is task-agnostic.
 
-reward-bench is **the comprehensiveness scoreboard** for forge. Throughput is measured separately (`bench-fp8-16k.sh`, `bench-nvfp4-16k.sh`). reward-bench answers: "given a model that's fast enough, can it actually orchestrate to solve a task?"
+reward-bench is **the comprehensiveness scoreboard** for forge.
+Throughput is measured separately. reward-bench answers: "given a
+model that is fast enough, can it actually orchestrate to solve a
+task?"
 
-Per [ADR 0029](../../../phase-preliminary/adr/0029-reward-bench.md). Per [ADR 0015](../../../phase-preliminary/adr/0015-verifiable-agent-rewards.md), scores are verifiable — derived from the env's deterministic reward function, not from any judge.
+Per [ADR 0029](../../../phase-preliminary/adr/0029-reward-bench.md).
+Per [ADR 0015](../../../phase-preliminary/adr/0015-verifiable-agent-rewards.md),
+scores are verifiable — derived from the env's deterministic reward
+function, not from any judge.
 
 ## Non-goals
 
-- Not a training lab. Training is `rl-2048`'s job (Jupyter + GRPO + Unsloth + CUDA). reward-bench is CPU-only evaluation with pinned Docker images.
-- Not a UI. Headless. `make reward-bench MODEL=<id> TIER=1 TASK=2048` runs one attempt and exits.
-- Not coupled to one task. The harness is task-agnostic; today only 2048 is wired in.
-- Not a model server. We consume the vLLM endpoint at `${INFERENCE_DOMAIN}` from whichever lab/mode is currently up.
+- Not a training lab. Training is `rl-2048`'s job. reward-bench is
+  CPU-only evaluation.
+- Not a UI. Headless. `bench_main:run/0` (or `make` target) runs one
+  attempt and exits.
+- Not coupled to one task. The harness is task-agnostic; today only
+  2048 is wired in.
+- Not a model server. We consume a vLLM endpoint from
+  `${VLLM_BASE_URL}`; provisioning that is some other lab's job.
 
 ## Architecture
 
-### Layered structure
+See [SOLUTION-ARCHITECTURE.md](SOLUTION-ARCHITECTURE.md) for the
+three-role decomposition (Orchestrator / SolutionGenerator /
+canonical_scorer) and the two-layer sandbox (outer docker for the
+bench release, inner BEAM processes for Solver execution).
 
-```
-┌─────────────────────────────────────────────────────┐
-│  orchestrator (host, Python)                        │
-│   - picks model from models.yml                     │
-│   - sends tier-N prompt to vLLM                     │
-│   - extracts submission from response               │
-│   - runs static anti-cheat (AST + bandit)           │
-│   - launches per-attempt Docker container           │
-│   - replay-determinism check (second container)     │
-│   - writes artifacts                                │
-└─────────────────────────────────────────────────────┘
-              │
-              ▼ (docker run)
-┌─────────────────────────────────────────────────────┐
-│  tier-N sandbox (Docker, immutable image)           │
-│   - mounts /env (ro) /workspace (rw) /reports (rw)  │
-│   - runs runner.py from /env                        │
-│   - runner imports submission, plays N games        │
-│   - writes /reports/result.json                     │
-│   - tier 1: --network=none                          │
-│   - tier 2-4: --network proxy-net + iptables-egress │
-│               only ${INFERENCE_DOMAIN}              │
-└─────────────────────────────────────────────────────┘
-              │
-              ▼ (artifact copy)
-${STORAGE_ROOT}/labs/reward-bench/experiments/<run_id>/
-```
+## Mode mutex
 
-### Container topology
+CPU-only. Co-runs with whichever lab is providing inference —
+`${VLLM_BASE_URL}` must be reachable. The bench owns no inference
+infrastructure.
 
-One container per attempt, image `reward-bench-tier${N}:${VERSION}` (built from local `Dockerfile.tier${N}`). Image base is `python:3.12-slim` plus tier-specific packages (see ADR 0029 §8). No host home, no docker socket, no `/var/log`. `proxy-net` only for tier 2+ (not tier 1).
+## Required environment
 
-### Mode mutex
+- `VLLM_BASE_URL` — chat-completions endpoint root, e.g.
+  `https://inference.mikhailov.tech` (or `/v1` suffix; the client
+  normalises).
+- `VLLM_API_KEY` — bearer token for the endpoint.
+- `VLLM_MODEL_ID` — id the endpoint advertises for the candidate
+  model.
+- `MAX_ITERS` — orchestrator iterations per attempt (default 1).
+- `HARD_WALL_SEC` — total wallclock budget per attempt (default 60).
+- `SKILL_PATH` — path to the SKILL spec for the task (default
+  `tasks/2048/SKILL_tier1.md`).
 
-CPU-only — co-runs with whichever mode/lab is currently providing inference. Required prerequisite: `${INFERENCE_DOMAIN}` is reachable from the proxy-net network (i.e., one of `wiki-compiler` mode / `inference` mode is up and serving the candidate model).
+## Submission protocol
 
-### Reuse from rl-2048
+One protocol, no tools. The LLM receives an `env_spec` (task SKILL +
+output rule + budget) and emits the candidate Solver as a fenced
+```` ```erlang ... ``` ```` block in its assistant message. The
+harness:
 
-`tasks/2048/env.py` is lifted from `GameBoard` in `rl-2048/notebooks/2048_gpt_oss_20b.ipynb` — same WASD action API, same params. Anti-cheat helpers (`check_python_modules`, `create_locked_down_function`) are reimplemented without the Unsloth dep to keep the sandbox minimal. A model fine-tuned on rl-2048 sees the same env at eval time.
+1. Extracts the last fenced erlang block as a binary.
+2. Compiles via `compile:forms/2`, loads via `code:load_binary/3`.
+3. Runs N canonical games in monitored Erlang processes, one process
+   per seed.
+4. Feeds aggregate scores back to the LLM as the next user message;
+   the LLM may iterate within the per-iter wallclock budget.
+5. Final body = the highest-scoring fenced block across iters.
 
-## Data contracts
-
-### Required env (read from forge `.env`)
-
-- `STORAGE_ROOT` — data-disk root, matches forge.
-- `INFERENCE_BASE_URL` — vLLM endpoint, e.g. `https://inference.mikhailov.tech/v1`.
-- `VLLM_API_KEY` — same value as in `forge/.env`.
-- `INFERENCE_ACTIVE_MODEL_ID` — id from `wiki-compiler/configs/models.yml`; the model under test.
-
-### Per-attempt directory layout
-
-```
-${STORAGE_ROOT}/labs/reward-bench/experiments/<run_id>/
-  meta.json               # see schema below
-  prompt.txt              # the prompt sent to the model
-  raw_response.txt        # the model's full text response
-  submission.py           # extracted Python (tier 1) or graph spec (tier 2+)
-  submission.sha256       # for replay verification
-  cheat-check.json        # AST + bandit findings
-  events.jsonl            # per-game step trace
-  result.json             # final scores
-  result-replay.json      # second-run scores (must match within tier tolerance)
-  sandbox.log             # container stdout/stderr
-  done                    # touch-marker — presence = run finalised
-```
-
-### Schemas (pydantic v2)
-
-```python
-# meta.json
-class AttemptMeta(BaseModel):
-    run_id: str                # e.g. "2026-05-04-180423-qwen36-27b-fp8-tier1"
-    model_id: str              # from models.yml
-    served_model_name: str     # what vLLM advertises
-    task_id: Literal["2048"]   # extensible
-    tier: int = Field(ge=1, le=4)
-    started_at: datetime
-    image_digest: str          # sha256 of sandbox image (for reproducibility)
-    forge_commit: str          # forge git rev at attempt time
-
-# result.json
-class GameResult(BaseModel):
-    seed: int
-    score: int = Field(ge=0)
-    max_tile: int = Field(ge=2)
-    moves: int = Field(ge=0)
-    final_state: Literal[
-        "won", "lost", "max_moves",
-        "stagnated",                 # neither score nor max-tile changed for stagnation_sec
-        "walltime_exceeded",         # outer hard-wall cap fired (only if HARD_WALL_SEC>0)
-        "solver_error", "invalid_action",
-    ]
-    walltime_sec: float
-
-class AttemptResult(BaseModel):
-    games: list[GameResult]
-    mean_score: float
-    median_score: float
-    std_score: float
-    max_max_tile: int
-    n_games: int
-    aggregate_walltime_sec: float
-    stagnation_sec: float        # default 60 — per-game progress watchdog
-    hard_wall_sec: float         # 0 = disabled. Outer runaway-protection cap.
-    stagnated_any: bool          # any game ended in final_state="stagnated"
-    walltime_exceeded: bool      # any game ended due to outer hard-wall cap
-
-# cheat-check.json
-class CheatFinding(BaseModel):
-    layer: Literal["ast", "bandit"]
-    severity: Literal["info", "warning", "rejected"]
-    rule: str                  # e.g. "no_subprocess"
-    line: int
-    code: str
-
-class CheatReport(BaseModel):
-    findings: list[CheatFinding]
-    network_policy: Literal["none", "vllm_only"]
-    replay_score_match: bool | None
-    replay_tolerance_pct: float
-    verdict: Literal["clean", "warning", "rejected"]
-    rejected_reason: str | None
-```
-
-## Submission protocols
-
-Each tier admits two protocols. Both target the same per-tier submission file (Solver class / build_graph / construct meta-orchestrator); they differ only in how the model produces it.
-
-### Static — single-reply emission
-
-Model receives the task spec in one prompt; emits the submission as one fenced code block. Harness extracts, writes, runs, scores.
-
-Status: planned.
-
-### Interactive — tool-using agent loop
-
-Model gets a workspace, env module, and tool protocol. Reads files (view), submits code (execute_submission), signals completion (finish). Loop runs up to a per-attempt iteration cap. The body from the most recent successful `execute_submission` is promoted to `/workspace/submission.py` for canonical scoring.
-
-Tool-call wire format: each call is one fenced block in the assistant
-reply:
-
-    ```tool
-    {"name": "<active-tool-name>", "args": {<...>}}
-    ```
-
-Active tool set (per [ADR 0008](SOLUTION-ARCHITECTURE.md)):
-  - view(path)              read file contents into the next prompt.
-  - execute_submission(content) write the submission body into a
-                            sandboxed `reward-bench-tier${TIER}` Docker
-                            container, run the dev-runner, return a
-                            structured JSON observation
-                            (per-seed scores, max-tile, protocol
-                            violations, runtime tracebacks).
-  - finish(note)            end the loop; the most recent
-                            execute_submission body is promoted to
-                            `/workspace/submission.py` for canonical
-                            scoring.
-
-The parser that decodes assistant replies into (name, args) tuples is
-specified in spec/parser.md.
-
-Status: only currently-implemented protocol.
-
-### Why two protocols
-
-Static bounds reasoning at one forward pass — cheaper baseline. Interactive gives env source + shell iteration on a larger budget. Cross-mode comparison is informative.
+No tool-call JSON. No file IO. No docker per Solver.
 
 ## Tier specifications
 
-### Tier 1 — closed-world FSM
+### Tier 1 — static Erlang FSM
 
-**Image:** `reward-bench-tier1:${VERSION}` — base + numpy + transitions + pydantic.
-**Network:** `--network=none`.
-**Submission:** Python module with `class Solver` exposing `move(board: list[list[int]]) -> str` returning one of `'W' | 'A' | 'S' | 'D'`. The class MUST use the `transitions` library to declare states + transitions (we grep for `from transitions import` and reject otherwise — soft enforcement).
-**Allowed imports:** numpy, transitions, re, math, random, collections, itertools, functools, dataclasses, typing, plus `env_2048` (the read-only env module).
-**Reward:** mean game score over N=20 games (configurable).
-**Replay tolerance:** 0 % — exact match required.
-**Author-stage context:** Stage 1 runs the model at 128K (`--max-model-len 131072`). A **condenser** summarises older turns when prompt + reserved output exceeds the budget. Interactive protocol only; static-mode authors get one shot in the same budget.
+- **Submission**: Erlang module named `submission` exporting
+  `move/1`. The function takes a 4×4 board (list of 4 lists of 4
+  non-negative integers; 0 = empty, tiles are powers of 2) and
+  returns one of the atoms `w` | `a` | `s` | `d`.
+- **Allowed surface**: any module:function/arity from the Erlang/OTP
+  standard library, callable inside a pure `move/1`. No `spawn`,
+  no `process_flag`, no `file:`, no `gen_tcp:` — the harness runs
+  the Solver inside a sandboxed Erlang process; IO patterns the
+  harness does not whitelist will fault the game.
+- **Reward**: mean game score over 20 games on canonical held-out
+  seeds 1000-1019.
+- **Replay tolerance**: 0 % — the env is pure functional + seeded,
+  so two runs of the same Solver against the same seeds must produce
+  identical scores.
+- **Author context**: solution_generator's reasoning loop, bounded
+  by `time_remaining_sec` (the orchestrator's per-iter slice of
+  `HARD_WALL_SEC`).
 
-### Tier 2 — open-world FSM-of-agents
+### Tier 2-4
 
-**Image:** `reward-bench-tier2:${VERSION}` — tier1 + langgraph + openai + tenacity + structlog.
-**Network:** `--network proxy-net` + iptables egress restricted to `${INFERENCE_DOMAIN}`.
-**Submission:** Python module exposing `def build_graph() -> langgraph.StateGraph`. Each node is a function that may call `llm.invoke(prompt) -> str` (provided shim wraps the openai client pinned to `${INFERENCE_BASE_URL}` and the active model). Nodes return state-update dicts.
-**Allowed imports:** tier1 + `langgraph`, `langchain_core`, `pydantic`, `openai`, `tenacity`, `structlog`.
-**Reward:** mean game score over N=10 games (fewer because LLM calls slow it).
-**Replay tolerance:** 5 % — LLM micro-noise tolerated.
-
-### Tier 3 — orchestrator-chosen edges
-
-**Image:** `reward-bench-tier3:${VERSION}` — tier2 + openhands-sdk.
-**Network:** same as tier 2.
-**Submission:** A LangGraph + an orchestrator function that routes between nodes at runtime. The orchestrator function may make its own LLM call to decide the transition.
-**Reward:** mean over N=10.
-**Replay tolerance:** 5 %.
-
-### Tier 4 — orchestrator constructs the FSM
-
-**Image:** same as tier 3 (no new deps).
-**Submission:** A meta-orchestrator function `def construct(task_spec) -> Solver` that, when called, returns a Solver instance. The Solver may itself contain dynamically-built LangGraph or OpenHands agents.
-**Reward:** mean over N=10.
-**Replay tolerance:** 10 % (more meta-randomness).
+**Deferred.** Tiers 2-4 would generalise to open-world FSM-of-agents,
+LangGraph-style orchestrations, meta-orchestrators that build the
+solver dynamically. None of this is on the current roadmap. The
+3-role architecture leaves room for it if/when tier-1 saturates.
 
 ## Make targets
 
+See the [`Makefile`](Makefile) for the actual list. Summary:
+
 ```
-make reward-bench MODEL=<id> TIER=<N> TASK=<id>
-    Run one attempt for one (model, tier, task) cell. Produces one
-    artifact directory.
-
-make reward-battery TIER=<N> [--filter <regex>]
-    Iterate over every model in wiki-compiler/configs/models.yml with
-    bench_tier ≠ skip; run one attempt at the given TIER for each.
-
-make reward-bench-build
-    Build all four sandbox Docker images, pinned by digest.
-
-make reward-bench-down
-    No-op (no long-running containers); included for symmetry with
-    other labs. Removes any stale per-attempt containers if present.
-
-make reward-bench-clean
-    Delete all per-attempt artifacts older than N days (default: keep
-    forever — admin-driven cleanup).
+make compile     rebar3 compile inside reward-bench-dev:0.1
+make eunit       run EUnit suites
+make ct          run Common Test suites
+make shell       interactive rebar3 shell with deps loaded
+make dialyzer    static type analysis
+make release     build the deployment release
 ```
 
-### Implementation extras
+## Per-game wallclock + iteration caps
 
-The Makefile additionally exposes operational helpers that are NOT
-part of this contract — they evolved during development and stay
-alongside the spec targets for convenience:
+Each canonical game runs in its own monitored Erlang process. Two
+caps guard runaway Solvers:
 
-- `make smoke-tier1` — run the reference FSM through Stage 2 + Stage 3
-  without an LLM. Used for CI/regression: builds the tier-1 image,
-  plays 20 reference-FSM games, asserts mean_score and replay match.
-- `make shim ROOT=<dir> PORT=<n>` — start the OpenAI-compatible Claude
-  shim for fixture/dev runs without GPU.
-- `make claude-fixture-tier1 RUN_ID=<x> SHIM=<url>` — drive the agent
-  loop through the shim (Claude-in-the-loop fixture).
+- **Wallclock**: each game has a hard deadline (currently
+  `?GAME_HARD_WALL_SEC` = 5.0s in `orchestrator.erl`); on expiry
+  the process is killed and the game's state is recorded as
+  `wall_clock_expired`.
+- **Move count**: capped at `?GAME_MOVE_CAP` (10000) in
+  `beam_canonical_scorer`; on expiry the game ends as
+  `max_moves_reached`.
 
-`make reward-battery TIER=<N> [FILTER=<regex>]` is implemented by
-[`src/reward_bench/frameworks/run_battery.py`](src/reward_bench/frameworks/run_battery.py).
-It reads `wiki-compiler/configs/models.yml`, drops `bench_skip: True`
-entries, optionally narrows by regex on `id`, and invokes `make
-reward-bench MODEL=<id> TIER=<N>` per pick.
-
-## Per-game stagnation detector
-
-Stage 2 budgets are **per-game**, not per-attempt. Each game runs as long as it's making progress; "progress" means `game.score` increased OR `game.max_tile` increased. If neither has changed for `REWARD_BENCH_STAGNATION_SEC` seconds (default 60), the game ends with `final_state="stagnated"`. The score accumulated up to that point is kept.
-
-- Tier-1 FSMs play 20 games in seconds (microseconds per move) — they never trip the detector.
-- Tier-2+ candidates calling an LLM per move have 60 s ≈ 30-60 moves of headroom; if the policy can't find a merge in that span the game is genuinely stuck and we move on.
-- Detection is wall-time-based, so it normalises across tiers without per-tier tuning.
-
-An outer runaway cap remains available via `REWARD_BENCH_HARD_WALL_SEC` (default 0 = disabled). Set it to e.g. 1800 if you want to bound total Stage-2 wall time as a safety net for badly-misbehaving solvers.
-
-## Risk surfaces
-
-- **Sandbox escape via `pickle.loads`** — submissions could load a malicious pickle that does anything. Mitigation: AST scan rejects `pickle` import; bandit also flags this rule. If a submission needs serialisation, `json` is allow-listed.
-- **AST-walk false positives** — a submission using `eval` for legitimate reasons (e.g., literal eval of board state). Mitigation: AST walk knows the difference between `eval(arbitrary_string)` (rejected) and `ast.literal_eval(arbitrary_string)` (allowed via the `ast` whitelist).
-- **Replay non-determinism** in tiers 2-4 — vLLM's KV cache + speculative decoding can introduce ~0.1 % token-level noise even with `temperature=0`. Mitigation: per-tier replay tolerance (0 % tier 1, 5 % tier 2-3, 10 % tier 4). Submissions whose replay drifts more get verdict=`rejected`.
-- **Iptables egress rule drift** — if proxy-net's iptables config changes (e.g., during caddy reconfig), tier 2-4 submissions might suddenly reach the open internet. Mitigation: smoke-tests verify the egress allowlist before each `reward-battery` run.
-- **Score gaming via timing-based randomness** — a submission could read the wall-clock and use it as a seed (defeating replay determinism). Mitigation: AST scan flags `time.time()`, `datetime.now()`, `os.urandom`, `time.monotonic()` etc. — only `random.Random(seed)` and `numpy.random.default_rng(seed)` allowed.
+A stagnation detector (no score / max-tile progress for N seconds)
+is in scope for a later cycle.
 
 ## Cross-references
 
-- [ADR 0029 — reward-bench](../../../phase-preliminary/adr/0029-reward-bench.md) — design decisions
-- [ADR 0015 — verifiable agent rewards](../../../phase-preliminary/adr/0015-verifiable-agent-rewards.md) — first principle this lab realises
-- [wiki-bench/SPEC](../wiki-bench/SPEC.md) — sibling lab, source of the Docker-sandbox pattern
-- [wiki-bench/docs/adr/0002 — Docker sandbox](../wiki-bench/docs/adr/0002-docker-sandbox-and-storage-root.md) — the pattern we mirror
-- [rl-2048/notebooks/2048_gpt_oss_20b.ipynb](../rl-2048/notebooks/2048_gpt_oss_20b.ipynb) — source of the `GameBoard` env we reuse
+- [ADR 0029 — reward-bench](../../../phase-preliminary/adr/0029-reward-bench.md)
+  — design decisions.
+- [ADR 0015 — verifiable agent rewards](../../../phase-preliminary/adr/0015-verifiable-agent-rewards.md)
+  — the first principle this lab realises.
 
 ## Measurable motivation chain
 
 Per [P7](../../../phase-preliminary/architecture-principles.md):
 
-- **Driver**: ADR 0029 — forge needs a verifiable comprehensiveness scoreboard.
-- **Goal**: [Quality](../../../phase-a-architecture-vision/goals.md) (KR: pre_prod_share ≥ 0.95).
-- **Outcome**: this lab + 4-tier ladder + per-attempt artifacts; first task 2048; quantitative leaderboard across all models in registry.
-- **Measurement source**: lab-tests: RB (reward-bench smoke + AGENTS Phase A-H integrity).
-- **Contribution**: closes the throughput-only gap in model selection signal — comprehensiveness becomes diff-able.
+- **Driver**: ADR 0029 — forge needs a verifiable comprehensiveness
+  scoreboard.
+- **Goal**: [Quality](../../../phase-a-architecture-vision/goals.md)
+  (KR: `pre_prod_share ≥ 0.95`).
+- **Outcome**: this lab + 4-tier ladder; first task 2048; leaderboard
+  across registry models.
+- **Measurement source**: lab-tests: RB (reward-bench EUnit + live
+  smoke against real vLLM).
+- **Contribution**: closes the throughput-only gap in model selection
+  signal — comprehensiveness becomes diff-able.
 - **Capability realised**: [Architecture knowledge management](../../../phase-b-business-architecture/capabilities/forge-level.md).
 - **Function**: Provide-verifiable-comprehensiveness-signal-for-LLM-selection.
 - **Element**: this directory.
