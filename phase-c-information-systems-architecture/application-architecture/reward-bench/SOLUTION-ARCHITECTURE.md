@@ -400,27 +400,26 @@ reward_bench/                       rebar3 project (single app)
 │   ├── reward_bench.app.src
 │   ├── reward_bench_app.erl
 │   ├── reward_bench_sup.erl
-│   ├── bench.erl                   (use case — bench/2)
-│   ├── orchestrator.erl            (gen_server)
-│   ├── solution_generator.erl      (gen_server)
-│   ├── llm_client.erl              (gen_server, hackney)
-│   ├── canonical_scorer.erl        (behaviour)
-│   ├── beam_canonical_scorer.erl   (production impl, in-VM)
-│   ├── fake_canonical_scorer.erl   (test impl)
-│   ├── extract_fenced_erlang.erl   (pure)
-│   ├── compose_env_spec.erl        (pure)
-│   ├── env_2048.erl                (game logic, pure)
-│   ├── runner_canonical.erl        (plays one game w/ deadline+heap cap)
-│   └── records.hrl
+│   ├── bench.erl                   use case — bench/2
+│   ├── orchestrator.erl            stateless — orchestrate/2
+│   ├── solution_generator.erl      stateless — generate/3,4 (reasoning loop)
+│   ├── llm_client.erl              gen_server, hackney
+│   ├── canonical_scorer.erl        behaviour
+│   ├── beam_canonical_scorer.erl   in-VM impl (compile + load + spawn games)
+│   ├── runner_canonical.erl        plays one game w/ deadline
+│   ├── extract_fenced_erlang.erl   pure
+│   ├── compose_env_spec.erl        pure
+│   ├── env_2048.erl                game logic, pure
+│   └── records.hrl                 shared records
 ├── test/
-│   ├── eunit/                      (unit tests)
-│   └── *_SUITE.erl                 (Common Test integration + live)
-├── tasks/
-│   └── 2048/
-│       └── SKILL_tier1.md          Erlang Solver contract
-├── tests-spec/                     CATS markdown specs (unchanged tooling)
+│   ├── *_tests.erl                 EUnit suites (one per module)
+│   ├── bench_live_SUITE.erl        Common Test — real vLLM
+│   └── test_solver_*.erl           EUnit test fixtures
+├── tasks/2048/
+│   └── SKILL_tier1.md              Erlang Solver contract
 ├── rebar.config
-├── Dockerfile                      FROM erlang:27 + COPY release
+├── rebar.lock
+├── Dockerfile.dev                  Erlang/OTP 27 + rebar3 (dev + test)
 └── Makefile                        rebar3 + docker build targets
 ```
 
