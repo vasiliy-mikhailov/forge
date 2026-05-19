@@ -213,17 +213,21 @@ spare so the last response actually arrives.
 
 ### Wallclock enforcement
 
-Two-layer:
+The orchestrator passes a deadline via
+`snapshot.time_remaining_sec`. The reasoning loop checks
+remaining time before each LLM turn:
 
-1. **Deadline param** passed by orchestrator. The loop checks
-   `time_left(Deadline)` before each LLM turn.
-2. **Top-level `erlang:send_after(DeadlineMs, self(), deadline)`**
-   in `init/1`. A `handle_info(deadline, S)` returns `{stop,
-   normal, S}` and the loop unwinds — the LLM call in progress
-   completes, no body is corrupted.
+```erlang
+case Deadline - Now < MinIterMs of
+    true  -> Best#submission.body;        %% out of budget; return best so far
+    false -> iter(Cfg, Msgs, Best, Deadline, Iter)
+end
+```
 
-No threads, no SIGTERM races. The BEAM is cooperative; we own
-both ends of the cooperation.
+`MinIterTime` (default ~5 s) is conservative so the final
+response has time to arrive. No threads, no SIGTERM races, no
+`send_after` — the BEAM is cooperative, the loop is the
+mechanism, and we own both ends.
 
 ### LLM client
 
