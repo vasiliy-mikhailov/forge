@@ -19,7 +19,7 @@ REBAR3_TTY := docker run --rm -it \
     -w /work \
     $(DEV_IMAGE) rebar3
 
-.PHONY: dev-image compile eunit ct shell dialyzer release clean
+.PHONY: dev-image compile eunit fitness ct shell dialyzer release clean
 
 dev-image: Dockerfile.dev
 	docker build -t $(DEV_IMAGE) -f Dockerfile.dev .
@@ -28,7 +28,10 @@ compile: dev-image
 	$(REBAR3) compile
 
 eunit: dev-image
-	$(REBAR3) eunit
+	$(REBAR3) eunit --dir test,fitness-functions
+
+fitness: dev-image
+	$(REBAR3) eunit --dir fitness-functions
 
 ct: dev-image
 	$(REBAR3) ct --readable=true
