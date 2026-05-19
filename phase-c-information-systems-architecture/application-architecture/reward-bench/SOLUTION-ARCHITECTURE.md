@@ -101,42 +101,39 @@ wrapper that passes `dev_seeds()` from `compose_env_spec`.
 
 ```erlang
 -module(orchestrator).
--behaviour(gen_server).
--export([run/2]).
--spec run(env(), bench_config()) -> [submission()].
+-export([orchestrate/2]).
+-spec orchestrate(#env{}, #bench_config{}) -> [#submission{}].
 ```
 
-Started transiently per `bench/2` call. Holds cumulative state
-(running best, history). Per iter:
+Stateless module. `bench/2` calls `orchestrate/2`; the loop's
+accumulator carries cumulative state. Per iter:
 
-1. Builds a `#context_snapshot{}` from cumulative state +
+1. Builds a `#context_snapshot{}` from the accumulator +
    `env.env_spec`.
-2. `gen_server:call(SolutionGenerator, {generate, Snapshot})`.
-3. `gen_server:call(CanonicalScorer, {score_body, Body, Seeds,
-   HardWallSec})`.
-4. Updates best/history; sends Submission to the caller (or
-   appends to a returned list).
+2. Calls `solution_generator:generate/3`.
+3. Calls `canonical_scorer:score_body/4` (canonical seeds).
+4. Updates best / history; recurses.
 
-Holds no model context. The cumulative state is structured data
-in process memory.
+Holds no process state — the tail recursion's accumulator IS
+the state.
 
 ### SolutionGenerator
 
 ```erlang
 -module(solution_generator).
--behaviour(gen_server).
--callback init([env()]) -> {ok, state()}.
--callback handle_call({generate, #context_snapshot{}}, _, state()) ->
-    {reply, body :: binary(), state()}.
+-export([generate/3, generate/4]).
+-spec generate(LLM :: pid(), Scorer :: module(),
+               #context_snapshot{}) -> binary().
 ```
 
-Per-call (or per-bench, configurable) gen_server. Fresh context
-every `generate` — no memory across iters except what
-`#context_snapshot{}` carries.
+Stateless module. The reasoning loop's accumulator carries
+`{Messages, BestSoFar}` across iters; nothing persists in
+process state between calls.
 
-Inside the call: a bounded reasoning loop (§4), terminated by
-wallclock deadline or convergence. Returns module source as a
-binary.
+Fresh context every `generate` — no memory across iters except
+what `#context_snapshot{}` carries. The loop is bounded by
+wallclock deadline + max iterations (§4). Returns module source
+as a binary.
 
 ### Runner (canonical scorer)
 
