@@ -241,6 +241,11 @@ Reference: <https://www.opengroup.org/togaf>. Style only.
 
 ## CATS methodology
 
+Mindset for the **Information Systems Architecture phase** (TOGAF
+Phase C) and the **implementation stage** that follows it. Earlier
+phases (vision, business architecture) produce documents, not
+modules; CATS does not apply there.
+
 ## Stance
 
 - **Act as a Senior Erlang AI Engineer.** Pure functions over
