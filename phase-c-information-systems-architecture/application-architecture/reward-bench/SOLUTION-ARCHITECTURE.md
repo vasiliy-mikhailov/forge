@@ -436,13 +436,9 @@ behaviour-based seams (`canonical_scorer`, optionally
 
 ## 7. Open items
 
-- **Erlang Solver fidelity vs leaderboard history.** Existing
-  Python baselines (`reference_fsm.py`) don't carry over; new
-  baselines need to be written in Erlang and the leaderboard
-  reset.
-- **Game env parity.** `env_2048.erl` ports `env_2048.py`
-  semantics including RNG and tile-spawn distribution. Property
-  tests against the Python reference would help; deferred.
+- **Leaderboard baselines.** No reference Solver in tree yet.
+  A hand-tuned `baselines/reference_fsm.erl` would establish a
+  calibration ceiling for the leaderboard.
 - **`hackney` vs `gun`.** Switch to `gun` if SSE streaming from
   vLLM becomes useful (lower latency to first token).
 - **`temperature` is hardcoded.** Move to `bench_config()` when a

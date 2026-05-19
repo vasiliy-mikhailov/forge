@@ -1,5 +1,4 @@
-%% @doc 2048 game environment — pure Erlang port of the Python
-%% env_2048.py per SOLUTION-ARCHITECTURE.md §5.
+%% @doc 2048 game environment per SOLUTION-ARCHITECTURE.md §5.
 %%
 %% State is the #game_state{} record (see records.hrl). All
 %% functions are pure — they take a state and return a new state.

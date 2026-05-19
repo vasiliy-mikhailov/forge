@@ -9,7 +9,7 @@
 -include("records.hrl").
 
 -export([suite/0, all/0, init_per_suite/1, end_per_suite/1]).
--export([bench_against_real_vllm/1]).
+-export([bench_against_real_vllm/1, llm_probe/1]).
 
 -define(INLINE_SKILL, <<
     "Write an Erlang module named `submission` that exports `move/1`.\n"
@@ -33,7 +33,7 @@ suite() ->
     [{timetrap, {minutes, 5}}].
 
 all() ->
-    [bench_against_real_vllm].
+    [llm_probe, bench_against_real_vllm].
 
 init_per_suite(Config) ->
     case os:getenv("VLLM_API_KEY") of
@@ -48,6 +48,57 @@ init_per_suite(Config) ->
 
 end_per_suite(_Config) ->
     ok.
+
+%% Raw LLM round-trip — what does the model emit when asked for an
+%% Erlang Solver? Logs the assistant content so we can diagnose
+%% why bench_against_real_vllm got an empty body.
+llm_probe(_Config) ->
+    BaseUrl = list_to_binary(os:getenv("VLLM_BASE_URL",
+                                       "http://localhost:8000")),
+    ApiKey  = list_to_binary(os:getenv("VLLM_API_KEY")),
+    ModelId = list_to_binary(os:getenv("VLLM_MODEL_ID",
+                                       "qwen3.6-27b-awq")),
+
+    Prompt = <<
+        "Write an Erlang module named `submission` that exports `move/1`.\n"
+        "The function takes a 4x4 board and returns one of the atoms\n"
+        "w, a, s, d.\n\n"
+        "Emit your Solver as a fenced ```erlang ... ``` block in your\n"
+        "assistant message. Do not explain — just emit the module."
+    >>,
+
+    {ok, LLM} = llm_client:start_link(#{
+        base_url => BaseUrl,
+        api_key  => ApiKey,
+        model_id => ModelId
+    }),
+    try
+        ct:log("base_url=~ts model_id=~ts", [BaseUrl, ModelId]),
+        ct:log("prompt (~p bytes):~n~ts", [byte_size(Prompt), Prompt]),
+
+        T0 = erlang:monotonic_time(millisecond),
+        Result = llm_client:chat(LLM, [#{role => <<"user">>,
+                                          content => Prompt}]),
+        DT = erlang:monotonic_time(millisecond) - T0,
+        ct:log("response took ~p ms", [DT]),
+
+        case Result of
+            {ok, Content} ->
+                ct:log("assistant content (~p bytes):~n~ts",
+                       [byte_size(Content), Content]),
+                Ext1 = extract_fenced_erlang:extract(Content),
+                Ext2 = extract_fenced_erlang:extract(
+                          Content, <<"-module(submission)">>),
+                ct:log("extract/1 (last fence)  -> ~p bytes",
+                       [byte_size(Ext1)]),
+                ct:log("extract/2 (anchored)    -> ~p bytes",
+                       [byte_size(Ext2)]);
+            {error, Reason} ->
+                ct:log("LLM error: ~p", [Reason])
+        end
+    after
+        llm_client:stop(LLM)
+    end.
 
 bench_against_real_vllm(_Config) ->
     BaseUrl = list_to_binary(os:getenv("VLLM_BASE_URL",
