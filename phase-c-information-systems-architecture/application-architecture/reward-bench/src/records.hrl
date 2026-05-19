@@ -6,3 +6,13 @@
     rand      :: rand:state(),
     moves = 0 :: non_neg_integer()
 }).
+
+-record(game_result, {
+    score        :: non_neg_integer(),
+    max_tile     :: non_neg_integer(),
+    moves        :: non_neg_integer(),
+    state        :: won | lost | wall_clock_expired
+                  | error | max_moves_reached,
+    walltime_sec :: float(),
+    error        :: undefined | term()
+}).
