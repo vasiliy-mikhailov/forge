@@ -1,221 +1,167 @@
 ---
 name: cats-review
 description: |
-  CATS-style architecture review of a project against the invariants
-  declared in its SOLUTION-ARCHITECTURE.md. Invoke when the user
-  asks to "review the architecture", "audit drift", "do a CATS
-  review", or after a non-trivial refactor.
+  Audit a CATS-style lab for drift between its stance and its
+  artifacts (SPEC.md, SOLUTION-ARCHITECTURE.md, tests, code).
+  Produce a gap report + a step-by-step remediation plan.
+
+  Invoke when the user asks to "review the architecture", "audit
+  drift", "do a CATS review", or after a non-trivial refactor.
 ---
 
 # cats-review
 
-CATS methodology says **constraints are tests, not prose**. Most
-constraints (per-module behavior) belong in EUnit / Common Test.
-Some — cross-cutting invariants that span the codebase — are best
-checked by an agent with judgment: regex catches 90 % but trips on
-edge cases (variable dispatch, comments, string content), and the
-fix is usually "look at the AST" or "use xref" rather than a
-tighter pattern. That's this skill.
+A CATS review is **not** a checklist. It is the agent reading the
+stance and the artifacts, finding where they disagree, and writing
+the next cycles that close the gaps.
 
-## When to invoke
+## Step 1 — Stance
 
-- User asks to "review the architecture" / "do a CATS review" /
-  "audit for drift".
-- After a refactor that crossed module boundaries.
-- Before merging a feature branch that touched the supervision
-  tree, behaviours, or §5-style invariants ("no file APIs", "no
-  spawn outside the Runner", etc.).
+The four ground rules every artifact in a CATS lab obeys. Repeat
+them out loud (in your reasoning, before reading anything else):
 
-## Process
+### Twain (master rule)
 
-1. Read `SOLUTION-ARCHITECTURE.md` (or the project's equivalent
-   target-architecture doc).
-2. For each invariant claim in §1-§N, pick a check method and
-   verify it.
-3. Produce the review report (format below).
+> Writing is easy. All you have to do is cross out the excessive
+> words. — Mark Twain
 
-When the project has the seven canonical Erlang invariants below,
-run all seven. Otherwise, extract the project-specific invariants
-from the doc and verify them with the same machinery.
+Every other writing rule derives from it. Cognitive load is the
+bottleneck on doing good work; excess words are the largest
+controllable source.
 
-## The seven canonical Erlang checks
+- **Code comments**: keep the "what" (intent faster than re-reading
+  the code). Strip "why" — it lives in the spec, the ADR, or
+  `SOLUTION-ARCHITECTURE.md`. Strip cycle archaeology
+  ("Cycle 47: …") — that lives in git.
+- **Specs**: one decision per spec. No "out of scope" sections, no
+  anticipatory enumeration, no "previously X but cycle N changed
+  it" preambles. Specs describe the current decision; git holds
+  the chronology.
+- **Architecture docs / ADRs**: current state only. When a decision
+  changes, edit the doc — don't append an amendment header.
+- **Commit messages**: as long as needed to capture the why, no
+  longer.
 
-Each check below has: **what § promises**, **what to verify**, and
-**how** (preferred method first, fallback in parens). When the
-preferred method isn't available, note that in the report.
+### Senior Erlang AI Engineer
 
-### 1. Behaviour conformance
+Pure functions over stateful processes. Immutability (binaries,
+tuples, records) over mutation. Composition over inheritance.
+Small, focused functions with explicit inputs and outputs. Side
+effects sit at the edges (`gen_server`s); the core is pure.
 
-- **What §2 promises**: production impls declare the behaviour they
-  satisfy (e.g. `beam_canonical_scorer` implements
-  `canonical_scorer`).
-- **Verify**: every behaviour-declaring module has ≥1 module with
-  matching `-behaviour(BehaviourName)` attribute.
-- **How**: at the Erlang shell or via an escript,
-  `Mod:module_info(attributes)` returns `[{behaviour, [...]}]`.
-  Reflection — robust.
+### Constraints are tests, not prose
 
-### 2. No file APIs above the Runner
+Express invariants and contracts as TDD-style unit tests,
+meta-tests (architecture-shape checks), or live integration tests.
+Markdown `test_spec` / `src_spec` ceremony is dead. Erlang
+`-spec` attributes carry type contracts, EUnit pins behavior,
+Common Test pins integration. **The doc explains *why*; the tests
+prove *what*.**
 
-- **What §5 promises**: bench-side code communicates only in
-  binaries / scalars / records. The only `file:*` calls live
-  inside the Runner adapter (or, in the Erlang bench, a one-time
-  startup read in the CLI entry).
-- **Verify**: no `file:`-namespaced calls in `src/*.erl` outside
-  an allow-list.
-- **How**:
-  - **Preferred**: `xref:start/1` + `xref:add_directory` over
-    `_build/default/lib/<app>/ebin`, then
-    `xref:q(s, "(XC | (Mod) - <allowlisted_mod>) || \"file\" : Mod")`.
-    Semantic — catches variable dispatch (`M = file, M:read_file(P)`).
-  - **Fallback**: `re:run` with `\bfile:`. Misses variable dispatch
-    and trips on comments/string content. Note the limitation in
-    the report.
+### Prefer fitness functions: constraints → search → verification → repair → repeat
 
-### 3. No unrestricted spawn
+Define what success looks like *as a check* before you start;
+iterate against the check; verify on each pass; repair when the
+check regresses. Live-runtime tests are fitness functions against
+the real environment.
 
-- **What §5 promises**: concurrency is corralled. Solver execution
-  spawns one Erlang process per seed inside `beam_canonical_scorer`;
-  no other module spawns raw processes. (OTP startup via
-  supervisors is fine — that goes through `proc_lib`, not `spawn`.)
-- **Verify**: no calls to `erlang:spawn{,_link,_monitor,_opt}/N`
-  outside an allow-list.
-- **How**:
-  - **Preferred**: `xref:q(s, "(XC | (Mod) - <allowlisted_mod>) || \"erlang\" : Mod / (E : Fun where Fun = spawn or Fun = spawn_link ...)")`.
-  - **Fallback**: regex `\b(?:erlang:)?spawn(?:_link|_monitor|_opt)?\s*\(`.
+## Step 2 — Read the artifacts (in this order)
 
-### 4. SolutionGenerator uses the fenced-block extractor
+The order matters: each later artifact is judged against the
+earlier ones.
 
-- **What §4 promises**: the LLM emits a fenced ` ```erlang ... ``` `
-  block; the `extract_fenced_erlang` helper lifts the body. If a
-  refactor strips that call, the bench returns garbage.
-- **Verify**: `solution_generator` actually CALLS
-  `extract_fenced_erlang:extract/1` (not just mentions it).
-- **How**:
-  - **Preferred**: `xref:q(s, "(XC) || solution_generator")` and
-    confirm `extract_fenced_erlang:extract/1` appears in the result.
-  - **Fallback**: regex for `extract_fenced_erlang:` (the colon
-    enforces a call site, not a bare mention).
+1. **`SPEC.md`** — what the lab promises (the contract).
+2. **`SOLUTION-ARCHITECTURE.md`** — how the lab keeps that promise
+   (the target architecture, §1-§N invariants, role decomposition).
+3. **`test/`** and any sibling fitness-function folder, plus the
+   `make eunit` / `make ct` targets — what is actually proven.
+4. **`src/`** — what is actually built.
 
-### 5. Every record has a user
+Don't review by name; open every file and read it. The point is
+to develop an opinion based on what's there, not on what should
+be there.
 
-- **What's promised**: records declared in `records.hrl` are part
-  of the architecture; orphans accumulate during refactors.
-- **Verify**: every `-record(Name, ...)` declaration in
-  `records.hrl` (or wherever shared records live) has ≥ 1 reference
-  somewhere in `src/*.erl` (excluding the declaration itself).
-- **How**:
-  - **Preferred**: parse the .hrl with `epp_dodger:parse_file`,
-    extract record names; parse each src/*.erl with
-    `erl_syntax:parse_form` + walk for `record_expr` / `record_index`
-    / `record_access` nodes whose record name matches.
-  - **Fallback**: regex `#RecName[\\{\\.]` (the trailing `{` / `.`
-    enforces it's actually a record reference, not a substring of
-    another name). Note: `#submission` would NOT match
-    `#submission_other` because `_` isn't in the trailing class.
+## Step 3 — Find gaps between the stance and the artifacts
 
-### 6. No Python-era stragglers
+For each pair (stance dimension, artifact), ask: **is the artifact
+consistent with the stance?** If not, name the drift.
 
-- **What's promised**: the Erlang bench replaced the Python one
-  wholesale (per the cycle-232 cutover). Stale Python-era strings
-  in source or comments are documentation drift, not just cosmetic.
-- **Verify**: no occurrences in `src/`, `test/`, `tasks/` of:
-  `submission.py`, `class Solver`, `transitions library`,
-  `pydantic`, `OpenHands`, `condenser`, `ralph`, `agent_loop`.
-- **How**: text scan is the right tool — this is a lint, not a
-  semantic check. Case-insensitive regex over each prohibited term.
-  Note any matches with file + line + the surrounding context.
+The dimensions:
 
-### 7. Supervision tree shape — NOTE: this is a unit test, not a fitness function
-
-- **What was claimed**: `reward_bench_sup` boots clean with the
-  expected child count.
-- **Verify**: spawn the sup, call `supervisor:which_children/1`,
-  count.
-- **How**: `{ok, Pid} = reward_bench_sup:start_link(), Children =
-  supervisor:which_children(Pid), unlink + exit cleanup`.
-
-**Caveat**: this check is per-module behavior of one specific
-supervisor — not a cross-cutting invariant. It belongs in
-`test/reward_bench_sup_tests.erl`, not in a CATS review. Surface
-this in the report as "wrong category — recommend moving to
-unit tests".
-
-## Cross-project applicability
-
-The 7 checks above are the Erlang/reward-bench instances of more
-general CATS invariants:
-
-| general | reward-bench instance |
+| stance dimension | what drift looks like |
 |---|---|
-| Behaviour conformance / interface impl | Erlang `-behaviour` |
-| Side-effect scope (file IO above the Runner) | `file:` |
-| Concurrency scope (no rogue spawns) | `spawn` |
-| Wiring sanity (boundary helper actually called) | `extract_fenced_erlang` |
-| No dead types / records | records.hrl |
-| No old-stack stragglers | Python lexicon |
-| Supervision tree shape | reward_bench_sup |
+| Twain | amendment headers; cycle archaeology in comments / specs / commit subjects; "out of scope" sections; anticipatory enumeration; rule-change preambles; >1 sentence of "why" in a file that has a spec or ADR |
+| Senior Erlang AI Engineer | mutation hidden in records or process state when pure functions would do; side effects scattered through the core instead of corralled in a `gen_server` boundary; OO-flavoured composition; functions without explicit `-spec`; functions that take a process and a state instead of just values |
+| Constraints are tests | invariants stated in prose with no test pinning them; `test_spec` / `src_spec` markdown files still present; promises in SPEC / SOLUTION-ARCHITECTURE not covered by `make eunit` or `make ct`; tests written as scripts instead of EUnit / Common Test suites; missing `-spec` on exported functions |
+| Fitness functions | "we should never X" claims with no automated check; quality floors that exist only in someone's head; live-runtime regressions caught by manual eyeballing rather than a live test |
 
-When invoked on a different project, derive the project-specific
-instance of each general invariant by reading its
-`SOLUTION-ARCHITECTURE.md`.
+Cross-product the dimensions × artifacts. Output one row per pair
+in the gap table, ✓ or ✗ per cell. Each ✗ gets a drift detail
+section below.
 
-## Output format
+## Step 4 — Step-by-step plan to make it consistent
+
+For every ✗, write a remediation cycle. **Order by leverage**:
+the gap whose closure most clarifies the others goes first.
+
+Each cycle entry:
 
 ```
-## CATS Architecture Review — <project> — <date>
+Cycle N: <imperative action — what you do, not what you achieve>
+  Stance dimension: <Twain | Senior Erlang | Constraints are tests | Fitness functions>
+  Artifact touched: <file path(s)>
+  Verification: <how cats-review knows the gap is gone>
+```
 
-Target architecture doc: <path>
-Build artifacts inspected: <path-to-ebin>
+The plan ends when re-running cats-review would print all-green.
 
-### Invariants checked
+## Output template
 
-| § | invariant | method | status |
-|---|---|---|---|
-| §2 | behaviour conformance | reflection | ✓ |
-| §5 | no file APIs above Runner | xref | ✓ |
-| §5 | no unrestricted spawn | xref | ✗ DRIFT |
-| §4 | fenced extractor wired | xref | ✓ |
-| —  | every record has a user | AST | ✓ |
-| —  | no Python-era stragglers | regex | ✓ |
-| —  | sup shape (NOT a fitness function — see report) | runtime | n/a |
+```
+## CATS Architecture Review — <project> — <YYYY-MM-DD>
 
-### Drift details
+### Step 1 — Stance recited
+Twain · Senior Erlang AI Engineer · Constraints are tests · Fitness functions
 
-#### §5 no unrestricted spawn
-   What §5 promises: "Solver execution spawns one Erlang process
-   per seed inside beam_canonical_scorer; no other module spawns
-   raw processes."
-   What I found: src/foo.erl:42 calls erlang:spawn_link/2.
-   Suggested fix: route through canonical_scorer or remove.
+### Step 2 — Artifacts read
+- SPEC.md                  (<N> lines, last touched <date>)
+- SOLUTION-ARCHITECTURE.md (<N> lines, last touched <date>)
+- test/, fitness-functions/ (<count> files, `make eunit` -> <N> tests)
+- src/                      (<count> .erl files, `make compile` -> <ok|warnings|errors>)
 
-### Coverage gaps
+### Step 3 — Gaps
 
-Architectural claims in §X that I could not mechanically verify:
-- "context flows through ... without mutation drift" (semantic claim
-  needs a property test or a runtime probe)
-- ...
+| dimension \ artifact | SPEC | SA  | tests | src |
+|---                   |---   |---  |---    |--- |
+| Twain                | ✓/✗ | ✓/✗ | ✓/✗  | ✓/✗ |
+| Senior Erlang        | …    | …   | …    | …   |
+| Constraints are tests| …    | …   | …    | …   |
+| Fitness functions    | …    | …   | …    | …   |
 
-### Methodology notes per check
+### Drift details (one per ✗)
 
-- §5 file IO: used xref (semantic). xref returns 0 calls to
-  `file:*` from src/ modules other than `bench_main`, which
-  reads SKILL_tier1.md at startup as the doc allows.
+#### <dimension> in <artifact>
+- <line range / file:lineno>: <evidence>
+- Why this violates <dimension>: <one sentence>
 
-- §5 spawn: used xref. Found 1 call: src/foo.erl:42
-  → `erlang:spawn_link/2`. See drift detail above.
+### Step 4 — Plan
 
-- ... (one note per check)
+Cycle N+1: <action>
+  Stance dimension: <one>
+  Artifact touched: <path>
+  Verification: <check>
+
+Cycle N+2: …
+
 ```
 
 ## Anti-patterns
 
-- **Don't** shell out to grep when xref / AST is reachable. The
-  cost of a semantic check is a few seconds of compile + load;
-  the cost of regex false-positive/negative is a missed drift.
-- **Don't** pin per-module behavior here. If a check would die
-  with one specific module's deletion, it's a unit test — say
-  so in the report and recommend the move.
-- **Don't** report green without naming the method. "passed via
-  regex" and "passed via xref" carry very different epistemic
-  weight; the reader needs to know which.
+- **Don't** invent dimensions. The four listed in Step 1 are the
+  whole stance — extending it dilutes it.
+- **Don't** judge a file by name. Open it.
+- **Don't** propose cycles whose verification is "looks good now".
+  Every cycle in the plan must end with an automated check or with
+  re-running cats-review and seeing the row flip to ✓.
+- **Don't** output a verdict-without-evidence. Every ✗ must cite
+  the file + line(s) that prove it.
